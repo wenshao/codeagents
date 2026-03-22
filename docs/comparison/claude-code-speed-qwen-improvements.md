@@ -11,8 +11,8 @@
 | 维度 | Claude Code | Qwen Code |
 |------|------------|-----------|
 | **分发方式** | 预编译原生二进制（Rust） | Node.js + npm 依赖 |
-| **冷启动** | ~100-200ms | ~2-5 秒 |
-| **内存** | ~50-80 MB | ~200-400 MB |
+| **冷启动**（估算） | 亚秒级 | 数秒级 |
+| **内存**（估算） | 较低 | 较高（Node.js + React 开销） |
 | **依赖体积** | 单文件 | node_modules 数百 MB |
 
 Claude Code 从 `curl install.sh | bash` 安装的是**编译后的原生可执行文件**，npm 安装方式已被标记为 deprecated。这意味着：
@@ -123,19 +123,19 @@ this.buffers.set(actualIndex, newBuffer);  // 存入 Map
 
 每个 chunk 到来时，`currentBuffer + chunk` 创建新字符串（JavaScript 字符串不可变，每次拼接分配新内存）。虽然每 chunk 只拼接一次（非循环内重复拼接），但对于长工具输出（数千 chunk），累积的内存分配和 GC 压力仍然显著。改用数组收集 + 最终 join 更优。
 
-### 问题 3：Token 计算开销大
+### 问题 3：Token 计算方式
 
 **文件**：`packages/core/src/core/openaiContentGenerator/openaiContentGenerator.ts`（82-107 行）
 
 ```typescript
-// countTokens() 方法：
+// countTokens() 方法（ContentGenerator 接口方法）：
 async countTokens(request: CountTokensParameters): Promise<CountTokensResponse> {
   try {
     const estimator = new RequestTokenEstimator();
-    const result = await estimator.calculateTokens(request);  // 主路径
+    const result = await estimator.calculateTokens(request);
     return { totalTokens: result.totalTokens };
   } catch (error) {
-    // 回退：对 contents 做 JSON 序列化，按 4 字符≈1 token 估算
+    // 回退：按 4 字符≈1 token 粗估
     const content = JSON.stringify(request.contents);
     const totalTokens = Math.ceil(content.length / 4);
     return { totalTokens };
@@ -143,9 +143,9 @@ async countTokens(request: CountTokensParameters): Promise<CountTokensResponse> 
 }
 ```
 
-- 主路径 `RequestTokenEstimator` 每次调用前遍历全部历史内容
-- 异常回退用 `JSON.stringify(request.contents)` 序列化全部对话内容（非整个 request，但仍昂贵）
-- 对于 100 轮对话，每轮新增消息后都重新计算全部 token，无增量缓存
+**第六轮核实发现**：`countTokens()` **不在代理主循环中被显式调用**（client.ts 和 geminiChat.ts 均未调用）。实际 token 计数来自 **API 响应的 usage 元数据**（`uiTelemetryService.getLastPromptTokenCount()`，chatCompressionService.ts:109）。
+
+因此这个问题的影响**小于预期**——`countTokens()` 不是每轮执行的热路径，而是按需调用（如 SDK 内部或特定功能）。JSON.stringify 回退路径的实际触发频率较低。
 
 ### 问题 4：会话历史无限增长
 
@@ -265,10 +265,9 @@ const [warnings, userWarnings] = await Promise.all([
 // 源码 TODO 已承认冗余，重构为 minimal config + full config 分离
 ```
 
-**预期收益**：
-- 并行化独立操作：省 200-500ms
-- 消除 loadCliConfig 双调用：省 100-300ms
-- 总计可将交互模式启动时间减少 30-50%
+**预期收益**（估算，未实测）：
+- 并行化独立操作：省数百毫秒（取决于 cleanupCheckpoints 和 warnings 的实际耗时）
+- loadCliConfig 双调用优化：仅沙箱场景受益
 
 #### 1.2 I18N 同步加载改为内嵌默认语言
 
@@ -346,7 +345,7 @@ class TokenCounter {
 ```typescript
 // 当前（geminiChat.ts:514-520）：每次 getHistory() 深拷贝
 getHistory(curated?: boolean): Content[] {
-  return structuredClone(history);  // 昂贵！每轮 3-6 次调用
+  return structuredClone(history);  // 昂贵！每轮 3-4 次调用
 }
 
 // 改进：返回只读引用（经验证，所有调用方仅读取不修改）
@@ -461,7 +460,7 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 | 消除 loadCliConfig 双调用（沙箱路径，源码 TODO 已承认） | 中 | 中（仅沙箱场景） | P1 |
 | MCP 启动超时缩短（10min→5-10s） | 低 | **高**（稳定性） | P0 |
 | structuredClone 改 readonly 引用（每轮多次调用） | 低 | **高**（大会话性能） | P1 |
-| Token 计算增量缓存 | 中 | 中 | P1 |
+| ~~Token 计算增量缓存~~ | 中 | 低（countTokens 非热路径） | P3 |
 | 流式解析字符串拼接改数组收集 | 低 | 中 | P1 |
 | 压缩服务 JSON.stringify 改估算 | 低 | 中 | P1 |
 | i18n fs.existsSync 改异步 + 默认语言内嵌 | 低 | 中 | P1 |
@@ -492,7 +491,7 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 ---
 
-## 附录：源码核实记录（四轮核实）
+## 附录：源码核实记录（六轮核实）
 
 ### 第一轮核实
 
@@ -559,3 +558,14 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 | structuredClone 调用点精确计数 | `core/src/` 全局 grep | 8 个非测试调用点 | ✅ 确认：每轮至少 3-4 次（API + nextSpeaker×2 + IDE 检查） |
 | ~~3.1 LSP 超时建议残留~~ | 文档 3.1 节 | — | ❌ 修正：R1/R2 已确认 LSP 不阻塞启动，删除 LSP 超时建议 |
 | React 顶层 import 行号 | `gemini.tsx` | 15, 20 | ✅ 确认：`import { render } from 'ink'` 和 `import React from 'react'` |
+
+### 第六轮核实（最终验证）
+
+| 问题 | 核实文件 | 实际行号 | 结论 |
+|------|---------|---------|------|
+| ~~Token 计算每轮执行~~ | `client.ts`, `geminiChat.ts` 全局搜索 | 无匹配 | ⚠️ **重大修正**：`countTokens()` 不在主循环中被调用；token 数来自 API 响应 usage 元数据 |
+| CHANGELOG: 18MB | `CHANGELOG.md` | 66 | ✅ 确认：原文 "Improved startup memory usage by ~18MB across all scenarios" |
+| CHANGELOG: Git 并行 | `CHANGELOG.md` | 178 | ✅ 确认：原文 "reading git refs directly and skipping redundant `git fetch`" |
+| structuredClone 注释 "3-6" | 文档自身 | 349 | ⚠️ 修正：改为 "3-4"（与 R5 精确计数一致） |
+| 预期收益数字 | 无源码依据 | — | ⚠️ 修正：标注为估算值，未实测 |
+| 附录标题 | 文档自身 | 495 | ⚠️ 修正："四轮" → "六轮" |
