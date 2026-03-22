@@ -88,11 +88,17 @@ Claude Code CHANGELOG 中记录的多项优化：
 文件中共有约 22 个 await，但因分支条件，交互路径实际执行约 8-9 个。
 ```
 
-**注意**：`loadCliConfig()` 被调用了**两次**（259 行和 356 行）。源码中有 TODO 注释承认这是待重构的冗余：
+**注意**：`loadCliConfig()` 在启动过程中被调用了**两次**：
+- **父进程**（259 行）：仅为沙箱路径做认证，然后 `relaunchOnExitCode()` 退出
+- **子进程**（356 行）：加载完整配置含扩展
+
+虽然是不同进程，但从用户视角看是**串行的**（父进程完成才启动子进程），总时间包含两次 loadCliConfig。源码 TODO 承认冗余：
 ```typescript
 // TODO(jacobr): refactor loadCliConfig so there is a minimal version
 // that only initializes enough config to enable refreshAuth
 ```
+
+**补充**：非沙箱场景下，父进程在 `relaunchAppInChildProcess()`（325 行）后也退出，子进程仅调用一次 loadCliConfig（356 行）。双调用问题**仅在沙箱启用时存在**。
 
 **具体问题**：
 
@@ -154,6 +160,13 @@ history.push(message);  // 无自动修剪
 ```
 
 - `structuredClone()` 对大历史非常昂贵
+- 非测试代码中共 8 个调用点，每轮至少 3-4 次：
+  - `geminiChat.ts:296` — API 请求前（每轮 1 次）
+  - `nextSpeakerChecker.ts:55,63` — 下一发言人检测（每轮 2 次，同一函数内）
+  - `client.ts:568` — IDE 上下文检查（每轮 1 次，条件性）
+  - `client.ts:681` — Stop Hook（条件性）
+  - `turn.ts:351` — 错误报告（条件性）
+  - `chatCompressionService.ts:88` — 压缩（阈值触发）
 - 没有自动修剪机制，100 轮对话后历史可达数十 MB
 
 ### 问题 5：聊天压缩触发时的 JSON 序列化
@@ -361,20 +374,17 @@ function estimateSize(content: Content): number {
 
 ### 第三优先级：稳定性
 
-#### 3.1 全局超时保护
+#### 3.1 MCP 启动阶段超时缩短
 
 ```typescript
-// MCP 连接加超时
-await Promise.race([
-  server.connect(),
-  timeout(5000, 'MCP server connection timeout')
-]);
+// 当前：MCP 连接默认 10 分钟超时（mcp-client.ts:59）
+// 启动路径上，一个无响应 MCP 服务器会让用户等 10 分钟
 
-// LSP 发现加超时
-await Promise.race([
-  lspService.discoverAndPrepare(),
-  timeout(3000, 'LSP discovery timeout')
-]);
+// 改进：启动阶段使用短超时，后续操作恢复长超时
+const STARTUP_TIMEOUT = 5_000;  // 5 秒
+await this.client.connect(this.transport, {
+  timeout: isStartup ? STARTUP_TIMEOUT : this.serverConfig.timeout,
+});
 ```
 
 #### ~~3.2 HTTP 连接复用~~ ✅ 已验证不需要
@@ -448,7 +458,7 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 | 改进 | 难度 | 收益 | 优先级 |
 |------|------|------|--------|
 | 启动 await 并行化（cleanupCheckpoints ‖ parseArguments, warnings 并行） | 低 | **高**（首印象） | P0 |
-| 消除 loadCliConfig 双调用（源码 TODO 已承认） | 中 | **高**（省 100-300ms） | P0 |
+| 消除 loadCliConfig 双调用（沙箱路径，源码 TODO 已承认） | 中 | 中（仅沙箱场景） | P1 |
 | MCP 启动超时缩短（10min→5-10s） | 低 | **高**（稳定性） | P0 |
 | structuredClone 改 readonly 引用（每轮多次调用） | 低 | **高**（大会话性能） | P1 |
 | Token 计算增量缓存 | 中 | 中 | P1 |
@@ -465,17 +475,16 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 ## 五、一句话总结
 
-**Claude Code 快的本质**：Rust 原生二进制 + 激进并行化 + 极致懒加载 + 内核级沙箱 + 超时断路器。
+**Claude Code 快的本质**：Rust 原生二进制 + 激进并行化 + 极致懒加载 + 文件系统级沙箱 + 超时断路器。
 
-**Qwen Code 慢的本质**：Node.js 运行时开销 + 启动路径 8-9 个串行 await（无并行） + loadCliConfig 双调用 + structuredClone 每轮 3-6 次深拷贝 + React/Ink 非交互也加载 + MCP 启动超时 10 分钟。
+**Qwen Code 慢的本质**：Node.js 运行时开销 + 启动路径 8-9 个串行 await（无并行） + structuredClone 每轮 3-4 次深拷贝 + React/Ink 非交互也加载 + MCP 启动超时 10 分钟。
 
 > 注：~~OTel 9 包 eager 加载~~ 经第三轮核实，OTel 实际是条件加载（默认关闭），不影响正常启动。
 
-**最小代价最大收益的四件事**：
+**最小代价最大收益的三件事**：
 1. 启动独立 await 并行化 + warnings 并行（`Promise.all()`，改几行代码）
-2. 消除 loadCliConfig 双调用（源码 TODO 已指出方向）
-3. structuredClone 改 readonly 引用（每轮 3-6 次深拷贝，大会话影响显著）
-4. MCP 启动超时从 10 分钟缩短到 5-10 秒
+2. structuredClone 改 readonly 引用（每轮 3-4 次深拷贝，所有调用方验证为只读安全）
+3. MCP 启动超时从 10 分钟缩短到 5-10 秒
 
 ---
 
@@ -540,3 +549,13 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 | ~~内核级沙箱 iptables/ipset~~ | `CHANGELOG.md` | 全文搜索 | ❌ **纠正**：CHANGELOG 无 iptables/ipset/seccomp/BPF 任何提及；实为文件系统+网络域名隔离 |
 | ~~web-tree-sitter ~2.5MB~~ | `node_modules/web-tree-sitter/` | 实测 | ❌ **纠正**：WASM 187KB，总包 ~380KB（原描述偏大 6-7 倍） |
 | 优先级矩阵重复表头 | 文档自身 | 449-452 | ✅ 已修复格式错误 |
+
+### 第五轮核实（一致性与精度）
+
+| 问题 | 核实文件 | 实际行号 | 结论 |
+|------|---------|---------|------|
+| ~~"内核级沙箱"残留~~ | 文档总结 468 行 | — | ❌ 修正：与第 6 节不一致，改为"文件系统级沙箱" |
+| ~~loadCliConfig 双调用同进程~~ | `gemini.tsx` | 247-327 | ⚠️ 修正：259 行在父进程（沙箱认证），356 行在子进程；非沙箱场景仅一次 |
+| structuredClone 调用点精确计数 | `core/src/` 全局 grep | 8 个非测试调用点 | ✅ 确认：每轮至少 3-4 次（API + nextSpeaker×2 + IDE 检查） |
+| ~~3.1 LSP 超时建议残留~~ | 文档 3.1 节 | — | ❌ 修正：R1/R2 已确认 LSP 不阻塞启动，删除 LSP 超时建议 |
+| React 顶层 import 行号 | `gemini.tsx` | 15, 20 | ✅ 确认：`import { render } from 'ink'` 和 `import React from 'react'` |
