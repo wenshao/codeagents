@@ -21,21 +21,21 @@
 
 | 工具 | 开发者 | 许可证 | Stars | 语言 | LLM 提供商 | 特色 |
 |------|--------|--------|-------|------|-----------|------|
+| [Gemini CLI](./docs/tools/gemini-cli.md) | Google | Apache-2.0 | 98k+ | TypeScript | 1 (Gemini) | TOML 策略引擎 |
+| [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | 69k+ | Python | 100+ | 浏览器操作，多代理委托 |
+| [Codex CLI](./docs/tools/codex-cli.md) | OpenAI | Apache-2.0 | 66k+ | TypeScript | OpenAI | 沙箱执行，多平台 |
+| [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | 59k+ | TypeScript | 48+ | Git Checkpoint 回滚 |
+| [Aider](./docs/tools/aider.md) | Paul Gauthier | GPL-3.0 | 42k+ | Python | 100+ | 14 种编辑格式，Git 原生 |
+| [Goose](./docs/tools/goose.md) | Block | Apache-2.0 | 33k+ | **Rust** | 58+ | MCP 原生，Recipe 系统 |
+| [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | 31k+ | TypeScript | 60+ | PR Checks，语义索引 |
+| [Warp](./docs/tools/warp.md) | Warp | 专有 | 26k+ | Rust | 多种 | AI 终端替代品 |
+| [Qwen Code](./docs/tools/qwen-code.md) | 阿里云 | Apache-2.0 | 20k+ | TypeScript | 5 | 免费 OAuth，6 语言 UI |
+| [SWE-agent](./docs/tools/swe-agent.md) | Princeton NLP | MIT | 18k+ | Python | 100+ | SWE-bench 74%，Docker 沙箱 |
+| [OpenCode](./docs/tools/opencode.md) | OpenCode AI | MIT | 11k+ | **TypeScript** | 20+ | 多客户端，插件系统 |
+| [Kimi CLI](./docs/tools/kimi-code.md) | 月之暗面 | 开源 | 7k+ | **Python** | 4 | 双模式 Ctrl-X |
 | [Claude Code](./docs/tools/claude-code.md) | Anthropic | 专有 | - | Rust | 1 (Claude) | MCP 生态，100 万上下文 |
-| [Aider](./docs/tools/aider.md) | Paul Gauthier | GPL-3.0 | 40k+ | Python | 100+ | 14 种编辑格式，Git 原生 |
-| [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | 58k+ | TypeScript | 48+ | Git Checkpoint 回滚 |
-| [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | 32k+ | Python | 100+ | 浏览器操作，多代理委托 |
-| [Goose](./docs/tools/goose.md) | Block | Apache-2.0 | 27k+ | **Rust** | 58+ | MCP 原生，Recipe 系统 |
-| [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | 27k+ | TypeScript | 60+ | PR Checks，语义索引 |
-| [Warp](./docs/tools/warp.md) | Warp | 专有 | 30k+ | Rust | 多种 | AI 终端替代品 |
-| [SWE-agent](./docs/tools/swe-agent.md) | Princeton NLP | MIT | 19k+ | Python | 100+ | SWE-bench 74%，Docker 沙箱 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | - | TypeScript | 多种 | Background Agent |
-| [Codex CLI](./docs/tools/codex-cli.md) | OpenAI | Apache-2.0 | 20k+ | TypeScript | OpenAI | 沙箱执行，多平台 |
 | [Copilot CLI](./docs/tools/github-copilot-cli.md) | GitHub | 专有 | - | TypeScript | GPT-4 | GitHub 生态 |
-| [OpenCode](./docs/tools/opencode.md) | OpenCode AI | MIT | 3k+ | **TypeScript** | 20+ | 多客户端，插件系统 |
-| [Gemini CLI](./docs/tools/gemini-cli.md) | Google | Apache-2.0 | 1k+ | TypeScript | 1 (Gemini) | TOML 策略引擎 |
-| [Qwen Code](./docs/tools/qwen-code.md) | 阿里云 | Apache-2.0 | 2k+ | TypeScript | 5 | 免费 OAuth，6 语言 UI |
-| [Kimi CLI](./docs/tools/kimi-code.md) | 月之暗面 | 开源 | - | **Python** | 4 | 双模式 Ctrl-X |
 
 ## 文档导航
 
