@@ -3,101 +3,141 @@
 **开发者：** Cline
 **许可证：** Apache-2.0
 **仓库：** [github.com/cline/cline](https://github.com/cline/cline)
-**网站：** [cline.bot](https://cline.bot/)
 **Stars：** 约 58k+
 
 ## 概述
 
-Cline 是一个直接在 IDE 中运行的自主编码代理（主要是 VS Code）。它被超过 500 万开发者信任，是最流行的开源 AI 编程助手之一。
+Cline 是最受欢迎的 AI 编程 VS Code 扩展，同时提供独立 CLI。基于 TypeScript 构建，核心 Task 循环（3764 行）实现了完整的代理工作流。支持 48+ LLM 提供商，内置 Git Checkpoint 系统实现操作回滚，通过 MCP 和 Hook 系统提供强大的扩展能力。
 
 ## 核心功能
 
 ### 基础能力
-- **IDE 集成**：原生 VS Code/Cursor 扩展
-- **自主操作**：可创建/编辑文件、运行命令、浏览网页
-- **计划/执行模式**：复杂任务的结构化工作流
-- **MCP 集成**：模型上下文协议支持
-- **浏览器访问**：可使用浏览器进行研究
-- **终端集成**：完整的命令执行能力
+- **VS Code 深度集成**：WebView UI + 编辑器 API
+- **23 种内置工具**：文件读写、Bash 执行、浏览器操作、MCP 工具等
+- **48+ LLM 提供商**：Anthropic、OpenAI、Google、AWS、Azure 等
+- **Plan/Act 双模式**：规划阶段探索，执行阶段修改
+- **Checkpoint 系统**：基于 Git 的操作回滚
+- **MCP 支持**：外部 MCP 服务器集成（1400+ 行 McpHub）
+- **独立 CLI**：可脱离 VS Code 运行
 
 ### 独特功能
-- **基于权限**：每个操作都需要用户批准
-- **多步规划**：分解复杂任务
-- **上下文感知**：理解整个项目
-- **Claude Sonnet 4**：针对最新 Claude 模型优化
-- **VS Code 原生**：深度 VS Code 集成
+- **Git Checkpoint**：每步操作自动保存 Git 快照，可回滚到任意步骤
+- **Strict Plan Mode**：强制先规划再执行
+- **Focus Chain**：交互式任务清单
+- **扩展思维**：Claude/O1/Gemini 思维链可视化
+- **命令权限控制器**：正则匹配 + 重定向/子 shell 检测
+- **Skills/Workflows**：Markdown 定义的可复用技能
+- **Headless 浏览器**：内置 browser_action 工具
+
+## 技术架构（源码分析）
+
+### 项目结构
+
+```
+cline/
+├── src/
+│   ├── extension.ts          # VS Code 扩展入口
+│   ├── core/
+│   │   ├── controller/       # 主控制器（1000+ 行）
+│   │   ├── task/             # 代理循环（3764 行）
+│   │   ├── api/              # LLM 提供商工厂（48+）
+│   │   ├── prompts/          # 系统提示组件
+│   │   ├── permissions/      # 命令权限
+│   │   └── hooks/            # Hook 系统
+│   ├── integrations/
+│   │   └── checkpoints/      # Git Checkpoint（931 行）
+│   └── services/
+│       └── mcp/McpHub.ts     # MCP 集成（1400+ 行）
+├── webview-ui/               # React WebView UI
+├── cli/                      # 独立 CLI
+└── proto/                    # Protocol Buffers 定义
+```
+
+### 核心代理循环
+
+```
+用户提交任务 (WebView)
+  → Controller.initTask()
+  → Task (代理循环)
+    → createMessage(systemPrompt, messages, tools) [流式]
+    → 解析响应（文本 / 工具调用 / 思维链）
+    → ToolExecutor 执行工具
+      → CommandPermissionController (正则 + 重定向检测)
+      → AutoApprove 检查
+      → 用户确认（如需要）
+      → 执行 + 收集结果
+    → Checkpoint 保存 (Git commit)
+    → 循环直到 attempt_completion
+```
+
+### 工具系统（23 种）
+
+| 类别 | 工具 |
+|------|------|
+| 文件 | read_file, write_to_file, replace_in_file, list_files, list_code_definition_names |
+| 搜索 | search_files, web_search, web_fetch |
+| 执行 | execute_command |
+| 浏览器 | browser_action（Headless Chrome） |
+| MCP | use_mcp_tool, access_mcp_resource, load_mcp_documentation |
+| 交互 | ask_followup_question, attempt_completion |
+| 规划 | plan_mode_respond, act_mode_respond |
+| 任务 | focus_chain |
+
+### Checkpoint 系统
+
+每步操作自动 Git commit，用户可视化 diff，一键回滚到任意步骤。自动排除 node_modules/.git 等，支持多根工作区。
+
+### 权限系统
+
+```
+命令执行
+  → CommandPermissionController
+    → 正则匹配（allow/deny 列表）
+    → 重定向检测（>, >>, |, &&）
+    → 子 shell/反引号检测
+  → AutoApprove 设置
+  → .cline-ignore 文件过滤
+  → 用户确认
+```
 
 ## 安装
 
 ```bash
-# 从 VS Code Marketplace 安装
-1. 打开 VS Code
-2. 转到扩展（Ctrl/Cmd + Shift + X）
-3. 搜索 "Cline"
-4. 安装并使用 GitHub 登录
+# VS Code 扩展（主要方式）
+# 1. VS Code → 扩展 → 搜索 "Cline" → 安装
 
-# 或从 VSIX
-code --install-extension cline.cline
+# 独立 CLI
+npm install -g @cline/cli
 ```
 
-## 架构
+## 支持的提供商（48+）
 
-- **语言：** TypeScript
-- **平台：** VS Code / Cursor / Antigravity
-- **主要模型：** Claude Sonnet 4.0
+Anthropic, OpenRouter, OpenAI, Google Gemini, AWS Bedrock, Azure, GCP Vertex, SAP AI Core, Cerebras, Groq, DeepSeek, Qwen, Mistral, xAI, Ollama, LM Studio, OpenAI 兼容 API 等。
 
 ## 优势
 
-1. **IDE 原生**：专为 VS Code 构建
-2. **权限模式**：安全 - 更改前始终询问
-3. **大社区**：500 万+ 用户
-4. **MCP 支持**：通过模型上下文协议扩展
-5. **自主**：可独立处理多步任务
+1. **VS Code 原生**：最佳 IDE 集成体验
+2. **Checkpoint 回滚**：Git 快照保证安全
+3. **提供商丰富**：48+ 提供商支持
+4. **Plan/Act 模式**：规划和执行分离
+5. **社区庞大**：58k+ Stars，活跃开发
+6. **MCP + Hook**：强大的扩展能力
 
 ## 劣势
 
-1. **依赖 IDE**：主要是 VS Code（非纯 CLI）
-2. **仅 Claude**：专注于 Claude 模型
-3. **权限疲劳**：快速任务可能繁琐
-4. **Git 集成较少**：不如 Aider 专注于 Git
-
-## 使用方法
-
-```bash
-# VS Code 命令面板中
-Cline: Start New Task
-Cline: Continue Conversation
-
-# 让 Cline 做点什么
-"Cline，用 hooks 重构这个组件"
-
-# 多步任务
-"Cline，创建一个带测试的新 API 端点"
-```
-
-## 配置
-
-```json
-// .vscode/settings.json
-{
-  "cline.apiProvider": "anthropic",
-  "cline.model": "claude-sonnet-4-20250514",
-  "cline.autoApproval": false
-}
-```
+1. **VS Code 依赖**：主要功能绑定 VS Code
+2. **非终端原生**：CLI 是辅助，非主力
+3. **内存占用**：Electron + WebView 较重
+4. **无 Git 原生工作流**：不像 Aider 自动提交
 
 ## 使用场景
 
-- **最适合**：VS Code 用户、全功能开发
-- **适合**：多文件编辑、自主任务完成
-- **不太适合**：快速 CLI 交互、非 VS Code 用户
-
-## Fork 和变体
-
-- **Clare**：tot-ra 的分支，带有修改
+- **最适合**：VS Code 用户、需要可视化操作回滚
+- **适合**：前端开发、全栈项目、浏览器测试
+- **不太适合**：纯终端工作流、服务器端开发
 
 ## 资源链接
 
-- [文档](https://docs.cline.bot/)
 - [GitHub](https://github.com/cline/cline)
-- [网站](https://cline.bot/)
+- [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=saoudrizwan.claude-dev)
+- [文档](https://docs.cline.bot/)

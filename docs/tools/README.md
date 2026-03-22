@@ -39,7 +39,7 @@
 ### [Goose](./goose.md)
 **开发者：** Block
 **最适合：** 模型灵活性
-**核心特性：** 多提供商支持
+**核心特性：** Rust 原生、58+ 提供商、MCP 扩展
 
 ### [OpenCode](./opencode.md)
 **开发者：** OpenCode AI

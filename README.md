@@ -18,7 +18,7 @@
 | [Cursor CLI](#cursor-cli) | Cursor | 专有 | - | TypeScript | 多种 |
 | [SWE-agent](#swe-agent) | Princeton NLP | MIT | 19k+ | Python | Claude, GPT-4 |
 | [Cline](#cline) | Cline | Apache-2.0 | 58k+ | TypeScript | Claude |
-| [Goose](#goose) | Block | Apache-2.0 | 27k+ | TypeScript | 模型无关 |
+| [Goose](#goose) | Block | Apache-2.0 | 27k+ | Rust | 模型无关 |
 | [OpenCode](#opencode) | OpenCode AI | MIT | 3k+ | TypeScript | Claude, GPT, Gemini |
 | [Gemini CLI](#gemini-cli) | Google | Apache-2.0 | 1k+ | TypeScript | Gemini |
 | [Warp](#warp) | Warp | 专有 | 30k+ | Rust | 多种 |

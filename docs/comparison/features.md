@@ -46,7 +46,7 @@
 | Cursor | TypeScript | IDE (VS Code) | AI 原生编辑器 |
 | SWE-agent | Python | Agent-Computer Interface | 基准性能 |
 | Cline | TypeScript | IDE 扩展 | 自主编码 |
-| Goose | TypeScript | 多提供商 | 模型灵活性 |
+| Goose | Rust | MCP 原生 | 模型灵活性 |
 | OpenCode | Go | 双代理 | 终端优先 |
 | Continue | TypeScript | IDE + CI/CD | 可扩展助手 |
 | Warp | Rust | 终端替代品 | 现代终端 + AI |

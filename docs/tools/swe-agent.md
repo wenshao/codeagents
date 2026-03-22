@@ -3,114 +3,175 @@
 **开发者：** Princeton NLP
 **许可证：** MIT
 **仓库：** [github.com/princeton-nlp/SWE-agent](https://github.com/princeton-nlp/SWE-agent)
-**文档：** [github.com/princeton-nlp/SWE-agent/tree/main/docs](https://github.com/princeton-nlp/SWE-agent/tree/main/docs)
+**论文：** [SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering](https://arxiv.org/abs/2405.15793)
 **Stars：** 约 19k+
 
 ## 概述
 
-SWE-agent 是普林斯顿大学的学术项目，使用语言模型修复真实 GitHub 仓库中的问题。它引入了 Agent-Computer Interface (ACI) 设计模式。
+SWE-agent 是 Princeton NLP 实验室开发的学术级 AI 编程代理，提出了 Agent-Computer Interface (ACI) 概念。基于 Python + Pydantic 构建，通过 SWE-ReX 实现 Docker 沙箱化执行，在 SWE-bench 上取得领先成绩。支持通过 LiteLLM 接入 100+ 模型。
 
 ## 核心功能
 
 ### 基础能力
-- **GitHub 问题解决**：接收 GitHub 问题并尝试修复
-- **Agent-Computer Interface (ACI)**：代理与计算机之间的新接口
-- **多模型支持**：适用于 Claude、GPT-4o 和其他模型
-- **可复现**：在 SWE-bench 上完全可复现的实验
-- **网络安全**：可处理安全挑战
+- **ACI（Agent-Computer Interface）**：定义代理与计算机交互的标准接口
+- **Docker 沙箱**：通过 SWE-ReX 在隔离容器中执行
+- **工具 Bundle 系统**：YAML 定义的可组合工具集
+- **批量评估**：并行运行 SWE-bench 基准测试
+- **RetryAgent**：多次尝试 + 代码审查循环
+- **成本控制**：每实例 $3 上限 + 全局预算
 
 ### 独特功能
-- **SWE-bench 领先者**：在 SWE-bench 上达到最先进性能
-- **mini-swe-agent**：100 行最小实现
-- **研究支持**：已发表的学术研究
-- **生产就绪**：被 Meta、NVIDIA、IBM、斯坦福使用
+- **SWE-bench 评估框架**：内置完整的基准测试管线
+- **Action Sampler**：多模型投票，集成决策
+- **History Processor**：上下文窗口优化（LastN、缓存控制）
+- **Trajectory Inspector**：Web 可视化回放执行过程
+- **多种解析器**：FunctionCalling / ThoughtAction / ActionOnly / JSON
+
+## 技术架构（源码分析）
+
+### 项目结构
+
+```
+sweagent/
+├── agent/
+│   ├── agents.py           # DefaultAgent, RetryAgent, ShellAgent
+│   ├── models.py           # LLM 抽象（LiteLLM）
+│   ├── history_processors.py  # 上下文优化
+│   ├── action_sampler.py   # 多模型投票
+│   ├── reviewer.py         # 代码审查循环
+│   └── problem_statement.py # 问题描述类型
+├── environment/
+│   └── swe_env.py          # SWE-ReX 环境包装
+├── tools/
+│   ├── tools.py            # ToolHandler 工具管理
+│   ├── bundle.py           # Bundle 加载系统
+│   └── parsing.py          # 输出解析器
+├── run/
+│   ├── run.py              # CLI 入口
+│   └── run_batch.py        # 批量评估
+├── inspector/              # Web 轨迹查看器
+└── config/                 # YAML 配置模板
+```
+
+### 核心代理循环
+
+```
+问题描述 (GitHub Issue / 文本)
+  → SWEEnv 创建 Docker 容器
+  → 仓库检出 + 环境初始化
+  → DefaultAgent.run()
+    → step(): LLM 推理 → 解析动作 → 执行命令
+    → 观察结果 → 更新历史
+    → 重复直到完成或超时
+  → 收集 patch → 生成 trajectory
+  → RetryAgent: 审查 → 评分 → 选择最佳方案
+```
+
+### 工具 Bundle 系统
+
+工具通过 YAML 配置定义，可组合使用：
+
+```yaml
+# tools/edit_anthropic/config.yaml
+tools:
+  - name: str_replace_editor
+    description: "File viewing and editing"
+    parameters:
+      - name: command
+        type: string
+        enum: [view, create, str_replace, insert, undo_edit]
+      - name: path
+        type: string
+```
+
+### 解析器
+
+| 解析器 | 格式 | 适用场景 |
+|--------|------|---------|
+| FunctionCallingParser | 原生函数调用 | 默认，支持函数调用的模型 |
+| ThoughtActionParser | 思考 + 反引号动作 | 不支持函数调用的模型 |
+| ActionOnlyParser | 仅命令 | 简单场景 |
+| JsonParser | JSON 格式 | 结构化输出 |
+
+### 特殊控制 Token
+
+- `###SWE-AGENT-RETRY-WITH-OUTPUT###` — 重试并保留观察
+- `###SWE-AGENT-RETRY-WITHOUT-OUTPUT###` — 重试不保留
+- `###SWE-AGENT-EXIT-FORFEIT###` — 放弃当前任务
 
 ## 安装
 
 ```bash
-# 克隆仓库
+# pip 安装
+pip install sweagent
+
+# 或从源码
 git clone https://github.com/princeton-nlp/SWE-agent.git
-cd SWE-agent
-
-# 安装依赖
-pip install -e .
-
-# 或使用 Docker
-docker pull primls/swe-agent
+cd SWE-agent && pip install -e .
 ```
 
-## 架构
+## 支持的模型
 
-- **语言：** Python
-- **设计模式：** Agent-Computer Interface (ACI)
-- **支持的模型：**
-  - Claude Sonnet 4 / Opus 4
-  - GPT-4o
-  - DeepSeek
-  - 本地模型
+通过 LiteLLM 支持 100+ 模型，可配置多 API Key 负载均衡（`key1:::key2`）。
 
 ## 优势
 
-1. **基准领先者**：SWE-bench Verified 达 74%
-2. **学术严谨**：同行评审研究
-3. **开源**：完全 MIT 许可
-4. **可复现**：所有实验都可复现
-5. **实战验证**：被主要科技公司使用
+1. **基准测试之王**：SWE-bench Verified 74%（增强版）
+2. **学术严谨**：Princeton NLP 维护，有论文支撑
+3. **Docker 隔离**：安全沙箱执行
+4. **批量评估**：并行基准测试 + 自动合并预测
+5. **灵活架构**：Bundle 系统 + 可插拔解析器
+6. **成本控制**：每实例预算上限
 
 ## 劣势
 
-1. **学术重点**：为基准测试设计，非日常编码
-2. **设置复杂**：比其他工具更难设置
-3. **研究导向**：对日常使用不够精致
-4. **Python 专注**：主要在 Python 仓库上测试
+1. **面向研究**：不适合日常编码使用
+2. **设置复杂**：需要 Docker + Python 环境
+3. **执行较慢**：容器启动 + 评估开销
+4. **非交互式**：主要用于自动化评估
 
 ## CLI 命令
 
 ```bash
-# 运行 GitHub 问题
-python run.py --issue_url https://github.com/user/repo/issues/123
+# 解决单个 GitHub Issue
+sweagent run \
+  --agent.model.name claude-sonnet-4 \
+  --problem_statement.github_url https://github.com/user/repo/issues/42
 
-# 运行 SWE-bench
-python run.py --problem_type swe-bench --model_name claude
+# 批量评估 SWE-bench
+sweagent run-batch \
+  --instances swe-bench:lite \
+  --agent.model.name gpt-4o
 
-# 使用 mini-swe-agent（100 行版本）
-python mini_swe_agent.py
+# 交互式 Shell 模式
+sweagent run --agent.type shell
 
-# 使用 Docker 运行
-docker run --rm primls/swe-agent --issue_url <url>
-```
-
-## mini-swe-agent
-
-100 行 Python 最小实现：
-
-```bash
-# 运行迷你版本
-python mini_swe_agent.py --prompt "修复 main.py 中的 bug"
+# 启动 Inspector（Web 查看器）
+sweagent inspector
 ```
 
 ## 基准测试
 
-| 基准 | 得分 |
-|------|------|
-| SWE-bench Verified | 74%（专门调优后） |
-| SWE-bench Lite | 62% |
-| LiveCodeBench | 有竞争力 |
+| 基准 | 得分 | 说明 |
+|------|------|------|
+| SWE-bench Verified | 74% | 增强版（RetryAgent + 审查） |
+| SWE-bench Lite | 62% | 标准评估 |
+| SWE-bench Pro | 45.9% | 生产级任务 |
 
 ## 使用场景
 
-- **最适合**：研究、基准测试、自动 bug 修复
-- **适合**：Python 项目、问题解决
-- **不太适合**：交互式编码、快速编辑
+- **最适合**：SWE-bench 评估、自动 Bug 修复研究
+- **适合**：批量 Issue 修复、CI/CD 集成
+- **不太适合**：日常交互式编码、快速原型
 
-## 生态系统
+## 相关项目
 
-- **mini-swe-agent**：教育性 100 行版本
-- **SWE-bench**：它创建的基准
-- **生产分支**：几家公司运行修改版本
+- [SWE-bench](https://www.swebench.com/) — 基准测试框架
+- [SWE-ReX](https://github.com/princeton-nlp/SWE-ReX) — 运行时执行环境
+- [mini-swe-agent](./mini-swe-agent.md) — 100 行教学实现
 
 ## 资源链接
 
-- [论文](https://arxiv.org/abs/2401.12345)
-- [文档](https://github.com/princeton-nlp/SWE-agent/tree/main/docs)
-- [SWE-bench](https://www.swebench.com/)
+- [GitHub](https://github.com/princeton-nlp/SWE-agent)
+- [论文](https://arxiv.org/abs/2405.15793)
+- [文档](https://princeton-nlp.github.io/SWE-agent/)

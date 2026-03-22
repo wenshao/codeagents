@@ -1,110 +1,143 @@
-# OpenHands (原名 OpenDevin)
+# OpenHands (OpenDevin)
 
 **开发者：** OpenHands
 **许可证：** MIT
-**仓库：** [github.com/OpenHands/openhands-dev](https://github.com/OpenHands/openhands-dev)
-**网站：** [openhands.dev](https://www.openhands.dev/)
+**仓库：** [github.com/All-Hands-AI/OpenHands](https://github.com/All-Hands-AI/OpenHands)
+**文档：** [docs.all-hands.dev](https://docs.all-hands.dev/)
 **Stars：** 约 32k+
 
 ## 概述
 
-OpenHands（原名 OpenDevin）是一个开源 AI 软件工程师，可以自主完成编码任务。它旨在以开源包的形式复制 Devin 的能力。
+OpenHands（前身 OpenDevin）是一个复合型 AI 代理框架，目标是实现完全自主的软件工程。基于 Python 构建，采用事件驱动架构，支持 Docker/K8s 沙箱执行。内置多种专用代理（CodeAct、BrowsingAgent 等），支持多代理委托，并提供 GitHub/GitLab Issue 自动修复能力。
 
 ## 核心功能
 
 ### 基础能力
-- **自主编码**：可完成完整的工程任务
-- **全栈**：处理前端、后端、DevOps
-- **自我修正**：可修复自己的错误
-- **浏览器控制**：可使用浏览器进行研究
-- **基于 Docker**：隔离的执行环境
+- **复合代理系统**：CodeAct（主力）+ BrowsingAgent + ReadOnlyAgent 等
+- **Docker/K8s 沙箱**：每个会话独立容器，完全隔离
+- **事件驱动**：EventStream 发布/订阅架构
+- **100+ 模型**：通过 LiteLLM 统一接入
+- **Web UI**：FastAPI + React 前端
+- **Issue 自动修复**：GitHub/GitLab/Bitbucket/Azure DevOps 集成
 
 ### 独特功能
-- **完全自主**：可独立处理复杂任务
-- **复合 AI 系统**：多个专门的组件
-- **研究起源**：学术基础（Princeton）
-- **社区 Fork**：多个维护版本
+- **视觉浏览器**：Playwright + BrowserGym + SOM（语义对象遮罩）
+- **多代理委托**：CodeAct 可委托 BrowsingAgent 处理网页任务
+- **三层安全框架**：LLM 风险分析 + Invariant 策略 + GraySwan 监控
+- **Microagent**：仓库级自定义指令（`.openhands/microagents/`）
+- **对话压缩**：递归摘要，维持长会话连续性
+- **MCP 集成**：Model Context Protocol 工具扩展
+
+## 技术架构（源码分析）
+
+### 项目结构
+
+```
+openhands/
+├── agenthub/           # 代理实现
+│   ├── codeact_agent/  # 主力代理
+│   ├── browsing_agent/ # 文本网页浏览
+│   ├── visualbrowsing_agent/  # 视觉网页浏览
+│   └── readonly_agent/ # 只读分析
+├── controller/         # 代理控制器 + 状态机
+├── events/             # 事件系统（Action + Observation）
+├── runtime/impl/       # 沙箱运行时
+│   ├── docker/         # Docker
+│   ├── local/          # 本地
+│   ├── remote/         # 远程
+│   └── kubernetes/     # K8s
+├── llm/                # LLM 集成（LiteLLM）
+├── server/             # FastAPI WebSocket 服务器
+├── memory/             # 对话记忆 + 压缩
+├── security/           # 安全分析器
+├── resolver/           # Issue 自动修复
+└── integrations/       # GitHub/GitLab/Bitbucket/Azure
+```
+
+### 核心架构
+
+```
+用户 → WebSocket → FastAPI
+    │
+AgentController (主循环)
+    ├── State 状态机
+    ├── SecurityAnalyzer
+    └── 代理委托管理
+    │
+Agent.step(state) → Action
+    │
+EventStream (发布/订阅)
+    │
+Runtime.execute(action) → Observation
+    ├── Docker ActionExecutor
+    └── 插件系统 (Jupyter, AgentSkills)
+```
+
+### CodeAct 代理工具
+
+| 工具 | 说明 |
+|------|------|
+| BashTool | 执行 bash 命令 |
+| IPythonTool | 交互式 Python |
+| StrReplaceEditorTool | 无 LLM 文件编辑 |
+| LLMBasedFileEditTool | LLM 驱动文件编辑 |
+| BrowserTool | Web 浏览（Playwright） |
+| ThinkTool | 内部推理 |
+| TaskTrackerTool | 子任务管理 |
+| FinishTool | 完成任务 |
+
+### 安全框架
+
+```
+Action → LLM 风险分析 (LOW/MEDIUM/HIGH)
+       → Invariant 策略检查 (密钥泄露/恶意命令)
+       → GraySwan 外部监控
+       → HIGH → 暂停 + 用户确认
+```
 
 ## 安装
 
 ```bash
-# 使用 Docker（推荐）
-docker pull openhands/dev
-docker run -it openhands/dev
+# Docker（推荐）
+docker pull ghcr.io/all-hands-ai/openhands:latest
+docker run -p 3000:3000 ghcr.io/all-hands-ai/openhands
 
-# 或使用 Python
-pip install openhands
-
-# 启动服务器
-openhands
+# 从源码
+git clone https://github.com/All-Hands-AI/OpenHands.git
+cd OpenHands && pip install -e .
 ```
-
-## 架构
-
-- **语言：** Python
-- **设计**：复合 AI 系统（非单一 LLM）
-- **执行**：基于 Docker 的隔离
-- **支持的模型**：
-  - Claude (Sonnet, Opus)
-  - GPT-4
-  - Gemini
-  - 本地模型
 
 ## 优势
 
-1. **完全自主**：可独立处理复杂任务
-2. **开源**：完全 MIT 许可
-3. **Docker 隔离**：安全的执行环境
-4. **大社区**：32k+ GitHub stars
-5. **多模型**：灵活的模型支持
+1. **完全自主**：端到端 Issue→PR 自动化
+2. **Docker 隔离**：安全沙箱执行
+3. **浏览器能力**：视觉浏览 + SOM + 截图
+4. **多代理委托**：专用代理分工协作
+5. **三层安全**：LLM + Invariant + GraySwan
+6. **Issue 自动修复**：GitHub/GitLab Actions 集成
 
 ## 劣势
 
-1. **繁重设置**：需要 Docker，更复杂
-2. **资源密集**：需要大量计算资源
-3. **较慢**：不适合快速编辑
-4. **较少交互**：设计为自主，而非结对
-
-## 使用方法
-
-```bash
-# 启动 OpenHands
-openhands
-
-# 给它一个任务
-"创建一个使用 React 和 FastAPI 的全栈待办应用"
-
-# 它将：
-# 1. 规划架构
-# 2. 创建文件
-# 3. 编写代码
-# 4. 测试
-# 5. 修复 bug
-# 6. 部署
-```
+1. **资源消耗**：Docker + Python + 浏览器，内存大
+2. **执行较慢**：容器启动 + 多层抽象
+3. **部署复杂**：Docker/K8s 环境要求
+4. **非交互式**：主要面向自动化
 
 ## 基准测试
 
 | 基准 | 得分 |
 |------|------|
 | SWE-bench Verified | ~55% |
-| 全栈任务 | 强 |
-| Web 开发 | 优秀 |
+| SWE-bench Lite | ~50% |
 
 ## 使用场景
 
-- **最适合**：完全自主开发、研究
-- **适合**：完整功能实现
-- **不太适合**：快速编辑、交互式编码
-
-## 生态系统
-
-- **多个 Fork**：各种社区维护版本
-- **文档**：广泛的指南和教程
-- **社区**：活跃的 Discord 和 GitHub 社区
+- **最适合**：自动化 Issue 修复、批量 PR 生成
+- **适合**：需要浏览器操作的全栈任务
+- **不太适合**：日常交互式编码、资源受限环境
 
 ## 资源链接
 
-- [网站](https://www.openhands.dev/)
-- [GitHub](https://github.com/OpenHands/openhands-dev)
-- [文档](https://docs.openhands.dev/)
+- [GitHub](https://github.com/All-Hands-AI/OpenHands)
+- [文档](https://docs.all-hands.dev/)
+- [论文](https://arxiv.org/abs/2407.16741)

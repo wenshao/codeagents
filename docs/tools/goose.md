@@ -8,60 +8,129 @@
 
 ## 概述
 
-Goose 是一个开源、可扩展的 AI 代理，运行在你的机器上。它被设计为模型无关的，可与多个提供商集成。
+Goose 是 Block（原 Square）开发的开源 AI 代理框架，**完全用 Rust 编写**（核心 ~55k 行 Rust）。它支持 58+ LLM 提供商，基于 MCP（模型上下文协议）构建扩展系统，提供 CLI、Web、桌面（Electron）三种客户端。
 
 ## 核心功能
 
 ### 基础能力
-- **模型无关**：适用于 Anthropic、OpenAI、Cursor、Google 模型
-- **MCP 支持**：完整的模型上下文协议集成
-- **本地运行**：在本地机器上运行
-- **GUI + CLI**：图形界面和命令行界面
-- **可扩展**：自定义工具的插件系统
+- **Rust 原生**：高性能单二进制分发
+- **58+ LLM 提供商**：Anthropic、OpenAI、Google、AWS Bedrock、Azure、Ollama 等
+- **MCP 原生扩展**：所有工具通过 MCP 服务器提供
+- **多客户端**：CLI（goose-cli）、HTTP 服务器（goosed）、Electron 桌面应用
+- **Recipe 系统**：YAML/JSON 定义的可复用任务模板
+- **调度系统**：Cron 定时执行 Recipe
 
 ### 独特功能
-- **多提供商**：在 AI 提供商之间无缝切换
-- **LSP 集成**：自动加载语言服务器
-- **终端 + IDE**：跨不同环境工作
-- **GitHub 集成**：原生 GitHub 工作流支持
-- **雄心勃勃的设计**：比典型 CLI 工具更全面
+- **Agent Communication Protocol (ACP)**：自研代理通信协议
+- **Smart Approve 模式**：仅敏感操作需要确认
+- **Recipe 参数化**：模板变量 + JSON Schema 验证
+- **安全检查器**：对抗性输入检测、重复行为监控
+- **多格式文件解析**：内置 DOCX、PDF、XLSX 解析
+- **本地 AI 推理**：Whisper 语音、llama.cpp 本地模型
+
+## 技术架构（源码分析）
+
+### 项目结构
+
+```
+goose/
+├── crates/
+│   ├── goose/           # 核心代理框架（~55k 行 Rust）
+│   ├── goose-cli/       # CLI 入口
+│   ├── goose-server/    # HTTP/WebSocket 服务器（goosed）
+│   ├── goose-acp/       # Agent Communication Protocol
+│   ├── goose-mcp/       # 内置 MCP 服务器实现
+│   └── goose-test/      # 测试工具
+└── ui/desktop/          # Electron 桌面应用
+```
+
+### 核心架构
+
+```
+客户端 (CLI / Desktop / Web)
+    │
+    ▼
+goosed (Axum HTTP 服务器)
+    │
+    ▼
+AgentManager (LRU 缓存, 最多 100 会话)
+    │
+    ▼
+Agent (会话级代理)
+    ├── Provider (58+ LLM 提供商)
+    ├── ExtensionManager (MCP 客户端管理)
+    │   ├── Stdio 传输（子进程）
+    │   ├── StreamableHttp 传输
+    │   └── Builtin 传输（进程内）
+    ├── ToolExecution (权限检查 + 执行)
+    └── Scheduler (Cron 定时任务)
+```
+
+### 技术栈
+- **语言**：Rust
+- **异步运行时**：Tokio
+- **HTTP 框架**：Axum + Tower
+- **MCP SDK**：rmcp（Rust MCP）
+- **Token 计算**：tiktoken-rs
+- **AST 解析**：tree-sitter（Go/Java/JS/Kotlin/Python/Ruby/Rust/Swift/TS）
+- **本地推理**：candle（Whisper）、llama-cpp-2
+- **密钥管理**：keyring（系统密钥链）
+- **桌面**：Electron
+
+### 四种运行模式
+
+| 模式 | 说明 |
+|------|------|
+| **Auto** | 自动批准所有工具调用 |
+| **Approve** | 每个工具调用都需确认 |
+| **SmartApprove**（默认） | 仅敏感操作需确认 |
+| **Chat** | 仅聊天，不执行工具 |
+
+### 安全系统
+
+- **环境变量白名单**：31 个危险变量被禁止注入（PATH、LD_PRELOAD 等）
+- **AdversaryInspector**：对抗性输入检测
+- **RepetitionInspector**：重复行为监控
+- **权限管理器**：AllowOnce / AlwaysAllow / NeverAllow
 
 ## 安装
 
 ```bash
-# 使用 npm
-npm install -g @block/goose
-
-# 使用 Homebrew
+# Homebrew（推荐）
 brew install block/tap/goose
 
-# 或从发布版下载
+# 或从 GitHub Release 下载
 # https://github.com/block/goose/releases
+
+# 启动
+goose
 ```
 
-## 架构
+## 支持的提供商（58+）
 
-- **语言：** TypeScript
-- **支持的提供商：**
-  - Anthropic (Claude)
-  - OpenAI (GPT-4)
-  - Google (Gemini)
-  - Cursor
-  - 本地模型
+| 类别 | 提供商 |
+|------|--------|
+| **主要** | Anthropic, OpenAI, Google Gemini |
+| **云服务** | AWS Bedrock, Azure, GCP Vertex AI, Databricks |
+| **推理** | Groq, Cerebras, Together, DeepInfra |
+| **兼容** | OpenRouter, LiteLLM, Ollama |
+| **其他** | GitHub Copilot, xAI, Venice, Snowflake |
 
 ## 优势
 
-1. **模型灵活性**：根据需要在提供商之间切换
-2. **MCP 原生**：为模型上下文协议构建
-3. **开源**：Apache-2.0 许可
-4. **跨平台**：适用于 macOS、Linux、Windows
-5. **现代**：采用当前最佳实践的近期项目
+1. **Rust 性能**：启动快、内存低、单二进制分发
+2. **提供商最多**：58+ LLM 提供商支持
+3. **MCP 原生**：所有扩展基于标准协议
+4. **Recipe 系统**：可复用任务模板 + 定时调度
+5. **安全设计**：环境变量白名单 + 对抗性检测
+6. **Apache-2.0**：企业友好许可
 
 ## 劣势
 
-1. **较新项目**：不如 Aider 或 SWE-agent 成熟
-2. **较小社区**：比主要工具用户少
-3. **复杂性**：更多功能可能意味着更多复杂性
+1. **Rust 生态**：插件开发门槛高
+2. **无 Git 原生集成**：依赖 MCP 扩展实现
+3. **文档不足**：相比代码能力，文档覆盖有限
+4. **复杂性**：功能丰富但学习曲线较陡
 
 ## CLI 命令
 
@@ -72,34 +141,42 @@ goose
 # 使用特定模型
 goose --model claude-opus-4
 
-# 执行任务
-goose "重构这个函数"
-
-# 列出可用提供商
-goose providers list
+# 执行 Recipe
+goose run recipe.yaml
 
 # 配置
-goose config init
+goose config
+
+# 管理扩展
+goose extension list
+goose extension add <name>
+
+# 调度任务
+goose schedule create --recipe task.yaml --cron "0 9 * * *"
 ```
 
 ## 配置
 
 ```yaml
-# ~/.goose/config.yaml
-default_provider: anthropic
-providers:
-  anthropic:
-    model: claude-opus-4
-    api_key: ${ANTHROPIC_API_KEY}
+# ~/.config/goose/config.yaml
+provider: anthropic
+model: claude-sonnet-4
+mode: smart_approve
+extensions:
+  - name: developer
+    type: builtin
+  - name: memory
+    type: builtin
 ```
 
 ## 使用场景
 
-- **最适合**：想要模型灵活性的用户、MCP 用户
-- **适合**：多提供商工作流、开源倡导者
-- **不太适合**：想要简单、有主见的工具的用户
+- **最适合**：需要多提供商灵活性、MCP 生态用户、自动化 Recipe
+- **适合**：企业部署（Rust 性能 + Apache 许可）
+- **不太适合**：想要简单工具的用户、需要深度 Git 集成
 
 ## 资源链接
 
 - [快速入门](https://block.github.io/goose/docs/quickstart/)
 - [GitHub](https://github.com/block/goose)
+- [Recipe 文档](https://block.github.io/goose/docs/recipes/)
