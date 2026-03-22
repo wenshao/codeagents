@@ -282,9 +282,8 @@ interface SessionVersion {
 | **6 语言 UI** | 中/英/日/德/俄/葡 | ❌ 仅英文 |
 | **免费 OAuth** | 每天 1000 次 | ❌ |
 | **扩展格式转换** | Claude/Gemini 扩展自动转换 | ❌ |
-| **5 提供商** | Qwen + OpenAI + Anthropic + Gemini + Vertex | ✅ 但通过 Vercel AI SDK |
-| **Plan 模式审批** | 显式规划→审批→执行 | ✅ plan 代理有权限系统（`ask` 模式） |
-| **交互式 Shell Mode** | `!` 切换 Shell 模式 | 两者均支持 bash 命令执行 |
+
+> 注：多提供商支持（Qwen 5 个 vs OpenCode 20+ via Vercel AI）、Plan 模式审批（两者都有权限系统）、交互式 Shell（两者都支持 bash 执行）经 R2 核实非 Qwen 独有优势，已移除。
 
 ---
 
