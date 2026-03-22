@@ -192,8 +192,12 @@
 | 策略 | 实现 | 优势 | 劣势 | 使用者 |
 |------|------|------|------|--------|
 | **统一 SDK** | Vercel AI SDK | 一次集成，多提供商 | 受 SDK 限制 | OpenCode |
-| **独立实现** | 每个提供商一个 Generator | 灵活，深度定制 | 维护成本高 | Qwen Code |
-| **单提供商** | 直连特定 API | 最深度优化 | 锁定 | Claude Code、Gemini CLI |
+| **LiteLLM** | Python 包装 100+ 模型 | 模型最多 | Python 限定 | Aider, SWE-agent, OpenHands |
+| **独立实现** | 每个提供商一个 Generator | 灵活，深度定制 | 维护成本高 | Qwen Code, Gemini CLI |
+| **Handler 工厂** | 每个提供商一个 Handler | 精细控制 | 代码量大 | Cline (48+), Continue (60+) |
+| **Provider trait** | Rust trait 抽象 | 性能最佳 | Rust 门槛 | Goose (58+) |
+| **工厂函数** | Python match/case | 简单直接 | 扩展性一般 | Kimi CLI |
+| **单提供商** | 直连特定 API | 最深度优化 | 锁定 | Claude Code |
 
 ## 工具集成
 
@@ -296,6 +300,19 @@ MCP 是扩展 AI 代理的标准：
 │                                                          │
 └─────────────────────────────────────────────────────────┘
 ```
+
+### 上下文管理策略对比（源码分析）
+
+| 策略 | 工具 | 实现方式 |
+|------|------|---------|
+| **AST 仓库映射** | Aider | Tree-sitter 解析 30+ 语言，提取函数/类定义，SQLite 磁盘缓存 |
+| **语义向量索引** | Continue | Tree-sitter AST + LanceDB 向量 + SQLite FTS5 全文索引 |
+| **聊天压缩** | Gemini CLI, Qwen Code, OpenCode | LLM 摘要旧消息，Token 阈值触发 |
+| **递归压缩** | OpenHands | Condenser 多深度递归摘要 |
+| **ChatChunks 分块** | Aider | 系统/示例/仓库/文件/历史分块，独立缓存控制 |
+| **30+ 上下文提供器** | Continue | 文件/Git/Jira/数据库等 30+ 来源动态注入 |
+| **工具输出截断** | OpenCode | 32K token 上限，溢出自动存文件 |
+| **Prompt 缓存** | Aider, Gemini CLI | Anthropic cache_control + 后台保活 ping |
 
 ### Token 预算分配
 
