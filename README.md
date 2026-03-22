@@ -46,7 +46,8 @@
 - **[架构深度对比](./docs/comparison/architecture-deep-dive.md)** — 11 个项目的代理循环、工具系统、安全模型等
 - **[Qwen Code vs Claude Code](./docs/comparison/qwen-vs-claude-code.md)** — 开源 vs 闭源头部代理全面对比
 - **[Claude Code 为什么更快？Qwen Code 改进建议](./docs/comparison/claude-code-speed-qwen-improvements.md)** — 性能差距根因 + 改进路线图
-- **[Qwen Code 功能补全建议](./docs/comparison/qwen-code-feature-gaps.md)** — 对标 Claude Code 的功能缺口与优先级
+- **[Qwen Code 功能补全：对标 Claude Code](./docs/comparison/qwen-code-feature-gaps.md)** — 功能缺口与优先级
+- **[Qwen Code 功能补全：对标 OpenCode](./docs/comparison/qwen-code-vs-opencode-feature-gaps.md)** — 功能缺口与优先级
 - **[Qwen vs Gemini vs Kimi](./docs/comparison/qwen-vs-gemini-vs-kimi.md)** — 三者谱系与分叉差异
 - **[OpenCode vs Qwen Code](./docs/comparison/opencode-vs-qwen-source.md)** — 15 维度源码对比
 
