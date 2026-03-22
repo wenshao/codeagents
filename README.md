@@ -31,6 +31,7 @@
 
 - **[工具详情](./docs/tools/)** - 每个工具的详细分析
 - **[功能对比](./docs/comparison/features.md)** - 功能横向对比
+- **[Qwen Code vs Gemini CLI vs Kimi CLI](./docs/comparison/qwen-vs-gemini-vs-kimi.md)** - 三者谱系与源码级差异
 - **[OpenCode vs Qwen Code 源码对比](./docs/comparison/opencode-vs-qwen-source.md)** - 基于源码的深度分析
 - **[架构深度对比](./docs/comparison/architecture-deep-dive.md)** - 9 个项目源码级架构对比
 - **[基准测试](./docs/benchmarks/)** - SWE-bench 等性能测试
