@@ -38,10 +38,10 @@
 | **多终端后端** | ✅ Tmux/iTerm2/进程内 | ❌ | **Qwen 独有** |
 | **Wire 协议** | ❌ | ✅ SPMC 通道 | **Kimi 独有** |
 | **ACP 服务器** | ❌ | ✅ IDE 原生集成 | **Kimi 独有** |
-| **后台任务管理** | ❌ | ✅ TaskList/TaskOutput/TaskStop | **Kimi 独有** |
+| **后台任务管理 UI** | 部分（shell `is_background` 参数） | ✅ TaskList/TaskOutput/TaskStop | Kimi 管理更完整 |
 | **D-Mail 上下文优化** | ❌ | ✅ 向过去检查点发消息 | **Kimi 独有** |
 | **FastAPI Web 服务器** | ❌ | ✅ Web + 可视化 | **Kimi 独有** |
-| **AskUser 多选交互** | ❌ | ✅ 2-4 选项 + 批量问题 | **Kimi 独有** |
+| AskUser 多选交互 | ✅ `QuestionOption` + `multiSelect` | ✅ 2-4 选项 + 批量 | 对等 |
 
 ---
 
@@ -75,29 +75,19 @@
 
 ---
 
-### 3. 后台任务管理
+### 3. 后台任务管理 UI（增强现有能力）
 
 **Kimi CLI 实现**（`src/kimi_cli/tools/background/`）：
-- `TaskList` — 列出所有后台任务
+- `TaskList` — 列出所有后台任务及状态
 - `TaskOutput` — 获取任务输出（阻塞/非阻塞）
 - `TaskStop` — 中断任务
 - 支持超时、输出预览、心跳检测
 
-**Qwen Code 缺失影响**：长时间运行的操作（如大型测试套件、构建）无法后台执行，阻塞交互。
+**Qwen Code 现状**：Shell 工具已支持后台执行（`shell.ts:55` `is_background` 参数），但**缺少任务管理界面**——无法列出/查看/停止已启动的后台任务。
 
-**建议实现**：
-```typescript
-// 扩展现有 shell 工具，增加后台任务管理
-interface BackgroundTask {
-  id: string;
-  command: string;
-  status: 'running' | 'completed' | 'failed';
-  output: string[];
-  startTime: number;
-}
-```
+**建议增强**：在现有 `is_background` 基础上增加 TaskList/TaskOutput/TaskStop 工具。
 
-**工作量**：中（3-5 天）
+**工作量**：中（2-3 天，后台执行已有，仅需管理 UI）
 
 ---
 
@@ -129,19 +119,15 @@ interface BackgroundTask {
 
 ---
 
-### 6. AskUser 增强交互
+### ~~6. AskUser 增强交互~~ ✅ 已验证存在
 
-**Kimi CLI 实现**（`src/kimi_cli/tools/ask_user/`）：
-- 2-4 个选项的多选交互
-- 自定义选项描述
-- 批量提问（1-4 个问题）
-- 自动生成"Other"选项
+Qwen Code 的 `askUserQuestion.ts` 已有完整的结构化选项交互：
+- `QuestionOption` 接口（label + description）
+- `multiSelect` 多选支持
+- `questions: Question[]` 批量问题
+- `ToolAskUserQuestionConfirmationDetails` 确认对话框
 
-**Qwen Code 现状**：有 `askUserQuestion` 工具，但功能较基础（自由文本输入）。
-
-**建议增强**：增加结构化选项交互模式。
-
-**工作量**：低（1-2 天）
+与 Kimi CLI 的 `ask_user` 功能等价。
 
 ---
 
@@ -179,11 +165,11 @@ interface BackgroundTask {
 
 ---
 
-### D. 多终端后端
+### D. 多终端后端（并行分屏）
 
-**Qwen Code 实现**：InProcess + iTerm2 + Tmux 三种后端自动检测。
+**Qwen Code 实现**：InProcess + iTerm2 + Tmux 三种后端自动检测，用于 Arena 多代理并行分屏显示。
 
-**Kimi CLI 缺失**：仅 TUI 单后端。
+**Kimi CLI 现状**：有 TUI + ACP + Web 三种客户端模式，但无终端分屏并行显示多个代理。
 
 ---
 
@@ -191,8 +177,8 @@ interface BackgroundTask {
 
 | 功能 | 工作量 | 用户价值 | 优先级 |
 |------|--------|---------|--------|
-| AskUser 增强（结构化选项） | 低（1-2 天） | **高**（交互体验） | **P0** |
-| 后台任务管理 | 中（3-5 天） | **高**（长任务不阻塞） | **P1** |
+| ~~AskUser 增强~~ | — | — | ✅ 已有（`QuestionOption` + `multiSelect`） |
+| 后台任务管理 UI（补全 TaskList/Output/Stop） | 低（2-3 天） | **高**（管理后台任务） | **P1** |
 | D-Mail 上下文优化 | 中（3-5 天） | 中（创新性） | P2 |
 | ACP 服务器 | 高（2-3 周） | 中（多 IDE） | P2 |
 | Wire 协议 | 高（2-3 周） | 中（多客户端基础） | P2 |
@@ -206,7 +192,9 @@ interface BackgroundTask {
 
 **Kimi CLI 的优势**：Wire 协议 + ACP 服务器（多客户端架构基础）、后台任务管理、D-Mail 上下文优化——架构更创新。
 
-**Qwen Code 最值得借鉴的 1 件事**：后台任务管理（长时间运行的构建/测试不阻塞交互）。
+**Qwen Code 最值得借鉴的 1 件事**：后台任务管理 UI（TaskList/TaskOutput/TaskStop，后台执行已有但缺管理界面）。
+
+> 注：~~AskUser 多选交互~~ 经 R1 核实，Qwen Code 已有完整实现（`QuestionOption` + `multiSelect`）。
 
 **Kimi CLI 最值得借鉴的 1 件事**：Arena 模式（多模型并行竞争评估）。
 
