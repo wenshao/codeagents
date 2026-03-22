@@ -160,13 +160,13 @@ history.push(message);  // 无自动修剪
 ```
 
 - `structuredClone()` 对大历史非常昂贵
-- 非测试代码中共 8 个调用点，每轮至少 3-4 次：
-  - `geminiChat.ts:296` — API 请求前（每轮 1 次）
-  - `nextSpeakerChecker.ts:55,63` — 下一发言人检测（每轮 2 次，同一函数内）
-  - `client.ts:568` — IDE 上下文检查（每轮 1 次，条件性）
-  - `client.ts:681` — Stop Hook（条件性）
-  - `turn.ts:351` — 错误报告（条件性）
-  - `chatCompressionService.ts:88` — 压缩（阈值触发）
+- 非测试代码中共 8 个调用点，典型每轮 1-2 次，高峰 3-4 次：
+  - `geminiChat.ts:296` — API 请求前（**每轮必调** 1 次）
+  - `nextSpeakerChecker.ts:55,63` — 下一发言人检测（同一函数内 2 次，但**仅在无待处理工具调用时**执行，`client.ts:736` 条件守卫）
+  - `client.ts:568` — IDE 上下文检查（条件性）
+  - `client.ts:681` — Stop Hook（条件性，仅无待处理工具时）
+  - `turn.ts:351` — 错误报告（异常路径）
+  - `chatCompressionService.ts:88` — 压缩（70% 阈值触发）
 - 没有自动修剪机制，100 轮对话后历史可达数十 MB
 
 ### 问题 5：聊天压缩触发时的 JSON 序列化
@@ -318,34 +318,16 @@ class StreamBuffer {
 }
 ```
 
-#### 2.2 Token 计算缓存 + 增量
+#### ~~2.2 Token 计算缓存 + 增量~~ → 低优先级
 
-```typescript
-// 当前：每次完整计算
-calculateTokens(fullHistory);
-
-// 改进：只计算增量
-class TokenCounter {
-  private cachedCount = 0;
-  private lastHistoryLength = 0;
-
-  count(history) {
-    if (history.length === this.lastHistoryLength) return this.cachedCount;
-    // 只计算新增部分
-    const newMessages = history.slice(this.lastHistoryLength);
-    this.cachedCount += countTokens(newMessages);
-    this.lastHistoryLength = history.length;
-    return this.cachedCount;
-  }
-}
-```
+第六轮核实发现 `countTokens()` 不在代理主循环中被调用，token 计数来自 API 响应 usage 元数据。此优化仅在 SDK 内部或特定功能按需调用时有价值，非运行时热路径。
 
 #### 2.3 structuredClone 改 readonly 引用
 
 ```typescript
 // 当前（geminiChat.ts:514-520）：每次 getHistory() 深拷贝
 getHistory(curated?: boolean): Content[] {
-  return structuredClone(history);  // 昂贵！每轮 3-4 次调用
+  return structuredClone(history);  // 昂贵！每轮至少 1 次，工具调用结束时可达 3-4 次
 }
 
 // 改进：返回只读引用（经验证，所有调用方仅读取不修改）
@@ -423,16 +405,16 @@ class CircuitBreaker {
 #### 4.1 考虑核心模块 Rust 化
 
 将最热的路径用 Rust 重写为 N-API 模块：
-- Token 计算（当前每轮全量遍历历史）
 - 流式解析（减少字符串分配和 GC 压力）
-- 文件搜索（grep/glob）
+- 文件搜索（grep/glob，当前用 Node.js 实现）
 
 ```
-性能收益预估：
-  Token 计算：10-50x 提速
+性能收益预估（估算）：
   流式解析：消除 GC 压力
   文件搜索：5-10x 提速（ripgrep 级别）
 ```
+
+> 注：Token 计算经 R6 核实非热路径（数据来自 API 响应 usage），Rust 化收益有限。
 
 #### 4.2 引入 `--bare` 模式
 
@@ -476,13 +458,13 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 **Claude Code 快的本质**：Rust 原生二进制 + 激进并行化 + 极致懒加载 + 文件系统级沙箱 + 超时断路器。
 
-**Qwen Code 慢的本质**：Node.js 运行时开销 + 启动路径 8-9 个串行 await（无并行） + structuredClone 每轮 3-4 次深拷贝 + React/Ink 非交互也加载 + MCP 启动超时 10 分钟。
+**Qwen Code 慢的本质**：Node.js 运行时开销 + 启动路径 8-9 个串行 await（无并行） + structuredClone 每轮 1-4 次深拷贝 + React/Ink 非交互也加载 + MCP 启动超时 10 分钟。
 
 > 注：~~OTel 9 包 eager 加载~~ 经第三轮核实，OTel 实际是条件加载（默认关闭），不影响正常启动。
 
 **最小代价最大收益的三件事**：
 1. 启动独立 await 并行化 + warnings 并行（`Promise.all()`，改几行代码）
-2. structuredClone 改 readonly 引用（每轮 3-4 次深拷贝，所有调用方验证为只读安全）
+2. structuredClone 改 readonly 引用（每轮 1-4 次深拷贝，所有调用方验证为只读安全）
 3. MCP 启动超时从 10 分钟缩短到 5-10 秒
 
 ---
@@ -491,7 +473,7 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 ---
 
-## 附录：源码核实记录（六轮核实）
+## 附录：源码核实记录（七轮核实）
 
 ### 第一轮核实
 
@@ -569,3 +551,12 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 | structuredClone 注释 "3-6" | 文档自身 | 349 | ⚠️ 修正：改为 "3-4"（与 R5 精确计数一致） |
 | 预期收益数字 | 无源码依据 | — | ⚠️ 修正：标注为估算值，未实测 |
 | 附录标题 | 文档自身 | 495 | ⚠️ 修正："四轮" → "六轮" |
+
+### 第七轮核实（最终一致性）
+
+| 问题 | 核实文件 | 实际行号 | 结论 |
+|------|---------|---------|------|
+| nextSpeakerChecker 每轮执行？ | `client.ts` | 736-737 | ⚠️ 修正：有条件守卫（`!pendingToolCalls && !skipNextSpeakerCheck`），非每轮必调 |
+| 2.2 Token 缓存建议与 R6 矛盾 | 文档 2.2 节 | — | ⚠️ 修正：标记为低优先级，与 R6 发现一致 |
+| 4.1 Rust 化 Token 计算建议与 R6 矛盾 | 文档 4.1 节 | — | ⚠️ 修正：移除 Token 计算 Rust 化建议 |
+| structuredClone 频率 | 多文件 | — | ⚠️ 精确：每轮必调 1 次（API 请求），条件路径额外 0-3 次 |
