@@ -26,9 +26,9 @@
 | **延迟工具加载** | ✅ ToolSearch | ❌ | **需补全** |
 | **断路器增强** | ✅ 连续 N 次计数 | 部分（布尔标志） | **需增强** |
 | **Voice 模式** | ✅ | ❌ | **需补全** |
-| 交互式 Shell | ✅ `! command` | ✅ `!{...}` 语法（`shellProcessor.ts`） | 对等（语法不同） |
+| 交互式 Shell | ✅ `! command` | ✅ Shell Mode（`!` 切换）+ `!{...}` 注入 | 对等（模式切换 vs 单行前缀） |
 | **Remote Control** | ✅ `/remote-control` | ❌ | **需补全** |
-| **Teammates 协作** | ✅ | ❌ | **需补全** |
+| **Teammates 团队** | ✅ 分工协作（tmux 分屏） | 部分（Arena 竞争模式，非协作） | **需增强**（竞争→协作） |
 | **Channels** | ✅ MCP 消息推送 | ❌ | **需补全** |
 | 插件市场 | ✅ 13 官方插件 | ✅ `marketplace.ts`（280 行）+ extensionManager | 对等（Qwen 官方插件较少） |
 | 结构化输出 | ✅ | ✅ `baseLlmClient.ts` `generateJson()` | 对等 |
@@ -205,16 +205,18 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 
 ---
 
-### 10. Teammates 协作
+### 10. Teammates（多代理团队）
 
 **Claude Code 实现**：
-- 分屏协作（iTerm2、tmux）
-- Leader-Follower 模型
-- 实时同步
+- Leader agent 在 tmux/iTerm2 分屏中启动 teammate agents
+- Teammate 继承 leader 的模型配置
+- 本质是 **AI-AI 团队协作**（非人-AI），leader 分派任务给 teammates
 
-**Qwen Code 现状**：有 Arena 模式（多代理竞争），但无人-AI 实时协作。
+**Qwen Code 现状**：有功能相似的 **Arena 模式**（`ArenaManager.ts`），支持多模型并行 worktree 对比。但 Arena 侧重竞争评估，Claude 的 Teammates 侧重分工协作。
 
-**工作量**：高（3-4 周）
+**差距**：Arena 是竞争模式（选最优方案），Teammates 是协作模式（分工完成不同子任务）。两者互补。
+
+**工作量**：中（1-2 周，可基于现有 Arena 和子代理基础设施扩展协作模式）
 
 ---
 
@@ -264,7 +266,7 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 | Channels | 中（1-2 周） | 中 | P2 |
 | 细粒度工具流（更多工具支持 updateOutput） | 中（1-2 周） | 中 | P2 |
 | Voice 模式 | 高（3-4 周） | 低 | P3 |
-| Teammates 协作 | 高（3-4 周） | 低 | P3 |
+| Teammates 协作模式（扩展 Arena） | 中（1-2 周） | 中 | P2 |
 
 > 注：交互式 Shell、结构化输出、插件市场基础设施、LSP 经核实均已存在，从缺失列表移除。
 
