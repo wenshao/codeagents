@@ -10,7 +10,7 @@
 | 工具系统（声明式） | ✅ | ✅ | 对等 |
 | 事件驱动调度器 | ✅ Scheduler | ✅ CoreToolScheduler | 对等（实现不同） |
 | Hook 系统 | ✅ | ✅ 12 事件 | 对等 |
-| MCP 集成 | ✅ Stdio/SSE/HTTP | ✅ Stdio/SSE | Qwen 少 HTTP |
+| MCP 集成 | ✅ Stdio/SSE/HTTP | ✅ Stdio/SSE/HTTP（`StreamableHTTPClientTransport`） | 对等 |
 | 会话管理 | ✅ | ✅ + `chatRecordingService`（JSONL 持久化） | 对等 |
 | Ink + React TUI | ✅ | ✅ | 对等 |
 | 审批模式（4 种） | ✅ DEFAULT/AUTO_EDIT/YOLO/PLAN | ✅ 同 4 种 | 对等 |
