@@ -4,14 +4,16 @@ A collection of external resources for learning about Code Agent CLI tools.
 
 ## 官方文档
 
-- [Claude Code 文档](https://code.claude.com/docs)
+- [Claude Code 文档](https://docs.anthropic.com/en/docs/claude-code)
+- [Codex CLI](https://github.com/openai/codex) - OpenAI
 - [Aider 文档](https://aider.chat/docs/)
-- [GitHub Copilot 文档](https://docs.github.com/copilot)
+- [GitHub Copilot CLI](https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line)
+- [Goose 文档](https://block.github.io/goose/docs/quickstart/) - Block
 - [Continue 文档](https://docs.continue.dev)
-- [OpenHands 文档](https://docs.openhands.dev)
+- [OpenHands 文档](https://docs.all-hands.dev/)
 - [Gemini CLI 文档](https://geminicli.com/docs)
 - [Qwen Code 文档](https://qwenlm.github.io/qwen-code-docs/zh/) - 阿里云
-- [Kimi CLI 文档](https://moonshotai.github.io/kimi-cli/zh/) - 月之暗面
+- [Kimi CLI 文档](https://github.com/MoonshotAI/kimi-cli) - 月之暗面
 
 - [SWE-bench](https://www.swebench.com/) - Software engineering benchmark
 - [Artificial Analysis - Coding Agents](https://artificialanalysis.ai/insights/coding-agents-comparison)
