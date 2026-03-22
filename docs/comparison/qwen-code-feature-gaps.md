@@ -183,7 +183,7 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 
 **Qwen Code 缺失影响**：无法在移动设备上监控/操作长时间运行的任务。
 
-**建议实现**：利用现有 WebSocket/Wire 协议基础设施，增加远程客户端。
+**建议实现**：需从零构建远程会话桥接。Qwen Code 当前无 WebSocket 服务器或 Wire 协议（`packages/webui/` 仅是共享 UI 组件库，非 Web 服务器）。可参考 Claude Code 的 claude.ai/code 桥接模式，或借鉴 Kimi CLI 的 Wire 协议方案。
 
 **工作量**：高（2-3 周）
 
@@ -265,8 +265,8 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 | Notebook 编辑 | 中（1-2 周） | 中 | P2 |
 | Channels | 中（1-2 周） | 中 | P2 |
 | 细粒度工具流（更多工具支持 updateOutput） | 中（1-2 周） | 中 | P2 |
-| Voice 模式 | 高（3-4 周） | 低 | P3 |
 | Teammates 协作模式（扩展 Arena） | 中（1-2 周） | 中 | P2 |
+| Voice 模式 | 高（3-4 周） | 低 | P3 |
 
 > 注：交互式 Shell、结构化输出、插件市场基础设施、LSP 经核实均已存在，从缺失列表移除。
 
@@ -278,7 +278,7 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 
 | 功能 | Qwen Code 实现 | 竞争价值 |
 |------|---------------|---------|
-| **Agent Arena** | `ArenaManager.ts`，多模型并行 worktree 对比 | 独一无二的多模型评估能力 |
+| **Agent Arena** | `ArenaManager.ts`，多模型并行 worktree 对比 | 多模型竞争评估（Claude Teammates 是协作，无竞争模式） |
 | **视觉模型 YOLO 自动切换** | 根据输入自动切换视觉模型（Claude Code 支持图片但无自动切换） | 多模态体验更流畅 |
 | **6 语言 UI** | 中/英/日/德/俄/葡完整本地化 | 全球化覆盖 |
 | **免费 OAuth** | 每天 1000 次 | 零门槛试用 |
@@ -294,7 +294,7 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 
 **3 个需要投入的 P1**：延迟工具加载 + 企业管控 + 丰富官方插件库
 
-> 注：交互式 Bash（`!{...}` 语法）、结构化输出（`generateJson()`）、插件市场基础设施（`marketplace.ts`）经 R2 核实均已存在，从缺失列表移除。
+> 注：交互式 Shell（`!` 模式切换 + `!{...}` 注入）、结构化输出（`generateJson()`）、插件市场基础设施（`marketplace.ts`）、LSP（`lsp.ts`）经核实均已存在，从缺失列表移除。
 
 **Qwen Code 不需要复制 Claude Code 的一切**——Agent Arena、6 语言 UI、免费 OAuth、多提供商是独有竞争力。重点补全 `--bare` 模式和企业管控两个核心缺口。
 
