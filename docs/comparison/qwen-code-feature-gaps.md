@@ -15,16 +15,16 @@
 | 会话恢复 | ✅ `--resume` | ✅ `resumeHistoryUtils.ts` | 对等 |
 | 自动记忆 | ✅ | ✅ `memoryTool.ts` | 对等 |
 | 非交互模式 | ✅ `-p` | ✅ `--prompt` + `--output-format` | 对等 |
-| 上下文压缩 | ✅ + 断路器 | ✅ `chatCompressionService.ts` | Qwen 缺断路器 |
+| 上下文压缩 | ✅ + 断路器（N 次计数） | ✅ + 简单断路器（布尔标志） | Qwen 断路器较简单 |
 | 操作检查点 | ✅ 隐含 | ✅ `checkpointService.ts` + `/restore` | Qwen 更强 |
 | 扩展思维/推理 | ✅ | ✅ `thinkingConfig` | 对等 |
 | Agent Arena | ❌ | ✅ `ArenaManager.ts` | **Qwen 独有** |
-| 视觉模型 | ❌ | ✅ YOLO 模式 | **Qwen 独有** |
+| 视觉/图像 | ✅ 图片粘贴/读取 | ✅ YOLO 自动切换视觉模型 | 对等（Qwen 自动切换更强） |
 | 6 语言 UI | ❌ | ✅ 中/英/日/德/俄/葡 | **Qwen 独有** |
 | 免费 OAuth | ❌ | ✅ 1000 次/天 | **Qwen 独有** |
 | **`--bare` 模式** | ✅ | ❌ | **需补全** |
 | **延迟工具加载** | ✅ ToolSearch | ❌ | **需补全** |
-| **断路器** | ✅ | ❌ | **需补全** |
+| **断路器增强** | ✅ 连续 N 次计数 | 部分（布尔标志） | **需增强** |
 | **Voice 模式** | ✅ | ❌ | **需补全** |
 | **交互式 Bash** | ✅ `!` 命令 | ❌ | **需补全** |
 | **Remote Control** | ✅ `/remote-control` | ❌ | **需补全** |
@@ -32,10 +32,10 @@
 | **Channels** | ✅ MCP 消息推送 | ❌ | **需补全** |
 | **插件市场** | ✅ 13 官方插件 | ❌ 仅扩展系统 | **需补全** |
 | **结构化输出** | ✅ | ❌ | **需补全** |
-| **细粒度工具流** | ✅ | ❌ | **需补全** |
+| **细粒度工具流** | ✅ | 部分（`updateOutput` 回调已有） | **需增强** |
 | **企业管控** | ✅ managed-settings | ❌ | **需补全** |
 | **Notebook 编辑** | ✅ NotebookEdit | 部分（仅读取） | **需增强** |
-| **LSP 集成** | ✅ | ❌ | 待验证 |
+| LSP 集成 | ✅ | ✅ `lsp.ts`（完整 LSP 工具：定义、引用、诊断等） | 对等 |
 
 ---
 
@@ -67,38 +67,33 @@ if (argv.bare) {
 
 ---
 
-### 2. 断路器模式
+### 2. 断路器增强（布尔 → 计数器）
 
 **Claude Code 实现**：
 - 自动压缩连续 3 次失败后停止重试
-- 防止无限循环消耗 token
+- 计数器模式，重置条件可控
 
-**Qwen Code 缺失影响**：压缩失败后可能反复重试，浪费 token 和时间。
+**Qwen Code 现状**：已有简单断路器——`hasFailedCompressionAttempt` 布尔标志（`client.ts:113,877`），压缩失败后设为 `true`，后续非强制压缩跳过（`chatCompressionService.ts:97`）。但布尔标志意味着**一次失败就永远放弃**，无法区分暂时性和持续性错误。
 
-**建议实现**：
+**建议增强**：
 ```typescript
-// packages/core/src/services/chatCompressionService.ts
-class ChatCompressionService {
-  private consecutiveFailures = 0;
-  private readonly MAX_FAILURES = 3;
+// 当前（client.ts:113）：
+private hasFailedCompressionAttempt = false;  // 一次失败永远放弃
 
-  async compress(...) {
-    if (this.consecutiveFailures >= this.MAX_FAILURES) {
-      return { newHistory: null, info: { compressionStatus: 'CIRCUIT_OPEN' } };
-    }
-    try {
-      const result = await this.doCompress(...);
-      this.consecutiveFailures = 0;
-      return result;
-    } catch (e) {
-      this.consecutiveFailures++;
-      throw e;
-    }
-  }
+// 改进：计数器 + 超时重置
+private compressionFailures = 0;
+private lastFailureTime = 0;
+private readonly MAX_FAILURES = 3;
+private readonly RESET_AFTER_MS = 5 * 60 * 1000;  // 5 分钟后重试
+
+// 判断逻辑：
+if (this.compressionFailures >= this.MAX_FAILURES &&
+    Date.now() - this.lastFailureTime < this.RESET_AFTER_MS) {
+  return NOOP;  // 断路器打开
 }
 ```
 
-**工作量**：极低（半天），仅在现有压缩服务中加计数器
+**工作量**：极低（半天），改 1 个布尔为计数器 + 时间戳
 
 ---
 
@@ -291,7 +286,7 @@ qwen -p "分析这个函数的复杂度" --schema '{"type":"object","properties"
 | 功能 | 工作量 | 用户价值 | 优先级 |
 |------|--------|---------|--------|
 | `--bare` 模式 | 低（1-2 天） | **高**（CI/脚本） | **P0** |
-| 断路器模式 | 极低（半天） | **高**（稳定性） | **P0** |
+| 断路器增强（布尔→计数器） | 极低（半天） | **高**（稳定性） | **P0** |
 | 交互式 Bash `!` | 低（1-2 天） | **高**（效率） | **P0** |
 | 延迟工具加载 | 中（3-5 天） | **高**（性能 + token） | **P1** |
 | 结构化输出 | 中（3-5 天） | **高**（SDK 集成） | **P1** |
@@ -313,7 +308,7 @@ qwen -p "分析这个函数的复杂度" --schema '{"type":"object","properties"
 | 功能 | Qwen Code 实现 | 竞争价值 |
 |------|---------------|---------|
 | **Agent Arena** | `ArenaManager.ts`，多模型并行 worktree 对比 | 独一无二的多模型评估能力 |
-| **视觉模型 YOLO** | 自动切换视觉模型 | 多模态编程体验 |
+| **视觉模型 YOLO 自动切换** | 根据输入自动切换视觉模型（Claude Code 支持图片但无自动切换） | 多模态体验更流畅 |
 | **6 语言 UI** | 中/英/日/德/俄/葡完整本地化 | 全球化覆盖 |
 | **免费 OAuth** | 每天 1000 次 | 零门槛试用 |
 | **多提供商** | Qwen + OpenAI + Anthropic + Gemini + Vertex | 模型灵活性 |
@@ -324,7 +319,7 @@ qwen -p "分析这个函数的复杂度" --schema '{"type":"object","properties"
 
 ## 六、一句话总结
 
-**3 个半天可完成的 P0**：`--bare` 模式 + 断路器 + 交互式 Bash `!`
+**3 个半天可完成的 P0**：`--bare` 模式 + 断路器增强（布尔→计数器） + 交互式 Bash `!`
 
 **4 个需要投入的 P1**：延迟工具加载 + 结构化输出 + 插件市场 + 企业管控
 
