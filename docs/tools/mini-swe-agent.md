@@ -66,15 +66,11 @@ python mini_swe_agent.py
 ## CLI 命令
 
 ```bash
-# 运行迷你代理
+# 运行迷你代理（具体参数请参考仓库 README）
 python mini_swe_agent.py
-
-# 指定任务
-python mini_swe_agent.py --prompt "修复 main.py 中的 bug"
-
-# 指定模型
-python mini_swe_agent.py --model gpt-4
 ```
+
+> 注：具体 CLI 参数请以仓库最新 README 为准。
 
 ## 使用场景
 
