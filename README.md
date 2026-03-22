@@ -19,7 +19,7 @@
 | [SWE-agent](#swe-agent) | Princeton NLP | MIT | 19k+ | Python | Claude, GPT-4 |
 | [Cline](#cline) | Cline | Apache-2.0 | 58k+ | TypeScript | Claude |
 | [Goose](#goose) | Block | Apache-2.0 | 27k+ | TypeScript | 模型无关 |
-| [OpenCode](#opencode) | OpenCode AI | MIT | 3k+ | Go | Claude, GPT, Gemini |
+| [OpenCode](#opencode) | OpenCode AI | MIT | 3k+ | TypeScript | Claude, GPT, Gemini |
 | [Gemini CLI](#gemini-cli) | Google | Apache-2.0 | 1k+ | TypeScript | Gemini |
 | [Warp](#warp) | Warp | 专有 | 30k+ | Rust | 多种 |
 | [Continue](#continue) | Continue | Apache-2.0 | 27k+ | TypeScript | 多种 |
@@ -31,6 +31,7 @@
 
 - **[工具详情](./docs/tools/)** - 每个工具的详细分析
 - **[功能对比](./docs/comparison/features.md)** - 功能横向对比
+- **[OpenCode vs Qwen Code 源码对比](./docs/comparison/opencode-vs-qwen-source.md)** - 基于源码的深度分析
 - **[基准测试](./docs/benchmarks/)** - SWE-bench 等性能测试
 - **[架构分析](./docs/architecture/overview.md)** - 工作原理深度解析
 - **[入门指南](./docs/guides/getting-started.md)** - 如何选择和开始使用
@@ -61,7 +62,7 @@
 - SWE-agent
 - OpenHands/OpenDevin
 
-### 4. 带 CLI 功能的 IDE 扩展
+### 5. 带 CLI 功能的 IDE 扩展
 主要作为 IDE 扩展但提供 CLI 访问：
 - Cline
 - Continue
@@ -73,8 +74,8 @@
 | **代码编辑** | Claude Code | 原生编辑，MCP 生态 |
 | **Git 集成** | Aider | 最佳 Git 工作流集成 |
 | **基准性能** | Claude Code | SWE-bench 复杂推理领先 |
-| **终端速度** | Codex CLI | 简单任务最快 |
-| **模型灵活性** | Goose, Continue | 支持多个提供商 |
+| **终端速度** | Gemini CLI | 轻量级，简单任务快 |
+| **模型灵活性** | OpenCode, Goose | 20+ 提供商支持 |
 | **隐私/自托管** | TabbyML | 自托管选项 |
 
 ## 性能基准 (2026)

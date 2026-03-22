@@ -14,6 +14,11 @@
 **最适合：** GitHub 生态集成
 **核心特性：** 企业功能
 
+### [Cursor CLI](./cursor-cli.md)
+**开发者：** Cursor
+**最适合：** IDE 级 AI 编程体验
+**核心特性：** Background Agent、多模型支持
+
 ### [Warp](./warp.md)
 **开发者：** Warp Dot Dev
 **最适合：** 现代终端体验
