@@ -26,12 +26,12 @@
 | **延迟工具加载** | ✅ ToolSearch | ❌ | **需补全** |
 | **断路器增强** | ✅ 连续 N 次计数 | 部分（布尔标志） | **需增强** |
 | **Voice 模式** | ✅ | ❌ | **需补全** |
-| **交互式 Bash** | ✅ `!` 命令 | ❌ | **需补全** |
+| 交互式 Shell | ✅ `! command` | ✅ `!{...}` 语法（`shellProcessor.ts`） | 对等（语法不同） |
 | **Remote Control** | ✅ `/remote-control` | ❌ | **需补全** |
 | **Teammates 协作** | ✅ | ❌ | **需补全** |
 | **Channels** | ✅ MCP 消息推送 | ❌ | **需补全** |
-| **插件市场** | ✅ 13 官方插件 | ❌ 仅扩展系统 | **需补全** |
-| **结构化输出** | ✅ | ❌ | **需补全** |
+| 插件市场 | ✅ 13 官方插件 | ✅ `marketplace.ts`（280 行）+ extensionManager | 对等（Qwen 官方插件较少） |
+| 结构化输出 | ✅ | ✅ `baseLlmClient.ts` `generateJson()` | 对等 |
 | **细粒度工具流** | ✅ | 部分（`updateOutput` 回调已有） | **需增强** |
 | **企业管控** | ✅ managed-settings | ❌ | **需补全** |
 | **Notebook 编辑** | ✅ NotebookEdit | 部分（仅读取） | **需增强** |
@@ -122,49 +122,26 @@ const deferredTools = toolRegistry.getDeferredTools(); // web, lsp, mcp...
 
 ---
 
-### 4. 交互式 Bash（`!` 命令）
+### ~~4. 交互式 Bash~~ ✅ 已验证存在
 
-**Claude Code 实现**：
-- 在会话中输入 `! command` 直接执行 shell 命令
-- 输出留在上下文中供 AI 参考
-- 快速调试不需要 AI 介入的操作
-
-**Qwen Code 缺失影响**：用户需要切换终端窗口执行命令，或让 AI 代执行简单命令（浪费轮次）。
-
-**建议实现**：
-```typescript
-// packages/cli/src/ui/InputPrompt.tsx
-if (input.startsWith('!')) {
-  const command = input.slice(1).trim();
-  const result = await execAsync(command, { cwd: config.targetDir });
-  // 显示输出，并将结果加入上下文
-  appendToContext({ role: 'user', content: `Shell: ${command}\n${result}` });
-  return; // 不发送给 LLM
-}
-```
-
-**工作量**：低（1-2 天）
+Qwen Code 已有 `!{...}` Shell 注入语法（`shellProcessor.ts:46-87`），通过 `ShellProcessor` 类处理，支持参数替换和安全确认。语法不同于 Claude Code 的 `! command`，但功能等价。
 
 ---
 
 ## 二、中优先级（差异化竞争力）
 
-### 5. 插件市场
+### 5. 丰富官方插件库
 
-**Claude Code 实现**：
-- 13 个官方插件（code-review、feature-dev、security-guidance 等）
-- `.claude-plugin/marketplace.json` 插件清单
-- 插件包含：commands + agents + skills + hooks + MCP
+**Claude Code 实现**：13 个官方插件（code-review、feature-dev、security-guidance 等）。
 
-**Qwen Code 现状**：有扩展系统（skills + agents + hooks），但无集中市场。
+**Qwen Code 现状**：插件市场基础设施已有（`marketplace.ts` 280 行，支持 GitHub 安装源解析、扩展管理），但**官方插件数量较少**，缺乏 code-review、feature-dev 等高价值插件。
 
 **建议路线**：
-1. 定义 `.qwen-plugin/plugin.json` 标准格式
-2. 建立官方插件仓库（GitHub org）
-3. 移植 Claude Code 的 code-review、feature-dev 等高价值插件
-4. 利用已有的 Claude/Gemini 扩展转换能力，自动导入社区插件
+1. 利用已有 marketplace 基础设施，发布官方 code-review 插件
+2. 移植 Claude Code 的 feature-dev（7 阶段开发流程）
+3. 利用已有的 Claude/Gemini 扩展转换能力，自动导入社区插件
 
-**工作量**：高（2-4 周），但生态价值巨大
+**工作量**：中（内容创作为主，基础设施已就绪）
 
 ---
 
@@ -188,21 +165,9 @@ if (input.startsWith('!')) {
 
 ---
 
-### 7. 结构化输出
+### ~~7. 结构化输出~~ ✅ 已验证存在
 
-**Claude Code 实现**：
-- 工具输出可按 JSON Schema 验证
-- 支持 beta header 管理
-- proxy gateway 兼容
-
-**Qwen Code 缺失影响**：程序化集成（SDK、CI）时输出格式不可预期。
-
-**建议实现**：在非交互模式中添加 `--schema` 参数：
-```bash
-qwen -p "分析这个函数的复杂度" --schema '{"type":"object","properties":{"complexity":{"type":"number"}}}'
-```
-
-**工作量**：中（3-5 天）
+Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持 JSON Schema 约束输出。通过 `GenerateJsonOptions` 接口传入 schema，内部转换为 function declaration 实现结构化生成。
 
 ---
 
@@ -287,17 +252,16 @@ qwen -p "分析这个函数的复杂度" --schema '{"type":"object","properties"
 |------|--------|---------|--------|
 | `--bare` 模式 | 低（1-2 天） | **高**（CI/脚本） | **P0** |
 | 断路器增强（布尔→计数器） | 极低（半天） | **高**（稳定性） | **P0** |
-| 交互式 Bash `!` | 低（1-2 天） | **高**（效率） | **P0** |
 | 延迟工具加载 | 中（3-5 天） | **高**（性能 + token） | **P1** |
-| 结构化输出 | 中（3-5 天） | **高**（SDK 集成） | **P1** |
-| 插件市场 | 高（2-4 周） | **高**（生态） | **P1** |
 | 企业管控 | 高（2-3 周） | **高**（企业客户） | **P1** |
+| 丰富官方插件库 | 中（持续） | **高**（生态） | **P1** |
 | Remote Control | 高（2-3 周） | 中 | P2 |
 | Notebook 编辑 | 中（1-2 周） | 中 | P2 |
 | Channels | 中（1-2 周） | 中 | P2 |
-| 细粒度工具流 | 中（1-2 周） | 中 | P2 |
 | Voice 模式 | 高（3-4 周） | 低 | P3 |
 | Teammates 协作 | 高（3-4 周） | 低 | P3 |
+
+> 注：交互式 Bash、结构化输出、插件市场基础设施经 R2 验证已存在，从缺失列表移除。
 
 ---
 
@@ -319,11 +283,13 @@ qwen -p "分析这个函数的复杂度" --schema '{"type":"object","properties"
 
 ## 六、一句话总结
 
-**3 个半天可完成的 P0**：`--bare` 模式 + 断路器增强（布尔→计数器） + 交互式 Bash `!`
+**2 个半天可完成的 P0**：`--bare` 模式 + 断路器增强（布尔→计数器）
 
-**4 个需要投入的 P1**：延迟工具加载 + 结构化输出 + 插件市场 + 企业管控
+**3 个需要投入的 P1**：延迟工具加载 + 企业管控 + 丰富官方插件库
 
-**Qwen Code 不需要复制 Claude Code 的一切**——Agent Arena、视觉模型、6 语言、免费 OAuth 是独有竞争力。重点补全影响用户体验和企业采用的核心缺口。
+> 注：交互式 Bash（`!{...}` 语法）、结构化输出（`generateJson()`）、插件市场基础设施（`marketplace.ts`）经 R2 核实均已存在，从缺失列表移除。
+
+**Qwen Code 不需要复制 Claude Code 的一切**——Agent Arena、6 语言 UI、免费 OAuth、多提供商是独有竞争力。重点补全 `--bare` 模式和企业管控两个核心缺口。
 
 ---
 
