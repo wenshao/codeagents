@@ -2,147 +2,207 @@
 
 **开发者：** Moonshot AI (月之暗面)
 **许可证：** 开源
-**仓库：** [github.com/MoonshotAI/kimi-cli](https://github.com/MoonshotAI/kimi-cli)
-**文档：** [moonshotai.github.io/kimi-cli](https://moonshotai.github.io/kimi-cli/zh/)
-**状态：** 技术预览版
+**仓库：** [github.com/nicepkg/kimi-cli](https://github.com/nicepkg/kimi-cli)
+**Stars：** -
 
 ## 概述
 
-Kimi CLI 是月之暗面推出的终端 AI 编程代理，可帮助完成软件开发任务和终端操作。在 1024 程序员节期间开源，代表了中国国产编程工具生态的升级。
+Kimi CLI 是月之暗面推出的 AI 编程代理，**主要用 Python 编写**（68.8%），辅以 TypeScript（Web UI + SDK）。核心特色是双模式交互（Agent + Shell，Ctrl-X 切换）和 Wire 协议支持多客户端（TUI、Web、IDE）。支持 Kimi、OpenAI、Anthropic、Google 等多个 LLM 提供商。
 
 ## 核心功能
 
 ### 基础能力
-- **终端原生**：在命令行中运行
-- **代码编辑**：读取和编辑代码
-- **命令执行**：执行 shell 命令
-- **网页搜索**：搜索和爬取网页内容
-- **智能补全**：命令行智能补全
+- **Python 代理引擎**：Pydantic 2 类型安全 + FastAPI 服务器
+- **10+ 内置工具**：文件操作、Shell 执行、Web 搜索/抓取、规划、推理等
+- **多提供商**：Kimi、OpenAI、Anthropic、Google Gemini
+- **多客户端**：TUI 终端、Web UI（React）、IDE（ACP 协议）
+- **MCP 支持**：Model Context Protocol 集成
+- **会话持久化**：Wire 格式存储，可导出/恢复
 
 ### 独特功能
-- **双模式交互**：Shell 风格界面 + AI 助手
-- **Ctrl-K 快捷键**：快速切换到智能模式
-- **通用命令行代理**：支持各种编程任务
-- **文件处理**：强大的文件操作能力
+- **双模式交互**：Agent 模式（AI 处理）与 Shell 模式（直接执行），Ctrl-X 无缝切换
+- **Wire 协议**：统一的客户端-服务器通信协议
+- **ACP（Agent Client Protocol）**：IDE 编辑器原生集成
+- **Moonshot 服务**：集成 Moonshot Search 和 Fetch API
+- **扩展思维模式**：`thinking_mode = "enabled"` 支持深度推理
+- **上下文压缩**：80% 容量时自动压缩历史
+
+## 技术架构（源码分析）
+
+### 项目结构
+
+```
+kimi-cli/
+├── src/kimi_cli/           # Python 主应用
+│   ├── __main__.py         # CLI 入口
+│   ├── app.py              # KimiCLI 核心编排器
+│   ├── config.py           # Pydantic 配置（TOML/JSON）
+│   ├── llm.py              # LLM 提供商工厂
+│   ├── session.py          # 会话状态管理
+│   ├── agents/             # 代理实现
+│   ├── tools/              # 10+ 工具实现
+│   │   ├── file/           # 文件读写编辑
+│   │   ├── shell/          # Shell 执行（AST 安全分析）
+│   │   ├── web/            # Web 搜索/抓取（Moonshot）
+│   │   ├── think/          # 推理
+│   │   ├── plan/           # 规划
+│   │   ├── multiagent/     # 多代理协调
+│   │   ├── background/     # 后台任务
+│   │   └── todo/           # 任务管理
+│   ├── wire/               # Wire 协议（多客户端通信）
+│   ├── auth/               # OAuth 认证
+│   ├── cli/                # CLI 命令（Typer）
+│   └── ui/                 # TUI 组件
+├── sdks/kimi-sdk/          # TypeScript SDK
+├── web/                    # React Web UI
+└── tests/                  # 测试套件
+```
+
+### 核心架构
+
+```
+CLI 入口 (__main__.py)
+    │
+    ▼
+KimiCLI.create() [工厂模式]
+    ├── 配置加载 (Pydantic + TOML)
+    ├── OAuth 认证 (浏览器重定向)
+    ├── 插件系统初始化
+    └── KimiSoul 代理引擎
+    │
+    ▼
+执行模式选择
+    ├── run_shell()    → TUI 交互模式
+    ├── run_print()    → 格式化输出
+    ├── run_acp()      → IDE 集成
+    └── run_wire_stdio() → IPC 通信
+    │
+    ▼
+代理循环
+    → LLM 调用 (create_llm 工厂)
+    → 工具调用解析
+    → 权限检查 (AST 分析)
+    → 工具执行
+    → 上下文管理 (自动压缩)
+    → 重复直到完成
+```
+
+### 双模式交互
+
+```
+Agent 模式（默认）：
+> 重构 auth 模块     ← AI 处理，可调用工具
+
+按 Ctrl-X → Shell 模式：
+$ ls -la             ← 直接执行，保留上下文
+
+按 ESC → 回到 Agent 模式
+```
+
+Wire 协议在模式切换间维持上下文，无丢失。
+
+### 权限系统
+
+```
+规则优先级：deny > ask > allow > default
+
+Shell 工具：AST 解析命令，提取目录和操作
+文件工具：read=allow, write=ask
+Web 工具：allow
+危险模式：["rm -rf", "sudo"] → deny
+```
 
 ## 安装
 
 ```bash
-# 1. 先安装 uv 包管理器（如果未安装）
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 2. 使用 uv 安装 Kimi CLI
+# 使用 uv（推荐）
 uv tool install kimi-cli
 
-# 3. 验证安装
+# 使用 pip
+pip install kimi-cli
+
+# 验证
 kimi --version
 
-# 首次运行会引导配置
+# 首次使用（会引导 OAuth 认证）
 kimi
-# 推荐 Kimi Code（自动 OAuth 授权）
-# 或输入 API Key
 ```
 
-## 架构
+## 支持的模型
 
-- **语言**：TypeScript
-- **主要模型**：Kimi (Moonshot AI)
-- **平台**：macOS、Linux
-- **状态**：技术预览版
+| 提供商 | 模型 | 说明 |
+|--------|------|------|
+| **Kimi** | kimi-k2.5 | 最新，多模态 |
+| OpenAI | GPT-4, GPT-4o | 标准支持 |
+| Anthropic | Claude Sonnet/Opus | 标准支持 |
+| Google | Gemini | 标准支持 |
+
+## 配置
+
+```toml
+# ~/.config/kimi-cli/config.toml
+
+[default_model]
+provider = "kimi"
+name = "kimi-k2.5"
+max_context_size = 256000
+
+[llm_config]
+temperature = 0.7
+thinking_mode = "enabled"
+max_tokens = 4096
+
+[agent_loop]
+max_steps = 20
+compaction_trigger_ratio = 0.8
+
+[permissions]
+shell = "ask"
+file = { read = "allow", write = "ask" }
+```
 
 ## 优势
 
-1. **双模式设计**：Shell + AI 智能模式
-2. **快捷键支持**：Ctrl-K 快速调用
-3. **网页能力**：内置网页搜索和爬取
-4. **中文优化**：对中文开发友好
-5. **月之暗面支持**：Kimi 模型能力强
+1. **双模式交互**：Agent + Shell 无缝切换，效率高
+2. **Wire 协议**：多客户端统一通信
+3. **Moonshot 集成**：原生搜索和网页抓取服务
+4. **扩展思维**：支持深度推理模式
+5. **Python 生态**：Pydantic 类型安全，FastAPI 服务器
+6. **多提供商**：不锁定 Kimi，支持主流模型
 
 ## 劣势
 
-1. **预览版本**：功能可能不稳定
-2. **仅 macOS/Linux**：暂不支持 Windows
-3. **需要会员**：需要 Kimi 会员或 API Key
-4. **较新项目**：生态和文档有限
+1. **技术预览**：功能和 API 可能变化
+2. **社区较小**：用户群较少
+3. **Python 性能**：启动速度不如 Rust/Go
+4. **文档有限**：中文资源为主
 
 ## CLI 命令
 
 ```bash
-# 启动交互式会话
-kimi-cli
+# 交互式会话
+kimi
 
-# 直接提问
-kimi-cli "帮我分析这个项目的结构"
+# 导出会话
+kimi export
 
-# 生成代码
-kimi-cli "创建一个 Python 脚本处理 CSV 文件"
+# MCP 服务器管理
+kimi mcp list
 
-# 使用 Ctrl-K（在 shell 中）
-# 按下 Ctrl-K 进入智能模式，输入自然语言命令
+# 启动 Web 服务器
+kimi web
 
-# 网页搜索
-kimi-cli "搜索最新的 Python 版本信息"
-```
-
-## 双模式交互
-
-```
-普通 Shell 模式:
-$ ls -la
-(正常 shell 输出)
-
-按 Ctrl-K 进入智能模式:
-> 列出所有 Python 文件并统计行数
-(AI 处理并返回结果)
-
-ESC 退出智能模式，返回普通 shell
-```
-
-## 配置
-
-```bash
-# ~/.kimi-cli/config.json
-{
-  "model": "moonshot-v1-128k",
-  "apiKey": "your-api-key",
-  "temperature": 0.7,
-  "maxTokens": 4096
-}
+# 插件管理
+kimi plugin list
 ```
 
 ## 使用场景
 
-- **最适合**：中文开发者、Kimi 用户
-- **适合**：日常开发、命令行操作
-- **不太适合**：生产环境（预览版）
-
-## 系统要求
-
-- **操作系统**：macOS、Linux
-- **Node.js**：v16 或更高版本
-- **账户**：Kimi 会员或 API Key
-
-## Kimi 模型
-
-| 模型 | 上下文 | 推荐场景 |
-|------|--------|----------|
-| moonshot-v1-8k | 8K | 简单任务 |
-| moonshot-v1-32k | 32K | 中等复杂度 |
-| moonshot-v1-128k | 128K | 大文件分析 |
+- **最适合**：Kimi 用户、需要双模式交互的终端用户
+- **适合**：中文开发者、多提供商切换
+- **不太适合**：需要成熟生态的生产环境
 
 ## 资源链接
 
-- [GitHub](https://github.com/MoonshotAI/kimi-cli)
-- [中文文档](https://moonshotai.github.io/kimi-cli/zh/)
-- [入门指南](https://moonshotai.github.io/kimi-cli/zh/guides/getting-started.html)
-- [平台文档](https://platform.moonshot.cn/docs/guide/kimi-cli-support)
-
-## 社区
-
-- [GitHub Issues](https://github.com/MoonshotAI/kimi-cli/issues)
-- [GitHub Discussions](https://github.com/MoonshotAI/kimi-cli/discussions)
-
-## 相关项目
-
-- [Kimi API](https://platform.moonshot.cn/) - Kimi API 平台
-- [Moonshot AI](https://www.moonshot.cn/) - 月之暗面官网
+- [GitHub](https://github.com/nicepkg/kimi-cli)
+- [Kimi 官网](https://kimi.moonshot.cn/)

@@ -25,7 +25,7 @@
 | [Continue](#continue) | Continue | Apache-2.0 | 27k+ | TypeScript | 多种 |
 | [OpenHands/OpenDevin](#openhandsopendevin) | OpenHands | MIT | 32k+ | Python | 多种 |
 | [Qwen Code](#qwen-code) | 阿里云 | Apache-2.0 | 2k+ | TypeScript | Qwen3-Coder |
-| [Kimi CLI](#kimi-cli) | 月之暗面 | 开源 | - | TypeScript | Kimi |
+| [Kimi CLI](#kimi-cli) | 月之暗面 | 开源 | - | Python | Kimi |
 
 ## 文档导航
 
@@ -56,7 +56,7 @@
 ### 3. 国内工具
 中国厂商推出的 CLI 编程工具：
 - **Qwen Code** (阿里云) - 每日 2000 次免费额度
-- **Kimi CLI** (月之暗面) - 双模式交互设计
+- **Kimi CLI** (月之暗面) - 双模式交互（Agent + Shell，Ctrl-X 切换）
 
 ### 4. 研究/学术项目
 有公开基准测试的学术项目：

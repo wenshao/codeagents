@@ -48,12 +48,12 @@
 | Cline | TypeScript | IDE 扩展 | 自主编码 |
 | Goose | Rust | MCP 原生 | 模型灵活性 |
 | OpenCode | Go | 双代理 | 终端优先 |
-| Continue | TypeScript | IDE + CI/CD | 可扩展助手 |
+| Continue | TypeScript | IDE + CLI + CI/CD | PR Checks + 语义索引 |
 | Warp | Rust | 终端替代品 | 现代终端 + AI |
 | Gemini CLI | TypeScript | ReAct 循环 | Google 生态 |
 | OpenHands | Python | 复合 AI | 完全自主 |
 | Qwen Code | TypeScript | CLI | 中文开发者生态 |
-| Kimi CLI | TypeScript | CLI | 双模式交互 |
+| Kimi CLI | Python | CLI + Web + IDE | 双模式交互（Ctrl-X） |
 
 ### 核心功能对比
 

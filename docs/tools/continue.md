@@ -3,79 +3,135 @@
 **开发者：** Continue Dev
 **许可证：** Apache-2.0
 **仓库：** [github.com/continuedev/continue](https://github.com/continuedev/continue)
-**文档：** [docs.continue.dev](https://docs.continue.dev)
+**文档：** [docs.continue.dev](https://docs.continue.dev/)
 **Stars：** 约 27k+
 
 ## 概述
 
-Continue 是一个开源 AI 编程助手，最初作为 IDE 扩展，现在提供 CLI 功能。以其可扩展性和 CI/CD 集成而闻名。
+Continue 是一个开源的 AI 代码助手框架，同时支持 IDE 扩展（VS Code、JetBrains）和独立 CLI。基于 TypeScript 构建，以 60+ LLM 提供商、30+ 上下文提供器和语义代码库索引为核心特色。独特的 PR Checks 系统允许将代码审查规则作为 Markdown 文件纳入源码管控。
 
 ## 核心功能
 
 ### 基础能力
-- **IDE 扩展**：VS Code、JetBrains 支持
-- **CLI 访问**：自动化命令行界面
-- **源码控制的 AI 检查**：CI 流水线中可强制执行
-- **代码审查机器人**：AI 驱动的 PR 审查
-- **可定制代理**：为特定任务配置代理
-- **多模型**：支持各种 AI 提供商
+- **多 IDE 支持**：VS Code、JetBrains、独立 CLI（`cn` 命令）
+- **60+ LLM 提供商**：OpenAI、Anthropic、Gemini、Bedrock、Ollama 等
+- **30+ 上下文提供器**：当前文件、代码库、Git、Jira、数据库等
+- **语义索引**：Tree-sitter AST + LanceDB 向量搜索
+- **Tab 自动补全**：InlineCompletion 实时代码建议
+- **MCP 支持**：Model Context Protocol 工具扩展
+- **PR Checks**：Markdown 定义的 CI/CD 代码审查规则
 
 ### 独特功能
-- **CI/CD 集成**：在 GitHub Actions 中使用 AI
-- **文档代理**：自动生成/更新文档
-- **可配置**：基于 YAML 的配置
-- **gh/glab 集成**：与 GitHub/GitLab CLI 配合工作
+- **PR Checks 系统**：`.continue/checks/` 目录下的 Markdown 文件定义代码审查规则，可作为 GitHub Status Check 执行
+- **NextEdit**：智能预测光标位置的下一步编辑
+- **CodebaseRepoMap**：AST 级别代码库地图
+- **角色模型选择**：default / fast / smart 三种角色分别配置模型
+- **30+ 上下文提供器**：从文件、Git、Jira、数据库等注入上下文
+
+## 技术架构（源码分析）
+
+### 项目结构
+
+```
+continue/
+├── core/              # 核心 TypeScript 库
+│   ├── core.ts        # Core 类（索引、补全、配置）
+│   ├── llm/llms/      # 60+ LLM 提供商实现
+│   ├── tools/         # 内置工具
+│   ├── context/       # 30+ 上下文提供器
+│   ├── indexing/      # 语义索引系统
+│   └── config/        # 配置加载
+├── extensions/
+│   ├── vscode/        # VS Code 扩展
+│   ├── cli/           # CLI 工具（cn 命令）
+│   └── intellij/      # JetBrains 扩展
+├── gui/               # React WebView UI（Vite + Tailwind）
+├── packages/
+│   ├── config-yaml/   # YAML 配置解析
+│   ├── terminal-security/  # 终端安全策略
+│   └── openai-adapters/    # OpenAI 格式转换
+└── .continue/         # 示例配置
+    ├── checks/        # PR 审查规则
+    ├── agents/        # 代理定义
+    └── rules/         # 编码规则
+```
+
+### 核心架构
+
+```
+IDE (VS Code / JetBrains) 或 CLI
+    │
+    ▼
+Core 类（协议驱动的 IPC）
+    ├── ConfigHandler（YAML/JSON/TS 配置）
+    ├── CompletionProvider（Tab 补全）
+    ├── CodebaseIndexer（语义索引）
+    │   ├── CodeSnippetsIndex (Tree-sitter AST)
+    │   ├── FullTextSearchIndex (SQLite FTS5)
+    │   └── LanceDbIndex (向量嵌入)
+    ├── 上下文提供器（30+）
+    └── MCPManagerSingleton
+    │
+    ▼
+BaseLLM（60+ 提供商）
+    → streamChat() / complete()
+    → Token 计数 + 成本追踪
+```
+
+### 索引系统
+
+```
+文件系统遍历
+  → SHA 哈希内容寻址
+  → Tree-sitter AST 提取（函数/类）
+  → SQLite FTS5 全文索引
+  → 向量嵌入（本地 ONNX 或云端）
+  → LanceDB 向量存储
+  → 增量更新（修改追踪）
+```
+
+### PR Checks 系统
+
+```markdown
+<!-- .continue/checks/security-audit.md -->
+---
+name: Security Audit
+---
+
+Review the code for security vulnerabilities...
+Check for: SQL injection, XSS, sensitive data exposure...
+```
+
+- 作为 GitHub Status Check 运行
+- CLI 命令：`cn checks <pr-url>`
+- Markdown 格式，纳入版本控制
+- 可在 CI/CD 管线中强制执行
+
+### 内置工具
+
+| 类别 | 工具 |
+|------|------|
+| 文件 | readFile, createNewFile, editFile, multiEdit |
+| 搜索 | globSearch, grepSearch, searchCodebase, searchWeb |
+| 导航 | viewDiff, viewRepoMap, viewSubdirectory, ls |
+| 终端 | runTerminalCommand（带安全策略） |
+| Web | fetchUrlContent, searchWeb |
+| 配置 | createRuleBlock, requestRule, readSkill |
 
 ## 安装
 
 ```bash
 # VS Code 扩展
-code --install-extension Continue.continue
+# VS Code → 扩展 → 搜索 "Continue" → 安装
 
-# Python 包用于 CLI
-pip install continue-cli
+# CLI（cn 命令）
+npm install -g @continuedev/cli
 
-# 或使用桌面应用
-# 从 continue.dev 下载
-```
-
-## 架构
-
-- **语言：** TypeScript
-- **支持的模型：**
-  - OpenAI (GPT-4)
-  - Anthropic (Claude)
-  - 本地模型 (Ollama)
-  - 自定义提供商
-
-## 优势
-
-1. **CI/CD 集成**：在编码代理中独一无二
-2. **源码控制配置**：AI 提示在 git 中
-3. **多模型**：灵活的提供商支持
-4. **大社区**：23k+ GitHub stars
-5. **可扩展**：插件系统
-
-## 劣势
-
-1. **IDE 优先**：CLI 是 IDE 扩展的补充
-2. **配置复杂性**：需要更多设置
-3. **专注较少**：试图做所有事情
-
-## CLI 命令
-
-```bash
-# Continue CLI
-continue-cli
-
-# 运行特定任务
-continue-cli --task "重构这个文件"
-
-# CI/CD 模式
-continue-ci --pr-number 123
-
-# 启用 GitHub CLI 访问
-continue-config enable-gh
+# CLI 命令
+cn chat              # 交互式聊天
+cn checks <pr-url>   # 运行 PR 检查
+cn review <pr-url>   # 代码审查
+cn serve             # 启动 HTTP 服务器
 ```
 
 ## 配置
@@ -83,22 +139,51 @@ continue-config enable-gh
 ```yaml
 # ~/.continue/config.yaml
 models:
-  - name: claude-opus-4
+  - name: claude-sonnet-4
     provider: anthropic
+    apiKey: ${ANTHROPIC_API_KEY}
+    roles: [default, smart]
+  - name: claude-haiku-4-5
+    provider: anthropic
+    roles: [fast]
 
-slackBotToken: ${SLACK_TOKEN}
-github:
-  enabled: true
+contextProviders:
+  - name: codebase
+  - name: terminal
+  - name: docs
+
+embeddingsProvider:
+  provider: transformers.js  # 本地 ONNX 嵌入
+
+tools:
+  - name: runTerminalCommand
+  - name: editFile
 ```
+
+## 优势
+
+1. **PR Checks**：源码控制的代码审查规则，可集成 CI/CD
+2. **语义索引**：AST + 向量搜索，精准上下文
+3. **60+ 提供商**：最广泛的模型支持之一
+4. **多 IDE 支持**：VS Code + JetBrains + CLI
+5. **上下文提供器**：30+ 来源注入上下文
+6. **本地嵌入**：ONNX 模型，无需云端
+
+## 劣势
+
+1. **复杂性高**：配置选项众多，学习曲线陡
+2. **非终端原生**：CLI 是辅助，IDE 为主
+3. **索引开销**：大型项目初始索引耗时
+4. **文档与功能不同步**：功能迭代快，文档滞后
 
 ## 使用场景
 
-- **最适合**：CI/CD 自动化、PR 审查
-- **适合**：想要 CLI 自动化的 IDE 用户
-- **不太适合**：纯终端工作流
+- **最适合**：CI/CD 代码审查自动化、需要语义搜索的大型项目
+- **适合**：多 IDE 团队、自定义上下文需求
+- **不太适合**：简单终端工作流、快速任务
 
 ## 资源链接
 
-- [CLI 指南](https://docs.continue.dev/guides/cli)
 - [GitHub](https://github.com/continuedev/continue)
-- [文档](https://docs.continue.dev)
+- [文档](https://docs.continue.dev/)
+- [Hub](https://hub.continue.dev/)

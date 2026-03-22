@@ -14,6 +14,8 @@
 | Cline | TypeScript | ~40k 行 | `/root/git/cline` |
 | SWE-agent | Python | ~20k 行 | `/root/git/swe-agent` |
 | OpenHands | Python | ~60k 行 | `/root/git/openhands` |
+| Continue | TypeScript | ~80k 行 | `/root/git/continue` |
+| Kimi CLI | Python | ~20k 行 | `/root/git/kimi-cli` |
 | Claude Code | Rust | 专有 | `/root/git/claude-code` |
 
 ---
