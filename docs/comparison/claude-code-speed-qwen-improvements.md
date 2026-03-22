@@ -167,17 +167,17 @@ const charCount = JSON.stringify(content).length;
 
 ### 问题 6：重量级依赖加载
 
-**文件**：`packages/core/package.json`（30-38 行）、`packages/core/src/telemetry/sdk.ts`
+**文件**：`packages/core/package.json`（30-38 行）、`packages/cli/src/gemini.tsx`
 
-| 依赖 | 包数/体积 | import 方式 | 问题 |
-|------|----------|-----------|------|
-| OpenTelemetry | 9 个包 ~800 KB | `telemetry/sdk.ts` 顶层静态 import | 9 个 OTel 包在 sdk.ts 中全部为顶层 `import`（7-30 行），模块被加载时全部解析 |
-| web-tree-sitter | ~2.5 MB WASM | `shellAstParser.ts:17` 顶层 import | 模块导入时加载，但实际 Parser 初始化是懒加载的（`initParser()` 单例） |
-| React 19 + Ink | ~300 KB | CLI 包静态依赖 | 非交互模式也会加载 |
+| 依赖 | 包数/体积 | import 方式 | 实际加载时机 |
+|------|----------|-----------|-------------|
+| ~~OpenTelemetry~~ | 9 个包 | `telemetry/sdk.ts` 顶层 import | ✅ **条件加载**：仅 `telemetry.enabled=true` 时加载（默认 false），不影响正常启动 |
+| web-tree-sitter | ~2.5 MB WASM | `shellAstParser.ts:17` 顶层 import | 模块被 import 时加载，但 Parser 是 `initParser()` 懒单例 |
+| React 19 + Ink | ~300 KB | `gemini.tsx:15,20` 顶层 import | **交互和非交互模式都会加载**（顶层 import），但 `nonInteractiveCli.ts` 本身不 import React |
 
-**补充说明**：
-- OpenTelemetry 的实际加载取决于 `telemetry/sdk.ts` 何时被 import——如果入口文件直接或间接引用了它，则启动时加载
-- web-tree-sitter 的 WASM 模块在 `import` 时加载到内存，但 Parser 实例化是懒的（`initParser()` 首次调用时初始化）
+**关键发现**：
+- ~~OpenTelemetry 是最大的性能问题~~ → **实际是条件加载**。`config.ts:746-748` 检查 `telemetrySettings.enabled`，仅启用时才调用 `initializeTelemetry()`，默认关闭
+- React/Ink 在 `gemini.tsx` 顶层 `import { render } from 'ink'` 和 `import React from 'react'`（15、20 行），即使进入非交互路径也已解析。`nonInteractiveCli.ts` 不引用 React，但入口 `gemini.tsx` 已经加载了
 
 ### 问题 7：MCP 超时过长
 
@@ -262,29 +262,27 @@ await import(languagePackUrl);
 import defaultLocale from './locales/en.json';  // 编译时内嵌
 ```
 
-#### 1.3 重量级依赖懒加载
+#### 1.3 非交互入口独立（避免加载 React/Ink）
 
 ```typescript
-// 当前：启动时全部加载
-import * as otel from '@opentelemetry/...';
-import TreeSitter from 'web-tree-sitter';
+// 当前：gemini.tsx 顶层导入 React 和 Ink
+import { render } from 'ink';        // 第 15 行
+import React from 'react';           // 第 20 行
+// 即使走非交互路径（457-510 行），这些模块已在入口处解析
 
-// 改进：使用时才加载
-const getTreeSitter = () => import('web-tree-sitter');
-const getOtel = () => import('@opentelemetry/...');
-```
+// 改进方案 A：非交互模式使用独立入口
+// bin/qwen-noninteractive → 直接 import nonInteractiveCli.ts（不经过 gemini.tsx）
 
-#### 1.4 非交互模式裁剪 React
-
-```typescript
-// 当前：非交互模式也加载 Ink + React
-// 改进：非交互模式使用轻量输出
-if (nonInteractive) {
-  // 直接 stdout，不加载 React
-} else {
+// 改进方案 B：gemini.tsx 中 React/Ink 改为 dynamic import
+// 仅在 startInteractiveUI() 内部才 import
+async function startInteractiveUI(...) {
   const { render } = await import('ink');
+  const React = await import('react');
+  // ...
 }
 ```
+
+> 注：~~OTel 9 包 eager 加载~~ 经第三轮核实，OTel 实际是**条件加载**（`config.ts:746`，默认 `enabled: false`），不影响正常启动，无需改动。
 
 ### 第二优先级：运行时性能
 
@@ -450,16 +448,17 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 | 改进 | 难度 | 收益 | 优先级 |
 |------|------|------|--------|
+| 改进 | 难度 | 收益 | 优先级 |
+|------|------|------|--------|
 | 启动 await 并行化（cleanupCheckpoints ‖ parseArguments, warnings 并行） | 低 | **高**（首印象） | P0 |
 | 消除 loadCliConfig 双调用（源码 TODO 已承认） | 中 | **高**（省 100-300ms） | P0 |
-| OTel 9 包 + tree-sitter 改 dynamic import | 低 | **高**（启动省 1-2 秒） | P0 |
 | MCP 启动超时缩短（10min→5-10s） | 低 | **高**（稳定性） | P0 |
-| 流式解析字符串拼接改数组收集 | 低 | 中 | P1 |
+| structuredClone 改 readonly 引用（每轮多次调用） | 低 | **高**（大会话性能） | P1 |
 | Token 计算增量缓存 | 中 | 中 | P1 |
-| structuredClone 改 readonly 引用 | 低 | 中 | P1 |
+| 流式解析字符串拼接改数组收集 | 低 | 中 | P1 |
 | 压缩服务 JSON.stringify 改估算 | 低 | 中 | P1 |
 | i18n fs.existsSync 改异步 + 默认语言内嵌 | 低 | 中 | P1 |
-| 非交互模式裁剪 React | 中 | 中 | P2 |
+| gemini.tsx 非交互路径独立入口（避免加载 React/Ink） | 中 | 中 | P2 |
 | `--bare` 模式 | 中 | 中 | P2 |
 | 断路器模式 | 中 | 中 | P2 |
 | 热路径 Rust N-API（Token 计算、文件搜索） | 高 | **高** | P3 |
@@ -471,12 +470,14 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 **Claude Code 快的本质**：Rust 原生二进制 + 激进并行化 + 极致懒加载 + 内核级沙箱 + 超时断路器。
 
-**Qwen Code 慢的本质**：Node.js 运行时开销 + 22 个串行 await + loadCliConfig 双调用 + structuredClone 深拷贝历史 + 压缩服务全量 JSON.stringify + 9 个 OTel 包顶层 import + MCP 启动超时 10 分钟。
+**Qwen Code 慢的本质**：Node.js 运行时开销 + 22 个串行 await + loadCliConfig 双调用 + structuredClone 每轮多次深拷贝 + 压缩服务全量 JSON.stringify + React/Ink 非交互也加载 + MCP 启动超时 10 分钟。
+
+> 注：~~OTel 9 包 eager 加载~~ 经第三轮核实，OTel 实际是条件加载（默认关闭），不影响正常启动。
 
 **最小代价最大收益的四件事**：
 1. 启动独立 await 并行化 + warnings 并行（`Promise.all()`，改几行代码）
 2. 消除 loadCliConfig 双调用（源码 TODO 已指出方向）
-3. OTel/tree-sitter 改 dynamic import（省启动时间 + 内存）
+3. structuredClone 改 readonly 引用（每轮 3-6 次深拷贝，大会话影响显著）
 4. MCP 启动超时从 10 分钟缩短到 5-10 秒
 
 ---
@@ -518,3 +519,16 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 | Token fallback 范围 | `openaiContentGenerator.ts` | 100 | ⚠️ 修正：序列化 `request.contents`（非整个 request） |
 | initializeApp 内部 | `initializer.ts` | 33-74 | ✅ 确认：i18n → auth → IDE 连接，全部串行 |
 | 非交互路径 | `gemini.tsx` | 457-510 | ✅ 确认：同样有串行 await 可优化 |
+
+### 第三轮核实（交叉验证）
+
+| 问题 | 核实文件 | 实际行号 | 结论 |
+|------|---------|---------|------|
+| ~~OTel eager 加载~~ | `config.ts` + `telemetry/sdk.ts` | 746-748, 7-30 | ❌ **重大纠正**：条件加载（`telemetry.enabled` 默认 false），不影响正常启动 |
+| structuredClone 调用频率 | `geminiChat.ts`, `client.ts`, `turn.ts` | 296, 568, 681, 351 | ✅ 确认：每轮至少 1 次，错误/压缩/Hook 时更多 |
+| React 非交互加载 | `gemini.tsx` | 15, 20 | ✅ 确认：顶层 import，非交互也解析；`nonInteractiveCli.ts` 自身不 import React |
+| 压缩服务粒度 | `chatCompressionService.ts` | 45 | ✅ 确认：`contents.map(c => JSON.stringify(c).length)` 对数组每项序列化 |
+| readStdin 条件 | `gemini.tsx` | 463-468 | ✅ 确认：条件 `!process.stdin.isTTY`，非交互路径专用 |
+| CHANGELOG: keychain 60ms | `CHANGELOG.md` | 136 | ✅ 确认：原文 "Faster startup on macOS (~60ms) by reading keychain credentials in parallel" |
+| CHANGELOG: 大仓库 80MB | `CHANGELOG.md` | 50 | ✅ 确认：原文 "Reduced memory usage on startup in large repositories (~80 MB saved on 250k-file repos)" |
+| CHANGELOG: 恢复 45% | `CHANGELOG.md` | 137 | ✅ 确认：原文 "up to 45% faster loading and ~100-150MB less peak memory" |
