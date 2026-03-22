@@ -64,32 +64,48 @@
 | Claude Code | ✓ | ✓ | ✓ | 强大的 Git 支持 |
 | Aider | ✓ | ✓ | | **同类最佳** |
 | Copilot CLI | | ✓ | ✓ | GitHub 专注 |
+| Cursor | | ✓ | | IDE 内置 |
 | SWE-agent | | | | 问题专注 |
 | Cline | ✓ | ✓ | | 良好支持 |
 | Goose | | | | 基础 |
+| OpenCode | | | | 通过 bash 工具 |
 | Continue | | | ✓ | CI/CD 专注 |
+| Warp | | ✓ | | 终端内置 |
+| Gemini CLI | | | | 通过 bash 工具 |
+| Qwen Code | | | | 通过 bash 工具 |
+| Kimi CLI | | | | 通过 bash 工具 |
 
 #### 上下文管理
 
-| 工具 | 最大上下文 | 仓库映射 | RAG | 说明 |
-|------|-------------|----------|-----|-------|
+| 工具 | 最大上下文 | 仓库映射 | 压缩 | 说明 |
+|------|-------------|----------|------|-------|
 | Claude Code | 100 万 token | | ✓ | 最大上下文 |
 | Aider | 20 万 token | ✓ | | 优秀的映射 |
 | Copilot CLI | ~12.8 万 token | | | 标准 |
+| Cursor | ~20 万 token | | | 多模型 |
 | SWE-agent | 可变 | ✓ | | 研究专注 |
 | Cline | ~20 万 token | | ✓ | 良好上下文 |
+| OpenCode | 可变 | | ✓ | 会话压缩 |
+| Gemini CLI | ~100 万 token | | | Gemini 原生 |
 | OpenHands | 可变 | | | 全项目 |
+| Qwen Code | ~100 万 token | | ✓ | 聊天压缩服务 |
+| Kimi CLI | ~20 万 token | | | 标准 |
 
 #### 执行与安全
 
-| 工具 | 沙箱 | 权限 | 试运行 | 说明 |
+| 工具 | 沙箱 | 权限系统 | 试运行 | 说明 |
 |------|---------|-------------|---------|-------|
-| Claude Code | ✓ | ✓ | ✓ | 良好安全 |
+| Claude Code | ✓ | ✓ | ✓ | 精细权限 |
 | Aider | | ✓ | | 透明 |
 | Copilot CLI | | | | 企业 |
+| Cursor | | ✓ | | IDE 内权限 |
 | SWE-agent | ✓ | | | Docker |
 | Cline | ✓ | ✓ | | 基于权限 |
+| OpenCode | | ✓ | | Tree-sitter 分析 + Doom Loop 保护 |
+| Gemini CLI | | ✓ | | 基于权限 |
 | OpenHands | ✓ | | ✓ | Docker 隔离 |
+| Qwen Code | ✓ | ✓ | | deny>ask>allow + Hook |
+| Kimi CLI | | ✓ | | 基础权限 |
 
 ## 使用场景推荐
 
