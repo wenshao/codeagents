@@ -120,9 +120,9 @@
 
 ```bash
 # 安装命令
-npm install -g @anthropic-ai/claude-code      # Claude Code
+curl -fsSL https://claude.ai/install.sh | bash  # Claude Code
 pip install aider-chat                         # Aider
-brew install copilot-cli                       # Copilot CLI
+gh extension install github/gh-copilot           # Copilot CLI
 brew install --cask warp                       # Warp
 npm install -g @google/gemini-cli              # Gemini CLI
 ```

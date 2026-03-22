@@ -69,7 +69,7 @@ Code   CLI   本地
 
 ```bash
 # 安装
-npm install -g @anthropic-ai/claude-code
+curl -fsSL https://claude.ai/install.sh | bash
 
 # 设置
 claude
@@ -129,10 +129,10 @@ kimi
 
 ```bash
 # 安装
-brew install copilot-cli
+gh extension install github/gh-copilot
 
 # 设置
-copilot-cli auth login
+gh auth login
 
 # 首次使用
 gh copilot explain "kubectl get pods"
