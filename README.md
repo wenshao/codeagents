@@ -32,6 +32,7 @@
 - **[工具详情](./docs/tools/)** - 每个工具的详细分析
 - **[功能对比](./docs/comparison/features.md)** - 功能横向对比
 - **[OpenCode vs Qwen Code 源码对比](./docs/comparison/opencode-vs-qwen-source.md)** - 基于源码的深度分析
+- **[架构深度对比](./docs/comparison/architecture-deep-dive.md)** - 9 个项目源码级架构对比
 - **[基准测试](./docs/benchmarks/)** - SWE-bench 等性能测试
 - **[架构分析](./docs/architecture/overview.md)** - 工作原理深度解析
 - **[入门指南](./docs/guides/getting-started.md)** - 如何选择和开始使用
