@@ -67,33 +67,41 @@ Claude Code CHANGELOG 中记录的多项优化：
 
 ### 问题 1：启动路径严重阻塞
 
-**文件**：`packages/cli/src/gemini.tsx`（214-408 行）
+**文件**：`packages/cli/src/gemini.tsx`（215-510 行，共 22 个串行 await）
 
 ```
-当前启动流程（串行 await 链）：
-  cleanupCheckpoints()          // 215 行
-  → parseArguments()            // 217 行
-  → loadSandboxConfig()         // 251 行
-  → loadCliConfig()             // 259 行
-  → refreshAuth()               // 278 行
-  → readStdin()                 // 290 行
-  → loadCliConfig() 再次        // 356 行
-  → initializeApp()             // 408 行（含 i18n、文件发现）
-  → getStartupWarnings()        // 417 行（两个 await 串行）
-  → getUserStartupWarnings()    // 418 行
-  → kittyProtocolDetection      // 431 行
-  → startInteractiveUI()        // 432 行
+当前启动流程（串行 await 链，交互模式）：
+  setupUnhandledRejectionHandler()  // 213 行（同步，正确地在最前面）
+  cleanupCheckpoints()              // 215 行 ← 可并行
+  → parseArguments()                // 217 行 ← 可并行（与上面互不依赖）
+  → loadSandboxConfig(argv)         // 251 行 ← 依赖 argv
+  → loadCliConfig(partial)          // 259 行 ← 第一次加载，仅用于沙箱认证
+  → refreshAuth()                   // 278 行 ← 依赖 config
+  → readStdin()                     // 290 行 ← 可并行（与认证互不依赖）
+  → loadCliConfig(full)             // 356 行 ← 第二次加载，含扩展（有 TODO 注释承认冗余）
+  → initializeApp()                 // 408 行（内含 i18n → auth → IDE 连接，全部串行）
+  → getStartupWarnings()            // 417 行 ← 可并行
+  → getUserStartupWarnings()        // 418 行 ← 可并行（与上面互不依赖）
+  → kittyProtocolDetection          // 431 行
+  → startInteractiveUI()            // 432 行
+```
+
+**注意**：`loadCliConfig()` 被调用了**两次**（259 行和 356 行）。源码中有 TODO 注释承认这是待重构的冗余：
+```typescript
+// TODO(jacobr): refactor loadCliConfig so there is a minimal version
+// that only initializes enough config to enable refreshAuth
 ```
 
 **具体问题**：
 
 | 操作 | 文件 | 问题 |
 |------|------|------|
-| I18N 初始化 | `initializer.ts:42` | 同步文件 I/O 加载语言包，阻塞 UI 渲染 |
-| 文件发现 | `config.ts:750` | `new FileDiscoveryService(cwd)` 无缓存，每次启动扫描文件系统 |
-| GEMINI.md 扫描 | `config.ts:729` | `getAllGeminiMdFilenames()` 每次启动遍历文件 |
-| LSP 配置 | `config.ts:635-636` | LSP 为可选功能，仅存储 getter/setter，**不阻塞启动** ✅ |
-| 语言包加载 | `i18n/index.ts:99-104` | `fs.existsSync()` 多次同步检查，阻塞主线程 |
+| I18N 初始化 | `initializer.ts:42` | `await initializeI18n()` 在 `initializeApp()` 内阻塞，UI 渲染前必须完成 |
+| I18N 文件检查 | `i18n/index.ts:99-104` | `fs.existsSync()` 多次同步调用，阻塞事件循环 |
+| loadCliConfig 双调用 | `gemini.tsx:259, 356` | 同一函数调用两次（源码 TODO 承认冗余） |
+| Startup Warnings | `gemini.tsx:417-418` | 两个独立 await 串行执行，应 `Promise.all()` |
+| ~~FileDiscoveryService~~ | `config.ts:1710` | ✅ 实为懒初始化 getter，构造函数仅解析 gitignore 规则，不扫描文件系统 |
+| ~~LSP 阻塞启动~~ | `config.ts:635` | ✅ 仅 getter/setter，不阻塞启动 |
 
 ### 问题 2：流式工具调用解析的字符串拼接开销
 
@@ -109,17 +117,27 @@ this.buffers.set(actualIndex, newBuffer);  // 存入 Map
 
 ### 问题 3：Token 计算开销大
 
-**文件**：`openaiContentGenerator.ts`（82-107 行）
+**文件**：`packages/core/src/core/openaiContentGenerator/openaiContentGenerator.ts`（82-107 行）
 
 ```typescript
-// 每次请求前都执行：
-RequestTokenEstimator.calculateTokens(request);  // 串行处理文本/图片/音频
-
-// 回退方案更糟：
-JSON.stringify(request.contents);  // 对整个历史做序列化
+// countTokens() 方法：
+async countTokens(request: CountTokensParameters): Promise<CountTokensResponse> {
+  try {
+    const estimator = new RequestTokenEstimator();
+    const result = await estimator.calculateTokens(request);  // 主路径
+    return { totalTokens: result.totalTokens };
+  } catch (error) {
+    // 回退：对 contents 做 JSON 序列化，按 4 字符≈1 token 估算
+    const content = JSON.stringify(request.contents);
+    const totalTokens = Math.ceil(content.length / 4);
+    return { totalTokens };
+  }
+}
 ```
 
-**每次** LLM 调用前都完整计算 token 数，对于 100 轮对话意味着反复序列化数百 KB 历史。
+- 主路径 `RequestTokenEstimator` 每次调用前遍历全部历史内容
+- 异常回退用 `JSON.stringify(request.contents)` 序列化全部对话内容（非整个 request，但仍昂贵）
+- 对于 100 轮对话，每轮新增消息后都重新计算全部 token，无增量缓存
 
 ### 问题 4：会话历史无限增长
 
@@ -147,16 +165,19 @@ const charCount = JSON.stringify(content).length;
 
 100 轮对话 = 100+ 次 `JSON.stringify()`，每次序列化全部内容。
 
-### 问题 6：重量级依赖启动加载
+### 问题 6：重量级依赖加载
 
-**文件**：`packages/core/package.json`
+**文件**：`packages/core/package.json`（30-38 行）、`packages/core/src/telemetry/sdk.ts`
 
-| 依赖 | 体积 | 问题 |
-|------|------|------|
-| OpenTelemetry（9 个包） | ~800 KB | api + 6 个 OTLP 导出器 + http 插桩 + sdk-node |
-| web-tree-sitter | ~2.5 MB WASM | 启动时加载，初始 LLM 调用不需要 |
-| React 19 + Ink | ~300 KB | 即使非交互模式也加载 |
-| diff 库 | ~100 KB | 预加载，仅文件编辑时需要 |
+| 依赖 | 包数/体积 | import 方式 | 问题 |
+|------|----------|-----------|------|
+| OpenTelemetry | 9 个包 ~800 KB | `telemetry/sdk.ts` 顶层静态 import | 9 个 OTel 包在 sdk.ts 中全部为顶层 `import`（7-30 行），模块被加载时全部解析 |
+| web-tree-sitter | ~2.5 MB WASM | `shellAstParser.ts:17` 顶层 import | 模块导入时加载，但实际 Parser 初始化是懒加载的（`initParser()` 单例） |
+| React 19 + Ink | ~300 KB | CLI 包静态依赖 | 非交互模式也会加载 |
+
+**补充说明**：
+- OpenTelemetry 的实际加载取决于 `telemetry/sdk.ts` 何时被 import——如果入口文件直接或间接引用了它，则启动时加载
+- web-tree-sitter 的 WASM 模块在 `import` 时加载到内存，但 Parser 实例化是懒的（`initParser()` 首次调用时初始化）
 
 ### 问题 7：MCP 超时过长
 
@@ -205,23 +226,31 @@ export class AnthropicContentGenerator implements ContentGenerator {
 #### 1.1 启动流程并行化
 
 ```typescript
-// 当前：串行
-await loadSettings();
-await validateAuth();
-await initI18n();
-await discoverFiles();
-await startLSP();
+// 当前（gemini.tsx）：所有 await 串行
+await cleanupCheckpoints();                    // 215 行
+let argv = await parseArguments();             // 217 行
+// ...后续全部依赖 argv，无法提前
 
-// 改进：并行
-const [settings, auth, i18n] = await Promise.all([
-  loadSettings(),
-  validateAuth(),
-  initI18n()
+// 改进 1：独立操作并行
+const [_, argv] = await Promise.all([
+  cleanupCheckpoints(),   // 与参数解析互不依赖
+  parseArguments(),
 ]);
-// LSP 和文件发现延迟到首次需要时
+
+// 改进 2：startup warnings 并行（当前 417-418 行串行）
+const [warnings, userWarnings] = await Promise.all([
+  getStartupWarnings(),
+  getUserStartupWarnings({...}),
+]);
+
+// 改进 3：消除 loadCliConfig 双调用（当前 259 和 356 行）
+// 源码 TODO 已承认冗余，重构为 minimal config + full config 分离
 ```
 
-**预期收益**：启动时间从 2-5 秒降到 0.5-1 秒。
+**预期收益**：
+- 并行化独立操作：省 200-500ms
+- 消除 loadCliConfig 双调用：省 100-300ms
+- 总计可将交互模式启动时间减少 30-50%
 
 #### 1.2 I18N 同步加载改为内嵌默认语言
 
@@ -351,25 +380,9 @@ await Promise.race([
 ]);
 ```
 
-#### 3.2 HTTP 连接复用
+#### ~~3.2 HTTP 连接复用~~ ✅ 已验证不需要
 
-```typescript
-// Anthropic 客户端单例 + 连接池
-class AnthropicPool {
-  private static client: Anthropic | null = null;
-
-  static getClient(config): Anthropic {
-    if (!this.client) {
-      this.client = new Anthropic({
-        apiKey: config.apiKey,
-        maxRetries: 3,
-        // 启用 HTTP/2 keep-alive
-      });
-    }
-    return this.client;
-  }
-}
-```
+Anthropic 客户端已在构造函数中创建一次并复用（`anthropicContentGenerator.ts:58-88`），此改进不需要。
 
 #### 3.3 错误恢复断路器
 
@@ -395,29 +408,23 @@ class CircuitBreaker {
 }
 ```
 
-#### 3.4 未处理异常提前捕获
+#### ~~3.4 未处理异常提前捕获~~ ✅ 已验证不需要
 
-```typescript
-// 当前：应用初始化后才注册异常处理（gemini.tsx:120-137）
-// 改进：入口文件第一行
-process.on('unhandledRejection', handler);
-process.on('uncaughtException', handler);
-// 然后才开始初始化
-```
+`setupUnhandledRejectionHandler()` 已在 `main()` 第一行（213 行）调用，早于所有 async 操作。此改进不需要。
 
 ### 第四优先级：长期架构
 
 #### 4.1 考虑核心模块 Rust 化
 
 将最热的路径用 Rust 重写为 N-API 模块：
-- Token 计算（当前是 JS 最热代码）
-- 流式解析（当前 O(n²)）
+- Token 计算（当前每轮全量遍历历史）
+- 流式解析（减少字符串分配和 GC 压力）
 - 文件搜索（grep/glob）
 
 ```
 性能收益预估：
   Token 计算：10-50x 提速
-  流式解析：消除 O(n²)
+  流式解析：消除 GC 压力
   文件搜索：5-10x 提速（ripgrep 级别）
 ```
 
@@ -443,20 +450,20 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 | 改进 | 难度 | 收益 | 优先级 |
 |------|------|------|--------|
-| 启动流程并行化 | 低 | **高**（首印象） | P0 |
-| 全局超时保护 | 低 | **高**（稳定性） | P0 |
-| 重量级依赖懒加载 | 低 | **高**（启动-1-2秒） | P0 |
-| 流式解析字符串拼接改数组 | 低 | 中 | P1 |
+| 启动 await 并行化（cleanupCheckpoints ‖ parseArguments, warnings 并行） | 低 | **高**（首印象） | P0 |
+| 消除 loadCliConfig 双调用（源码 TODO 已承认） | 中 | **高**（省 100-300ms） | P0 |
+| OTel 9 包 + tree-sitter 改 dynamic import | 低 | **高**（启动省 1-2 秒） | P0 |
+| MCP 启动超时缩短（10min→5-10s） | 低 | **高**（稳定性） | P0 |
+| 流式解析字符串拼接改数组收集 | 低 | 中 | P1 |
 | Token 计算增量缓存 | 中 | 中 | P1 |
-| MCP 启动超时缩短（10min→5s） | 低 | 中 | P1 |
-| 压缩服务优化 | 低 | 中 | P1 |
-| 历史管理重构 | 中 | 中 | P1 |
+| structuredClone 改 readonly 引用 | 低 | 中 | P1 |
+| 压缩服务 JSON.stringify 改估算 | 低 | 中 | P1 |
+| i18n fs.existsSync 改异步 + 默认语言内嵌 | 低 | 中 | P1 |
 | 非交互模式裁剪 React | 中 | 中 | P2 |
 | `--bare` 模式 | 中 | 中 | P2 |
-| I18N 默认语言内嵌 | 低 | 低 | P2 |
 | 断路器模式 | 中 | 中 | P2 |
-| 热路径 Rust N-API | 高 | **高** | P3 |
-| SQLite 存储 | 高 | 高 | P3 |
+| 热路径 Rust N-API（Token 计算、文件搜索） | 高 | **高** | P3 |
+| 会话存储改 SQLite | 高 | 高 | P3 |
 
 ---
 
@@ -464,12 +471,13 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 **Claude Code 快的本质**：Rust 原生二进制 + 激进并行化 + 极致懒加载 + 内核级沙箱 + 超时断路器。
 
-**Qwen Code 慢的本质**：Node.js 运行时开销 + 启动串行 await 链 + structuredClone 深拷贝历史 + 压缩服务全量 JSON.stringify + 9 个 OpenTelemetry 包 eager 加载 + MCP 超时 10 分钟过长。
+**Qwen Code 慢的本质**：Node.js 运行时开销 + 22 个串行 await + loadCliConfig 双调用 + structuredClone 深拷贝历史 + 压缩服务全量 JSON.stringify + 9 个 OTel 包顶层 import + MCP 启动超时 10 分钟。
 
-**最小代价最大收益的三件事**：
-1. 启动流程 `Promise.all()` 并行化（改几行代码，省 1-3 秒）
-2. 重量级依赖改 dynamic import（省 1-2 秒启动 + 百 MB 内存）
-3. MCP 启动超时从 10 分钟缩短到 5-10 秒（消除长时间等待）
+**最小代价最大收益的四件事**：
+1. 启动独立 await 并行化 + warnings 并行（`Promise.all()`，改几行代码）
+2. 消除 loadCliConfig 双调用（源码 TODO 已指出方向）
+3. OTel/tree-sitter 改 dynamic import（省启动时间 + 内存）
+4. MCP 启动超时从 10 分钟缩短到 5-10 秒
 
 ---
 
@@ -477,20 +485,36 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 ---
 
-## 附录：源码核实记录
+## 附录：源码核实记录（两轮核实）
 
-以下问题经过回源码逐行核实：
+### 第一轮核实
 
 | 问题 | 核实文件 | 实际行号 | 结论 |
 |------|---------|---------|------|
-| 启动串行 | `gemini.tsx` | 215-432 | ✅ 确认：12+ 个串行 await |
-| i18n 阻塞 | `initializer.ts` → `i18n/index.ts` | 42, 253-257 | ✅ 确认：async 但在 initializeApp 内阻塞 |
-| FileDiscoveryService | `config.ts` | 37, 534, 778, 1710 | ✅ 确认：存在，懒初始化 |
-| ~~LSP 阻塞启动~~ | `config.ts` | 635-636 | ❌ 纠正：仅 getter/setter，不阻塞 |
-| 流式字符串拼接 | `streamingToolCallParser.ts` | 155 | ⚠️ 修正：O(n) 每 chunk，非 O(n²)，但 GC 压力大 |
-| structuredClone | `geminiChat.ts` | 520 | ✅ 确认：每次 getHistory() 深拷贝 |
-| JSON.stringify 压缩 | `chatCompressionService.ts` | 45 | ✅ 确认：每条消息序列化计算字符数 |
-| MCP 超时 | `mcp-client.ts` | 59, 153-155 | ⚠️ 修正：有 10 分钟超时，但太长 |
-| ~~Anthropic 每请求创建~~ | `anthropicContentGenerator.ts` | 58-88 | ❌ 纠正：构造函数创建一次，复用 |
-| OpenTelemetry 包数 | `package.json` | 30-38 | ⚠️ 修正：实际 9 个包（非 6 个） |
-| Token 计算 | `openaiContentGenerator.ts` | 82-107 | ✅ 确认：每次调用前完整计算 |
+| 启动串行 | `gemini.tsx` | 215-432 | ✅ 确认 |
+| i18n 阻塞 | `initializer.ts` → `i18n/index.ts` | 42, 253-257 | ✅ 确认 |
+| FileDiscoveryService | `config.ts` | 37, 534, 778, 1710 | ✅ 存在，懒初始化 |
+| ~~LSP 阻塞启动~~ | `config.ts` | 635-636 | ❌ 仅 getter/setter，不阻塞 |
+| 流式字符串拼接 | `streamingToolCallParser.ts` | 155 | ⚠️ O(n) 非 O(n²)，但 GC 压力大 |
+| structuredClone | `geminiChat.ts` | 520 | ✅ 确认 |
+| JSON.stringify 压缩 | `chatCompressionService.ts` | 45 | ✅ 确认 |
+| MCP 超时 | `mcp-client.ts` | 59, 153-155 | ⚠️ 有 10 分钟超时，但太长 |
+| ~~Anthropic 每请求创建~~ | `anthropicContentGenerator.ts` | 58-88 | ❌ 构造函数创建一次，复用 |
+| OpenTelemetry 包数 | `package.json` | 30-38 | ⚠️ 实际 9 个包 |
+| Token 计算 | `openaiContentGenerator.ts` | 82-107 | ✅ 确认 |
+
+### 第二轮核实（深度验证）
+
+| 问题 | 核实文件 | 实际行号 | 结论 |
+|------|---------|---------|------|
+| 启动 await 总数 | `gemini.tsx` | 215-510 | ⚠️ 修正：实为 **22 个** await（非 12+） |
+| loadCliConfig 双调用 | `gemini.tsx` | 259, 356 | ✅ 确认：调用两次，源码有 TODO 承认冗余 |
+| 可并行的 await 对 | `gemini.tsx` | 215/217, 417/418 | ✅ 确认：至少 2 对可 Promise.all() |
+| ~~FileDiscoveryService 扫描文件系统~~ | `fileDiscoveryService.ts` | 25-36 | ❌ 纠正：构造函数仅解析 gitignore 规则，不扫描 |
+| ~~异常处理注册晚~~ | `gemini.tsx` | 213 | ❌ 纠正：在 main() 第一行，早于所有 async 操作 |
+| i18n fs.existsSync | `i18n/index.ts` | 99-104, 212 | ✅ 确认：多处 fs.existsSync() 同步调用 |
+| OpenTelemetry import 方式 | `telemetry/sdk.ts` | 7-30 | ✅ 确认：9 个包全部为顶层静态 import |
+| web-tree-sitter 加载 | `shellAstParser.ts` | 17 | ⚠️ 修正：模块静态 import，但 Parser 初始化是 `initParser()` 懒单例 |
+| Token fallback 范围 | `openaiContentGenerator.ts` | 100 | ⚠️ 修正：序列化 `request.contents`（非整个 request） |
+| initializeApp 内部 | `initializer.ts` | 33-74 | ✅ 确认：i18n → auth → IDE 连接，全部串行 |
+| 非交互路径 | `gemini.tsx` | 457-510 | ✅ 确认：同样有串行 await 可优化 |
