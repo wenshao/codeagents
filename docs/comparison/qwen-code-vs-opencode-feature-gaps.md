@@ -10,7 +10,7 @@
 | 多代理（build/plan/general/explore） | ✅ | ✅ 子代理 + Arena | 对等 |
 | MCP 集成（4 种传输） | ✅ HTTP/SSE/Stdio/WS | ✅ SSE/Stdio | Qwen 传输方式较少 |
 | 会话管理 | ✅ SQLite | ✅ JSONL | 架构不同 |
-| 工具系统 | ✅ 40+ 工具 | ✅ 17+ 工具 | OpenCode 更多 |
+| 工具系统 | ✅ 19 个内置工具 | ✅ 16 个内置工具 | 接近对等 |
 | 权限系统 | ✅ 分层规则 | ✅ deny>ask>allow | 对等 |
 | 上下文压缩 | ✅ | ✅ | 对等 |
 | Git Worktree | ✅ | ✅ | 对等 |
@@ -30,7 +30,7 @@
 | **Session 版本/分叉** | ✅ | ❌ 线性会话 | **需补全** |
 | **批量操作工具** | ✅ 实验性 | ❌ | **需补全** |
 | **统一 AI SDK** | ✅ Vercel AI v5 | ❌ 各提供商独立 | **架构差异** |
-| **npm 插件系统** | ✅ | ❌ | **需补全** |
+| **插件系统** | ✅ Hook 式插件（npm 包 + file://） | ✅ 扩展系统（Git clone + GitHub release） | 架构不同 |
 | **Instance 上下文** | ✅ 每目录状态隔离 | ❌ | **需补全** |
 | **Exa 代码搜索** | ✅ 语义搜索 | ❌ 仅 Web 搜索 | **需补全** |
 | Tauri 桌面应用 | ✅ | ❌ | 架构差异 |
@@ -179,19 +179,19 @@ interface SessionVersion {
 
 ---
 
-### 7. npm 插件系统
+### 7. 插件系统差异（架构不同，非缺失）
 
 **OpenCode 实现**：
-- `packages/plugin/`：完整的 Hook 式插件架构
-- 插件接收：client、project、worktree、directory、serverUrl
+- `packages/plugin/`：Hook 式插件，支持 npm 包和 `file://` 加载
 - 内置插件：CodexAuthPlugin、CopilotAuthPlugin、GitlabAuthPlugin
 - Hook 类型：auth、event、tool、chat.system.transform 等
 
-**Qwen Code 现状**：有扩展系统（`marketplace.ts` + `extensionManager.ts`），但基于 Git clone 安装，不是 npm 包。
+**Qwen Code 实现**：
+- `marketplace.ts`（280 行）+ `extensionManager.ts`：扩展系统
+- 安装方式：Git clone、GitHub release、本地目录、符号链接
+- 支持 Claude/Gemini 扩展格式自动转换
 
-**建议路线**：补充 npm 包插件加载能力，与现有扩展系统并存。
-
-**工作量**：中（1-2 周）
+**评估**：两者架构不同但功能覆盖相当。OpenCode 的 npm 加载更适合 Node.js 生态插件分发；Qwen Code 的 Git 方式更灵活（不限语言）。**非核心缺口**。
 
 ---
 
@@ -266,7 +266,7 @@ interface SessionVersion {
 | 代码搜索（Exa） | 低（1-2 天） | 中 | **P1** |
 | SQLite 持久化 | 高（1-2 周） | **高**（大会话性能） | **P1** |
 | HTTP 服务器 | 高（2-3 周） | 中（多客户端基础） | P2 |
-| npm 插件系统 | 中（1-2 周） | 中 | P2 |
+| ~~npm 插件系统~~ | — | — | ✅ 两者架构不同（npm vs Git），非缺口 |
 | Instance 上下文 | 中（3-5 天） | 中 | P2 |
 | 批量操作工具 | 低（1-2 天） | 低 | P3 |
 | MDNS 服务发现 | 低（1 天） | 低（依赖 HTTP 服务器） | P3 |
@@ -283,8 +283,8 @@ interface SessionVersion {
 | **免费 OAuth** | 每天 1000 次 | ❌ |
 | **扩展格式转换** | Claude/Gemini 扩展自动转换 | ❌ |
 | **5 提供商** | Qwen + OpenAI + Anthropic + Gemini + Vertex | ✅ 但通过 Vercel AI SDK |
-| **Plan 模式审批** | 显式规划→审批→执行 | ✅ plan 代理但无审批 |
-| **交互式 Shell Mode** | `!` 模式切换 | ❌ |
+| **Plan 模式审批** | 显式规划→审批→执行 | ✅ plan 代理有权限系统（`ask` 模式） |
+| **交互式 Shell Mode** | `!` 切换 Shell 模式 | 两者均支持 bash 命令执行 |
 
 ---
 
