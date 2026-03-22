@@ -6,7 +6,7 @@
 
 ## 概述
 
-本仓库提供了 14 款 AI 编程 CLI 工具的全面对比。**核心内容基于 11 个开源项目的本地源码深度分析**，而非仅依赖官方文档，确保技术细节的准确性。
+本仓库提供了 15 款 AI 编程 CLI 工具的全面对比。**核心内容基于 11 个开源项目的本地源码深度分析**，而非仅依赖官方文档，确保技术细节的准确性。
 
 ### 源码分析纠正的重要事实
 
@@ -30,6 +30,7 @@
 | [Warp](./docs/tools/warp.md) | Warp | 专有 | 30k+ | Rust | 多种 | AI 终端替代品 |
 | [SWE-agent](./docs/tools/swe-agent.md) | Princeton NLP | MIT | 19k+ | Python | 100+ | SWE-bench 74%，Docker 沙箱 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | - | TypeScript | 多种 | Background Agent |
+| [Codex CLI](./docs/tools/codex-cli.md) | OpenAI | Apache-2.0 | 20k+ | TypeScript | OpenAI | 沙箱执行，多平台 |
 | [Copilot CLI](./docs/tools/github-copilot-cli.md) | GitHub | 专有 | - | TypeScript | GPT-4 | GitHub 生态 |
 | [OpenCode](./docs/tools/opencode.md) | OpenCode AI | MIT | 3k+ | **TypeScript** | 20+ | 多客户端，插件系统 |
 | [Gemini CLI](./docs/tools/gemini-cli.md) | Google | Apache-2.0 | 1k+ | TypeScript | 1 (Gemini) | TOML 策略引擎 |
@@ -39,7 +40,7 @@
 ## 文档导航
 
 ### 工具详情（源码级）
-- **[工具索引](./docs/tools/)** — 14 个工具的详细分析，含架构图和代码引用
+- **[工具索引](./docs/tools/)** — 15 个工具的详细分析，含架构图和代码引用
 
 ### 对比文档
 - **[功能对比矩阵](./docs/comparison/features.md)** — 14 工具 × 8 维度横向对比
@@ -63,7 +64,7 @@
 | 流派 | 代表工具 | 核心模式 |
 |------|---------|---------|
 | **编辑优先** | Aider | LLM 直接输出代码修改（14 种格式），工具是辅助 |
-| **工具调用** | Claude Code, OpenCode, Cline, Goose | 结构化 function calling 操作环境 |
+| **工具调用** | Claude Code, Codex CLI, OpenCode, Cline, Goose | 结构化 function calling 操作环境 |
 | **事件驱动** | OpenHands | EventStream 发布/订阅，最灵活但最复杂 |
 | **ReAct 循环** | Gemini CLI, Qwen Code, SWE-agent | 思考→行动→观察→重复 |
 
@@ -72,7 +73,7 @@
 | 语言 | 工具 | 特点 |
 |------|------|------|
 | **Rust** | Goose, Claude Code, Warp | 性能最佳，内存最低 |
-| **TypeScript** | Gemini CLI, Qwen Code, OpenCode, Cline, Continue | Ink/React TUI 成熟，生态丰富 |
+| **TypeScript** | Gemini CLI, Qwen Code, OpenCode, Codex CLI, Cline, Continue | Ink/React TUI 成熟，生态丰富 |
 | **Python** | Aider, SWE-agent, OpenHands, Kimi CLI | LiteLLM 100+ 模型，学术研究首选 |
 
 ## 30 秒选型指南

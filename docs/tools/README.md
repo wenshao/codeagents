@@ -26,6 +26,11 @@
 
 ## 开源工具
 
+### [Codex CLI](./codex-cli.md)
+**开发者：** OpenAI
+**最适合：** 安全沙箱执行
+**核心特性：** 网络隔离沙箱，三种自主级别
+
 ### [Aider](./aider.md)
 **开发者：** Paul Gauthier
 **最适合：** Git 重度工作流
