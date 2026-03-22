@@ -23,7 +23,7 @@
 | 扩展格式转换 | ❌ | ✅ Claude/Gemini 格式 | **Qwen 独有** |
 | **SQLite 持久化** | ✅ Drizzle ORM | ❌ JSONL 文件 | **需补全** |
 | **HTTP 服务器** | ✅ Hono:4096 | ❌ | **需补全** |
-| **Doom Loop 保护** | ✅ 3 次阈值 | ❌ | **需补全** |
+| Doom Loop / 循环检测 | ✅ 权限拒绝 3 次阈值 | ✅ `LoopDetectionService`（工具 5 次 + 内容 10 次） | 对等（Qwen 更全面） |
 | **文件时间锁** | ✅ 外部修改检测 | ❌ | **需补全** |
 | **MDNS 服务发现** | ✅ 远程连接 | ❌ | **需补全** |
 | **apply_patch 工具** | ✅ GPT 专用 | ❌ | **需补全** |
@@ -40,34 +40,15 @@
 
 ## 一、高优先级（核心体验差距）
 
-### 1. Doom Loop 保护
+### ~~1. Doom Loop 保护~~ ✅ 已验证存在
 
-**OpenCode 实现**：
-- `session/processor.ts`：`DOOM_LOOP_THRESHOLD = 3`
-- 连续 3 次权限拒绝后自动中断代理循环
-- 防止代理反复请求被拒绝的操作，浪费 token
+Qwen Code 有完整的 `LoopDetectionService`（`services/loopDetectionService.ts`），**比 OpenCode 更全面**：
+- **工具调用循环**：`TOOL_CALL_LOOP_THRESHOLD = 5`（连续 5 次相同工具调用）
+- **内容重复循环**：`CONTENT_LOOP_THRESHOLD = 10`（内容句子重复 10 次）
+- 支持会话级禁用（`disabledForSession`）
+- 遥测集成（`LoopDetectedEvent`）
 
-**Qwen Code 缺失影响**：代理可能反复尝试被拒绝的操作，消耗 token 且体验差。
-
-**建议实现**：
-```typescript
-// packages/core/src/core/coreToolScheduler.ts
-private consecutiveDenials = 0;
-private readonly DOOM_LOOP_THRESHOLD = 3;
-
-// 权限被拒绝时：
-if (decision === 'deny') {
-  this.consecutiveDenials++;
-  if (this.consecutiveDenials >= this.DOOM_LOOP_THRESHOLD) {
-    // 中断循环，通知用户
-    return { error: 'Doom loop detected: 3 consecutive permission denials' };
-  }
-} else {
-  this.consecutiveDenials = 0;  // 重置
-}
-```
-
-**工作量**：极低（半天）
+OpenCode 的 Doom Loop（`DOOM_LOOP_THRESHOLD = 3`）仅检测权限拒绝，Qwen Code 的检测范围更广。
 
 ---
 
@@ -278,7 +259,7 @@ interface SessionVersion {
 
 | 功能 | 工作量 | 用户价值 | 优先级 |
 |------|--------|---------|--------|
-| Doom Loop 保护 | 极低（半天） | **高**（防止 token 浪费） | **P0** |
+| ~~Doom Loop 保护~~ | — | — | ✅ 已有（`LoopDetectionService`，比 OpenCode 更全面） |
 | 文件时间锁 | 低（1 天） | **高**（防覆盖用户修改） | **P0** |
 | apply_patch 工具 | 中（2-3 天） | **高**（GPT 模型适配） | **P1** |
 | Session 版本/分叉 | 中（3-5 天） | **高**（探索多方案） | **P1** |
@@ -309,11 +290,13 @@ interface SessionVersion {
 
 ## 六、一句话总结
 
-**2 个半天可完成的 P0**：Doom Loop 保护 + 文件时间锁
+**1 个半天可完成的 P0**：文件时间锁（防覆盖用户并行修改）
 
 **4 个需要投入的 P1**：apply_patch 工具 + Session 版本分叉 + 代码搜索 + SQLite 持久化
 
-**Qwen Code 不需要复制 OpenCode 的一切**——统一 AI SDK 的迁移风险高、HTTP 服务器对 CLI 工具非必需。重点补全 Doom Loop 和文件时间锁两个**安全防护缺口**，以及 apply_patch 提升**多模型适配**能力。
+> 注：~~Doom Loop 保护~~ 经 R1 核实，Qwen Code 已有 `LoopDetectionService`（工具 5 次 + 内容 10 次阈值），比 OpenCode 的权限拒绝检测更全面。
+
+**Qwen Code 不需要复制 OpenCode 的一切**——统一 AI SDK 的迁移风险高、HTTP 服务器对 CLI 工具非必需。重点补全文件时间锁这个**安全防护缺口**，以及 apply_patch 提升**多模型适配**能力。
 
 ---
 
