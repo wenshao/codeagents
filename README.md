@@ -48,6 +48,7 @@
 - **[Claude Code 为什么更快？Qwen Code 改进建议](./docs/comparison/claude-code-speed-qwen-improvements.md)** — 性能差距根因 + 改进路线图
 - **[Qwen Code 功能补全：对标 Claude Code](./docs/comparison/qwen-code-feature-gaps.md)** — 功能缺口与优先级
 - **[Qwen Code 功能补全：对标 OpenCode](./docs/comparison/qwen-code-vs-opencode-feature-gaps.md)** — 功能缺口与优先级
+- **[Qwen Code 功能补全：对标上游 Gemini CLI](./docs/comparison/qwen-code-vs-gemini-feature-gaps.md)** — 分叉后未移植的功能
 - **[Qwen vs Gemini vs Kimi](./docs/comparison/qwen-vs-gemini-vs-kimi.md)** — 三者谱系与分叉差异
 - **[OpenCode vs Qwen Code](./docs/comparison/opencode-vs-qwen-source.md)** — 15 维度源码对比
 
