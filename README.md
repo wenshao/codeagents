@@ -84,7 +84,8 @@
 - **VS Code 用户** → Cline（58k Stars）或 Continue（PR Checks）
 - **中文开发者** → Qwen Code 或 Kimi CLI
 - **自动化/CI** → SWE-agent 或 OpenHands
-- **安全敏感** → Gemini CLI（TOML 策略引擎）
+- **安全沙箱** → Codex CLI（默认网络隔离）或 Gemini CLI（TOML 策略引擎）
+- **OpenAI 用户** → Codex CLI（官方开源）
 
 ## 性能基准 (2026)
 
