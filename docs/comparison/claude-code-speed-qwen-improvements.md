@@ -56,10 +56,12 @@ Claude Code CHANGELOG 中记录的多项优化：
 - **并行工具隔离**：Bash 错误不级联到 Read/Glob 等只读工具
 - **MCP 重连**：自动重连 + spinner 自动清除
 
-### 6. 内核级沙箱
+### 6. 文件系统级沙箱
 
-- Linux 使用 **iptables/ipset** 做网络隔离（内核级，几乎零开销）
-- 不是 JavaScript 层面的沙箱模拟
+- **文件系统隔离**：`sandbox.filesystem.allowWrite`/`allowRead` 控制读写权限
+- **网络隔离**：`sandbox.network.allowedDomains` 控制可访问域名
+- **macOS 弱网络隔离**：`enableWeakerNetworkIsolation` 选项（CHANGELOG 385 行）
+- 具体隔离机制为闭源实现，CHANGELOG 中未提及 iptables/ipset/seccomp 等内核级技术
 
 ---
 
@@ -67,23 +69,23 @@ Claude Code CHANGELOG 中记录的多项优化：
 
 ### 问题 1：启动路径严重阻塞
 
-**文件**：`packages/cli/src/gemini.tsx`（215-510 行，共 22 个串行 await）
+**文件**：`packages/cli/src/gemini.tsx`（215-432 行，交互路径约 8-9 个串行 await）
 
 ```
-当前启动流程（串行 await 链，交互模式）：
+典型交互启动路径（非沙箱场景，约 8-9 个串行 await）：
   setupUnhandledRejectionHandler()  // 213 行（同步，正确地在最前面）
   cleanupCheckpoints()              // 215 行 ← 可并行
   → parseArguments()                // 217 行 ← 可并行（与上面互不依赖）
-  → loadSandboxConfig(argv)         // 251 行 ← 依赖 argv
-  → loadCliConfig(partial)          // 259 行 ← 第一次加载，仅用于沙箱认证
-  → refreshAuth()                   // 278 行 ← 依赖 config
-  → readStdin()                     // 290 行 ← 可并行（与认证互不依赖）
-  → loadCliConfig(full)             // 356 行 ← 第二次加载，含扩展（有 TODO 注释承认冗余）
+  → loadSandboxConfig(argv)         // 251 行 ← 依赖 argv（沙箱场景会 relaunch 退出）
+  → loadCliConfig(full)             // 356 行 ← 含扩展加载
   → initializeApp()                 // 408 行（内含 i18n → auth → IDE 连接，全部串行）
   → getStartupWarnings()            // 417 行 ← 可并行
   → getUserStartupWarnings()        // 418 行 ← 可并行（与上面互不依赖）
   → kittyProtocolDetection          // 431 行
   → startInteractiveUI()            // 432 行
+
+注：沙箱路径（259-327 行）会 relaunch 进程后退出，不计入正常启动。
+文件中共有约 22 个 await，但因分支条件，交互路径实际执行约 8-9 个。
 ```
 
 **注意**：`loadCliConfig()` 被调用了**两次**（259 行和 356 行）。源码中有 TODO 注释承认这是待重构的冗余：
@@ -154,16 +156,19 @@ history.push(message);  // 无自动修剪
 - `structuredClone()` 对大历史非常昂贵
 - 没有自动修剪机制，100 轮对话后历史可达数十 MB
 
-### 问题 5：聊天压缩 O(n) 序列化
+### 问题 5：聊天压缩触发时的 JSON 序列化
 
-**文件**：`chatCompressionService.ts`（45 行）
+**文件**：`chatCompressionService.ts`（45、80-126 行）
 
 ```typescript
-// 对每一条历史消息做 JSON 序列化来计算字符数：
-const charCount = JSON.stringify(content).length;
+// findCompressSplitPoint()（45 行）—— 仅在压缩触发时调用：
+const charCounts = contents.map((content) => JSON.stringify(content).length);
 ```
 
-100 轮对话 = 100+ 次 `JSON.stringify()`，每次序列化全部内容。
+**触发条件**（`compress()` 方法，80-126 行）：
+- 仅当 token 数超过上下文窗口的 70%（`COMPRESSION_TOKEN_THRESHOLD = 0.7`）时触发
+- **不是每轮都执行**，典型使用中可能在 ~70 轮后首次触发
+- 但一旦触发，会对所有历史 Content 项做 `JSON.stringify()`，大会话时仍有显著开销
 
 ### 问题 6：重量级依赖加载
 
@@ -172,7 +177,7 @@ const charCount = JSON.stringify(content).length;
 | 依赖 | 包数/体积 | import 方式 | 实际加载时机 |
 |------|----------|-----------|-------------|
 | ~~OpenTelemetry~~ | 9 个包 | `telemetry/sdk.ts` 顶层 import | ✅ **条件加载**：仅 `telemetry.enabled=true` 时加载（默认 false），不影响正常启动 |
-| web-tree-sitter | ~2.5 MB WASM | `shellAstParser.ts:17` 顶层 import | 模块被 import 时加载，但 Parser 是 `initParser()` 懒单例 |
+| web-tree-sitter | ~380 KB（WASM 187KB） | `shellAstParser.ts:17` 顶层 import | 模块被 import 时加载，但 Parser 是 `initParser()` 懒单例 |
 | React 19 + Ink | ~300 KB | `gemini.tsx:15,20` 顶层 import | **交互和非交互模式都会加载**（顶层 import），但 `nonInteractiveCli.ts` 本身不 import React |
 
 **关键发现**：
@@ -323,28 +328,22 @@ class TokenCounter {
 }
 ```
 
-#### 2.3 历史管理改为环形缓冲
+#### 2.3 structuredClone 改 readonly 引用
 
 ```typescript
-// 当前：无限增长数组 + structuredClone
-// 改进：
-class ConversationHistory {
-  private messages: Message[] = [];
-  private maxSize = 200;
+// 当前（geminiChat.ts:514-520）：每次 getHistory() 深拷贝
+getHistory(curated?: boolean): Content[] {
+  return structuredClone(history);  // 昂贵！每轮 3-6 次调用
+}
 
-  push(msg: Message) {
-    this.messages.push(msg);
-    if (this.messages.length > this.maxSize) {
-      this.compress(); // 触发压缩
-    }
-  }
-
-  // 返回引用而非深拷贝（加 readonly 标记）
-  getReadonly(): readonly Message[] {
-    return this.messages;
-  }
+// 改进：返回只读引用（经验证，所有调用方仅读取不修改）
+getHistory(curated?: boolean): readonly Content[] {
+  const history = curated ? extractCuratedHistory(this.history) : this.history;
+  return history;  // 返回引用，TypeScript readonly 防止修改
 }
 ```
+
+**安全性验证**：第四轮核实确认所有 `getHistory()` 调用方（`client.ts:568`, `client.ts:681`, `turn.ts:351`, `chatCompressionService.ts:88`）均仅执行 `.filter()`、属性访问等只读操作，**不修改返回的数组**。移除深拷贝是安全的。
 
 #### 2.4 压缩服务改用字符长度估算
 
@@ -448,8 +447,6 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 | 改进 | 难度 | 收益 | 优先级 |
 |------|------|------|--------|
-| 改进 | 难度 | 收益 | 优先级 |
-|------|------|------|--------|
 | 启动 await 并行化（cleanupCheckpoints ‖ parseArguments, warnings 并行） | 低 | **高**（首印象） | P0 |
 | 消除 loadCliConfig 双调用（源码 TODO 已承认） | 中 | **高**（省 100-300ms） | P0 |
 | MCP 启动超时缩短（10min→5-10s） | 低 | **高**（稳定性） | P0 |
@@ -470,7 +467,7 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 **Claude Code 快的本质**：Rust 原生二进制 + 激进并行化 + 极致懒加载 + 内核级沙箱 + 超时断路器。
 
-**Qwen Code 慢的本质**：Node.js 运行时开销 + 22 个串行 await + loadCliConfig 双调用 + structuredClone 每轮多次深拷贝 + 压缩服务全量 JSON.stringify + React/Ink 非交互也加载 + MCP 启动超时 10 分钟。
+**Qwen Code 慢的本质**：Node.js 运行时开销 + 启动路径 8-9 个串行 await（无并行） + loadCliConfig 双调用 + structuredClone 每轮 3-6 次深拷贝 + React/Ink 非交互也加载 + MCP 启动超时 10 分钟。
 
 > 注：~~OTel 9 包 eager 加载~~ 经第三轮核实，OTel 实际是条件加载（默认关闭），不影响正常启动。
 
@@ -486,7 +483,7 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 ---
 
-## 附录：源码核实记录（两轮核实）
+## 附录：源码核实记录（四轮核实）
 
 ### 第一轮核实
 
@@ -532,3 +529,14 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 | CHANGELOG: keychain 60ms | `CHANGELOG.md` | 136 | ✅ 确认：原文 "Faster startup on macOS (~60ms) by reading keychain credentials in parallel" |
 | CHANGELOG: 大仓库 80MB | `CHANGELOG.md` | 50 | ✅ 确认：原文 "Reduced memory usage on startup in large repositories (~80 MB saved on 250k-file repos)" |
 | CHANGELOG: 恢复 45% | `CHANGELOG.md` | 137 | ✅ 确认：原文 "up to 45% faster loading and ~100-150MB less peak memory" |
+
+### 第四轮核实（精确性验证）
+
+| 问题 | 核实文件 | 实际行号 | 结论 |
+|------|---------|---------|------|
+| ~~22 个串行 await~~ | `gemini.tsx` | 215-432 | ⚠️ 修正：文件共 22 个 await，但交互路径实际执行 **8-9 个**（沙箱/非交互分支不走） |
+| structuredClone 可安全移除 | `client.ts` | 568, 681 | ✅ 确认：所有调用方仅 `.filter()`/属性访问，不修改返回数组 |
+| ~~压缩每轮 JSON.stringify~~ | `chatCompressionService.ts` | 80-126 | ⚠️ 修正：仅 token > 上下文 70% 时触发，非每轮（约 70 轮后首次） |
+| ~~内核级沙箱 iptables/ipset~~ | `CHANGELOG.md` | 全文搜索 | ❌ **纠正**：CHANGELOG 无 iptables/ipset/seccomp/BPF 任何提及；实为文件系统+网络域名隔离 |
+| ~~web-tree-sitter ~2.5MB~~ | `node_modules/web-tree-sitter/` | 实测 | ❌ **纠正**：WASM 187KB，总包 ~380KB（原描述偏大 6-7 倍） |
+| 优先级矩阵重复表头 | 文档自身 | 449-452 | ✅ 已修复格式错误 |
