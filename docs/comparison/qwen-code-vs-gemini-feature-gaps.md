@@ -11,7 +11,7 @@
 | 事件驱动调度器 | ✅ Scheduler | ✅ CoreToolScheduler | 对等（实现不同） |
 | Hook 系统 | ✅ | ✅ 12 事件 | 对等 |
 | MCP 集成 | ✅ Stdio/SSE/HTTP | ✅ Stdio/SSE | Qwen 少 HTTP |
-| 会话管理 | ✅ | ✅ + 录制 | 对等 |
+| 会话管理 | ✅ | ✅ + `chatRecordingService`（JSONL 持久化） | 对等 |
 | Ink + React TUI | ✅ | ✅ | 对等 |
 | 审批模式（4 种） | ✅ DEFAULT/AUTO_EDIT/YOLO/PLAN | ✅ 同 4 种 | 对等 |
 | Memory 工具 | ✅ 仅项目级 | ✅ 全局 + 项目级 | **Qwen 更强** |
@@ -103,9 +103,9 @@ interface ToolResult {
 - 一次对话序列中保持使用同一模型
 - 避免多轮对话中模型切换导致的上下文不一致
 
-**Qwen Code 缺失影响**：多提供商场景下，连续轮次可能切换模型，导致风格/能力不一致。
+**Qwen Code 缺失影响**：Gemini CLI 的模型粘性用于内部模型路由（如 Fallback 切换后保持新模型）。Qwen Code 的模型由用户显式选择，通常不会自动切换。**如果实现模型路由器（第 1 项），则需要此功能保持路由后的模型一致性**。
 
-**工作量**：极低（半天），加一个实例变量
+**工作量**：极低（半天），加一个实例变量。**依赖模型路由器，独立价值较低**。
 
 ---
 
@@ -147,14 +147,13 @@ interface ToolResult {
 
 ---
 
-### 6. 录制回放调试（RecordingContentGenerator）
+### 6. LLM 响应录制回放（RecordingContentGenerator）
 
 **Gemini CLI 实现**（`core/recordingContentGenerator.ts`）：
-- 记录 LLM 响应，供后续调试和回放
-- `--fake-responses` CLI 标志激活
-- 捕获"有趣"的响应片段
+- 记录 LLM **原始响应**，供后续 `--fake-responses` 回放
+- 用于自动化测试和调试——无需实际调用 LLM
 
-**Qwen Code 缺失影响**：无法离线重放对话调试，排查问题需要重新执行。
+**Qwen Code 现状**：有 `chatRecordingService.ts`（会话历史 JSONL 持久化），但这是**对话记录**，不是 LLM 响应录制回放。Qwen Code **缺少无需 LLM 的离线回放调试能力**。
 
 **工作量**：中（2-3 天）
 
@@ -193,7 +192,7 @@ interface ToolResult {
 
 | 功能 | 工作量 | 用户价值 | 优先级 |
 |------|--------|---------|--------|
-| 模型粘性（currentSequenceModel） | 极低（半天） | **高**（多提供商一致性） | **P0** |
+| 模型粘性（currentSequenceModel） | 极低（半天） | 中（依赖模型路由器） | P1（与路由器捆绑） |
 | 工具链式调用（Tail Tool Calls） | 中（2-3 天） | **高**（减少 LLM 轮次） | **P1** |
 | 模型路由器（Fallback 优先） | 中（3-5 天） | **高**（API 容错） | **P1** |
 | 录制回放调试 | 中（2-3 天） | 中（开发者体验） | **P1** |
@@ -223,9 +222,9 @@ interface ToolResult {
 
 ## 六、一句话总结
 
-**1 个半天可完成的 P0**：模型粘性（多提供商场景下保持连续轮次使用同一模型）
+**3 个需要投入的 P1**：工具链式调用（减少 LLM 轮次）+ 模型路由器 Fallback（API 容错）+ 模型粘性（与路由器捆绑）
 
-**3 个需要投入的 P1**：工具链式调用 + 模型路由器（Fallback）+ 录制回放调试
+**1 个开发者体验 P1**：LLM 响应录制回放（`--fake-responses` 离线测试）
 
 **Qwen Code 作为分叉已大幅超越上游**——多提供商、免费 OAuth、Arena、6 语言 UI 是独有竞争力。上游的模型路由器和安全检查器值得借鉴，但 A2A 和 Code Assist 是 Google 专属功能，无需复制。
 
