@@ -31,7 +31,7 @@
 | [Warp](./docs/tools/warp.md) | Warp | 专有 | 26k+ | Rust | 多种 | 终端替代品，GPU 渲染 |
 | [Qwen Code](./docs/tools/qwen-code.md) | 阿里云 | Apache-2.0 | 20k+ | TypeScript | 5 | 免费 OAuth 1000 次/天，6 语言 UI |
 | [SWE-agent](./docs/tools/swe-agent.md) | Princeton NLP | MIT | 18k+ | Python | 100+ | SWE-bench 74%（增强版），Docker 沙箱 |
-| [OpenCode](./docs/tools/opencode.md) | Anomaly | MIT | 11k+ | **TypeScript** | 100+ | 多客户端（TUI+Web+桌面），37 LSP，26 Formatter |
+| [OpenCode](./docs/tools/opencode.md) | Anomaly | MIT | 130k+ | **TypeScript** | 100+ | 多客户端（TUI+Web+桌面），37 LSP，26 Formatter，ACP IDE 集成 |
 | [Kimi CLI](./docs/tools/kimi-code.md) | 月之暗面 | 开源 | 7k+ | **Python** | 6 | 双模式 Agent↔Shell，Wire 协议 |
 | [Claude Code](./docs/tools/claude-code.md) | Anthropic | 专有 | - | Rust | 1 (Claude) | 13 官方插件，Prompt Hook，100 万上下文 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | - | TypeScript | 多种 | AI 原生 IDE，Background Agent |
@@ -109,7 +109,7 @@
 | Goose | **Rust** | ~55k 行 | MCP 原生，58+ 提供商 |
 | Gemini CLI | TypeScript | ~191k 行 | TOML 策略引擎，Qwen Code 上游 |
 | Qwen Code | TypeScript | ~191k 行 | Gemini 分叉 + 多提供商 + Arena |
-| OpenCode | **TypeScript** | ~50k 行 | 100+ Provider（models.dev）+ 37 LSP + 26 Formatter + 多客户端 |
+| OpenCode | **TypeScript** | ~983 TS + 359 TSX 文件 | 100+ Provider（models.dev）+ 37 LSP + 26 Formatter + ACP IDE |
 | Cline | TypeScript | ~40k 行 | Git Checkpoint + 48 提供商 |
 | SWE-agent | Python | ~20k 行 | ACI 设计 + Bundle 工具 |
 | OpenHands | Python | ~60k 行 | EventStream + 多代理委托 |

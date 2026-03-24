@@ -4,7 +4,7 @@
 **许可证：** MIT
 **仓库：** [github.com/anomalyco/opencode](https://github.com/anomalyco/opencode)（npm: `opencode-ai`）
 **网站：** [opencode.ai](https://opencode.ai/)
-**Stars：** 约 11k+
+**Stars：** ~130k（454 贡献者，500 万月活开发者）
 
 ## 概述
 
@@ -346,8 +346,111 @@ opencode uninstall
 - **适合**：终端原生工作流、多客户端需求、企业远程配置场景
 - **不太适合**：追求简单开箱即用的用户、纯终端 TUI 且需要非英语 UI 的场景
 
+## 项目演进（最近一年：2025.03 — 2026.03）
+
+### 里程碑时间线
+
+| 时间 | 版本 | 里程碑 |
+|------|------|--------|
+| 2025-03-21 | 初始 | 项目以 Go + Bubbletea TUI 启动（原名 termai） |
+| 2025-04 ~ 08 | v0.3 → v0.5 | Go→TypeScript 渐进重写；会话管理、Context Path、格式化器 |
+| 2025-08 ~ 10 | v0.5 → v0.15 | 快速迭代期，500+ releases；主题系统、Provider 扩展、Zen 模式 |
+| 2025-10-31 | **v1.0.0** | **完全重写 TUI**：Go+Bubbletea → OpenTUI (Zig+SolidJS)；会话压缩、命令面板 (Ctrl+P)、可切换侧边栏 |
+| 2025-11 ~ 2026-01 | v1.0.x | 223 次 patch release；Web/桌面应用雏形、多 provider 稳定化 |
+| 2026-01 ~ 02 | v1.1.x | 65 次 patch release；**权限系统重构**（pattern-based）、**14+ 语言国际化**、Skill 系统、Plan 模式、Codex 认证 |
+| 2026-02-14 | **v1.2.0** | SQLite 迁移、Branded ID 类型安全、SolidJS 桌面重构 |
+| 2026-02 ~ 03 | v1.2.x | 27 次 patch release；Windows ARM64、Node.js 兼容、远程工作区 |
+| 2026-03-22 | **v1.3.0** | **GitLab Agent Platform**、**Git-backed Session Review**、**多步认证**、**交互式更新流程**、Node.js 正式支持 |
+
+一年内发布 **500+ releases**，从 Go TUI 原型成长为 130k Stars 的多客户端 AI 编程平台。
+
+### v1.0.0 关键变化（2025-10-31）
+
+OpenCode 1.0 是一次**完全重写**：
+- TUI 框架从 Go + Bubbletea 迁移到自研的 **OpenTUI**（Zig 渲染 + SolidJS 响应式信号）
+- 新增**会话压缩**（自动和手动 compact）
+- 新增**命令面板**（Ctrl+P 快速操作）
+- 新增**可切换的 session 侧边栏**
+- 主题和键绑定格式 breaking change
+
+### v1.1.x 关键变化（2026-01 ~ 02）
+
+- **权限系统大重构**：从 `tools` config 迁移到 `permission` 模式，支持 pattern-based 粒度控制
+- **国际化**：Web/桌面应用新增 14+ 种语言
+- **Skill 系统**：SKILL.md 定义文件，支持从 `.opencode/skills/`、`~/.config/opencode/skills/`、`.claude/skills/` 发现
+- **Plan 模式**：plan_enter/exit 工具，只读分析
+- **Codex 认证**：GitHub Copilot 插件认证流程
+
+### v1.2.x 关键变化（2026-02 ~ 03）
+
+- **SQLite 迁移**：数据库 schema 升级，新增 workspace 表
+- **Branded ID 类型安全**：SessionID、WorkspaceID、ProviderID 等 Effect branded types
+- **Windows ARM64**：CLI 和桌面端新增 ARM64 release targets
+- **Node.js 兼容**：替换 Bun-specific API 为可移植方案，新增 Node.js 入口
+- **远程工作区**（实验性）：workspace-serve 命令 + Adaptor 模式
+
+### v1.3.0 关键变化（2026-03-22）
+
+- **GitLab Agent Platform**：自动发现 workflow models
+- **Git-backed Session Review**：基于 git 快照的变更追踪和 diff 可视化
+- **多步认证**：TUI 和桌面端支持需要多步问答的 provider（如 GitHub Copilot for Enterprise）
+- **交互式更新流程**：非 patch 更新提供确认对话框，支持跳过版本
+- **Node.js 正式支持**：不再强制依赖 Bun
+- **Breaking**：移除 Anthropic OAuth 插件
+
+## ACP（Agent Client Protocol）IDE 集成
+
+OpenCode 支持 **ACP（Agent Client Protocol）**——一个标准化代码编辑器与 AI 代理通信的开放协议。
+
+```bash
+# 以 ACP 模式启动（JSON-RPC over stdio）
+opencode acp
+```
+
+### 支持的编辑器
+
+| 编辑器 | 状态 | 说明 |
+|--------|------|------|
+| **Zed** | 原生支持 | 实时编辑、agent following |
+| **JetBrains IDEs** | 通过 ACP Agent Registry | acp.json 配置 |
+| **VS Code** | 自动安装扩展 | 从集成终端运行时自动激活 |
+| **Avante.nvim** | Neovim 插件 | 完整 ACP 集成 |
+| **CodeCompanion.nvim** | Neovim 插件 | 完整 ACP 集成 |
+
+通过 ACP 可使用 OpenCode 的全部功能：工具、自定义工具、MCP 服务器、AGENTS.md、格式化器、代理、权限等。
+
+## 付费计划
+
+| 计划 | 价格 | 包含内容 |
+|------|------|---------|
+| **免费 / 开源** | $0 | 自带 API Key 使用任意 provider |
+| **OpenCode Zen** | 按量付费（余额 < $5 时自动充值 $20） | 针对编码代理优化的模型列表，月度消费限额 |
+| **OpenCode Go** | $5 首月 → $10/月 | GLM-5、Kimi K2.5、MiniMax M2.5/M2.7；US/EU/SG 多区域 |
+
+## 企业功能
+
+- **集中配置**：通过 `.well-known/opencode` 远程下发组织级配置
+- **SSO 集成**：对接现有身份管理系统
+- **内部 AI 网关**：所有请求只走内部基础设施
+- **数据安全**：不存储代码和上下文数据
+- **禁用分享**：可为合规需求关闭 /share 功能
+- **私有 NPM Registry**：支持企业内部 npm 仓库（bun .npmrc）
+- **按席位定价**
+
+## 社区生态
+
+- **454 贡献者**，500 万月活开发者
+- **社区插件**：opencode-helicone-session（Helicone 追踪）等
+- **社区项目**：Remote-OpenCode（通过 Discord 远程控制）、agent-of-empires（多代理会话管理）
+- **安全事件**：曾披露未认证 RCE 漏洞（任何网站可在 OpenCode 安装的机器上执行任意代码），已修复
+
 ## 资源链接
 
 - [网站](https://opencode.ai/)
 - [GitHub](https://github.com/anomalyco/opencode)
+- [Changelog](https://opencode.ai/changelog)
+- [桌面下载](https://opencode.ai/download)（Beta）
 - [models.dev](https://models.dev) — 模型数据源
+- [ACP 文档](https://opencode.ai/docs/acp/)
+- [Zen 计划](https://opencode.ai/zen)
+- [Go 计划](https://opencode.ai/go)
