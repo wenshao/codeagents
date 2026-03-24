@@ -356,11 +356,11 @@ opencode uninstall
 | 2026-02 ~ 03 | v1.2.x | 27 次 patch release；Windows ARM64、Node.js 兼容、远程工作区 |
 | 2026-02-14 | **v1.2.0** | SQLite 迁移、Branded ID 类型安全、SolidJS 桌面重构 |
 | 2026-01 ~ 02 | v1.1.x | 65 次 patch release；**权限系统重构**（pattern-based）、**14+ 语言国际化**、Skill 系统、Plan 模式、Codex 认证 |
-| 2025-11 ~ 2026-01 | v1.0.x | 210 次 patch release；Web/桌面应用雏形、多 provider 稳定化 |
+| 2025-10 ~ 2026-01 | v1.0.x | 209 次 patch release（至 v1.0.224）；Web/桌面应用雏形、多 provider 稳定化 |
 | 2025-10-31 | **v1.0.0** | **完全重写 TUI**：Go+Bubbletea → OpenTUI + SolidJS；会话压缩、命令面板 (Ctrl+P)、可切换侧边栏 |
-| 2025-08 ~ 10 | v0.5 → v0.15 | 快速迭代期；主题系统、Provider 扩展、Zen 模式 |
-| 2025-04 ~ 08 | v0.3 → v0.5 | Go→TypeScript 渐进重写；会话管理、Context Path、格式化器 |
-| 2025-03-21 | 初始 | 项目以 Go + Bubbletea TUI 启动（原名 termai） |
+| 2025-09 ~ 10 | v0.6 → v0.15 | 快速迭代到 1.0；主题系统、Provider 扩展、Zen 模式 |
+| 2025-08 | v0.3 → v0.5 | 首批 releases；会话管理、Context Path、格式化器 |
+| 2025-03 ~ 07 | 开发期 | Go + Bubbletea TUI 启动（原名 termai），Go→TypeScript 渐进重写，无 release |
 
 一年内发布 **450+ releases**，从 Go TUI 原型成长为 130k Stars 的多客户端 AI 编程平台。
 
