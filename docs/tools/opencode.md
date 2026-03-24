@@ -352,42 +352,17 @@ opencode uninstall
 
 | 时间 | 版本 | 里程碑 |
 |------|------|--------|
-| 2025-03-21 | 初始 | 项目以 Go + Bubbletea TUI 启动（原名 termai） |
-| 2025-04 ~ 08 | v0.3 → v0.5 | Go→TypeScript 渐进重写；会话管理、Context Path、格式化器 |
-| 2025-08 ~ 10 | v0.5 → v0.15 | 快速迭代期，500+ releases；主题系统、Provider 扩展、Zen 模式 |
-| 2025-10-31 | **v1.0.0** | **完全重写 TUI**：Go+Bubbletea → OpenTUI (Zig+SolidJS)；会话压缩、命令面板 (Ctrl+P)、可切换侧边栏 |
-| 2025-11 ~ 2026-01 | v1.0.x | 223 次 patch release；Web/桌面应用雏形、多 provider 稳定化 |
-| 2026-01 ~ 02 | v1.1.x | 65 次 patch release；**权限系统重构**（pattern-based）、**14+ 语言国际化**、Skill 系统、Plan 模式、Codex 认证 |
-| 2026-02-14 | **v1.2.0** | SQLite 迁移、Branded ID 类型安全、SolidJS 桌面重构 |
-| 2026-02 ~ 03 | v1.2.x | 27 次 patch release；Windows ARM64、Node.js 兼容、远程工作区 |
 | 2026-03-22 | **v1.3.0** | **GitLab Agent Platform**、**Git-backed Session Review**、**多步认证**、**交互式更新流程**、Node.js 正式支持 |
+| 2026-02 ~ 03 | v1.2.x | 27 次 patch release；Windows ARM64、Node.js 兼容、远程工作区 |
+| 2026-02-14 | **v1.2.0** | SQLite 迁移、Branded ID 类型安全、SolidJS 桌面重构 |
+| 2026-01 ~ 02 | v1.1.x | 65 次 patch release；**权限系统重构**（pattern-based）、**14+ 语言国际化**、Skill 系统、Plan 模式、Codex 认证 |
+| 2025-11 ~ 2026-01 | v1.0.x | 210 次 patch release；Web/桌面应用雏形、多 provider 稳定化 |
+| 2025-10-31 | **v1.0.0** | **完全重写 TUI**：Go+Bubbletea → OpenTUI + SolidJS；会话压缩、命令面板 (Ctrl+P)、可切换侧边栏 |
+| 2025-08 ~ 10 | v0.5 → v0.15 | 快速迭代期；主题系统、Provider 扩展、Zen 模式 |
+| 2025-04 ~ 08 | v0.3 → v0.5 | Go→TypeScript 渐进重写；会话管理、Context Path、格式化器 |
+| 2025-03-21 | 初始 | 项目以 Go + Bubbletea TUI 启动（原名 termai） |
 
-一年内发布 **500+ releases**，从 Go TUI 原型成长为 130k Stars 的多客户端 AI 编程平台。
-
-### v1.0.0 关键变化（2025-10-31）
-
-OpenCode 1.0 是一次**完全重写**：
-- TUI 框架从 Go + Bubbletea 迁移到自研的 **OpenTUI**（Zig 渲染 + SolidJS 响应式信号）
-- 新增**会话压缩**（自动和手动 compact）
-- 新增**命令面板**（Ctrl+P 快速操作）
-- 新增**可切换的 session 侧边栏**
-- 主题和键绑定格式 breaking change
-
-### v1.1.x 关键变化（2026-01 ~ 02）
-
-- **权限系统大重构**：从 `tools` config 迁移到 `permission` 模式，支持 pattern-based 粒度控制
-- **国际化**：Web/桌面应用新增 14+ 种语言
-- **Skill 系统**：SKILL.md 定义文件，支持从 `.opencode/skills/`、`~/.config/opencode/skills/`、`.claude/skills/` 发现
-- **Plan 模式**：plan_enter/exit 工具，只读分析
-- **Codex 认证**：GitHub Copilot 插件认证流程
-
-### v1.2.x 关键变化（2026-02 ~ 03）
-
-- **SQLite 迁移**：数据库 schema 升级，新增 workspace 表
-- **Branded ID 类型安全**：SessionID、WorkspaceID、ProviderID 等 Effect branded types
-- **Windows ARM64**：CLI 和桌面端新增 ARM64 release targets
-- **Node.js 兼容**：替换 Bun-specific API 为可移植方案，新增 Node.js 入口
-- **远程工作区**（实验性）：workspace-serve 命令 + Adaptor 模式
+一年内发布 **450+ releases**，从 Go TUI 原型成长为 130k Stars 的多客户端 AI 编程平台。
 
 ### v1.3.0 关键变化（2026-03-22）
 
@@ -397,6 +372,31 @@ OpenCode 1.0 是一次**完全重写**：
 - **交互式更新流程**：非 patch 更新提供确认对话框，支持跳过版本
 - **Node.js 正式支持**：不再强制依赖 Bun
 - **Breaking**：移除 Anthropic OAuth 插件
+
+### v1.2.x 关键变化（2026-02 ~ 03）
+
+- **SQLite 迁移**：数据库 schema 升级，新增 workspace 表
+- **Branded ID 类型安全**：SessionID、WorkspaceID、ProviderID 等 Effect branded types
+- **Windows ARM64**：CLI 和桌面端新增 ARM64 release targets
+- **Node.js 兼容**：替换 Bun-specific API 为可移植方案，新增 Node.js 入口
+- **远程工作区**（实验性）：workspace-serve 命令 + Adaptor 模式
+
+### v1.1.x 关键变化（2026-01 ~ 02）
+
+- **权限系统大重构**：从 `tools` config 迁移到 `permission` 模式，支持 pattern-based 粒度控制
+- **国际化**：Web/桌面应用新增 14+ 种语言
+- **Skill 系统**：SKILL.md 定义文件，支持从 `.opencode/skills/`、`~/.config/opencode/skills/`、`.claude/skills/` 发现
+- **Plan 模式**：plan_enter/exit 工具，只读分析
+- **Codex 认证**：OpenAI ChatGPT Plus/Pro OAuth 认证插件（与 Copilot 认证分开）
+
+### v1.0.0 关键变化（2025-10-31）
+
+OpenCode 1.0 是一次**完全重写**：
+- TUI 框架从 Go + Bubbletea 迁移到自研的 **OpenTUI**（SolidJS 响应式信号）
+- 新增**会话压缩**（自动和手动 compact）
+- 新增**命令面板**（Ctrl+P 快速操作）
+- 新增**可切换的 session 侧边栏**
+- 主题和键绑定格式 breaking change
 
 ## ACP（Agent Client Protocol）IDE 集成
 
