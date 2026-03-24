@@ -105,9 +105,10 @@ Claude Code CHANGELOG 中记录的多项优化：
 | 操作 | 文件 | 问题 |
 |------|------|------|
 | I18N 初始化 | `initializer.ts:42` | `await initializeI18n()` 在 `initializeApp()` 内阻塞，UI 渲染前必须完成 |
+| **initializeApp 内部串行** | `initializer.ts:42-47` | `initializeI18n()`（文件 I/O + dynamic import，20-100ms）与 `performInitialAuth()`（网络请求，100-3000ms）**完全独立**却串行执行，应 `Promise.all()` |
 | I18N 文件检查 | `i18n/index.ts:99-104` | `fs.existsSync()` 多次同步调用，阻塞事件循环 |
 | loadCliConfig 双调用 | `gemini.tsx:259, 356` | 同一函数调用两次（源码 TODO 承认冗余） |
-| Startup Warnings | `gemini.tsx:417-418` | 两个独立 await 串行执行，应 `Promise.all()` |
+| Startup Warnings | `gemini.tsx:417-418` | 两个独立 await 串行执行，可 `Promise.all()`，但收益极低（见第八轮核实） |
 | ~~FileDiscoveryService~~ | `config.ts:1710` | ✅ 实为懒初始化 getter，构造函数仅解析 gitignore 规则，不扫描文件系统 |
 | ~~LSP 阻塞启动~~ | `config.ts:635` | ✅ 仅 getter/setter，不阻塞启动 |
 
@@ -121,7 +122,9 @@ const newBuffer = currentBuffer + chunk;
 this.buffers.set(actualIndex, newBuffer);  // 存入 Map
 ```
 
-每个 chunk 到来时，`currentBuffer + chunk` 创建新字符串（JavaScript 字符串不可变，每次拼接分配新内存）。虽然每 chunk 只拼接一次（非循环内重复拼接），但对于长工具输出（数千 chunk），累积的内存分配和 GC 压力仍然显著。改用数组收集 + 最终 join 更优。
+每个 chunk 到来时，`currentBuffer + chunk` 创建新字符串。**但 V8 引擎对此有 ConsString（rope）优化**：`a + b` 不会立即分配完整副本，而是创建一个引用链，只有在需要扁平化时（如 `JSON.parse`、`for..of` 遍历完整字符串）才物化。代码中 `for (const char of chunk)`（L163）遍历的是 **chunk** 而非 newBuffer，所以 ConsString 不会在每次调用时被扁平化；只有 `depth === 0` 时 `JSON.parse(newBuffer)` 才触发一次物化。因此**实际 GC 压力远低于预期**，改用数组收集 + `join()` 不会带来实质改善，甚至可能因数组对象开销而更慢。
+
+> ⚠️ **第八轮核实修正**：此问题从"中等收益"降级为"极低收益/不建议修改"。V8 ConsString 优化已覆盖此场景。
 
 ### 问题 3：Token 计算方式
 
@@ -255,18 +258,29 @@ const [_, argv] = await Promise.all([
   parseArguments(),
 ]);
 
-// 改进 2：startup warnings 并行（当前 417-418 行串行）
+// 改进 2：initializeApp() 内部并行化（当前 initializer.ts:42-47 串行）
+// initializeI18n（文件 I/O）与 performInitialAuth（网络请求）完全独立
+const [_, authError] = await Promise.all([
+  initializeI18n(languageSetting),   // 20-100ms（文件 I/O + dynamic import）
+  performInitialAuth(config, authType),  // 100-3000ms（网络 token refresh）
+]);
+
+// 改进 3：startup warnings 并行（当前 417-418 行串行）
+// 注：收益极低，getStartupWarnings() 仅读取临时文件（<2ms），
+// getUserStartupWarnings() 内部已用 Promise.all()，瓶颈在 ripgrep 检查
 const [warnings, userWarnings] = await Promise.all([
   getStartupWarnings(),
   getUserStartupWarnings({...}),
 ]);
 
-// 改进 3：消除 loadCliConfig 双调用（当前 259 和 356 行）
+// 改进 4：消除 loadCliConfig 双调用（当前 259 和 356 行）
 // 源码 TODO 已承认冗余，重构为 minimal config + full config 分离
 ```
 
 **预期收益**（估算，未实测）：
-- 并行化独立操作：省数百毫秒（取决于 cleanupCheckpoints 和 warnings 的实际耗时）
+- `initializeApp` 内部并行化：**省 20-100ms**（i18n 耗时被 auth 网络延迟掩盖）——**这是启动阶段最有价值的并行化**
+- `cleanupCheckpoints` ‖ `parseArguments`：**省 <5ms**（两者都极轻量）
+- startup warnings 并行：**省 <2ms**（`getStartupWarnings` 仅读临时文件，`getUserStartupWarnings` 内部已并行）
 - loadCliConfig 双调用优化：仅沙箱场景受益
 
 #### 1.2 I18N 同步加载改为内嵌默认语言
@@ -303,20 +317,9 @@ async function startInteractiveUI(...) {
 
 ### 第二优先级：运行时性能
 
-#### 2.1 流式解析改用数组收集
+#### ~~2.1 流式解析改用数组收集~~ ❌ 不建议修改（第八轮核实）
 
-```typescript
-// 当前：每个 chunk 创建新字符串（GC 压力大）
-const newBuffer = currentBuffer + chunk;
-
-// 改进：数组收集，最终一次性 join
-class StreamBuffer {
-  private chunks: string[] = [];
-  append(chunk: string) { this.chunks.push(chunk); }
-  toString() { return this.chunks.join(''); }
-  get length() { return this.chunks.reduce((s, c) => s + c.length, 0); }
-}
-```
+> **第八轮核实修正**：V8 引擎的 ConsString（rope）优化已覆盖 `currentBuffer + chunk` 场景。拼接不会立即分配完整副本；代码中 `for (const char of chunk)`（L163）遍历的是 chunk 而非 newBuffer，ConsString 不会在每次调用时被扁平化。只有 `depth === 0` 时 `JSON.parse(newBuffer)` 才触发一次物化。改用数组收集 + `join()` 不会带来实质改善。
 
 #### ~~2.2 Token 计算缓存 + 增量~~ → 低优先级
 
@@ -337,7 +340,24 @@ getHistory(curated?: boolean): readonly Content[] {
 }
 ```
 
-**安全性验证**：第四轮核实确认所有 `getHistory()` 调用方（`client.ts:568`, `client.ts:681`, `turn.ts:351`, `chatCompressionService.ts:88`）均仅执行 `.filter()`、属性访问等只读操作，**不修改返回的数组**。移除深拷贝是安全的。
+**安全性验证**：
+
+> ⚠️ **第八轮核实重大修正**：第四轮结论"所有调用方仅读取不修改"**有误**。`nextSpeakerChecker.ts:92` 存在**真正的深层 mutation**：
+> ```typescript
+> // nextSpeakerChecker.ts:86-92
+> if (lastComprehensiveMessage && lastComprehensiveMessage.role === 'model' &&
+>     lastComprehensiveMessage.parts && lastComprehensiveMessage.parts.length === 0) {
+>   lastComprehensiveMessage.parts.push({ text: '' });  // ← 直接修改 parts 数组！
+> }
+> ```
+> 如果去掉 `structuredClone`，此处的 `push` 会污染 `this.history` 内部状态。
+>
+> `copyCommand.ts:24` 的 `.filter(...).pop()` 则是安全的——`.filter()` 已创建新数组，`.pop()` 只修改临时数组。
+>
+> **推荐方案**：不应直接去掉 `structuredClone` 返回裸引用。正确做法是：
+> 1. **修复 `nextSpeakerChecker.ts:92`**：改为局部拷贝（如 `{ ...lastMsg, parts: [{ text: '' }] }`），不修改入参
+> 2. 修复后，`getHistory()` 可安全移除 `structuredClone`，改为返回只读引用
+> 3. 或提供 `getHistoryRef()`（无拷贝，只读契约）和 `getHistoryClone()`（深拷贝）两个方法，调用方按需选择
 
 #### 2.4 压缩服务改用字符长度估算
 
@@ -405,12 +425,11 @@ class CircuitBreaker {
 #### 4.1 考虑核心模块 Rust 化
 
 将最热的路径用 Rust 重写为 N-API 模块：
-- 流式解析（减少字符串分配和 GC 压力）
 - 文件搜索（grep/glob，当前用 Node.js 实现）
+- ~~流式解析~~ V8 ConsString 优化已覆盖，Rust 化收益有限
 
 ```
 性能收益预估（估算）：
-  流式解析：消除 GC 压力
   文件搜索：5-10x 提速（ripgrep 级别）
 ```
 
@@ -438,18 +457,20 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 | 改进 | 难度 | 收益 | 优先级 |
 |------|------|------|--------|
-| 启动 await 并行化（cleanupCheckpoints ‖ parseArguments, warnings 并行） | 低 | **高**（首印象） | P0 |
-| 消除 loadCliConfig 双调用（沙箱路径，源码 TODO 已承认） | 中 | 中（仅沙箱场景） | P1 |
+| **initializeApp 内部并行化**（i18n ‖ auth，`initializer.ts:42-47`） | 低 | **高**（省 20-100ms，auth 是启动最慢单操作） | **P0** |
+| structuredClone 优化（先修复 `nextSpeakerChecker.ts:92` mutation，再移除深拷贝） | 低 | **高**（大会话性能） | **P0** |
 | MCP 启动超时缩短（10min→5-10s） | 低 | **高**（稳定性） | P0 |
-| structuredClone 改 readonly 引用（每轮多次调用） | 低 | **高**（大会话性能） | P1 |
-| ~~Token 计算增量缓存~~ | 中 | 低（countTokens 非热路径） | P3 |
-| 流式解析字符串拼接改数组收集 | 低 | 中 | P1 |
+| 消除 loadCliConfig 双调用（沙箱路径，源码 TODO 已承认） | 中 | 中（仅沙箱场景） | P1 |
 | 压缩服务 JSON.stringify 改估算 | 低 | 中 | P1 |
 | i18n fs.existsSync 改异步 + 默认语言内嵌 | 低 | 中 | P1 |
+| 启动 await 并行化（cleanupCheckpoints ‖ parseArguments） | 低 | 极低（<5ms） | P2 |
+| startup warnings 并行 | 低 | 极低（<2ms，内部已 Promise.all） | P2 |
 | gemini.tsx 非交互路径独立入口（避免加载 React/Ink） | 中 | 中 | P2 |
 | `--bare` 模式 | 中 | 中 | P2 |
 | 断路器模式 | 中 | 中 | P2 |
-| 热路径 Rust N-API（Token 计算、文件搜索） | 高 | **高** | P3 |
+| ~~流式解析字符串拼接改数组收集~~ | — | ~~极低（V8 ConsString 已优化）~~ | ~~不建议~~ |
+| ~~Token 计算增量缓存~~ | 中 | 低（countTokens 非热路径） | P3 |
+| 热路径 Rust N-API（文件搜索） | 高 | **高** | P3 |
 | 会话存储改 SQLite | 高 | 高 | P3 |
 
 ---
@@ -458,22 +479,24 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 
 **Claude Code 快的本质**：Rust 原生二进制 + 激进并行化 + 极致懒加载 + 文件系统级沙箱 + 超时断路器。
 
-**Qwen Code 慢的本质**：Node.js 运行时开销 + 启动路径 8-9 个串行 await（无并行） + structuredClone 每轮 1-4 次深拷贝 + React/Ink 非交互也加载 + MCP 启动超时 10 分钟。
+**Qwen Code 慢的本质**：Node.js 运行时开销 + 启动路径 `initializeApp()` 内 i18n/auth 串行（auth 网络请求 100-3000ms） + structuredClone 每轮 1-4 次深拷贝 + React/Ink 非交互也加载 + MCP 启动超时 10 分钟。
 
 > 注：~~OTel 9 包 eager 加载~~ 经第三轮核实，OTel 实际是条件加载（默认关闭），不影响正常启动。
+> 注：~~流式解析字符串拼接~~ 经第八轮核实，V8 ConsString 优化已覆盖此场景，不建议修改。
+> 注：~~structuredClone 直接移除~~ 经第八轮核实，`nextSpeakerChecker.ts:92` 存在 mutation，需先修复再移除。
 
 **最小代价最大收益的三件事**：
-1. 启动独立 await 并行化 + warnings 并行（`Promise.all()`，改几行代码）
-2. structuredClone 改 readonly 引用（每轮 1-4 次深拷贝，所有调用方验证为只读安全）
+1. `initializeApp()` 内部 `initializeI18n()` 与 `performInitialAuth()` 并行化（`Promise.all()`，改几行代码，省 20-100ms）
+2. 修复 `nextSpeakerChecker.ts:92` 的 mutation 后，移除 `getHistory()` 的 `structuredClone`（每轮 1-4 次深拷贝）
 3. MCP 启动超时从 10 分钟缩短到 5-10 秒
 
 ---
 
-*分析基于 Qwen Code 本地源码和 Claude Code 插件仓库 + CHANGELOG，截至 2026 年 3 月。*
+*分析基于 Qwen Code 本地源码和 Claude Code 插件仓库 + CHANGELOG，截至 2026 年 3 月。第八轮核实由外部审计补充。*
 
 ---
 
-## 附录：源码核实记录（七轮核实）
+## 附录：源码核实记录（八轮核实）
 
 ### 第一轮核实
 
@@ -560,3 +583,15 @@ qwen --bare -p "fix this bug"  # 跳过 hooks/LSP/插件/技能扫描
 | 2.2 Token 缓存建议与 R6 矛盾 | 文档 2.2 节 | — | ⚠️ 修正：标记为低优先级，与 R6 发现一致 |
 | 4.1 Rust 化 Token 计算建议与 R6 矛盾 | 文档 4.1 节 | — | ⚠️ 修正：移除 Token 计算 Rust 化建议 |
 | structuredClone 频率 | 多文件 | — | ⚠️ 精确：每轮必调 1 次（API 请求），条件路径额外 0-3 次 |
+
+### 第八轮核实（外部审计）
+
+| 问题 | 核实文件 | 实际行号 | 结论 |
+|------|---------|---------|------|
+| ~~structuredClone 安全移除~~ | `nextSpeakerChecker.ts` | 86-92 | ❌ **重大修正**：`lastComprehensiveMessage.parts.push({ text: '' })` 直接修改入参的 parts 数组，不能直接去掉 structuredClone。需先修复此 mutation |
+| ~~流式解析字符串拼接 GC 压力大~~ | `streamingToolCallParser.ts` | 155, 163, 186 | ❌ **修正**：V8 ConsString（rope）优化使得 `a + b` 不立即分配新内存；`for..of` 遍历 chunk 而非 newBuffer；仅 `depth===0` 时 `JSON.parse` 触发一次物化。实际 GC 压力极低，不建议修改 |
+| ~~启动 await 并行化收益高~~ | `gemini.tsx`, `cleanup.ts`, `startupWarnings.ts`, `userStartupWarnings.ts` | 215-217, 417-418 | ⚠️ **降级**：`cleanupCheckpoints()` 仅一次 `fs.rm()`（<1ms）；`getStartupWarnings()` 仅读临时文件（<2ms）；`getUserStartupWarnings()` 内部已用 `Promise.all()`。合计并行化收益 <5ms |
+| **遗漏：initializeApp 内部串行** | `initializer.ts` | 42-47 | ✅ **新增**：`initializeI18n()`（文件 I/O + dynamic import, 20-100ms）与 `performInitialAuth()`（网络 token refresh, 100-3000ms）完全独立却串行执行，是启动阶段**最有价值的并行化点** |
+| `copyCommand.ts` mutation？ | `copyCommand.ts` | 23-24 | ✅ 确认安全：`.filter(...).pop()` 中 `.filter()` 创建新数组，`.pop()` 仅修改临时数组，不影响原始 history |
+| `parseArguments()` 耗时 | `config.ts`, `package.ts` | 181-660, 25-37 | ✅ 确认：内含 `getCliVersion()` → `readPackageUp()` 文件搜索，但结果有缓存，首次 5-20ms |
+| 优先级矩阵排序 | 文档自身 | — | ⚠️ 修正：`initializeApp` 并行化升为 P0；启动 await 并行化降为 P2；流式解析标记为不建议修改 |

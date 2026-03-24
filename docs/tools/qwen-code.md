@@ -4,7 +4,7 @@
 **许可证：** Apache-2.0
 **仓库：** [github.com/QwenLM/qwen-code](https://github.com/QwenLM/qwen-code)
 **文档：** [qwenlm.github.io/qwen-code-docs](https://qwenlm.github.io/qwen-code-docs/zh/)
-**Stars：** 约 2k+
+**Stars：** 约 20k+
 
 ## 概述
 
@@ -14,7 +14,7 @@ Qwen Code 是阿里云推出的开源 AI 编程代理，运行在终端中。基
 
 ### 基础能力
 - **终端原生**：基于 Ink + React 的终端 UI
-- **17+ 内置工具**：文件编辑、Bash 执行、Grep 搜索、Web 抓取等
+- **16 个内置工具**：文件编辑、Bash 执行、Grep 搜索、Web 抓取等
 - **多提供商**：Qwen OAuth（免费）、DashScope、OpenAI、Anthropic、Gemini
 - **MCP 支持**：模型上下文协议（SSE + Stdio）
 - **LSP 集成**：语言服务器协议支持
@@ -214,9 +214,15 @@ QWEN_SANDBOX=docker qwen
 |------|---------|
 | PreToolUse | 工具执行前 |
 | PostToolUse | 工具执行后 |
+| PostToolUseFailure | 工具执行失败后 |
+| Notification | 通知事件 |
 | UserPromptSubmit | 用户提交输入时 |
-| SessionStart/End | 会话开始/结束 |
-| SubagentStart/Stop | 子代理启停 |
+| SessionStart | 会话开始 |
+| SessionEnd | 会话结束 |
+| Stop | 代理停止时 |
+| SubagentStart | 子代理启动 |
+| SubagentStop | 子代理停止 |
+| PreCompact | 上下文压缩前 |
 | PermissionRequest | 权限请求时 |
 
 ## 使用场景

@@ -8,10 +8,10 @@
 |---------|------------|-------|-------------|-----------|-------|-------|----------|----------|------|------------|----------|--------|-----------|----------|
 | **开源** | | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ |
 | **免费层级** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **多模型** | | ✓ | | ✓ | | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | | |
-| **Git 集成** | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ |
-| **MCP 支持** | ✓ | | | | ✓ | ✓ | | | ✓ | ✓ | | ✓ | | |
-| **IDE 集成** | ✓ | | | ✓ | ✓ | | | ✓ | | | | ✓ | | |
+| **多模型** | | ✓ | | ✓ | | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | |
+| **Git 集成** | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ |
+| **MCP 支持** | ✓ | | | | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | |
+| **IDE 集成** | ✓ | | | ✓ | ✓ | | | ✓ | | | | ✓ | ✓ | |
 | **CLI 优先** | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | | | ✓ | ✓ |
 | **终端原生** | ✓ | ✓ | ✓ | | | ✓ | ✓ | | | ✓ | | | ✓ | ✓ |
 
@@ -28,12 +28,12 @@
 | SWE-agent | ✓ | ✓ | | ✓ | 灵活 |
 | Cline | ✓ | | | | 仅 Claude |
 | Goose | ✓ | ✓ | ✓ | | 多提供商 |
-| OpenCode | ✓ | ✓ | ✓ | | 多个 |
+| OpenCode | ✓ | ✓ | ✓ | | 100+ 提供商（models.dev 动态加载） |
 | Continue | ✓ | ✓ | | ✓ | 灵活 |
 | Warp | ✓ | ✓ | | | 多个 |
 | Gemini CLI | | | ✓ | | 仅 Gemini |
 | OpenHands | ✓ | ✓ | ✓ | ✓ | 灵活 |
-| Qwen Code | | | | | 仅 Qwen3-Coder |
+| Qwen Code | ✓ | ✓ | ✓ | | 5 提供商（Qwen/OpenAI/Anthropic/Gemini/自定义） |
 | Kimi CLI | | | | | 仅 Kimi |
 
 ### 架构与设计
@@ -47,12 +47,12 @@
 | SWE-agent | Python | Agent-Computer Interface | 基准性能 |
 | Cline | TypeScript | IDE 扩展 | 自主编码 |
 | Goose | Rust | MCP 原生 | 模型灵活性 |
-| OpenCode | Go | 双代理 | 终端优先 |
+| OpenCode | TypeScript | 多代理（7 内置） | 多客户端 AI 平台（TUI + Web + 桌面） |
 | Continue | TypeScript | IDE + CLI + CI/CD | PR Checks + 语义索引 |
 | Warp | Rust | 终端替代品 | 现代终端 + AI |
 | Gemini CLI | TypeScript | ReAct 循环 | Google 生态 |
 | OpenHands | Python | 复合 AI | 完全自主 |
-| Qwen Code | TypeScript | CLI | 中文开发者生态 |
+| Qwen Code | TypeScript | ReAct 循环（Gemini CLI 分叉） | 中文开发者生态 |
 | Kimi CLI | Python | CLI + Web + IDE | 双模式交互（Ctrl-X） |
 
 ### 核心功能对比
@@ -68,7 +68,7 @@
 | SWE-agent | | | | 问题专注 |
 | Cline | ✓ | ✓ | | 良好支持 |
 | Goose | | | | 基础 |
-| OpenCode | | | | 通过 bash 工具 |
+| OpenCode | | ✓ | | Git snapshot review + worktree 隔离 |
 | Continue | | | ✓ | CI/CD 专注 |
 | Warp | | ✓ | | 终端内置 |
 | Gemini CLI | | | | 通过 bash 工具 |
@@ -85,7 +85,7 @@
 | Cursor | ~20 万 token | | | 多模型 |
 | SWE-agent | 可变 | ✓ | | 研究专注 |
 | Cline | ~20 万 token | | ✓ | 良好上下文 |
-| OpenCode | 可变 | | ✓ | 会话压缩 |
+| OpenCode | 可变 | | ✓ | 会话 auto-compact + 可配置 compaction hook |
 | Gemini CLI | ~100 万 token | | | Gemini 原生 |
 | OpenHands | 可变 | | | 全项目 |
 | Qwen Code | ~100 万 token | | ✓ | 聊天压缩服务 |
@@ -101,7 +101,7 @@
 | Cursor | | ✓ | | IDE 内权限 |
 | SWE-agent | ✓ | | | Docker |
 | Cline | ✓ | ✓ | | 基于权限 |
-| OpenCode | | ✓ | | Tree-sitter 分析 + Doom Loop 保护 |
+| OpenCode | | ✓ | | Tree-sitter AST 分析 + Doom Loop 保护 + 文件时间锁 + Worktree 隔离 |
 | Gemini CLI | | ✓ | | 基于权限 |
 | OpenHands | ✓ | | ✓ | Docker 隔离 |
 | Qwen Code | ✓ | ✓ | | deny>ask>allow + Hook |
@@ -140,8 +140,8 @@
 3. **Continue** - CI/CD 集成
 
 ### 最适合中文开发者
-1. **Qwen Code** - 每日 2000 次免费，阿里云生态
-2. **Kimi CLI** - 双模式交互，Ctrl-K 快捷键
+1. **Qwen Code** - 每日 1000 次免费，阿里云生态
+2. **Kimi CLI** - 双模式交互，Ctrl-X 快捷键
 3. **Claude Code** - 中文理解能力强
 
 ## 性能总结

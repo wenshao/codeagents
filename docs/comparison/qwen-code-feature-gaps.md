@@ -10,13 +10,13 @@
 | Git Worktree | ✅ | ✅ `gitWorktreeService.ts` | 对等 |
 | 子代理/Task 工具 | ✅ | ✅ `subagent-manager.ts` | 对等 |
 | Plan 模式 | ✅ | ✅ | 对等 |
-| Hook 系统（11+ 事件） | ✅ | ✅ 11 个事件类型 | 对等 |
+| Hook 系统（12 事件） | ✅ | ✅ 12 个事件类型 | 对等 |
 | MCP 集成 | ✅ | ✅ `mcp-client.ts` | 对等 |
 | 会话恢复 | ✅ `--resume` | ✅ `resumeHistoryUtils.ts` | 对等 |
 | 自动记忆 | ✅ | ✅ `memoryTool.ts` | 对等 |
 | 非交互模式 | ✅ `-p` | ✅ `--prompt` + `--output-format` | 对等 |
 | 上下文压缩 | ✅ + 断路器（N 次计数） | ✅ + 简单断路器（布尔标志） | Qwen 断路器较简单 |
-| 操作检查点 | ✅ 隐含 | ✅ `checkpointService.ts` + `/restore` | Qwen 更强 |
+| 操作检查点 | ✅ 隐含 | ✅ `restoreCommand.ts` + `/restore` | Qwen 更强 |
 | 扩展思维/推理 | ✅ | ✅ `thinkingConfig` | 对等 |
 | Agent Arena | ❌ | ✅ `ArenaManager.ts` | **Qwen 独有** |
 | 视觉/图像 | ✅ 图片粘贴/读取 | ✅ YOLO 自动切换视觉模型 | 对等（Qwen 自动切换更强） |

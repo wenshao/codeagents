@@ -4,37 +4,47 @@
 
 ## 功能全景对比
 
-| 功能 | OpenCode | Qwen Code | 状态 |
+| 功能 | OpenCode (v1.3.0) | Qwen Code | 状态 |
 |------|---------|-----------|------|
 | **核心代理循环** | ✅ | ✅ | 对等 |
-| 多代理（build/plan/general/explore） | ✅ | ✅ 子代理 + Arena | 对等 |
-| MCP 集成（4 种传输） | ✅ HTTP/SSE/Stdio/WS | ✅ SSE/Stdio | Qwen 传输方式较少 |
-| 会话管理 | ✅ SQLite | ✅ JSONL | 架构不同 |
-| 工具系统 | ✅ 19 个内置工具 | ✅ 16 个内置工具 | 接近对等 |
-| 权限系统 | ✅ 分层规则 | ✅ deny>ask>allow | 对等 |
-| 上下文压缩 | ✅ | ✅ | 对等 |
-| Git Worktree | ✅ | ✅ | 对等 |
-| Hook 系统 | ✅ 插件 Hook | ✅ 12 事件类型 | 对等 |
-| 非交互模式 | ✅ `run` 命令 | ✅ `--prompt` | 对等 |
-| 输出截断 | ✅ 32K + 文件存储 | ✅ 截断实现 | 对等 |
-| i18n 多语言 | ❌ 仅英文 | ✅ 6 语言 | **Qwen 独有** |
+| 多代理系统 | ✅ 7 内置（build/plan/general/explore + 3 隐藏） | ✅ 子代理 + Arena | 对等 |
+| MCP 集成 | ✅ StreamableHTTP/SSE/Stdio + OAuth 认证 | ✅ SSE/Stdio/HTTP | OpenCode 支持 OAuth |
+| 会话管理 | ✅ SQLite + Drizzle ORM (WAL) | ✅ JSONL | 架构不同 |
+| 工具系统 | ✅ 18 个内置工具（14 无条件 + 4 有条件） | ✅ 16 个内置工具 | 接近对等 |
+| 权限系统 | ✅ 分层规则 + Tree-sitter AST | ✅ deny>ask>allow | 对等 |
+| 上下文压缩 | ✅ auto-compact + compaction hook | ✅ | 对等 |
+| Git Worktree | ✅ + 远程工作区（实验性） | ✅ | OpenCode 更进一步 |
+| Hook 系统 | ✅ 插件 Hook（17 类型） | ✅ 12 事件类型 | 对等（OpenCode 更多 hook 类型） |
+| Skill 系统 | ✅ 原生 Agent Skill + 权限 | ✅ | 对等 |
+| 非交互模式 | ✅ `run` + `--agent` | ✅ `--prompt` | 对等 |
+| 输出截断 | ✅ truncate + truncation-dir | ✅ 截断实现 | 对等 |
+| LSP 集成 | ✅ 37 种 LSP 服务器 | ✅ | OpenCode 覆盖更广 |
+| Formatter | ✅ 26 种 Formatter | ✅ | OpenCode 覆盖更广 |
+| 主题 | ✅ 37 种主题 | ✅ 主题系统 | OpenCode 更多 |
+| i18n 多语言 | ✅ Web/桌面 16 种语言（TUI 仅英文） | ✅ 6 语言 | 对等（OpenCode Web/桌面更多） |
 | Agent Arena | ❌ | ✅ | **Qwen 独有** |
 | 免费 OAuth | ❌ | ✅ 1000 次/天 | **Qwen 独有** |
 | 扩展格式转换 | ❌ | ✅ Claude/Gemini 格式 | **Qwen 独有** |
 | **SQLite 持久化** | ✅ Drizzle ORM | ❌ JSONL 文件 | **需补全** |
-| **HTTP 服务器** | ✅ Hono:4096 | ❌ | **需补全** |
+| **HTTP 服务器** | ✅ Hono + WebSocket + MDNS | ❌ | **需补全** |
 | Doom Loop / 循环检测 | ✅ 权限拒绝 3 次阈值 | ✅ `LoopDetectionService`（工具 5 次 + 内容 10 次） | 对等（Qwen 更全面） |
 | **文件时间锁** | ✅ 外部修改检测 | ❌ | **需补全** |
 | **MDNS 服务发现** | ✅ 远程连接 | ❌ | **需补全** |
-| **apply_patch 工具** | ✅ GPT 专用 | ❌ | **需补全** |
-| **Session 版本/分叉** | ✅ | ❌ 线性会话 | **需补全** |
-| **批量操作工具** | ✅ 实验性 | ❌ | **需补全** |
-| **统一 AI SDK** | ✅ Vercel AI v5 | ❌ 各提供商独立 | **架构差异** |
-| **插件系统** | ✅ Hook 式插件（npm 包 + file://） | ✅ 扩展系统（Git clone + GitHub release） | 架构不同 |
+| **apply_patch** | ✅ GPT 专用 diff 格式 | ❌ | **需补全** |
+| **Session Fork & Restore** | ✅ 分叉 + 回退到消息 + 恢复文件 | ❌ 线性会话 | **需补全** |
+| **Git-backed Review** | ✅ 快照 diff + 行内注释 | ❌ | **需补全** |
+| **Session 分享** | ✅ 云端链接 + SSR diff | ❌ | **需补全** |
+| **远程工作区** | ✅ Adaptor + SSE 同步（实验性） | ❌ | **需补全** |
+| **批量操作工具** | ✅ batch（实验性） | ❌ | **需补全** |
+| **统一 AI SDK** | ✅ Vercel AI v5 + models.dev 动态模型 | ❌ 各提供商独立 | **架构差异** |
+| **Provider 数量** | ✅ 100+（models.dev 动态加载） | ✅ 5 | OpenCode 远超 |
+| **插件系统** | ✅ Hook 式插件（npm + file://） | ✅ 扩展系统（Git clone + release） | 架构不同 |
 | **Instance 上下文** | ✅ 每目录状态隔离 | ❌ | **需补全** |
 | **Exa 代码搜索** | ✅ 语义搜索 | ❌ 仅 Web 搜索 | **需补全** |
-| Tauri 桌面应用 | ✅ | ❌ | 架构差异 |
+| **Effect 框架** | ✅ branded types + 服务抽象 | ❌ | 架构差异 |
+| 桌面应用 | ✅ Tauri (Vite+SolidJS) + Electron 双平台 | ❌ | 架构差异 |
 | OpenTUI + Solid.js | ✅ | ❌（Ink + React） | 架构差异 |
+| **Prompt Stashing** | ✅ | ❌ | **需补全** |
 
 ---
 
@@ -201,7 +211,7 @@ interface SessionVersion {
 - `codesearch.ts`：通过 Exa API 进行语义级代码搜索
 - 不同于 grep 的文本匹配——理解代码语义
 
-**Qwen Code 现状**：有 `web-search`（Tavily），但无语义代码搜索。
+**Qwen Code 现状**：有 `web-search`（支持 Tavily/Google/DashScope 三种后端），但无语义代码搜索。
 
 **建议实现**：增加 Exa 或类似的语义代码搜索工具。
 
@@ -279,11 +289,11 @@ interface SessionVersion {
 | 功能 | Qwen Code 实现 | OpenCode 缺失 |
 |------|---------------|--------------|
 | **Agent Arena** | 多模型并行竞争评估 | ❌ |
-| **6 语言 UI** | 中/英/日/德/俄/葡 | ❌ 仅英文 |
+| **6 语言 UI** | CLI 6 种语言 | TUI 仅英文（但 Web/桌面 16 种语言） |
 | **免费 OAuth** | 每天 1000 次 | ❌ |
 | **扩展格式转换** | Claude/Gemini 扩展自动转换 | ❌ |
 
-> 注：多提供商支持（Qwen 5 个 vs OpenCode 20+ via Vercel AI）、Plan 模式审批（两者都有权限系统）、交互式 Shell（两者都支持 bash 执行）经 R2 核实非 Qwen 独有优势，已移除。
+> 注：多提供商支持（Qwen 5 个 vs OpenCode 100+ via models.dev + Vercel AI）、Plan 模式审批（两者都有权限系统）、交互式 Shell（两者都支持 bash 执行）经 R2 核实非 Qwen 独有优势，已移除。
 
 ---
 

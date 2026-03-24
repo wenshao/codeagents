@@ -98,7 +98,7 @@
 - 回滚到之前的对话状态，附带摘要数据
 - 减少上下文窗口浪费（灵感来自 Steins;Gate）
 
-**Qwen Code 现状**：有检查点系统（`checkpointService.ts`），但只能恢复，不能向过去注入信息。
+**Qwen Code 现状**：有检查点系统（`restoreCommand.ts` + `/restore` 命令），但只能恢复，不能向过去注入信息。
 
 **评估**：创意性功能，减少 token 浪费。但实现复杂度高，实际用户价值待验证。
 

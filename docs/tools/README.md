@@ -47,9 +47,9 @@
 **核心特性：** Rust 原生、58+ 提供商、MCP 扩展
 
 ### [OpenCode](./opencode.md)
-**开发者：** OpenCode AI
-**最适合：** 终端优先
-**核心特性：** 双代理设计
+**开发者：** Anomaly Innovations
+**最适合：** 多客户端 AI 平台（TUI + Web + 桌面）
+**核心特性：** 7 代理 + 100+ Provider + 37 LSP + 17 种 Hook
 
 ### [Continue](./continue.md)
 **开发者：** Continue Dev
@@ -66,12 +66,12 @@
 ### [Qwen Code](./qwen-code.md)
 **开发者：** 阿里云
 **最适合：** 中文开发者、阿里云用户
-**核心特性：** 每日 2000 次免费额度
+**核心特性：** 每日 1000 次免费额度
 
 ### [Kimi CLI](./kimi-code.md)
 **开发者：** 月之暗面
 **最适合：** Kimi 用户、中文开发者
-**核心特性：** 双模式交互、Ctrl-K 快捷键
+**核心特性：** 双模式交互、Ctrl-X 快捷键
 
 ## 研究项目
 

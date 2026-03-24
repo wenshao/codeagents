@@ -179,8 +179,8 @@ export OPENAI_API_KEY="sk-..."
 # Google Gemini
 export GOOGLE_API_KEY="..."
 
-# Qwen Code (阿里云)
-export QWEN_API_KEY="sk-..."
+# Qwen Code (阿里云 DashScope)
+export DASHSCOPE_API_KEY="sk-..."
 
 # Kimi CLI (月之暗面)
 export KIMI_API_KEY="sk-..."

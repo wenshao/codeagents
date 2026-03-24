@@ -106,8 +106,8 @@
 | **grep_search** | 全文搜索（ripgrep） | allow |
 | **glob** | 文件模式匹配 | allow |
 | **list_directory** | 目录列表 | allow |
-| **web_fetch** | HTTP GET 请求 | allow |
-| **web_search** | 网络搜索（Tavily） | allow |
+| **web_fetch** | HTTP GET 请求 | ask |
+| **web_search** | 网络搜索（Tavily/Google/DashScope） | ask |
 | **agent** | 子代理生成 | allow |
 | **skill** | 技能调用 | allow |
 | **todo_write** | 任务管理 | allow |
@@ -124,7 +124,7 @@
 | **编辑工具** | Edit（old_string/new_string） | edit（多部分 diff + 编码检测 + BOM） |
 | **Shell** | Bash（4 模式：normal/sandbox/pipeline/interactive） | run_shell_command（AST 分析 + Tmux/iTerm2） |
 | **搜索** | Grep（ripgrep 语法） | grep_search（ripgrep + gitignore） |
-| **Web 搜索后端** | 内置 | Tavily |
+| **Web 搜索后端** | 内置 | Tavily/Google/DashScope（多后端） |
 | **独有工具** | NotebookEdit | save_memory, exit_plan_mode, lsp |
 | **工具定义** | Rust 内置（闭源） | DeclarativeTool 抽象类（TypeScript） |
 | **输出流式** | 内置支持 | `updateOutput` 回调 |
