@@ -8,10 +8,10 @@
 |---------|------------|-------|-------------|-----------|-------|-------|----------|----------|------|------------|----------|--------|-----------|----------|
 | **开源** | | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ |
 | **免费层级** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **多模型** | | ✓ | | ✓ | | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | |
+| **多模型** | | ✓ | | ✓ | | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ |
 | **Git 集成** | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ |
-| **MCP 支持** | ✓ | | | | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | |
-| **IDE 集成** | ✓ | | | ✓ | ✓ | | ✓ | ✓ | | | | ✓ | ✓ | |
+| **MCP 支持** | ✓ | | | | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | ✓ |
+| **IDE 集成** | ✓ | | | ✓ | ✓ | | ✓ | ✓ | | | | ✓ | ✓ | ✓ |
 | **CLI 优先** | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | | | ✓ | ✓ |
 | **终端原生** | ✓ | ✓ | ✓ | | | ✓ | ✓ | | | ✓ | | | ✓ | ✓ |
 
@@ -34,7 +34,7 @@
 | Gemini CLI | | | ✓ | | 仅 Gemini |
 | OpenHands | ✓ | ✓ | ✓ | ✓ | 灵活 |
 | Qwen Code | ✓ | ✓ | ✓ | | 5 提供商（Qwen/OpenAI/Anthropic/Gemini/自定义） |
-| Kimi CLI | | | | | 仅 Kimi |
+| Kimi CLI | ✓ | ✓ | ✓ | | 6 种 provider type（Kimi/OpenAI Legacy/OpenAI Responses/Anthropic/Gemini/Vertex AI） |
 
 ### 架构与设计
 
@@ -53,7 +53,7 @@
 | Gemini CLI | TypeScript | ReAct 循环 | Google 生态 |
 | OpenHands | Python | 复合 AI | 完全自主 |
 | Qwen Code | TypeScript | ReAct 循环（Gemini CLI 分叉） | 中文开发者生态 |
-| Kimi CLI | Python | CLI + Web + IDE | 双模式交互（Ctrl-X） |
+| Kimi CLI | Python | 多代理（4 内置）+ Wire 协议 | 双模式交互 + 多客户端（TUI + Web + IDE） |
 
 ### 核心功能对比
 
@@ -89,7 +89,7 @@
 | Gemini CLI | ~100 万 token | | | Gemini 原生 |
 | OpenHands | 可变 | | | 全项目 |
 | Qwen Code | ~100 万 token | | ✓ | 聊天压缩服务 |
-| Kimi CLI | ~20 万 token | | | 标准 |
+| Kimi CLI | ~25.6 万 token | | ✓ | 自动压缩（85% 触发比例），可配置保留空间 |
 
 #### 执行与安全
 
@@ -105,7 +105,7 @@
 | Gemini CLI | | ✓ | | 基于权限 |
 | OpenHands | ✓ | | ✓ | Docker 隔离 |
 | Qwen Code | ✓ | ✓ | | deny>ask>allow + Hook |
-| Kimi CLI | | ✓ | | 基础权限 |
+| Kimi CLI | | ✓ | | YOLO / 会话级审批 / 逐次确认 + feedback |
 
 ## 使用场景推荐
 
@@ -141,7 +141,7 @@
 
 ### 最适合中文开发者
 1. **Qwen Code** - 每日 1000 次免费，阿里云生态
-2. **Kimi CLI** - 双模式交互，Ctrl-X 快捷键
+2. **Kimi CLI** - 双模式交互，Ctrl-X 快捷键，多提供商
 3. **Claude Code** - 中文理解能力强
 
 ## 性能总结
@@ -156,4 +156,4 @@
 | Cline | ~40% | 中等 | 中等 | IDE 原生 |
 | OpenHands | ~55% | 慢 | 很高 | 完全自主 |
 | Qwen Code | N/A | 快 | 低 | 免费额度高 |
-| Kimi CLI | N/A | 快 | 低 | 双模式 |
+| Kimi CLI | N/A | 中等 | 中等 | 双模式 + 子代理 + 插件 |

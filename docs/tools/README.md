@@ -70,8 +70,8 @@
 
 ### [Kimi CLI](./kimi-code.md)
 **开发者：** 月之暗面
-**最适合：** Kimi 用户、中文开发者
-**核心特性：** 双模式交互、Ctrl-X 快捷键
+**最适合：** Kimi 用户、双模式终端工作流、多客户端需求
+**核心特性：** Agent↔Shell 双模式、Wire 协议多客户端、子代理系统、插件 + Skill 生态
 
 ## 研究项目
 
@@ -107,7 +107,7 @@
 | Claude | Claude Code, Aider, Cline |
 | GPT-4 | Copilot CLI, Continue, Goose |
 | Gemini | Gemini CLI, OpenCode, Goose |
-| 多模型 | Goose, Continue, OpenHands |
+| 多模型 | Goose, Continue, OpenHands, Kimi CLI |
 
 ## 按许可证分类
 

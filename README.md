@@ -32,7 +32,7 @@
 | [Qwen Code](./docs/tools/qwen-code.md) | 阿里云 | Apache-2.0 | 20k+ | TypeScript | 5 | 免费 OAuth 1000 次/天，6 语言 UI |
 | [SWE-agent](./docs/tools/swe-agent.md) | Princeton NLP | MIT | 18k+ | Python | 100+ | SWE-bench 74%（增强版），Docker 沙箱 |
 | [OpenCode](./docs/tools/opencode.md) | Anomaly | MIT | 130k+ | **TypeScript** | 100+ | 多客户端（TUI+Web+桌面），37 LSP，26 Formatter，ACP IDE 集成 |
-| [Kimi CLI](./docs/tools/kimi-code.md) | 月之暗面 | 开源 | 7k+ | **Python** | 6 | 双模式 Agent↔Shell，Wire 协议 |
+| [Kimi CLI](./docs/tools/kimi-code.md) | 月之暗面 | Apache-2.0 | 7k+ | **Python** | 6 | 双模式 Agent↔Shell，Wire 协议，子代理系统 |
 | [Claude Code](./docs/tools/claude-code.md) | Anthropic | 专有 | - | Rust | 1 (Claude) | 13 官方插件，Prompt Hook，100 万上下文 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | - | TypeScript | 多种 | AI 原生 IDE，Background Agent |
 | [Copilot CLI](./docs/tools/github-copilot-cli.md) | GitHub | 专有 | - | TypeScript | GPT-4 | gh copilot 命令解释/生成 |
