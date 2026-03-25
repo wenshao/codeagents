@@ -186,7 +186,7 @@
 
 | 能力 | Claude Code | Aider | Gemini CLI | Kimi CLI | Qwen Code | Copilot CLI | Codex CLI | Goose | OpenCode |
 |------|-------------|-------|-----------|----------|-----------|-------------|-----------|-------|---------|
-| **命令总数** | ~60（含 Skill） | ~42 | ~39 | ~28 | ~23 | ~38 | 28 | CLI 子命令 | Ctrl+P 面板 |
+| **命令总数** | ~60（含 Skill） | ~42 | ~39 | ~28 | ~23 | 34 | 28 | CLI 子命令 | Ctrl+P 面板 |
 | **代码审查** | `/review` 插件 | — | `/code-review`（扩展） | — | — | `/review` | `@codex review` | — | — |
 | **模式切换** | — | `/code` `/architect` `/ask` | `/plan` | `/plan` `/yolo` | `/plan` | — | `--ask-for-approval` | — | `--agent` |
 | **模型切换** | `/model` | `/model` `/editor-model` `/weak-model` | `/model` | `/model` | `/model` | `/model` | `--model` | `--model` | — |
@@ -210,7 +210,7 @@
 - **Aider** 命令最多（~42），文件/上下文管理和模式切换最细粒度
 - **Gemini CLI / Qwen Code / Kimi CLI** 命令体系接近（Gemini CLI 分叉谱系）
 - **Claude Code** 独有 `/review`（代码审查）和 `/remote-control`（远程控制）
-- **Copilot CLI** 38 命令 + 81 工具 + 3 内置代理，GitHub 生态深度集成
+- **Copilot CLI** 34 命令 + 67 工具 + 3 内置代理，GitHub 生态深度集成
 - **Codex CLI** 28 交互命令（官方文档验证）+ 15 CLI 子命令 + Rust 原生沙箱
 - **OpenCode** 使用 Ctrl+P 命令面板而非斜杠命令
 

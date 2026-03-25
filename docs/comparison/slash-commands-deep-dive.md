@@ -825,7 +825,7 @@ Admin 目录强制严格所有权检查，防止权限提升。
 | **Gemini CLI** | 全面可配置 | 中等命令量（41），策略引擎驱动 |
 | **Kimi CLI** | 双模式交互 | 28 命令（8 Soul + 20 Shell），双注册表 |
 | **Qwen Code** | 继承 Gemini + 中文优化 | 继承命令体系（23），保持兼容 |
-| **Copilot CLI** | GitHub 原生 | 38 命令 + 81 工具 + 3 内置代理 |
+| **Copilot CLI** | GitHub 原生 | 34 命令 + 67 工具 + 3 内置代理 |
 | **Codex CLI** | 安全第一 | 28 交互命令（官方文档验证）+ 15 CLI 子命令 + Rust 沙箱 |
 | **Goose** | MCP 原生 | CLI 子命令，MCP 驱动一切 |
 | **Cursor** | IDE 原生 | GUI 交互，CLI 是辅助 |
