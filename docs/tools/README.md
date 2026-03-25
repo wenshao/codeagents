@@ -1,8 +1,8 @@
-# Code Agent CLI 工具索引
+# Code Agent 索引
 
 ## 深度分析目录（多文件）
 
-| 工具 | 目录 | 文件数 | 内容 |
+| Agent | 目录 | 文件数 | 内容 |
 |------|------|--------|------|
 | [Claude Code](./claude-code/) | 9 文件 | 概述/79 命令/架构(反编译)/工具/Skill+13 插件/设置+安全监控/会话+MCP |
 | [Copilot CLI](./copilot-cli/) | 5 文件 | 概述/34 命令+67 工具/架构(SEA 反编译)+57 CLI 参数 |
@@ -14,9 +14,9 @@
 | [Qwen Code](./qwen-code/) | 1 文件 | 证据文件（Gemini CLI 分叉 + 阿里云 RUM + Arena 模式） |
 | [Goose](./goose/) | 1 文件 | 证据文件（MCP 原生 + PostHog + SecurityManager） |
 
-## 单文件工具（基础分析）
+## 单文件 Agent（基础分析）
 
-| 工具 | 文件 | 行数 | 特色 |
+| Agent | 文件 | 行数 | 特色 |
 |------|------|------|------|
 | [Cursor CLI](./cursor-cli.md) | 单文件 | 476 | AI 原生 IDE，Background Agent，Rules 系统 |
 | [Warp](./warp.md) | 单文件 | 382 | Warp 2.0 ADE，Oz 代理，16 命令 |

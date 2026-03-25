@@ -240,7 +240,7 @@ Recipe = 可参数化 + 可调度的 Skill 等价物。
 
 ---
 
-## 跨工具 Skill 兼容性
+## 跨 Agent Skill 兼容性
 
 ```
 Claude Code 插件               Qwen Code / Gemini CLI

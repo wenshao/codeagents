@@ -4,8 +4,8 @@
 
 ## 项目概述
 
-这是一个中文技术文档项目，对比分析 16+ 款 AI 编程 CLI 工具。所有分析基于源码验证，
-确保技术声明的准确性。项目目标是为开发者提供中立、客观、可验证的工具选型参考。
+这是一个中文技术文档项目，对比分析 16+ 款 AI 编程 Code Agent。所有分析基于源码验证，
+确保技术声明的准确性。项目目标是为开发者提供中立、客观、可验证的 Agent 选型参考。
 
 ## 项目结构（93 文件，27,000+ 行）
 
@@ -21,7 +21,7 @@ docs/
 │   ├── opencode/               # 5 文件 + EVIDENCE.md
 │   ├── qwen-code/              # EVIDENCE.md（Gemini CLI 分叉分析）
 │   ├── goose/                  # EVIDENCE.md（MCP 原生架构分析）
-│   └── *.md                    # 9 个单文件工具（Cursor/Warp/Cline 等）
+│   └── *.md                    # 9 个单文件 Agent（Cursor/Warp/Cline 等）
 ├── comparison/                 # 对比文档（12 篇）
 │   ├── features.md             # 功能矩阵
 │   ├── slash-commands-deep-dive.md  # 命令深度对比
@@ -79,7 +79,7 @@ docs/
 ### 示例
 
 ```markdown
-| 功能 | 工具 A | 工具 B |
+| 功能 | Agent A | Agent B |
 |------|--------|--------|
 | 上下文窗口 | 200k tokens | ~128k tokens |
 
@@ -95,17 +95,17 @@ docs/
 ## 注意事项
 
 - 更新工具文档时，同步检查以下文件中的相关引用：
-  - `README.md` 中的工具表格和导航链接
+  - `README.md` 中的 Agent 表格和导航链接
   - `docs/tools/README.md` 工具索引
-  - `docs/comparison/features.md` 功能对比数据（命令数、工具数等数字）
+  - `docs/comparison/features.md` 功能对比数据（命令数、内置工具数等数字）
   - `docs/comparison/privacy-telemetry.md` 隐私/遥测数据
   - `docs/comparison/pricing.md` 定价信息
   - `docs/comparison/system-requirements.md` 系统要求
   - `docs/guides/getting-started.md` 入门信息
-- 闭源工具的声明必须有 EVIDENCE.md 证据支撑（二进制分析或官方文档 URL）
-- 开源工具的声明需标注源码文件路径（如 `源码: aider/commands.py`）
+- 闭源 Agent 的声明必须有 EVIDENCE.md 证据支撑（二进制分析或官方文档 URL）
+- 开源 Agent 的声明需标注源码文件路径（如 `源码: aider/commands.py`）
 - 不要编造基准测试数据，无法验证的数据标注 `~` 表示估算
-- 保持工具间文档深度均衡，避免某些工具过于详细而其他过于简略
+- 保持各 Agent 文档深度均衡，避免某些 Agent 过于详细而其他过于简略
 - 新增文档后务必更新 `README.md` 导航目录
 
 ## 常用命令

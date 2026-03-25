@@ -260,4 +260,4 @@ export GOOSE_TELEMETRY_OFF=1
 | Goose | EVIDENCE.md（PostHog 脱敏） | 开源 |
 | Kimi CLI | EVIDENCE.md（零遥测确认） | 开源 |
 | OpenCode | EVIDENCE.md（零遥测确认） | 开源 |
-| 综合对比 | privacy-telemetry.md | 跨工具对比文档 |
+| 综合对比 | privacy-telemetry.md | 跨 Agent 对比文档 |
