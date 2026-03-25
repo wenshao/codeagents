@@ -134,3 +134,41 @@ Total flags: 51
 --version
 --worktree
 ```
+
+########## DECOMPILATION ANALYSIS (Bun bytecode extraction) ##########
+
+### Binary Structure
+- Format: Bun single-file executable with `@bytecode @bun-cjs` compilation
+- Entry point: `file:///$bunfs/root/src/entrypoints/cli.js`
+- Virtual filesystem: `$bunfs/root/` contains embedded .node modules and JS code
+- Marker: `---- Bun! ----` at binary offset 0x0e2ee740
+
+### Embedded Native Modules ($bunfs)
+- `/$bunfs/root/image-processor.node`
+- `/$bunfs/root/tree-sitter-bash.node`
+- `/$bunfs/root/color-diff.node`
+- (Plus sharp.node, audio-capture.node, file-index.node, yaml.node from strings)
+
+### Tool Prompt Extraction (from rodata/text segments)
+All tool descriptions are embedded as template literal functions, e.g.:
+- `FVD()` returns Read tool description
+- `cVD()` returns Write tool description  
+- `HXA()` returns Grep tool description
+- Agent tool description constructed dynamically with subagent types
+
+### Key Constants
+- `QpH = 2000` (Read tool default line limit)
+- `sT$() = parseInt(process.env.MAX_MCP_OUTPUT_TOKENS ?? "25000", 10)` (MCP output token limit)
+- `eT$ = 1600` (image token estimate)
+- `xH6 = 0.5` (MCP truncation threshold multiplier)
+
+### Security Monitor
+Binary contains embedded security monitor prompt:
+"You are a security monitor for autonomous AI coding agents."
+
+### Model Selection Logic
+- `DSA()` returns "inherit" (default subagent model)
+- `cGH()` resolves subagent model: env var > explicit > inherit > plan-based
+- `x38()` returns model options: sonnet (balanced), opus (complex), haiku (fast), inherit
+- `_Y$()` checks for opus-4-6 or sonnet-4-6 (extended context support)
+- `WIH()` checks MAX_THINKING_TOKENS env var and alwaysThinkingEnabled setting
