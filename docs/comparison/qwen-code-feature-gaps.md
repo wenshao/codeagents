@@ -369,7 +369,6 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 | **免费 OAuth** | 每天 1000 次 | 零门槛试用 |
 | **多提供商** | Qwen OAuth + DashScope + ModelScope + Anthropic + Google + 自定义（6+） | 模型灵活性 |
 | **Claude/Gemini 扩展转换** | 自动格式转换 | 跨生态兼容 |
-| **操作检查点** | `/restore` 命令回滚 | 安全网 |
 
 ---
 
@@ -385,4 +384,4 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 
 ---
 
-*分析基于 Claude Code 插件仓库（v2.1.81）和 Qwen Code 本地源码，截至 2026 年 3 月。*
+*分析基于 Claude Code 二进制反编译（v2.1.81）和 Qwen Code 开源代码，截至 2026 年 3 月。*
