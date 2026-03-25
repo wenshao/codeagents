@@ -150,6 +150,29 @@ _step()
 
 ---
 
+## 六、Gemini CLI：100 轮工具重试（非反射）
+
+> 源码：`client.ts:81`
+
+- `MAX_TURNS = 100` 硬编码
+- 工具执行失败触发重试（非 lint/test 反馈级别）
+- 重试策略：10 次 API 级退避（5s → 30s）
+- 仅重试 429（速率限制）和 5xx（服务器错误）
+- **无 lint/test 特定反射循环**
+
+---
+
+## 七、OpenCode：SQLite 追踪 + Tree-sitter 分析
+
+> 源码：03-architecture.md
+
+- **唯一使用 SQLite 数据库**（非 JSON 文件）的工具
+- 3 张表（sessions/messages/files）追踪工具执行结果
+- Tree-sitter Bash AST 解析：智能判断命令是否安全
+- Doom Loop 保护：3 次连续拒绝自动中断
+
+---
+
 ## 理想验证架构（未来方向）
 
 目前没有任何工具同时实现：

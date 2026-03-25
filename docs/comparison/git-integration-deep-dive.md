@@ -149,9 +149,33 @@ git diff → 计算变更
 SessionRevert.revert() → git checkout {hash} -- {file}
 ```
 
-- **Session Fork**：任意消息点创建分支
-- **Restore-to-Message**：回退到指定消息的文件状态
+- **Session Fork**：任意消息点创建分支，类似 Git 分支模型
+- **Restore-to-Message**：回退到指定消息时的文件状态
 - 快照存储：`~/.local/share/opencode/snapshot/{project_id}`
+- **Git-backed Review**：变更以 snapshot diff 形式可视化
+
+---
+
+## 六、Kimi CLI：D-Mail 时间回溯（实验性）
+
+> 源码：`soul/denwarenji.py` + `dmail/`
+
+`okabe` 代理中的 `SendDMail` 工具，灵感来自 Steins;Gate 动画的 D-Mail 概念：
+
+- 向过去的检查点"发送消息"
+- 回滚上下文到指定时间点
+- 实验性功能，不推荐生产使用
+
+---
+
+## 七、Codex CLI：.git 受保护
+
+> 来源：03-architecture.md
+
+- `.git`、`.agents`、`.codex` 目录**始终只读**
+- `codex apply <task-id>` 通过 `git apply` 应用 diff
+- `codex review` 基于 `git diff` 结构化审查
+- 沙箱内所有 Git 操作受 OS 级隔离保护
 
 ---
 

@@ -59,6 +59,141 @@ Rust 原生 CLI / Metal(macOS) + Vulkan(Linux/Win) GPU 渲染
 
 ---
 
+## 各工具 UI 详解
+
+### Claude Code：Ink + Bun 编译 + 丰富交互命令
+
+> 来源：02-commands.md、03-architecture.md（二进制分析 v2.1.81）
+
+**渲染架构**：JSX → React 组件 → Ink 渲染引擎 → Yoga 布局 → ANSI 输出。二进制为 227MB ELF x86-64，由 Bun v1.2 编译为单文件。
+
+**交互命令**：
+
+| 命令 | 功能 |
+|------|------|
+| `/vim` | 切换 Vim 编辑模式（hjkl/i/a/Esc） |
+| `/theme` | 主题选择器 UI |
+| `/color` | 配色方案配置 |
+| `/keybindings` | 打开 `~/.claude/keybindings.json` 自定义快捷键 |
+| `/statusline` | 配置状态栏显示内容 |
+| `/brief` | 切换简洁输出模式 |
+| `/fast` | 切换快速模式（Haiku/低 effort Sonnet） |
+| `/terminal-setup` | 终端环境设置（字体、颜色检测） |
+| `/desktop` | 在 Claude Desktop 应用继续当前会话 |
+| `/mobile` | 显示移动应用下载二维码 |
+| `/chrome` | Claude in Chrome（Beta）设置 |
+| Esc 键 | 显示 checkpoint 菜单，一键回退 |
+
+**多客户端**：终端 CLI + Claude Desktop（Mac/Win）+ 移动应用 + Chrome 扩展 + Web（claude.ai/code）。
+
+### Gemini CLI：Ink 6 + 模式切换
+
+> 源码：03-architecture.md
+
+**交互命令**：
+
+| 命令 | 功能 |
+|------|------|
+| `/shortcuts` | 显示所有键盘快捷键 |
+| `/theme` | 打开主题选择器 |
+| `/footer`（别名 `statusline`） | 配置状态栏显示内容 |
+| `/vim` | 切换 Vim 模式 |
+| Shift+Tab | 循环切换审批模式（DEFAULT → AUTO_EDIT → PLAN → YOLO） |
+
+### Aider：prompt_toolkit + Rich（1000+ 行 UI）
+
+> 源码：`aider/io.py`（1000+ 行）
+
+**独有交互**：
+
+| 命令 | 功能 |
+|------|------|
+| `/voice` | 语音输入（OpenAI Whisper 转录） |
+| `/paste` | 从剪贴板粘贴（PIL ImageGrab + pyperclip） |
+| `/copy` | 复制最近回复到剪贴板 |
+| `/multiline-mode` | 切换多行输入模式 |
+| Tab 键 | prompt_toolkit 自动补全（文件名、命令） |
+
+Rich 渲染组件：语法高亮代码块、彩色 diff、Markdown 表格、Panel 布局、进度条。
+
+### Kimi CLI：双模式（TUI + Web UI）
+
+> 源码：03-architecture.md
+
+**Web UI**（`kimi web` 命令）：
+
+```bash
+kimi web --port 5494 --auth-token my-token --lan-only
+```
+
+基于 FastAPI + Uvicorn + React，提供：
+- 多会话管理
+- Git diff 预览面板
+- 审批对话框（可视化权限确认）
+- 数学公式渲染
+- 文件变更面板
+
+**Wire 协议 v1.6**：TurnBegin/TurnEnd、StepBegin、ContentPart、ToolCall、ToolResult、ApprovalRequest/Response——事件流协议驱动 UI 实时更新。
+
+### OpenCode：37 主题 + 命令面板 + 4 客户端
+
+> 源码：03-architecture.md
+
+**架构演进**：v1.0 从 Go + Bubbletea 完全重写为 OpenTUI + SolidJS。
+
+**SolidJS 信号驱动响应式**：不同于 React 的虚拟 DOM diff，SolidJS 使用 Signal 系统精确追踪依赖，仅更新实际变化的 UI 节点——性能更高、内存更低。
+
+**4 种客户端**：
+
+| 客户端 | 技术 | 适用 |
+|--------|------|------|
+| TUI | OpenTUI + SolidJS | 终端内（主要） |
+| Web Console | SolidJS 前端 | 浏览器（16 语言） |
+| Tauri Desktop | Tauri v2 | 桌面原生 |
+| Electron | Electron | 桌面兼容 |
+
+**快捷键**：Ctrl+K（命令面板）、Ctrl+T（主题切换）、侧边栏开关。
+
+### Warp：GPU 渲染终端（最高性能）
+
+> 来源：warp.md
+
+```
+Rust 核心 → Metal(macOS) / Vulkan(Linux/Win) → GPU 硬件加速渲染
+```
+
+**块结构输出**：命令和输出被组织为可导航的"块"（Blocks），支持：
+- Ctrl+Shift+↑/↓ 块导航
+- 块级复制/搜索/书签
+- 文本编辑器风格的输入框
+
+**主题配置**（YAML）：
+
+```yaml
+# ~/.warp/themes/custom.yaml
+accent: "#6366f1"
+background: "#1e1e2e"
+foreground: "#cdd6f4"
+cursor: "#f5e0dc"
+```
+
+---
+
+## 快捷键对比
+
+| 快捷键 | Claude Code | Gemini CLI | Copilot CLI | OpenCode | Warp |
+|--------|------------|-----------|------------|----------|------|
+| **模式切换** | — | Shift+Tab | Shift+Tab | — | — |
+| **Vim 模式** | `/vim` | `/vim` | ✗ | ✗ | 设置中 Vi Mode |
+| **命令面板** | — | — | — | **Ctrl+K** | Ctrl+P |
+| **主题切换** | `/theme` | `/theme` | `/theme` | **Ctrl+T** | 设置 |
+| **回退** | **Esc** | — | — | — | — |
+| **块导航** | — | — | — | — | Ctrl+Shift+↑/↓ |
+| **剪贴板** | `/copy` | `/copy` | — | — | Cmd+C（块级） |
+| **语音输入** | `/voice` | ✗ | ✗ | ✗ | ✗ |
+
+---
+
 ## 独特 UI 创新
 
 | 创新 | 工具 | 说明 |

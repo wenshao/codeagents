@@ -104,7 +104,7 @@
 
 ---
 
-## 三、Gemini CLI：TOML 策略引擎 + Conseca
+## 三、Gemini CLI：TOML 策略引擎 + Conseca + seccomp
 
 > 源码：`packages/core/src/policy/` + `packages/core/src/safety/`
 
@@ -112,21 +112,47 @@
 
 `conseca.toml`、`discovered.toml`、`memory-manager.toml`、`plan.toml`、`read-only.toml`、`sandbox-default.toml`、`tracker.toml`、`write.toml`、`yolo.toml`
 
-### 双安全检查器
+### 三层安全检查
 
 | 检查器 | 类型 | 作用 |
 |--------|------|------|
-| **allowed-path** | InProcess | 路径白名单验证 |
-| **Conseca** | InProcess | LLM 驱动的最小权限策略生成器（默认关闭） |
-| **外挂检查器** | External（子进程） | 第三方安全检查器，IPC 通信 |
+| **allowed-path** | InProcess | 路径白名单验证 + 符号链接解析 + 路径遍历防护 |
+| **Conseca** | InProcess | LLM 驱动最小权限策略生成器（Gemini Flash，默认关闭） |
+| **外挂检查器** | External（子进程 IPC） | 第三方安全检查器，超时控制 |
 
-### 环境变量保护（模式匹配）
+### Conseca 最小权限策略生成器（独有）
 
-| 策略 | 变量 |
-|------|------|
-| 始终允许 | PATH, HOME, SHELL, TERM, LANG, TMPDIR |
-| 始终阻止 | CLIENT_ID, DB_URI, CONNECTION_STRING |
-| 模式阻止 | `*TOKEN*`, `*SECRET*`, `*PASSWORD*`, `*KEY*`, `*AUTH*`, `*CREDENTIAL*`, `*PRIVATE*`, `*CERT*` |
+- 使用 Gemini Flash 模型（轻量、低成本）
+- 针对每个 prompt **自动生成最小权限策略**
+- 输出：allow/deny/ask_user + reasoning
+- 启用：`enableConseca` 配置项（默认关闭）
+- 设计理念：而非预定义固定规则，让 LLM 根据当前任务动态决定所需权限
+
+### 环境变量保护（最完整的模式匹配系统）
+
+| 策略 | 变量/模式 |
+|------|---------|
+| 始终允许 | PATH, HOME, SHELL, TERM, LANG, TMPDIR, GitHub Actions 上下文变量 |
+| 始终阻止 | CLIENT_ID, DB_URI, CONNECTION_STRING, DATABASE_URL, AWS/Azure/Google 云标识 |
+| 名称模式 | `*TOKEN*`, `*SECRET*`, `*PASSWORD*`, `*KEY*`, `*AUTH*`, `*CREDENTIAL*`, `*CREDS*`, `*PRIVATE*`, `*CERT*` |
+| 值模式 | RSA/SSH/EC/PGP 私钥、URL 内嵌凭证、`ghp_`/`gho_` GitHub token、`AIzaSy_` Google key、`AKIA_` AWS key、`eyJ_` JWT、Stripe key |
+
+### seccomp BPF 沙箱（Linux）
+
+- 编译为 BPF 字节码，**内核态执行**（不可绕过）
+- 白名单 ~80 个系统调用（覆盖日常开发操作）
+- 阻止：`clone3`、`unshare`（容器逃逸）、`ptrace`（调试器附加）
+- 返回 `EPERM`（非 SIGKILL，优雅失败处理）
+- 架构特定：x64/arm64/arm/ia32 独立字节码
+- 过滤器文件：`/tmp/gemini-cli-seccomp-{pid}.bpf`
+
+### macOS Seatbelt
+
+~200+ 条细粒度 syscall 权限规则，动态 SBPL 配置文件。
+
+### Windows C# 沙箱
+
+.NET 安全模型进行进程权限限制——非常规技术选择（多数 Node.js 项目避免 C# 依赖）。
 
 ---
 

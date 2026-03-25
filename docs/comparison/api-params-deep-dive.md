@@ -157,7 +157,22 @@ pub struct ModelConfig {
 
 ---
 
-## 七、LLM SDK 生态
+## 七、Goose toolshim：无原生工具调用的模型兼容层
+
+> 源码：`model.rs:48`
+
+```rust
+pub struct ModelConfig {
+    pub toolshim: bool,              // 启用工具调用 shim
+    pub toolshim_model: Option<String>, // 代理决策的模型
+}
+```
+
+对不支持原生 function calling 的模型（如部分本地 Ollama 模型），Goose 通过 `toolshim` 用另一个模型代理工具调用决策。例如：主模型为 `llama3:8b`（无工具调用），`toolshim_model` 设为 `gpt-4o-mini`（代理工具选择）。
+
+---
+
+## 八、LLM SDK 生态
 
 | SDK | 使用者 | 提供商覆盖 |
 |-----|--------|-----------|

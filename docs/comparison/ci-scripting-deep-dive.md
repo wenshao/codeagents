@@ -32,26 +32,38 @@ echo "修复 lint 错误" | claude -p
 # 带成本控制
 claude -p "重构 auth 模块" --max-budget-usd 5.00
 
-# JSON 输出
+# JSON 输出（单次结果）
 claude -p "分析代码" --output-format json
 
-# 流式 JSON（实时处理）
+# 流式 JSON（实时处理每个 token）
 claude -p "修复 Bug" --output-format stream-json
 
 # 结构化输出（JSON Schema 约束）
 claude -p "列出所有 TODO" --json-schema '{"type":"array","items":{"type":"string"}}'
 ```
 
-### `--bare` 最小模式
+### `--bare` 最小模式（CI 专用）
 
 ```bash
-# CI/CD 专用：跳过所有非必要初始化
 claude --bare -p "运行测试" \
   --system-prompt "你是 CI 助手" \
-  --allowed-tools "Bash,Read,Glob"
+  --allowed-tools "Bash,Read,Glob" \
+  --no-session-persistence
 ```
 
-跳过：hooks、LSP、插件同步、归因、auto-memory、后台预取、keychain、CLAUDE.md 自动发现。
+**跳过**：hooks、LSP、插件同步、归因、auto-memory、后台预取、keychain 读取、CLAUDE.md 自动发现。
+**保留**：Skills 仍可通过 `/skill-name` 使用。
+**认证**：仅 `ANTHROPIC_API_KEY` 或 `apiKeyHelper`（OAuth/keychain 不可用）。
+**环境变量**：设置 `CLAUDE_CODE_SIMPLE=1`。
+**上下文**：必须显式提供 `--system-prompt`、`--add-dir`、`--mcp-config`、`--settings`、`--agents`、`--plugin-dir`。
+
+### 三种输出格式对比
+
+| 格式 | 用途 | 特点 |
+|------|------|------|
+| `text` | 简单脚本 | 纯文本，直接 grep/awk 处理 |
+| `json` | 结构化处理 | 等待完成后输出单个 JSON 对象 |
+| `stream-json` | 实时管道 | 逐 token 输出 JSON 行，支持 `--include-partial-messages` |
 
 ### 流式 JSON 双向协议
 
@@ -60,17 +72,27 @@ claude --bare -p "运行测试" \
 claude -p \
   --input-format stream-json \
   --output-format stream-json \
-  --replay-user-messages  # 回显确认
+  --replay-user-messages  # 回显用户消息到 stdout（ACK 确认）
 ```
 
-### 会话控制
+**`--replay-user-messages`**：仅在 stream-json 双向模式下有效，用于管道中确认消息已接收。
 
-| 标志 | 用途 |
-|------|------|
-| `--no-session-persistence` | 禁止保存会话（CI 场景） |
-| `--fallback-model haiku` | 模型过载自动降级 |
-| `--max-budget-usd 10` | 成本上限 |
-| `--include-partial-messages` | 流式输出部分消息 |
+### CI 控制标志完整列表
+
+| 标志 | 用途 | 限制 |
+|------|------|------|
+| `-p / --print` | 非交互管道模式 | 必须指定 |
+| `--bare` | 最小初始化 | 需显式提供上下文 |
+| `--output-format` | text/json/stream-json | 仅 `--print` |
+| `--input-format` | text/stream-json | 仅 `--print` |
+| `--json-schema` | JSON Schema 约束输出 | 仅 `--print` |
+| `--max-budget-usd` | 成本上限（USD） | 仅 `--print` |
+| `--no-session-persistence` | 禁止保存会话 | 仅 `--print` |
+| `--fallback-model` | 模型过载降级 | 仅 `--print` |
+| `--include-partial-messages` | 流式输出部分消息 | 仅 stream-json |
+| `--replay-user-messages` | 回显确认 | 仅双向 stream-json |
+| `--allowed-tools` | 限制可用工具 | — |
+| `--disallowed-tools` | 禁止特定工具 | — |
 
 ---
 
@@ -90,7 +112,75 @@ gemini -p "检查安全漏洞"
 
 ---
 
-## 三、SWE-agent：批量评估模式
+## 三、Codex CLI：5 级审批模式 + Cloud 执行
+
+> 来源：01-overview.md、02-commands.md
+
+### 5 级审批模式（`--ask-for-approval`）
+
+| 模式 | 行为 | CI 适用 |
+|------|------|---------|
+| `untrusted`（默认） | 每步都询问 | ✗ |
+| `on-request` | 模型决定何时询问 | ✓ |
+| `never` | 完全自动（无审批） | **✓（CI 最佳）** |
+| `on-failure` | 仅失败时询问（已废弃） | ✗ |
+| `granular` | 细粒度控制（v0.116.0 未实现） | — |
+
+### 快捷模式
+
+```bash
+# 全自动（推荐 CI 模式）
+codex --full-auto "修复所有测试"
+# 等同于: --ask-for-approval on-request --sandbox workspace-write
+
+# YOLO 模式（跳过所有检查，危险）
+codex --dangerously-bypass-approvals-and-sandbox "..."
+```
+
+### Cloud 远程执行
+
+```bash
+codex cloud exec "fix all failing tests"   # 提交到云端
+codex cloud status <TASK_ID>               # 查看状态
+codex cloud list                            # 列出任务
+codex cloud apply <TASK_ID>                # 将 diff 应用到本地
+codex cloud diff <TASK_ID>                 # 查看 diff
+```
+
+Cloud 模式支持 best-of-N（1-4 次尝试），选择最佳结果。
+
+---
+
+## 四、Copilot CLI：Autopilot + GitHub Actions
+
+> 来源：02-commands.md、EVIDENCE.md
+
+### Autopilot 模式
+
+```bash
+# 自动持续执行
+copilot --autopilot "重构 auth 模块"
+
+# 限制自动继续次数
+copilot --max-autopilot-continues 10 "..."
+
+# 全权限
+copilot --allow-all-tools --allow-all-paths "..."
+```
+
+### GitHub Actions 集成
+
+```bash
+# CI 中的非交互调用
+copilot -p "修复 Issue #123" --allow-all-tools
+
+# 环境变量控制
+COPILOT_ALLOW_ALL=true copilot -p "..."
+```
+
+---
+
+## 五、SWE-agent：批量评估模式
 
 > 来源：swe-agent.md
 
