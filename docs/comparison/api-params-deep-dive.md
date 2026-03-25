@@ -46,6 +46,57 @@
 ```python
 # models.py — 以下模型自动禁用温度
 use_temperature = False  # DeepSeek R1, o1/o3/o4, GPT-5
+
+# Aider 实际 LLM 调用（models.py:1020）
+response = litellm.completion(
+    model=self.model_name,
+    messages=messages,
+    temperature=0 if self.use_temperature else None,
+    stream=True,
+    timeout=600,  # 10 分钟超时
+    **extra_kwargs
+)
+```
+
+### Claude Code API 调用示例（二进制提取）
+
+```javascript
+// Anthropic API 调用（cache_control 优化）
+{
+  model: "claude-sonnet-4-6",
+  max_tokens: 16384,
+  system: [
+    { type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }
+  ],
+  tools: toolDefinitions.map(t => ({
+    ...t, cache_control: { type: "ephemeral" }
+  })),
+  messages: conversationHistory
+}
+```
+
+### Gemini CLI 生成配置（源码：`defaultModelConfigs.ts`）
+
+```typescript
+// chat-base 配置（对话模式默认）
+{
+  temperature: 1,
+  topP: 0.95,
+  topK: 64,
+  generationConfig: {
+    thinkingConfig: { includeThoughts: true }
+  }
+}
+
+// classifier 配置（模型路由分类器）
+{
+  temperature: 0,
+  topP: 1,
+  generationConfig: {
+    thinkingConfig: { thinkingBudget: 512 },
+    maxOutputTokens: 1024
+  }
+}
 ```
 
 ---

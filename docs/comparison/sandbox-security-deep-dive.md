@@ -25,9 +25,18 @@
 
 ### macOS — Seatbelt（`sandbox-exec`）
 
-- 运行时动态生成 SBPL（Sandbox Profile Language）策略
-- `seatbelt_base_policy.sbpl` 定义核心拒绝和系统权限
-- 默认阻止网络；允许回环流量到 `HTTPS_PROXY` 端口
+```scheme
+;; seatbelt_base_policy.sbpl（简化示意）
+(version 1)
+(deny default)                          ; 默认拒绝所有
+(allow process-exec)                    ; 允许进程执行
+(allow file-read* (subpath "/usr"))     ; /usr 只读
+(allow file-read* (subpath "/bin"))     ; /bin 只读
+(deny network*)                         ; 默认阻止网络
+(allow network* (local "localhost"))     ; 允许回环到 HTTPS_PROXY 端口
+```
+
+- 运行时动态生成 SBPL 策略
 - 环境变量 `CODEX_SANDBOX=seatbelt` 标识沙箱进程
 
 ### Linux — 三层防御
@@ -38,8 +47,19 @@
 | 内层 | **Landlock** | 可写目录白名单 |
 | 最内层 | **Seccomp** | 系统调用过滤，阻止网络 syscall |
 
-- `/usr`、`/bin`、`/lib` 只读挂载
-- `.git`、`.agents`、`.codex` 始终只读
+```bash
+# Bubblewrap 挂载示意
+bwrap \
+  --ro-bind /usr /usr \     # /usr 只读
+  --ro-bind /bin /bin \     # /bin 只读
+  --ro-bind /lib /lib \     # /lib 只读
+  --bind $PWD $PWD \        # 工作目录可写
+  --ro-bind .git .git \     # .git 只读（受保护）
+  --unshare-net \           # 网络隔离
+  -- /bin/bash              # 在隔离环境中执行
+```
+
+受保护路径（始终只读）：`.git`、`.agents`、`.codex`
 
 ### Windows — 受限令牌
 
@@ -86,6 +106,20 @@
 
 **Fail-safe**：分类器出错时默认 "blocking for safety"。
 
+### 权限规则配置
+
+```json
+{
+  "permissions": {
+    "deny": ["Bash(curl *)", "Read(./.env)", "Read(./secrets/**)"],
+    "ask": ["Bash(git push *)", "Bash(docker *)"],
+    "allow": ["Bash(npm run lint)", "Read(~/.zshrc)"]
+  }
+}
+```
+
+规则语法：`Tool(specifier)` 支持通配符（`*`、`**`）。评估顺序：**deny 优先 → ask → allow → 默认**。
+
 ### Prompt Hook（独有）
 
 ```json
@@ -94,13 +128,29 @@
     "PreToolUse": [{
       "matcher": "Bash",
       "hook": "prompt-hook: 检查命令是否涉及生产环境"
+    }],
+    "PostToolUse": [{
+      "matcher": "Edit",
+      "hook": {
+        "type": "command",
+        "command": "node check-security.js"
+      }
     }]
   }
 }
 ```
 
-- **Prompt Hook vs 脚本 Hook**：LLM 推理理解语义意图 → 无需穷举规则
-- 示例：规则"不允许操作生产环境"，LLM 能理解 `ssh prod-server` 和 `kubectl apply` 都是生产操作
+**三种 Hook 类型**：
+
+| 类型 | 执行方式 | 示例 |
+|------|---------|------|
+| **command** | Shell 子进程（JSON stdin/stdout） | `"command": "node check.js"` |
+| **http** | HTTP POST 请求 | `"url": "https://security.internal/check"` |
+| **prompt** | **LLM 推理决策** | `"prompt-hook: 检查是否涉及生产环境"` |
+
+Hook 返回 JSON 决策：`approve`（跳过确认）、`deny`（拒绝）、`block`（阻止+消息）、空（正常流程）。
+
+**Prompt Hook 优势**：LLM 能理解 `ssh prod-server` 和 `kubectl apply -f deployment.yaml` 都是"生产操作"，传统脚本需逐一枚举。
 
 ---
 
@@ -108,9 +158,32 @@
 
 > 源码：`packages/core/src/policy/` + `packages/core/src/safety/`
 
-### 9 个内置策略文件
+### 9 个内置策略文件 + TOML 示例
 
-`conseca.toml`、`discovered.toml`、`memory-manager.toml`、`plan.toml`、`read-only.toml`、`sandbox-default.toml`、`tracker.toml`、`write.toml`、`yolo.toml`
+```toml
+# plan.toml — 规划模式策略示例
+[[rule]]
+toolName = "*"              # 匹配所有工具
+modes = ["plan"]            # 仅计划模式
+decision = "deny"           # 默认拒绝
+priority = 60
+message = "You are in Plan Mode with access to read-only tools"
+
+[[rule]]
+toolName = "glob|grep_search|list_directory|read_file"
+modes = ["plan"]
+decision = "allow"           # 只读工具放行
+priority = 70
+
+[[rule]]
+toolName = "write_file"
+modes = ["plan"]
+argsPattern = ".*/plans/.*\\.md$"   # 仅允许写 .md 到 plans 目录
+decision = "allow"
+priority = 70
+```
+
+9 个策略文件：`conseca.toml`、`discovered.toml`、`memory-manager.toml`、`plan.toml`、`read-only.toml`、`sandbox-default.toml`、`tracker.toml`、`write.toml`、`yolo.toml`
 
 ### 三层安全检查
 

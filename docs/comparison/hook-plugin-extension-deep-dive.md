@@ -44,7 +44,53 @@
 | **http** | HTTP 请求 | 远程服务集成 |
 | **prompt** | **LLM 推理决策** | 语义理解，无需穷举规则 |
 
-**Prompt Hook 示例**：
+**Command Hook 示例**：
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "Bash",
+      "hook": {
+        "type": "command",
+        "command": "node /path/to/check-production.js"
+      }
+    }]
+  }
+}
+```
+
+Command Hook 通过 stdin 接收 JSON（含 tool_name、tool_input），通过 stdout 返回决策：
+
+```json
+// stdin（系统提供）
+{ "tool_name": "Bash", "tool_input": { "command": "ssh prod-server" } }
+
+// stdout（Hook 返回）
+{ "decision": "block", "reason": "禁止操作生产环境服务器" }
+```
+
+决策类型：`approve`（跳过确认）、`deny`（拒绝）、`block`（阻止+消息）、空（正常流程）。
+
+**HTTP Hook 示例**：
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "Edit",
+      "hook": {
+        "type": "http",
+        "url": "https://security.internal/audit",
+        "headers": { "Authorization": "Bearer ${AUDIT_TOKEN}" }
+      }
+    }]
+  }
+}
+```
+
+**Prompt Hook 示例（独有）**：
+
 ```json
 {
   "hooks": {
@@ -56,7 +102,11 @@
 }
 ```
 
-LLM 理解 `ssh prod-server` 和 `kubectl apply -f deployment.yaml` 都是生产操作，传统脚本 Hook 需要逐一枚举。
+LLM 理解 `ssh prod-server` 和 `kubectl apply -f deployment.yaml` 都是生产操作——传统脚本 Hook 需要逐一枚举，Prompt Hook 让 LLM 推理意图。
+
+### hookify 插件：自动生成 Hook 规则
+
+`hookify` 是 Claude Code 13 个官方插件之一，功能是分析对话模式自动生成 Hook 规则配置。
 
 ### 13 官方插件
 
@@ -103,9 +153,33 @@ code-review、pr-review-toolkit、feature-dev、commit-commands、security-guida
 
 BeforeTool、AfterTool、BeforeAgent、AfterAgent、BeforeModel、AfterModel、BeforeToolSelection、Notification、SessionStart、SessionEnd、PreCompress
 
+### Hook 配置示例
+
+```json
+// settings.json
+{
+  "hooks": {
+    "BeforeTool": [{
+      "matcher": "shell",
+      "hook": {
+        "type": "command",
+        "command": "node validate-shell.js"
+      }
+    }],
+    "AfterModel": [{
+      "matcher": "*",
+      "hook": {
+        "type": "runtime",
+        "handler": "logModelResponse"
+      }
+    }]
+  }
+}
+```
+
 ### Hook 决策类型
 
-`ask` | `block` | `deny` | `approve` | `allow`
+`ask`（请求用户确认）| `block`（阻止+消息）| `deny`（静默拒绝）| `approve`（自动批准）| `allow`（放行）
 
 ### 扩展系统
 
