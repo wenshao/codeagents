@@ -172,3 +172,71 @@ Binary contains embedded security monitor prompt:
 - `x38()` returns model options: sonnet (balanced), opus (complex), haiku (fast), inherit
 - `_Y$()` checks for opus-4-6 or sonnet-4-6 (extended context support)
 - `WIH()` checks MAX_THINKING_TOKENS env var and alwaysThinkingEnabled setting
+
+########## DECOMPILATION: System Prompt Structure (v2.1.81) ##########
+Extraction method: strings + sed/grep from ELF binary rodata segment
+Date: 2026-03-25
+
+### System Prompt Sections (8 confirmed)
+1. # System — runtime behavior, tool execution, permission modes
+2. # Doing tasks — software engineering focus, over-engineering warnings, security
+3. # Using your tools — tool preference hierarchy, parallel calls, subagent guidance
+4. # Tone and style — no emojis, concise, file_path:line_number format
+5. # Output efficiency — "Go straight to the point", lead with answer
+6. # Executing actions with care — reversibility/blast radius framework
+7. # Committing changes / Creating pull requests — Git Safety Protocol
+8. # auto memory — persistent file-based memory system types
+
+### Key Extracted Directives
+- "Do NOT use Bash to run commands when a relevant dedicated tool is provided"
+- "Read > cat, Edit > sed, Write > echo, Glob > find, Grep > grep"
+- "Only use emojis if the user explicitly requests it"
+- "Your responses should be short and concise"
+- "Go straight to the point. Try the simplest approach first"
+- "Lead with the answer or action, not the reasoning"
+- "Carefully consider the reversibility and blast radius of actions"
+- "A user approving an action once does NOT mean they approve it in all contexts"
+- "NEVER update the git config"
+- "NEVER run destructive git commands unless user explicitly requests"
+- "CRITICAL: Always create NEW commits rather than amending"
+
+### Build Constants
+- VERSION: "2.1.81"
+- BUILD_TIME: "2026-03-20T21:26:18Z"
+- PACKAGE_URL: "@anthropic-ai/claude-code"
+- FEEDBACK_CHANNEL: "https://github.com/anthropics/claude-code/issues"
+- README_URL: "https://code.claude.com/docs/en/overview"
+
+### Output Styles (2 built-in, from binary)
+- "Explanatory": provides educational insights about codebase patterns
+- "Learning": pauses and asks user to write code for hands-on practice
+
+### Tool Variable Names (minified → original)
+- L8 = "Read"
+- y8 = "Edit"
+- Z9 = "Write"
+- CD = "Bash"
+- jK = "Glob"
+- F_ = "Grep"
+- Hf = "Agent"
+- CP = "WebFetch"
+- sE = "WebSearch"
+- Qj = "NotebookEdit"
+- xw = "Skill"
+- Tz = "ToolSearch"
+- f4 = "AskUserQuestion"
+- ZT/Mh = "TaskCreate"/"TaskUpdate"
+
+### Feature Flags (tengu_ prefix, from binary)
+- tengu_defer_all_bn4: deferred tool loading
+- tengu_defer_caveat_m9k: deferred tool caveat
+- tengu_turtle_carbon: ultrathink mode
+- tengu_marble_anvil: thinking edits
+- tengu_hawthorn_steeple: content deduplication
+- tengu_hawthorn_window: dedup window size
+
+### Memory Types (from auto memory section)
+- user: user role, goals, responsibilities, knowledge
+- feedback: corrections and confirmations
+- project: ongoing work, goals, initiatives
+- reference: pointers to external systems
