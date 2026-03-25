@@ -293,10 +293,10 @@ Tree-sitter AST 解析（30+ 语言）
 | 工具 | MCP 客户端 | MCP 服务器 | 传输方式 |
 |------|-----------|-----------|---------|
 | **Goose** | ✓（原生） | ✓（内置） | Stdio, HTTP, Builtin |
-| **Claude Code** | ✓ | | Stdio, SSE |
+| **Claude Code** | ✓ | | Stdio, SSE, Streamable-HTTP |
 | **OpenCode** | ✓ | | HTTP, SSE, Stdio, WebSocket |
 | **Gemini CLI** | ✓ | | Stdio, SSE, HTTP |
-| **Qwen Code** | ✓ | | Stdio, SSE |
+| **Qwen Code** | ✓ | | Stdio, SSE, HTTP |
 | **Cline** | ✓ | | Stdio, SSE, HTTP |
 | **OpenHands** | ✓ | | FastMCP |
 | **Aider** | | | 不支持 |
@@ -523,7 +523,7 @@ pub struct ModelConfig {
 | **默认温度** | 0 | 0（base）/ 1（chat） | 环境变量控制 | 环境变量控制 |
 | **重试次数** | 指数退避到 60s | 10 次 | 3 次/步 | 用户配置 |
 | **重试延迟** | 0.125s → 60s | 5s → 30s | 0.3s → 5s（+抖动） | 300s 超时 |
-| **压缩阈值** | ChatChunks 分块 | 无显式阈值 | 85% 上下文 | 80% 上下文 |
+| **压缩阈值** | ChatChunks 分块 | 50% 容量 | 85% 上下文 | 80% 上下文 |
 | **预留空间** | 无 | 无 | 50K tokens | 无 |
 | **LLM 调用** | LiteLLM | @google/genai SDK | kosong (自研) + tenacity | Provider trait |
 | **流式输出** | 默认开启 | 默认流式 | 流式 | Provider 决定 |
