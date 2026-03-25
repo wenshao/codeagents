@@ -83,8 +83,8 @@ copilot
 | `glob` | 按模式匹配搜索文件名 |
 | `grep` | 按正则表达式搜索文件内容 |
 | `search` | 语义搜索 |
-| `fetch` | 获取 URL 内容 |
-| `git_apply_patch` | 应用 Git 补丁 |
+| `fetch` / `web_fetch` | 获取 URL 内容 |
+| `apply_patch` / `git_apply_patch` | 应用代码补丁 |
 | `search_code_subagent` | 代码搜索子代理 |
 
 ## 浏览器工具（21 个，基于 Playwright，二进制验证）
@@ -231,6 +231,9 @@ copilot
 | gpt-5.1 | GA [binary] | |
 | gpt-5 | GA [binary] | |
 | gpt-5-mini | GA [binary] | 免费（0x） |
+| gpt-5-codex | GA [binary] | |
+| gpt-4.1-mini | GA [binary] | 轻量 |
+| gpt-4.1-nano | GA [binary] | 超轻量 |
 | gpt-4.1 | GA [binary] | 免费（0x） |
 
 ### Google / xAI / 其他
@@ -440,7 +443,8 @@ try {
 - 浏览器工具：通过 `browser_` 前缀匹配确认 21 个
 - GitHub 工具：通过 `get_`/`list_`/`search_` 前缀匹配确认 35 个
 - 代理定义：通过 `cat definitions/*.agent.yaml` 确认 3 个 YAML 文件
-- 模型列表：通过模型名字符串匹配确认 14 个本地 + 11 个 web-only
+- 模型列表：通过模型名字符串匹配确认 17 个本地 + 11 个 web-only
+- 工具命名：二进制中同时存在 `fetch`（20 refs）和 `web_fetch`（4 refs），`git_apply_patch`（1 ref）和 `apply_patch`（9 refs），文档列出两种形式
 
 **官方文档验证：**
 - [CLI Command Reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference)
