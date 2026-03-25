@@ -216,7 +216,7 @@ cursor: "#f5e0dc"
 | 创新 | 工具 | 说明 |
 |------|------|------|
 | **37 种内置主题** | OpenCode | 目前主题最丰富的 CLI 工具 |
-| **命令面板 Ctrl+P** | OpenCode | IDE 风格的快速命令搜索 |
+| **命令面板 Ctrl+K** | OpenCode | IDE 风格的快速命令搜索 |
 | **Signal 驱动响应式** | OpenCode | SolidJS 信号系统，精确 UI 更新 |
 | **GPU 渲染终端** | Warp | Metal/Vulkan 硬件加速，块结构输出 |
 | **Arena 多终端** | Qwen Code | iTerm2/Tmux/InProcess 三种后端 |
