@@ -26,7 +26,7 @@
 | 工具 | 触发阈值 | 源码常量 | 自动触发 |
 |------|---------|---------|---------|
 | **Gemini CLI** | **50%** 容量 | `DEFAULT_COMPRESSION_TOKEN_THRESHOLD = 0.5` | ✓ |
-| **Goose** | **80%** 容量 | `DEFAULT_COMPACTION_THRESHOLD = 0.8` | ✓ |
+| **Goose** | **80%** 容量 | `GOOSE_AUTO_COMPACT_THRESHOLD`（默认 0.8，[官方文档](https://block.github.io/goose/docs/guides/sessions/smart-context-management/)） | ✓ |
 | **Kimi CLI** | **85%** 容量 或 剩余 <50K | `compaction_trigger_ratio = 0.85`, `reserved_context_size = 50000` | ✓ |
 | **Claude Code** | **~95%** 容量 | 二进制分析（autoCompact 54 refs） | ✓ |
 | **Aider** | `done_messages > 1024` tokens | `max_tokens = 1024` | ✓（后台线程） |
@@ -202,7 +202,7 @@ LLM 被指示按以下顺序分析项目：
 
 | 命令 | 多代理工具 | 单代理工具 |
 |------|-----------|-----------|
-| /review | Claude Code(4-6), Qwen Code(4) | Copilot CLI, Codex CLI, Gemini CLI |
+| /review | Claude Code(4-6), Qwen Code(4) | Copilot CLI(1 code-review agent), Codex CLI, Gemini CLI |
 | /compact | 无 | 全部（各自一个 LLM 调用） |
 | /plan | 无 | 全部（模式切换，非代理任务） |
 | /init | 无 | Kimi CLI（隔离的临时代理） |
@@ -233,7 +233,7 @@ LLM 被指示按以下顺序分析项目：
 | Aider /compact | `aider/history.py` (143行) + `aider/prompts.py` | GitHub API |
 | Kimi CLI /compact | `soul/compaction.py` + `prompts/compact.md` | GitHub API |
 | Gemini CLI /compact | `services/chatCompressionService.ts` + `prompts/snippets.ts` | GitHub API |
-| Goose /compact | `context_mgmt/mod.rs` + `prompts/compaction.md` | GitHub API |
+| Goose /compact | `context_mgmt/mod.rs` + `prompts/compaction.md` | GitHub API + [官方文档](https://block.github.io/goose/docs/guides/sessions/smart-context-management/) |
 | Claude Code /compact | API docs `compact-2026-01-12` + 二进制分析 | 官方文档 + strings |
 | Gemini CLI /plan | `policy/policies/plan.toml` + `tools/enter-plan-mode.ts` | GitHub API |
 | Kimi CLI /plan | `soul/slash.py` + `tools/plan/heroes.py` | GitHub API |

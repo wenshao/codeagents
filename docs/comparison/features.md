@@ -190,7 +190,7 @@
 | **代码审查** | `/review` 插件 | — | `/code-review`（扩展） | — | — | `/review` | `@codex review` | — | — |
 | **模式切换** | — | `/code` `/architect` `/ask` | `/plan` | `/plan` `/yolo` | `/plan` | — | `--ask-for-approval` | — | `--agent` |
 | **模型切换** | `/model` | `/model` `/editor-model` `/weak-model` | `/model` | `/model` | `/model` | `/model` | `--model` | `--model` | — |
-| **上下文压缩** | `/compact` | `/clear` `/reset` | `/compress` | `/compact` | `/compact` | — | — | — | — |
+| **上下文压缩** | `/compact` | `/clear` `/reset` | `/compress` | `/compact` | `/compact` | `/compact` | `/compact` | `/compact` | — |
 | **文件管理** | 自动 | `/add` `/drop` `/read-only` `/ls` | 自动 | `/add-dir` | 自动 | 自动 | 自动 | 自动 | 自动 |
 | **Git 操作** | 内置工具 | `/commit` `/undo` `/diff` `/git` | 内置工具 | — | 内置工具 | 内置 GitHub MCP | — | — | 内置工具 |
 | **仓库地图** | — | `/map` `/map-refresh` | — | — | — | — | — | — | — |
