@@ -661,12 +661,12 @@ gemini --version
 ```
 
 **配置优先级**（从高到低）：
-1. CLI 标志
-2. 环境变量
-3. 运行时覆盖（Runtime）
-4. 项目设置（`.gemini/settings.json`）
+1. 远程管理员设置（Remote Admin）
+2. CLI 标志 / 环境变量
+3. 系统设置（平台系统配置路径，如 `/etc/gemini-cli/settings.json`）
+4. 项目/工作区设置（`.gemini/settings.json`）
 5. 用户设置（`~/.gemini/settings.json`）
-6. 系统默认值
+6. 系统默认值（内置 Schema 默认值）
 7. 扩展设置
 
 ## 定价/配额
