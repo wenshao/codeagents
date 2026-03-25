@@ -1,4 +1,4 @@
-# Claude Code vs Cursor：终端代理 vs AI IDE
+# 15. Claude Code vs Cursor：终端代理 vs AI IDE
 
 > Claude Code（Anthropic 终端原生代理）vs Cursor（AI 原生 IDE）——两大商业 AI 编程工具的全面对比。一个扎根终端，一个重塑编辑器，代表了 AI 辅助开发的两条路径。
 

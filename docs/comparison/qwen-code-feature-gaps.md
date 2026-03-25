@@ -1,4 +1,4 @@
-# Qwen Code 功能补全建议：对标 Claude Code
+# 22. Qwen Code 功能补全建议：对标 Claude Code
 
 > 基于源码逐项比对，识别 Qwen Code 应该补全的 Claude Code 功能
 

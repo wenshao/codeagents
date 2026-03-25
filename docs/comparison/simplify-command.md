@@ -1,4 +1,4 @@
-# /simplify 命令深度分析
+# 10. /simplify 命令深度分析
 
 > `/simplify` 是 Claude Code 独有的代码简化和质量审查命令，通过三个并行代理从不同维度审查已修改代码。
 

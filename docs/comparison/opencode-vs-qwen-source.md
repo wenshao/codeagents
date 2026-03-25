@@ -1,4 +1,4 @@
-# OpenCode vs Qwen Code：源码级深度对比
+# 20. OpenCode vs Qwen Code：源码级深度对比
 
 > 基于本地源码仓库的深入分析，揭示两个开源 CLI 编程代理的架构设计差异
 

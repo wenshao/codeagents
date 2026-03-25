@@ -1,4 +1,4 @@
-# Aider vs Goose：开源代理双雄对比
+# 17. Aider vs Goose：开源代理双雄对比
 
 > Aider（Python，Git 原生，编辑格式之王）vs Goose（Rust，MCP 原生，企业级代理框架）——两个最具影响力的开源 CLI 编程代理的全面对比
 

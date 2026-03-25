@@ -1,4 +1,4 @@
-# Qwen Code 功能补全建议：对标 OpenCode
+# 23. Qwen Code 功能补全建议：对标 OpenCode
 
 > 基于源码逐项比对，识别 Qwen Code 应该借鉴的 OpenCode 功能
 

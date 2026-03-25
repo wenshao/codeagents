@@ -1,4 +1,4 @@
-# Qwen Code 用户使用指南
+# 4. Qwen Code 用户使用指南
 
 > 阿里云 Qwen 团队出品的开源 AI 编程代理。每天 1000 次免费，支持中文界面，基于 Gemini CLI 深度定制。
 

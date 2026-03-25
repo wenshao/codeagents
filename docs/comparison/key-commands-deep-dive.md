@@ -1,4 +1,4 @@
-# 关键命令实现深度对比
+# 8. 关键命令实现深度对比
 
 > 对 /compact、/plan、/init 三个核心命令的源码级实现逐工具对比。配合 [/review 深度对比](./review-command.md) 阅读。
 

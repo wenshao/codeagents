@@ -1,4 +1,4 @@
-# Claude Code vs Copilot CLI：终端代理双雄对比
+# 16. Claude Code vs Copilot CLI：终端代理双雄对比
 
 > Claude Code（Anthropic 官方终端代理）vs GitHub Copilot CLI（GitHub 原生终端代理）——两大平台级终端 AI 编程助手的全面对比。Claude Code 以深度代理能力见长，Copilot CLI 凭借 GitHub 生态一体化取胜。
 

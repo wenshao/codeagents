@@ -1,4 +1,4 @@
-# AGENTS.md 配置指南
+# 11. AGENTS.md 配置指南
 
 > 本文介绍 AGENTS.md 项目指令文件——它是什么、哪些工具支持它、如何编写、以及与 CLAUDE.md / GEMINI.md 的对比。
 

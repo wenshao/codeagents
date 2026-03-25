@@ -1,4 +1,4 @@
-# Qwen Code 功能补全建议：对标上游 Gemini CLI
+# 24. Qwen Code 功能补全建议：对标上游 Gemini CLI
 
 > Qwen Code 是 Gemini CLI 的分叉。本文识别分叉后未移植或上游新增的功能。
 

@@ -1,4 +1,4 @@
-# Qwen Code vs Kimi CLI：双向功能缺口分析
+# 25. Qwen Code vs Kimi CLI：双向功能缺口分析
 
 > 两个国内 AI 编程 CLI 代理的功能互补分析——Qwen Code（TypeScript，Gemini CLI 分叉）vs Kimi CLI（Python，独立实现）
 

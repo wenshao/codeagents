@@ -1,4 +1,4 @@
-# Qwen Code vs Claude Code：深度对比
+# 18. Qwen Code vs Claude Code：深度对比
 
 > Qwen Code（开源，Gemini CLI 分叉）vs Claude Code（闭源，Rust 原生）——两个头部 AI 编程代理的全面对比
 

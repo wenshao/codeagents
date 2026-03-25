@@ -1,4 +1,4 @@
-# Qwen Code vs Gemini CLI vs Kimi CLI：源码级深度对比
+# 19. Qwen Code vs Gemini CLI vs Kimi CLI：源码级深度对比
 
 > 三个有渊源关系的 CLI 编程代理：Gemini CLI（上游）→ Qwen Code（分叉增强）↔ Kimi CLI（独立实现）
 

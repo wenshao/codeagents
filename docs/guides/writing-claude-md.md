@@ -1,4 +1,4 @@
-# CLAUDE.md 写作指南
+# 10. CLAUDE.md 写作指南
 
 > 如何编写高效的 CLAUDE.md 项目指令文件，让 Claude Code 在每次会话中准确理解你的项目。基于 Anthropic 官方文档、社区最佳实践（Builder.io、HumanLayer、Arize）以及我们对 Claude Code 二进制的逆向分析。
 

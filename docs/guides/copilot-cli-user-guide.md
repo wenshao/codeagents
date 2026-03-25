@@ -1,4 +1,4 @@
-# GitHub Copilot CLI 用户使用指南
+# 3. GitHub Copilot CLI 用户使用指南
 
 > 基于 v0.0.403 源码分析、SEA 二进制反编译（34 命令、67 工具、3 代理、14+ 模型）编写。
 

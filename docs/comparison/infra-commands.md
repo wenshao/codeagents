@@ -1,4 +1,4 @@
-# 基础设施命令对比：/hooks /sandbox /model /permissions /mcp
+# 11. 基础设施命令对比：/hooks /sandbox /model /permissions /mcp
 
 > 对比各 CLI Agent 的 5 类基础设施命令——模型切换、权限管理、MCP 集成、Hook 配置、沙箱隔离。这些命令不直接参与编码，但决定了工具的安全边界、扩展能力和运行环境。
 
