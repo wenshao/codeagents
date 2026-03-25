@@ -1,6 +1,6 @@
 # AI 编程 Code Agent 对比
 
-> 基于源码分析和二进制反编译的 AI 编程 Code Agent 全面对比 | 88 文件 | 28,800+ 行 | 9 个 EVIDENCE.md 证据文件
+> 基于源码分析和二进制反编译的 AI 编程 Code Agent 全面对比 | 118 文件 | 34,600+ 行 | 9 个 EVIDENCE.md 证据文件
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -9,15 +9,6 @@
 ## 概述
 
 本仓库提供了 17 款 AI 编程 Code Agent 的全面对比。**核心内容基于源码分析（开源 Agent）和二进制反编译（闭源 Agent）**，并附带 EVIDENCE.md 证据文件支撑每项声明。
-
-### 源码分析纠正的重要事实
-
-| Agent | 官方/常见说法 | 源码实际情况 |
-|------|-------------|-------------|
-| **Goose** | TypeScript | **Rust**（55k 行） |
-| **OpenCode** | Go | **TypeScript**（Bun + Monorepo） |
-| **Kimi CLI** | TypeScript | **Python**（68.8%） |
-| **Qwen Code** | 原创 | **Gemini CLI 分叉**（大幅增强） |
 
 ## 快速对比表
 
@@ -31,18 +22,32 @@
 | [Goose](./docs/tools/goose.md) | Block | Apache-2.0 | 33k+ | **Rust** | 58+ | MCP 原生，Recipe 任务模板 |
 | [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | 31k+ | TypeScript | 60+ | PR Checks CI 审查，语义索引 |
 | [Warp](./docs/tools/warp.md) | Warp | 专有 | 26k+ | Rust | 多种 | 终端替代品，GPU 渲染 |
-| [Qwen Code](./docs/tools/qwen-code.md) | 阿里云 | Apache-2.0 | 20k+ | TypeScript | 5 | 免费 OAuth 1000 次/天，6 语言 UI |
+| [Qwen Code](./docs/tools/qwen-code.md) | 阿里云 | Apache-2.0 | 20k+ | TypeScript | 6+ | 免费 OAuth 1000 次/天，6 语言 UI |
 | [SWE-agent](./docs/tools/swe-agent.md) | Princeton NLP | MIT | 18k+ | Python | 100+ | SWE-bench 74%（增强版），Docker 沙箱 |
-| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | 130k+ | **TypeScript** | 100+ | 多客户端（TUI+Web+桌面），37 LSP，26 Formatter，ACP IDE 集成 |
+| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | 130k+ | **Go + TS** | 100+ | 多客户端（TUI+Web+桌面），37 LSP，ACP IDE |
 | [Kimi CLI](./docs/tools/kimi-cli/) | 月之暗面 | Apache-2.0 | 7k+ | **Python** | 6 | 双模式 Agent↔Shell，Wire 协议，子代理系统 |
 | [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | - | Rust | 1 (Claude) | 13 官方插件，Prompt Hook，100 万上下文 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | - | TypeScript | 多种 | AI 原生 IDE，Background Agent |
 | [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | 9k+ | Shell | 多种 | 终端原生代理，GitHub 深度集成，MCP 扩展 |
 | [Qoder CLI](./docs/tools/qoder-cli/) | QoderAI（阿里） | 专有 | - | **Go** | 多种 | Quest 模式，Claude Code 兼容，信用制定价 |
 
+## 30 秒选型指南
+
+- **日常编码** → Claude Code（推理强）或 Aider（Git 集成好）
+- **免费使用** → Qwen Code（1000 次/天）或 Gemini CLI
+- **多模型切换** → OpenCode（100+ via models.dev）或 Goose（58+）
+- **VS Code 用户** → Cline（58k Stars）或 Continue（PR Checks）
+- **中文开发者** → Qwen Code 或 Kimi CLI
+- **自动化/CI** → SWE-agent 或 OpenHands
+- **安全沙箱** → Codex CLI（默认网络隔离）或 Gemini CLI（TOML 策略引擎）
+- **OpenAI 用户** → Codex CLI（官方开源）
+
+---
+
 ## 文档导航
 
 ### Agent 详情（源码级）
+
 - **[Agent 索引](./docs/tools/)** — 16 个 Agent 的详细分析，含架构图和代码引用
 - **[Claude Code 专题](./docs/tools/claude-code/)** — 7 篇深度文档（概述/79 命令/架构/工具/Skill+13 插件/设置/会话）
 - **[Copilot CLI 专题](./docs/tools/copilot-cli/)** — 3 篇深度文档（概述/34 命令 + 67 工具 + 3 代理/架构）
@@ -52,42 +57,63 @@
 - **[Aider 专题](./docs/tools/aider/)** — 3 篇深度文档（概述/42 命令/PageRank RepoMap）
 - **[OpenCode 专题](./docs/tools/opencode/)** — 3 篇深度文档（概述/18 工具+7 代理/多客户端架构）
 
-### 对比文档
+### 全局对比（选型必读）
 
-**全局对比（选型必读）：**
 - [功能对比矩阵](./docs/comparison/features.md) — 14 Agent × 多维度横向对比
 - [隐私与遥测对比](./docs/comparison/privacy-telemetry.md) — 遥测端点、数据采集、安全监控
 - [定价与成本](./docs/comparison/pricing.md) | [系统要求](./docs/comparison/system-requirements.md) | [版本迭代](./docs/comparison/evolution-community.md)
 
-**架构与内部机制：**
-- [架构深度对比](./docs/comparison/architecture-deep-dive.md) — 代理循环、Mermaid 架构图
+### 架构与内部机制
+
+- [架构深度对比](./docs/comparison/architecture-deep-dive.md) — 10 Agent 代理循环、Mermaid 架构图、源码级参数
 - [功能性内部机制](./docs/comparison/functional-internals.md) — API 参数、编辑格式、上下文管理
 
-**命令深度对比（源码级）：**
-- [/review](./docs/comparison/review-command.md) — 9 步流水线 vs 4 代理并行 vs 8 维度
-- [/compact /plan /init](./docs/comparison/key-commands-deep-dive.md) — 压缩算法、策略引擎、隔离执行
-- [/loop /schedule](./docs/comparison/loop-schedule.md) — 本地循环 vs 远程调度 vs Cloud
-- [/simplify](./docs/comparison/simplify-command.md) — 三代理 21 检查项自动修复
-- [/hooks /sandbox /model /permissions /mcp](./docs/comparison/infra-commands.md) — 基础设施命令
-- [/btw /rewind](./docs/comparison/btw-rewind.md) — 旁问与回退
-- [内置命令总览](./docs/comparison/slash-commands-deep-dive.md) — 全命令对比表
-- [模型路由与自动选择](./docs/comparison/model-routing.md) — 8 策略自动路由 vs 三槽位 vs 手动切换
-- [上下文压缩算法](./docs/comparison/context-compression-deep-dive.md) — 四阶段验证 vs 递归分割 vs 渐进移除
-- [MCP 集成实现](./docs/comparison/mcp-integration-deep-dive.md) — MCP 原生 vs TOML 策略 vs 双下划线命名
-- [沙箱与安全隔离](./docs/comparison/sandbox-security-deep-dive.md) — OS 沙箱 vs 28 规则 vs 三层分析
-- [多代理架构](./docs/comparison/multi-agent-deep-dive.md) — Teammates 协作 vs Arena 竞争 vs A2A 远程
-- [Hook/插件/扩展](./docs/comparison/hook-plugin-extension-deep-dive.md) — 22 事件 + Prompt Hook vs 17 Hook 类型
-- [Skill/技能系统](./docs/comparison/skill-system-deep-dive.md) — SKILL.md frontmatter vs Flow Skill vs Recipe
-- [长期记忆与项目指令](./docs/comparison/memory-system-deep-dive.md) — 4 层 CLAUDE.md vs AI memory_manager vs 跨格式读取
-- [终端 UI/UX 框架](./docs/comparison/terminal-ui-deep-dive.md) — Ink+React vs prompt_toolkit vs Rust 原生 vs GPU 渲染
-- [Git 集成与版本控制](./docs/comparison/git-integration-deep-dive.md) — 自动提交归因 vs Esc 检查点 vs /rewind 三选项
-- [测试/Lint 反射循环](./docs/comparison/test-reflection-deep-dive.md) — 3 次反射 vs 实际编译验证 vs 沙箱测试
-- [遥测与隐私实现](./docs/comparison/telemetry-privacy-deep-dive.md) — 782 事件 vs 零遥测 vs Opt-in 10%
-- [非交互/CI 模式](./docs/comparison/ci-scripting-deep-dive.md) — stream-json 协议 vs TTY 自动检测 vs 批量评估
-- [系统提示与 Prompt 工程](./docs/comparison/system-prompt-deep-dive.md) — 8 模块硬编码 vs XML 结构 vs Jinja2 动态
-- [API 参数与重试策略](./docs/comparison/api-params-deep-dive.md) — 温度/重试/循环上限/缓存/工具调用跨 Agent 对比
+### 命令实现对比
 
-**Agent 间 1v1 对比：**
+| 命令 | 文章 | 核心对比 |
+|------|------|---------|
+| `/review` | [代码审查命令](./docs/comparison/review-command.md) | 9 步流水线 vs 4 代理并行 vs 8 维度 |
+| `/compact /plan /init` | [关键命令实现](./docs/comparison/key-commands-deep-dive.md) | 压缩算法、策略引擎、隔离执行 |
+| `/loop /schedule` | [循环与调度](./docs/comparison/loop-schedule.md) | 本地循环 vs 远程调度 vs Cloud |
+| `/simplify` | [代码简化](./docs/comparison/simplify-command.md) | 三代理 21 检查项自动修复 |
+| `/hooks /model /mcp` | [基础设施命令](./docs/comparison/infra-commands.md) | Hook、沙箱、权限、MCP |
+| `/btw /rewind` | [旁问与回退](./docs/comparison/btw-rewind.md) | 上下文隔离 + 三选项回退 |
+| 全命令总览 | [内置命令能力](./docs/comparison/slash-commands-deep-dive.md) | 11 节全命令逐项对比 |
+
+### 系统能力深度对比（15 篇 Deep-Dive）
+
+**核心架构：**
+
+| 主题 | 文章 | 核心对比 |
+|------|------|---------|
+| 模型路由 | [自动选择](./docs/comparison/model-routing.md) | 8 策略自动路由 vs 三槽位 vs 手动切换 |
+| 上下文压缩 | [压缩算法](./docs/comparison/context-compression-deep-dive.md) | 四阶段验证 vs 递归分割 vs 渐进移除 |
+| MCP 集成 | [协议实现](./docs/comparison/mcp-integration-deep-dive.md) | MCP 原生 vs TOML 策略 vs 双下划线命名 |
+| 安全隔离 | [沙箱对比](./docs/comparison/sandbox-security-deep-dive.md) | OS 沙箱 vs 28 规则 vs 三层分析 |
+| 多代理 | [架构对比](./docs/comparison/multi-agent-deep-dive.md) | Teammates 协作 vs Arena 竞争 vs A2A 远程 |
+
+**扩展系统：**
+
+| 主题 | 文章 | 核心对比 |
+|------|------|---------|
+| Hook/插件 | [扩展系统](./docs/comparison/hook-plugin-extension-deep-dive.md) | 22 事件 + Prompt Hook vs 17 Hook 类型 |
+| Skill 技能 | [技能系统](./docs/comparison/skill-system-deep-dive.md) | SKILL.md frontmatter vs Flow Skill vs Recipe |
+| 长期记忆 | [项目指令](./docs/comparison/memory-system-deep-dive.md) | 4 层 CLAUDE.md vs AI memory_manager vs 跨格式读取 |
+
+**工程实践：**
+
+| 主题 | 文章 | 核心对比 |
+|------|------|---------|
+| 终端 UI | [UI 框架](./docs/comparison/terminal-ui-deep-dive.md) | Ink+React vs prompt_toolkit vs Rust 原生 vs GPU |
+| Git 集成 | [版本控制](./docs/comparison/git-integration-deep-dive.md) | 自动提交归因 vs Esc 检查点 vs /rewind 三选项 |
+| 测试反射 | [反射循环](./docs/comparison/test-reflection-deep-dive.md) | 3 次反射 vs 实际编译验证 vs 沙箱测试 |
+| CI 模式 | [非交互](./docs/comparison/ci-scripting-deep-dive.md) | stream-json 协议 vs TTY 自动检测 vs 批量评估 |
+| 遥测隐私 | [隐私实现](./docs/comparison/telemetry-privacy-deep-dive.md) | 782 事件 vs 零遥测 vs Opt-in 10% |
+| 系统提示 | [Prompt 工程](./docs/comparison/system-prompt-deep-dive.md) | 8 模块硬编码 vs XML 结构 vs Jinja2 动态 |
+| API 参数 | [重试策略](./docs/comparison/api-params-deep-dive.md) | 温度/重试/循环上限/缓存跨 Agent 对比 |
+
+### Agent 间 1v1 对比
+
 - [Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md) | [vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md) | [Aider vs Goose](./docs/comparison/aider-vs-goose.md)
 - [Qwen vs Claude Code](./docs/comparison/qwen-vs-claude-code.md) | [vs Gemini vs Kimi](./docs/comparison/qwen-vs-gemini-vs-kimi.md) | [OpenCode vs Qwen](./docs/comparison/opencode-vs-qwen-source.md)
 
@@ -110,9 +136,12 @@
 - [上下文管理](./docs/guides/context-management.md) | [安全加固](./docs/guides/security-hardening.md)
 
 ### 参考文档
+
 - **[架构原理](./docs/architecture/overview.md)** — 代理循环、MCP、上下文管理
 - **[基准测试](./docs/benchmarks/overview.md)** — SWE-bench、Aider Benchmark、Terminal-Bench 等
 - **[外部资源](./docs/resources.md)** — 视频教程、博客、论文、社区
+
+---
 
 ## 架构流派（源码分析发现）
 
@@ -128,19 +157,9 @@
 | 语言 | Agent | 特点 |
 |------|-------|------|
 | **Rust** | Goose, Claude Code, Warp | 性能最佳，内存最低 |
-| **TypeScript** | Gemini CLI, Qwen Code, OpenCode, Codex CLI, Cline, Continue | Ink/React TUI 成熟，生态丰富 |
+| **TypeScript** | Gemini CLI, Qwen Code, Codex CLI, Cline, Continue | Ink/React TUI 成熟，生态丰富 |
+| **Go + TS** | OpenCode | Go 后端 + TypeScript TUI，SolidJS 响应式 |
 | **Python** | Aider, SWE-agent, OpenHands, Kimi CLI | LiteLLM 100+ 模型，学术研究首选 |
-
-## 30 秒选型指南
-
-- **日常编码** → Claude Code（推理强）或 Aider（Git 集成好）
-- **免费使用** → Qwen Code（1000 次/天）或 Gemini CLI
-- **多模型切换** → OpenCode（100+ via models.dev）或 Goose（58+）
-- **VS Code 用户** → Cline（58k Stars）或 Continue（PR Checks）
-- **中文开发者** → Qwen Code 或 Kimi CLI
-- **自动化/CI** → SWE-agent 或 OpenHands
-- **安全沙箱** → Codex CLI（默认网络隔离）或 Gemini CLI（TOML 策略引擎）
-- **OpenAI 用户** → Codex CLI（官方开源）
 
 ## 性能基准 (2026)
 
@@ -154,7 +173,20 @@
 
 *数据来源：[SWE-bench 排行榜](https://www.swebench.com/)*
 
-## 本仓库的源码分析基础
+---
+
+## 附录
+
+### 源码分析纠正的重要事实
+
+| Agent | 官方/常见说法 | 源码实际情况 |
+|------|-------------|-------------|
+| **Goose** | TypeScript | **Rust**（55k 行） |
+| **OpenCode** | Go | **Go + TypeScript**（混合 Monorepo，Go 后端 + TS TUI） |
+| **Kimi CLI** | TypeScript | **Python**（68.8%） |
+| **Qwen Code** | 原创 | **Gemini CLI 分叉**（大幅增强） |
+
+### 本仓库的源码分析基础
 
 本仓库的对比文档基于以下本地源码仓库的深度分析：
 
@@ -164,14 +196,14 @@
 | Goose | **Rust** | ~55k 行 | MCP 原生，58+ 提供商 |
 | Gemini CLI | TypeScript | ~191k 行 | TOML 策略引擎，Qwen Code 上游 |
 | Qwen Code | TypeScript | ~191k 行 | Gemini 分叉 + 多提供商 + Arena |
-| OpenCode | **TypeScript** | ~983 TS + 359 TSX 文件 | 100+ Provider（models.dev）+ 37 LSP + 26 Formatter + ACP IDE |
+| OpenCode | **Go + TS** | ~983 TS + 359 TSX 文件 | 100+ Provider（models.dev）+ 37 LSP + ACP IDE |
 | Cline | TypeScript | ~40k 行 | Git Checkpoint + 48 提供商 |
 | SWE-agent | Python | ~20k 行 | ACI 设计 + Bundle 工具 |
 | OpenHands | Python | ~60k 行 | EventStream + 多代理委托 |
 | Continue | TypeScript | ~80k 行 | 语义索引 + PR Checks |
 | Kimi CLI | **Python** | ~20k 行 | 双模式 Ctrl-X + Wire 协议 |
 
-## 资源链接
+### 资源链接
 
 - [awesome-cli-coding-agents](https://github.com/bradAGI/awesome-cli-coding-agents) — CLI 编程代理精选列表
 - [SWE-bench](https://www.swebench.com/) — 软件工程基准测试
