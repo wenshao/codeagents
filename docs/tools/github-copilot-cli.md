@@ -9,7 +9,7 @@
 
 ## 概述
 
-GitHub Copilot CLI 是 GitHub 推出的终端原生 AI 编程代理。基于与 GitHub Copilot coding agent 相同的代理框架，提供代码构建、调试、重构等智能辅助能力，并深度集成 GitHub 工作流。以独立二进制形式运行（`copilot` 命令），支持 macOS、Linux 和 Windows。内置 12 个核心工具、21 个浏览器工具、48 个 GitHub 平台工具、3 个内置代理和 14 个模型。
+GitHub Copilot CLI 是 GitHub 推出的终端原生 AI 编程代理。基于与 GitHub Copilot coding agent 相同的代理框架，提供代码构建、调试、重构等智能辅助能力，并深度集成 GitHub 工作流。以独立二进制形式运行（`copilot` 命令），支持 macOS、Linux 和 Windows。内置 11 个核心工具、21 个浏览器工具、35 个 GitHub 平台工具、3 个内置代理和 25+ 个模型。
 
 ## 安装
 
@@ -32,24 +32,25 @@ copilot
 
 支持 PAT 认证：创建带 "Copilot Requests" 权限的 fine-grained PAT，通过 `GH_TOKEN` 或 `GITHUB_TOKEN` 环境变量传入。
 
-## 斜杠命令（32 个）
+## 斜杠命令（34 个）
 
 | 命令 | 别名 | 用途 |
 |------|------|------|
 | `/add-dir` | | 添加工作目录 |
 | `/agent` | | 与内置代理交互 |
 | `/allow-all` | `/yolo` | 允许所有工具执行，跳过确认 |
-| `/clear` | | 清除对话历史 |
+| `/clear` | `/new` | 清除对话历史 |
 | `/compact` | | 压缩上下文窗口 |
 | `/context` | | 查看/管理上下文 |
 | `/cwd` | `/cd` | 切换当前工作目录 |
-| `/delegate` | | 委派任务给子代理（需 CCA_DELEGATE 功能标志） |
-| `/diff` | | 查看差异（实验性） |
+| `/delegate` | | 委派变更到远程仓库，生成 AI PR |
+| `/diff` | | 查看差异 |
 | `/exit` | `/quit` | 退出程序 |
 | `/experimental` | | 启用/查看实验性功能 |
 | `/feedback` | | 提交保密反馈调查 |
+| `/fleet` | | 拆分任务为并行子代理执行 |
 | `/help` | | 显示帮助信息 |
-| `/ide` | | IDE 集成（实验性） |
+| `/ide` | | IDE 集成 |
 | `/init` | | 初始化项目配置 |
 | `/list-dirs` | | 列出已添加的工作目录 |
 | `/login` | | GitHub 账户认证登录 |
@@ -57,8 +58,8 @@ copilot
 | `/lsp` | | 查看已配置的 LSP 服务器状态 |
 | `/mcp` | | 管理 MCP 服务器 |
 | `/model` | `/models` | 切换或列出可用模型 |
-| `/plan` | | 创建执行计划（需 PLAN_COMMAND 功能标志） |
-| `/plugin` | | 管理插件（需 PLUGIN_COMMAND 功能标志） |
+| `/plan` | | 创建执行计划 |
+| `/plugin` | | 管理插件 |
 | `/rename` | | 重命名当前会话 |
 | `/reset-allowed-tools` | | 重置工具允许列表 |
 | `/resume` | | 恢复之前的会话 |
@@ -71,7 +72,7 @@ copilot
 | `/usage` | | 查看使用量/配额 |
 | `/user` | | 查看当前用户信息 |
 
-## 核心工具（11 个）
+## 核心工具（11 个，二进制验证）
 
 | 工具 | 用途 |
 |------|------|
@@ -87,7 +88,7 @@ copilot
 | `git_apply_patch` | 应用 Git 补丁 |
 | `search_code_subagent` | 代码搜索子代理 |
 
-## 浏览器工具（19 个，基于 Playwright）
+## 浏览器工具（21 个，基于 Playwright，二进制验证）
 
 | 工具 | 用途 |
 |------|------|
@@ -96,6 +97,7 @@ copilot
 | `browser_console_messages` | 获取控制台消息 |
 | `browser_drag` | 拖拽元素 |
 | `browser_evaluate` | 执行 JavaScript |
+| `browser_file_upload` | 上传文件 |
 | `browser_fill_form` | 填写表单 |
 | `browser_handle_dialog` | 处理对话框 |
 | `browser_hover` | 悬停元素 |
@@ -110,8 +112,9 @@ copilot
 | `browser_tabs` | 管理浏览器标签页 |
 | `browser_take_screenshot` | 截取页面截图 |
 | `browser_type` | 输入文本 |
+| `browser_wait_for` | 等待页面条件满足 |
 
-## GitHub 平台工具（35 个）
+## GitHub 平台工具（35 个，二进制验证）
 
 ### Actions（12 个）
 
@@ -123,14 +126,14 @@ copilot
 | `get_job_logs` | 获取作业日志 |
 | `get_workflow` | 获取工作流详情 |
 | `get_workflow_run` | 获取工作流运行详情 |
-| `get_workflow_logs` | 获取工作流日志 |
+| `get_workflow_run_logs` | 获取工作流运行日志 |
 | `list_workflow_jobs` | 列出工作流作业 |
 | `list_workflow_run_artifacts` | 列出工作流运行产物 |
 | `list_workflow_runs` | 列出工作流运行 |
 | `list_workflows` | 列出仓库工作流 |
 | `summarize_job_log_failures` | 汇总作业日志失败 |
 
-### Pull Requests（6 个）
+### Pull Requests（7 个）
 
 | 工具 | 用途 |
 |------|------|
@@ -140,6 +143,7 @@ copilot
 | `get_pull_request_reviews` | 获取 PR 审查 |
 | `get_pull_request_status` | 获取 PR 状态 |
 | `list_pull_requests` | 列出 PR |
+| `search_pull_requests` | 搜索 PR |
 
 ### Issues（3 个）
 
@@ -197,24 +201,50 @@ copilot
 - **用途：** 执行测试、构建、lint 等开发命令，成功时返回简要摘要，失败时返回完整输出
 - **触发：** `/agent task`
 
-## 模型（14 个）
+## 模型（25+ 个，据官方文档）
 
-| 模型 | Premium 倍率 | 说明 |
-|------|-------------|------|
-| claude-sonnet-4.5 | 1x | 默认模型 |
-| claude-haiku-4.5 | 0.33x | 轻量快速 |
-| claude-opus-4.5 | 3x | 高性能 |
-| claude-sonnet-4 | 1x | |
-| gemini-3-pro-preview | 1x | Google Gemini |
-| gpt-5.2-codex | 1x | |
-| gpt-5.2 | 1x | |
-| gpt-5.1-codex-max | 1x | |
-| gpt-5.1-codex | 1x | |
-| gpt-5.1 | 1x | |
-| gpt-5 | 1x | |
-| gpt-5.1-codex-mini | 0.33x | 轻量 |
-| gpt-5-mini | 0x | 免费 |
-| gpt-4.1 | 0x | 免费 |
+> 以下综合本地二进制 v0.0.403 和官方 docs.github.com 文档。标记 `[binary]` 表示在本地二进制中确认存在，`[web]` 表示仅在官方文档中列出。
+
+### Anthropic Claude 系列
+
+| 模型 | 状态 | 说明 |
+|------|------|------|
+| claude-sonnet-4.5 | GA [binary] | 默认模型 |
+| claude-sonnet-4.6 | GA [web] | |
+| claude-sonnet-4 | GA [binary] | |
+| claude-haiku-4.5 | GA [binary] | 轻量快速 |
+| claude-opus-4.5 | GA [binary] | 高性能 |
+| claude-opus-4.6 | GA [web] | |
+| claude-opus-4.6 (fast mode) | Preview [web] | 快速模式 |
+
+### OpenAI GPT 系列
+
+| 模型 | 状态 | 说明 |
+|------|------|------|
+| gpt-5.4 | GA [web] | |
+| gpt-5.4 mini | GA [web] | |
+| gpt-5.3-codex | GA [web] | |
+| gpt-5.2-codex | GA [binary] | |
+| gpt-5.2 | GA [binary] | |
+| gpt-5.1-codex-max | GA [binary] | |
+| gpt-5.1-codex | GA [binary] | |
+| gpt-5.1-codex-mini | Preview [binary] | 轻量 |
+| gpt-5.1 | GA [binary] | |
+| gpt-5 | GA [binary] | |
+| gpt-5-mini | GA [binary] | 免费（0x） |
+| gpt-4.1 | GA [binary] | 免费（0x） |
+
+### Google / xAI / 其他
+
+| 模型 | 状态 | 说明 |
+|------|------|------|
+| gemini-3.1-pro | Preview [web] | |
+| gemini-3-pro-preview | GA [binary] | |
+| gemini-3-flash | Preview [web] | |
+| gemini-2.5-pro | GA [web] | |
+| grok-code-fast-1 | GA [web] | xAI |
+| raptor-mini | Preview [web] | 微调 GPT-5 mini |
+| goldeneye | Preview [web] | 微调 GPT-5.1-Codex |
 
 通过 `/model` 命令或 `COPILOT_MODEL` 环境变量切换模型。
 
@@ -371,9 +401,9 @@ try {
 
 ## 优势
 
-1. **完整代理能力**：12 个核心工具 + 21 个浏览器工具 + 48 个 GitHub 工具
+1. **完整代理能力**：11 个核心工具 + 21 个浏览器工具 + 35 个 GitHub 工具
 2. **GitHub 生态深度集成**：Actions、PR、Issues、代码扫描、密钥扫描原生联动
-3. **多模型选择**：14 个模型，涵盖 Claude、GPT、Gemini 系列
+3. **多模型选择**：25+ 个模型，涵盖 Claude、GPT、Gemini、Grok 系列
 4. **内置代理系统**：code-review、explore、task 三个专用代理
 5. **浏览器自动化**：基于 Playwright 的完整浏览器控制能力
 6. **MCP + LSP 可扩展**：支持自定义 MCP 服务器和语言服务器
@@ -387,7 +417,7 @@ try {
 2. **消耗 premium requests 配额**：高倍率模型（如 claude-opus-4.5 为 3x）消耗较快
 3. **需要 GitHub 账户**：依赖 GitHub 认证
 4. **部分功能需功能标志**：CUSTOM_AGENTS、PLAN_COMMAND 等需手动启用
-5. **较新产品**：仍在快速迭代中，实验性功能较多
+5. **较新产品**：仍在快速迭代中，功能迭代频繁（如 `/fleet`、新模型不断添加）
 
 ## 使用场景
 

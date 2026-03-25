@@ -52,22 +52,34 @@ Claude Code 采用 7 层优先级设置体系，从高到低：
 
 Claude Code 的 Hook 系统是其最独特的能力之一。与传统脚本 Hook 不同，Claude Code 支持 **LLM 驱动的 Hook 决策**——让 LLM 分析工具调用的意图和参数，决定是否允许执行。
 
-### Hook 事件类型
+### Hook 事件类型（22 种）
 
-| 事件 | 触发时机 | 用途 |
+| 事件 | 触发时机 | 来源 |
 |------|----------|------|
-| **PreToolUse** | 工具执行前 | 检查/修改/拦截工具调用 |
-| **PostToolUse** | 工具执行后 | 后处理工具输出 |
-| **Notification** | 通知事件 | 自定义通知（如桌面提醒） |
-| **SubagentStart** | 子代理启动时 | 子代理创建前的准备或检查 |
-| **SubagentStop** | 子代理停止时 | 子代理完成后处理 |
-| **SessionStart** | 会话开始时 | 初始化操作（如环境检查） |
-| **Setup** | 初始设置时 | 首次配置时的自动化操作 |
-| **Stop** | 代理停止时 | 清理或追加操作 |
-| **PreCompact** | 上下文压缩前 | 压缩前保存关键信息 |
-| **PostCompact** | 上下文压缩后 | 压缩后注入补充上下文 |
+| `SessionStart` | 会话开始时 | 二进制+官方 |
+| `SessionEnd` | 会话结束时 | 官方 |
+| `UserPromptSubmit` | 用户提交提示时 | 二进制+官方 |
+| `PreToolUse` | 工具执行前 | 二进制+官方 |
+| `PostToolUse` | 工具执行成功后 | 二进制+官方 |
+| `PostToolUseFailure` | 工具执行失败后 | 官方 |
+| `PermissionRequest` | 请求权限时 | 官方 |
+| `Notification` | 通知事件 | 二进制+官方 |
+| `SubagentStart` | 子代理启动时 | 二进制+官方 |
+| `SubagentStop` | 子代理停止时 | 二进制+官方 |
+| `Stop` | 代理停止时 | 二进制+官方 |
+| `StopFailure` | 代理停止失败时 | 官方 |
+| `PreCompact` | 上下文压缩前 | 二进制+官方 |
+| `PostCompact` | 上下文压缩后 | 二进制+官方 |
+| `TaskCompleted` | 后台任务完成时 | 官方 |
+| `TeammateIdle` | Teammate 空闲时 | 官方 |
+| `InstructionsLoaded` | 指令文件加载时 | 官方 |
+| `ConfigChange` | 配置变更时 | 官方 |
+| `WorktreeCreate` | 创建 Git worktree 时 | 官方 |
+| `WorktreeRemove` | 移除 Git worktree 时 | 官方 |
+| `Elicitation` | 向用户请求信息时 | 官方 |
+| `ElicitationResult` | 用户回复请求时 | 官方 |
 
-此外，**UserPromptSubmit** 可用于在用户提交提示时注入额外上下文信息。
+> 来源：[官方 Hooks 文档](https://code.claude.com/docs/en/hooks)，部分事件同时在 v2.1.81 二进制中确认。
 
 ### Hook 配置示例
 

@@ -26,7 +26,7 @@ Codex CLI 是 OpenAI 官方推出的开源终端编程代理。项目采用 Apac
 
 ## 审批模式
 
-Codex CLI 提供四种审批模式（approval mode），控制代理的自主程度：
+Codex CLI 提供五种审批模式（approval mode），控制代理的自主程度：
 
 ### untrusted 模式（默认）
 
@@ -66,6 +66,18 @@ codex -a never "修复所有测试并确保通过"
 | 风险等级 | 较高（依赖沙箱保护） |
 | 适用场景 | 批量任务、CI/CD 集成、自动化流水线 |
 
+### granular 模式
+
+```bash
+codex -a granular "精细控制审批"
+```
+
+| 项目 | 说明 |
+|------|------|
+| 行为 | 细粒度控制：sandbox_approval、rules、mcp_elicitations、request_permissions、skill_approval 分别配置 |
+| 风险等级 | 可调节 |
+| 适用场景 | 需要对不同操作类型设置不同审批策略的场景 |
+
 ### on-failure 模式（已弃用）
 
 此模式已标记为 DEPRECATED，不建议使用。
@@ -74,8 +86,8 @@ codex -a never "修复所有测试并确保通过"
 
 | 标志 | 等价于 |
 |------|--------|
-| `--full-auto` | `-a on-request --sandbox workspace-write` |
-| `--dangerously-bypass-approvals-and-sandbox` | 完全绕过审批和沙箱（危险） |
+| `--full-auto` | `--ask-for-approval on-request --sandbox workspace-write` |
+| `--dangerously-bypass-approvals-and-sandbox` (`--yolo`) | 完全绕过审批和沙箱（危险） |
 
 ## 沙箱机制
 

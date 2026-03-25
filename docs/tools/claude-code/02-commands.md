@@ -138,6 +138,44 @@ Found 3 issues:
 
 ---
 
+### /batch
+
+- **类型：** prompt（内置 Skill）
+- **功能：** 编排大规模并行变更——将大型任务拆分为多个子任务并行执行
+- **来源：** [官方文档](https://code.claude.com/docs/en/slash-commands)
+
+**使用示例：**
+```bash
+/batch 将所有 console.log 替换为 logger.info
+/batch 为所有 API 端点添加错误处理
+```
+
+**工作原理：**
+- 分析任务范围，识别可并行的子任务
+- 启动多个子代理并行执行变更
+- 汇总结果和变更报告
+
+---
+
+### /debug
+
+- **类型：** prompt（内置 Skill）
+- **功能：** 通过分析 debug 日志排查会话问题
+- **来源：** [官方文档](https://code.claude.com/docs/en/slash-commands)
+
+**使用示例：**
+```bash
+/debug
+/debug 为什么上一步失败了
+```
+
+**工作原理：**
+- 读取会话的 debug 日志文件
+- 分析错误、异常和异常行为模式
+- 提供排查建议和修复方案
+
+---
+
 ### /commit
 
 - **类型：** prompt（commit-commands 插件）
