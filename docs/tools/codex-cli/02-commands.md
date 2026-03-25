@@ -14,7 +14,7 @@
 |--------|------|------|-----------|
 | `exec` | `e` | 执行任务（默认子命令，无需显式写出） | `<prompt>` |
 | `review` | - | 代码审查，对 diff 生成结构化反馈 | `--uncommitted`, `--base <branch>`, `--commit <sha>` |
-| `login` | `status` | 登录 OpenAI 账户；`login status` 检查当前认证状态 | - |
+| `login` | - | 管理登录（`login status` 为子操作，非别名） | `status` |
 | `logout` | - | 登出当前账户，清除本地令牌 | - |
 | `mcp` | - | MCP 客户端管理（6 个子操作） | `list`, `get`, `add`, `remove`, `login`, `logout` |
 | `mcp-server` | - | 以 MCP 服务器模式运行（stdio 传输） | - |
@@ -22,10 +22,10 @@
 | `completion` | - | 生成 shell 自动补全脚本 | `bash`, `zsh`, `fish` |
 | `sandbox` | - | 沙箱测试与调试（3 个平台子操作） | `macos`, `linux`, `windows` |
 | `debug` | - | 调试信息输出 | `app-server` |
-| `apply` | `a` | 应用补丁文件（ApplyPatch 格式） | `<patch-file>` |
+| `apply` | `a` | 将 Codex agent 产生的最新 diff 通过 `git apply` 应用到本地工作树 | `<task-id>` |
 | `resume` | - | 恢复之前的会话 | `<session-id>` |
 | `fork` | - | 从已有会话分叉出新会话 | `<session-id>` |
-| `cloud` | - | 云端任务管理（实验性，4 个子操作） | `exec`, `status`, `list`, `apply`, `diff` |
+| `cloud` | - | 云端任务管理（实验性，5 个子操作） | `exec`, `status`, `list`, `apply`, `diff` |
 | `features` | - | 功能标志管理（3 个子操作） | `list`, `enable`, `disable` |
 
 ### exec（默认子命令）
@@ -47,7 +47,7 @@ cat error.log | codex "分析这段日志并修复根因"
 
 ### review（代码审查）
 
-`review` 子命令对 git diff 执行结构化审查，输出问题列表与改进建议。
+`review` 子命令对 git diff 执行结构化审查，输出问题列表与改进建议。支持 `--title <TITLE>` 可选参数在审查摘要中显示 commit 标题。
 
 ```bash
 # 审查工作区未提交的更改
@@ -59,6 +59,9 @@ codex review --base main
 # 审查特定 commit
 codex review --commit abc1234
 
+# 带标题的审查
+codex review --commit abc1234 --title "Fix race condition"
+
 # 管道输入自定义 diff
 git diff HEAD~3 | codex review
 ```
@@ -66,9 +69,9 @@ git diff HEAD~3 | codex review
 ### login / logout
 
 ```bash
-codex login          # 交互式登录 OpenAI 账户（浏览器 OAuth 流程）
-codex login status   # 查看当前认证状态（别名形式）
-codex logout         # 登出，清除 ~/.codex 下的令牌文件
+codex login          # 管理登录（交互式 OAuth 流程）
+codex login status   # 查看当前认证状态（子操作）
+codex logout         # 登出，清除本地认证凭证
 ```
 
 ### mcp（6 个子操作）
@@ -84,10 +87,11 @@ codex mcp logout <server-name>          # 登出 MCP 服务器
 
 ### app-server（IDE 集成）
 
-App-Server 是 Codex CLI 为 IDE 插件提供的 JSON-RPC 服务器，通过 stdio 通信。
+App-Server 是 Codex CLI 为 IDE 插件提供的 JSON-RPC 服务器，支持 stdio（默认）和 WebSocket（`ws://`）两种传输方式。支持 `--session-source` 标记来源（默认 `vscode`，也支持 `cli`、`exec`、`mcp` 等）。
 
 ```bash
-codex app-server                     # 启动 JSON-RPC 服务器
+codex app-server                     # 启动 JSON-RPC 服务器（stdio）
+codex app-server --listen ws://0.0.0.0:8080  # WebSocket 传输
 codex app-server generate-ts         # 生成 TypeScript 类型定义
 codex app-server generate-json-schema  # 生成 JSON Schema 定义
 codex debug app-server               # 调试模式启动 app-server
@@ -96,9 +100,9 @@ codex debug app-server               # 调试模式启动 app-server
 ### sandbox（沙箱测试）
 
 ```bash
-codex sandbox macos     # 测试 macOS Seatbelt 沙箱配置
-codex sandbox linux     # 测试 Linux 沙箱配置（landlock/seccomp）
-codex sandbox windows   # 测试 Windows 沙箱配置
+codex sandbox macos     # 测试 macOS Seatbelt 沙箱配置（别名：seatbelt）
+codex sandbox linux     # 测试 Linux 沙箱配置（bubblewrap 默认，别名：landlock）
+codex sandbox windows   # 测试 Windows 沙箱配置（restricted token）
 ```
 
 ### cloud（云端任务，实验性）
@@ -122,11 +126,11 @@ codex features disable <flag-name>  # 禁用指定功能标志
 ### apply / resume / fork
 
 ```bash
-codex apply patch.diff              # 应用 ApplyPatch 格式的补丁文件
-codex a patch.diff                  # 同上（别名）
+codex apply <task-id>               # 将 agent 产生的最新 diff 通过 git apply 应用到本地
+codex a <task-id>                   # 同上（别名）
 
-codex resume <session-uuid>         # 恢复指定会话
-codex fork <session-uuid>           # 从指定会话分叉出新会话
+codex resume <session-uuid>         # 恢复指定会话（--last 恢复最近会话）
+codex fork <session-uuid>           # 从指定会话分叉出新会话（--last 分叉最近会话）
 ```
 
 ### completion
@@ -141,19 +145,27 @@ codex completion fish >> ~/.config/fish/completions/codex.fish
 
 | 参数 | 简写 | 说明 | 默认值 |
 |------|------|------|--------|
-| `--model` | `-m` | 指定使用的模型 | `o4-mini` |
+| `--model` | `-m` | 指定使用的模型 | `gpt-5.1-codex` |
 | `--ask-for-approval` | `-a` | 审批模式（4 种）：untrusted/on-request/on-failure/never | `untrusted` |
-| `--sandbox` | - | 沙箱模式：`read-only` / `workspace-write` / `danger-full-access` | - |
+| `--sandbox` | `-s` | 沙箱模式：`read-only` / `workspace-write` / `danger-full-access` | - |
 | `--full-auto` | - | 便捷别名 = `--ask-for-approval on-request --sandbox workspace-write` | - |
-| `--config` | `-c` | 指定配置文件路径 | `~/.codex/config.toml` |
-| `--oss` | - | 使用本地 OSS 模型提供者 | - |
+| `--config` | `-c` | 覆盖配置值（`key=value` 格式，支持点路径如 `foo.bar.baz`） | - |
+| `--profile` | `-p` | 使用 config.toml 中定义的配置 profile | - |
+| `--oss` | - | 使用本地 OSS 模型提供者（验证 LM Studio 或 Ollama 运行中） | - |
 | `--local-provider` | - | 指定本地模型提供者（`lmstudio` / `ollama`） | - |
-| `--reasoning-effort` | - | 模型推理努力程度 | 配置文件值 |
-| `--dangerously-bypass-approvals-and-sandbox` | `--yolo` | 绕过所有审批和沙箱（危险） | - |
+| `--image` | `-i` | 附加图片到初始提示（可重复使用） | - |
+| `--enable` | - | 启用功能标志（可重复，等价于 `-c features.<name>=true`） | - |
+| `--disable` | - | 禁用功能标志（可重复，等价于 `-c features.<name>=false`） | - |
+| `--search` | - | 启用实时网络搜索（web_search 工具） | - |
+| `--cd` | `-C` | 指定代理工作根目录 | 当前目录 |
+| `--add-dir` | - | 添加额外可写目录（配合主工作区使用） | - |
+| `--remote` | - | 连接远程 app-server WebSocket 端点 | - |
+| `--no-alt-screen` | - | 禁用备用屏幕模式（内联 TUI，保留终端滚动历史） | - |
+| `--dangerously-bypass-approvals-and-sandbox` | - | 绕过所有审批和沙箱（极危险，仅限外部沙箱环境） | - |
 | `--help` | `-h` | 显示帮助信息 | - |
 | `--version` | `-V` | 显示版本号 | - |
 
-> 验证方式：`codex --help` 确认 `--version` 简写为 `-V`（大写）而非 `-v`。`--quiet`、`--no-project-doc`、`--project-doc` 不在 `codex --help` 输出中，已移除。
+> 验证方式：`codex --help` 确认 `--version` 简写为 `-V`（大写）。`--config` 是覆盖配置值而非指定配置文件路径。`--reasoning-effort` 不是独立 CLI 参数，需通过 `-c model_reasoning_effort=high` 设置。`--yolo` 别名未在 `codex --help` 中出现。
 
 ---
 
@@ -188,7 +200,7 @@ codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 
 ---
 
-## TUI 斜杠命令（35+ 个）
+## TUI 斜杠命令（40+ 个）
 
 交互式 TUI 会话中可用的斜杠命令，从二进制字符串表中提取。
 
@@ -214,8 +226,7 @@ codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 |------|------|
 | `/model` | 切换或查看当前使用的模型 |
 | `/permissions` | 查看或修改当前权限设置 |
-
-> 验证方式：`/config` 未出现在 developers.openai.com/codex/cli/slash-commands 官方文档中，已移除。
+| `/settings` | 查看或修改会话设置 |
 | `/personality` | 查看或设置代理人格（对应 personality 配置键） |
 | `/fast` | 切换快速模式（跳过部分确认步骤） |
 | `/debug-config` | 显示当前调试配置信息 |
@@ -226,9 +237,10 @@ codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 |------|------|
 | `/tools` | 列出当前可用的所有工具 |
 | `/mcp` | 管理 MCP 服务器连接 |
+| `/apps` | 管理 ChatGPT Apps（Connectors），通过 `$` 引用已安装的 App |
+| `/experimental` | 查看与切换实验性功能 |
+| `/skills` | 列出所有可用技能 |
 | `/prompts` | 查看当前生效的提示词 |
-
-> 验证方式：`/skills` 未出现在 developers.openai.com/codex/cli/slash-commands 官方文档中，已移除。
 | `/memories` | 查看或管理代理记忆 |
 
 ### 工作流
@@ -243,6 +255,9 @@ codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 | `/shell` | 直接执行 shell 命令（绕过代理） |
 | `/mention` | 提及/引用文件或符号，添加到上下文 |
 | `/ps` | 显示当前后台进程状态 |
+| `/history` | 查看会话历史记录 |
+| `/clear` | 清除当前屏幕/对话显示 |
+| `/help` | 显示可用斜杠命令帮助 |
 
 ### 系统与认证
 
@@ -263,7 +278,7 @@ codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 
 从二进制中提取的系统提示片段确认代理身份：
 
-> **"You are Codex, based on GPT-5."**
+> **"You are Codex, a coding agent based on GPT-5."**
 
 ### 核心工具列表
 
@@ -358,30 +373,37 @@ codex mcp-server    # 以 stdio MCP 服务器模式运行
 
 ---
 
-## App-Server 协议方法（40+）
+## App-Server 协议方法（90+）
 
-App-Server 使用 JSON-RPC 2.0 over stdio，为 IDE 插件（VS Code 扩展等）提供完整的 Codex 能力接口。从二进制提取的命名空间与方法如下：
+App-Server 使用 JSON-RPC 2.0 over stdio（也支持 `ws://` WebSocket 传输），为 IDE 插件（VS Code 扩展等）提供完整的 Codex 能力接口。从二进制提取的命名空间与方法如下：
 
-| 命名空间 | 方法示例 | 说明 |
+| 命名空间 | 实际方法（二进制提取） | 说明 |
 |----------|---------|------|
-| `account/*` | `account/info`, `account/status` | 账户信息与认证状态 |
-| `app/*` | `app/init`, `app/shutdown` | 应用生命周期管理 |
-| `command/*` | `command/exec`, `command/cancel` | 命令执行与取消 |
-| `completion/*` | `completion/create`, `completion/cancel` | 补全请求管理 |
-| `config/*` | `config/get`, `config/set`, `config/list` | 配置读写 |
-| `elicitation/*` | `elicitation/respond` | 交互式参数征询响应 |
-| `feedback/*` | `feedback/submit` | 用户反馈提交 |
-| `fs/*` | `fs/read`, `fs/write`, `fs/list` | 文件系统操作 |
-| `hook/*` | `hook/register`, `hook/trigger` | 钩子注册与触发 |
-| `item/*` | `item/get`, `item/list` | 对话项（消息/工具调用）管理 |
-| `model/*` | `model/list`, `model/get` | 模型信息查询 |
-| `notifications/*` | `notifications/send` | 通知推送 |
-| `turn/*` | `turn/submit`, `turn/cancel` | 对话回合管理 |
-| `thread/*` | `thread/create`, `thread/list`, `thread/resume` | 会话线程管理 |
-| `fuzzyFileSearch/*` | `fuzzyFileSearch/search` | 模糊文件搜索 |
-| `mcpServer/*` | `mcpServer/list`, `mcpServer/add` | MCP 服务器管理 |
-| `skills/*` | `skills/list`, `skills/invoke` | 技能管理与调用 |
-| `plugin/*` | `plugin/register`, `plugin/list` | 插件注册与管理 |
+| `account/*` | `account/read`, `account/updated`, `account/login/start`, `account/login/completed`, `account/login/cancel`, `account/logout` | 账户认证与登录流程 |
+| `app/*` | `app/list`, `app/list/updated` | 应用列表管理 |
+| `command/*` | `command/exec`, `command/exec/resize`, `command/exec/terminate`, `command/exec/write` | 命令执行、终端交互与生命周期 |
+| `completion/*` | `completion/complete` | 补全请求 |
+| `config/*` | `config/read`, `config/value/write`, `config/batchWrite`, `config/mcpServer/*` | 配置读写与批量操作 |
+| `elicitation/*` | `elicitation/create` | 交互式参数征询创建 |
+| `feedback/*` | `feedback/upload` | 用户反馈上传 |
+| `fs/*` | `fs/copy`, `fs/remove`, `fs/readDirectory` | 文件系统操作 |
+| `hook/*` | `hook/started`, `hook/completed` | 钩子生命周期事件 |
+| `item/*` | `item/started`, `item/completed`, `item/plan/delta`, `item/tool/call` | 对话项事件与工具调用 |
+| `model/*` | `model/list`, `model/rerouted` | 模型列表与重路由 |
+| `notifications/*` | `notifications/initialized`, `notifications/message`, `notifications/cancelled`, `notifications/progress`, `notifications/elicitation/complete`, `notifications/resources/updated`, `notifications/tools/list_changed` | 通知推送与事件 |
+| `turn/*` | `turn/start`, `turn/started`, `turn/completed`, `turn/interrupt`, `turn/steer`, `turn/diff/updated`, `turn/plan/updated` | 对话回合管理 |
+| `thread/*` | `thread/start`, `thread/started`, `thread/list`, `thread/read`, `thread/resume`, `thread/fork`, `thread/rollback`, `thread/archive`, `thread/unarchive`, `thread/compact/start`, `thread/compacted`, `thread/name/set`, `thread/name/updated`, `thread/metadata/update`, `thread/status/changed`, `thread/realtime/*`, `thread/unsubscribe`, `thread/loaded/list` | 会话线程完整管理 |
+| `review/*` | `review/start` | 代码审查 |
+| `tasks/*` | `tasks/get`, `tasks/list`, `tasks/cancel`, `tasks/result` | 任务管理 |
+| `fuzzyFileSearch/*` | `fuzzyFileSearch/search` (session start/stop/update) | 模糊文件搜索 |
+| `mcpServer/*` | `mcpServer/reload`, `mcpServer/oauth/login` | MCP 服务器管理 |
+| `skills/*` | `skills/list`, `skills/changed`, `skills/config/write` | 技能管理 |
+| `plugin/*` | `plugin/install`, `plugin/list`, `plugin/read`, `plugin/uninstall` | 插件安装与管理 |
+| `resources/*` | `resources/list`, `resources/read`, `resources/subscribe`, `resources/unsubscribe`, `resources/templates/list` | MCP 资源管理 |
+| `roots/*` | `roots/list` | 根目录列表 |
+| `tools/*` | `tools/list`, `tools/call` | 工具列表与调用 |
+| `prompts/*` | `prompts/list`, `prompts/get` | 提示词管理 |
+| `openai/*` | `openai/skills` | OpenAI 技能接口 |
 
 生成类型定义：
 
@@ -392,24 +414,68 @@ codex app-server generate-json-schema > codex-protocol.json
 
 ---
 
-## Feature Flags（12 个，二进制提取）
+## Feature Flags（52 个，`codex features list` 提取）
 
-从二进制字符串表中提取的所有功能标志：
+`codex features list` 输出全部 52 个功能标志，含 stable、experimental、under development、deprecated、removed 五种状态。以下列出关键标志：
 
-| 标志名 | 说明 | 默认状态 |
-|--------|------|---------|
-| `guardian_approval` | Guardian 子代理安全审批，自动审查高风险操作 | 关闭 |
-| `guardian_subagent` | Guardian 子代理系统（guardian_approval 的底层依赖） | 关闭 |
-| `collaboration_mode` | 协作模式，多用户共同参与同一会话 | 关闭 |
-| `multi_agent` | 多代理协作，主代理可分派子任务给子代理 | 关闭 |
-| `fast_mode` | 快速模式，跳过部分确认步骤加速执行 | 关闭 |
+### Stable（默认开启）
+
+| 标志名 | 说明 | 默认 |
+|--------|------|------|
+| `fast_mode` | 快速模式，跳过部分确认步骤加速执行 | 开启 |
+| `multi_agent` | 多代理协作，主代理可分派子任务给子代理 | 开启 |
+| `personality` | 代理人格自定义（语气、风格等） | 开启 |
+| `shell_snapshot` | Shell 快照，捕获终端状态用于上下文恢复 | 开启 |
+| `shell_tool` | Shell 工具（内置 shell 执行能力） | 开启 |
+| `enable_request_compression` | 启用请求压缩 | 开启 |
+| `skill_mcp_dependency_install` | 技能 MCP 依赖自动安装 | 开启 |
+| `unified_exec` | 统一执行模式 | 开启 |
+
+### Stable（默认关闭）
+
+| 标志名 | 说明 | 默认 |
+|--------|------|------|
+| `undo` | 撤销操作支持 | 关闭 |
+| `use_legacy_landlock` | 使用旧版 Landlock 沙箱 | 关闭 |
+
+### Experimental
+
+| 标志名 | 说明 | 默认 |
+|--------|------|------|
+| `guardian_approval` | Guardian 子代理安全审批，自动审查高风险操作（消耗更多 token） | 关闭 |
+| `apps` | ChatGPT Apps（Connectors）集成，通过 `$` 引用 | 关闭 |
+| `js_repl` | 持久 Node.js REPL，用于交互式 JavaScript 执行（需 Node >= v22.22.0） | 关闭 |
+| `tui_app_server` | 使用 app-server 后端的 TUI 实现 | 关闭 |
+| `prevent_idle_sleep` | 运行时阻止系统休眠 | 关闭 |
+
+### Under Development（关键）
+
+| 标志名 | 说明 | 默认 |
+|--------|------|------|
+| `codex_hooks` | 钩子系统，在特定事件点执行自定义逻辑 | 关闭 |
 | `voice_transcription` | 语音转录输入，通过麦克风输入指令 | 关闭 |
 | `realtime_conversation` | 实时对话模式（语音双向通信） | 关闭 |
-| `shell_snapshot` | Shell 快照，捕获终端状态用于上下文恢复 | 关闭 |
-| `codex_hooks` | 钩子系统，在特定事件点执行自定义逻辑 | 关闭 |
 | `tool_call_mcp_elicitation` | MCP 工具调用时支持交互式参数征询 | 关闭 |
-| `personality` | 代理人格自定义（语气、风格等） | 关闭 |
-| `ghost_snapshot` | Ghost 快照，轻量级环境检查点机制 | 关闭 |
+| `memories` | 代理记忆系统 | 关闭 |
+| `plugins` | 插件系统 | 关闭 |
+| `image_generation` | 图片生成功能 | 关闭 |
+| `code_mode` | 代码模式 | 关闭 |
+| `apply_patch_freeform` | 自由格式 ApplyPatch | 关闭 |
+| `enable_fanout` | 子任务扇出 | 关闭 |
+| `child_agents_md` | 子代理 AGENTS.md 支持 | 关闭 |
+| `request_permissions_tool` | 权限请求工具 | 关闭 |
+
+### Removed / Deprecated
+
+| 标志名 | 状态 |
+|--------|------|
+| `collaboration_modes` | removed（注意：是 modes 复数形式） |
+| `search_tool` | removed |
+| `remote_models` | removed |
+| `web_search_cached` | deprecated |
+| `web_search_request` | deprecated |
+
+> 验证方式：`codex features list` 输出 52 个标志。之前文档的 `guardian_subagent` 和 `ghost_snapshot` 不是独立 feature flag（`ghost_snapshot` 是配置键）。`collaboration_mode` 实际名称为 `collaboration_modes`。`multi_agent`、`fast_mode`、`shell_snapshot`、`personality` 默认状态均为开启，非关闭。
 
 管理命令：
 
@@ -433,7 +499,7 @@ codex features disable multi_agent           # 禁用指定标志
 |--------|------|------|--------|
 | `approval_mode` | string | 审批模式（untrusted/on-request/on-failure/never） | `untrusted` |
 | `sandbox` | string | 沙箱级别（read-only/workspace-write/danger-full-access） | `read-only` |
-| `model` | string | 默认模型 | `o4-mini` |
+| `model` | string | 默认模型 | `gpt-5.1-codex` |
 | `model_reasoning_effort` | string | 模型推理努力程度（low/medium/high） | `medium` |
 | `plan_mode_reasoning_effort` | string | Plan 模式下的推理努力程度 | `high` |
 | `personality` | string | 代理人格描述文本 | 空 |
@@ -444,12 +510,24 @@ codex features disable multi_agent           # 禁用指定标志
 | `agents` | table | 多代理配置（需启用 multi_agent flag） | 空 |
 | `skills` | table | 技能配置 | 空 |
 | `plugins` | table | 插件配置 | 空 |
+| `review_model` | string | 代码审查专用模型 | 空（使用默认模型） |
+| `model_context_window` | number | 模型上下文窗口大小 | 模型默认值 |
+| `model_auto_compact_token_limit` | number | 自动压缩触发 token 阈值 | 模型默认值 |
+| `developer_instructions` | string | 开发者指令（系统级） | 空 |
+| `model_instructions_file` | string | 模型指令文件路径 | 空 |
+| `profile` | string | 使用的配置 profile 名称 | 空 |
+| `history` | table | 会话历史配置 | 默认值 |
+| `analytics` | table | 分析与遥测配置 | 默认值 |
+| `ghost_snapshot` | table | Ghost 快照配置 | 默认值 |
+| `tui` | table | TUI 显示配置（动画、提示、状态栏、主题等） | 默认值 |
+| `project_root_markers` | array | 项目根目录标记文件列表 | 默认值 |
+| `tool_output_token_limit` | number | 工具输出 token 上限 | 默认值 |
 
 ### 完整配置示例
 
 ```toml
 # ~/.codex/config.toml
-model = "o4-mini"
+model = "gpt-5.1-codex"
 approval_mode = "untrusted"
 sandbox = "workspace-write"
 model_reasoning_effort = "medium"
@@ -470,7 +548,7 @@ args = ["-y", "@modelcontextprotocol/server-filesystem", "."]
 
 # 多代理配置
 [agents.reviewer]
-model = "o4-mini"
+model = "gpt-5.1-codex"
 instructions = "你是一个代码审查专家"
 
 # Profile 支持
@@ -479,7 +557,7 @@ model = "gpt-5.1-codex"
 approval_mode = "on-request"
 
 [profiles.personal]
-model = "o4-mini"
+model = "o3"
 approval_mode = "untrusted"
 ```
 
@@ -545,10 +623,9 @@ codex fork <session-uuid>           # 从指定会话分叉
 
 ```bash
 # TUI 中调用
-/skills                  # 列出所有可用技能
+/skills                          # 列出所有可用技能
 
-# 配置文件声明
-# config.toml
+# 配置文件声明（config.toml）
 [skills.deploy]
 path = "./skills/deploy"
 ```
