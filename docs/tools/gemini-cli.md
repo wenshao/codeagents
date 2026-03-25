@@ -539,7 +539,7 @@ gemini --resume <session-id>
 gemini --version
 ```
 
-### 斜杠命令（会话内，43 个命令）
+### 斜杠命令（会话内，41 个命令）
 
 ```bash
 # 核心操作
@@ -598,6 +598,7 @@ gemini --version
 /init            # 初始化项目配置
 /setupGithub     # 设置 GitHub
 /privacy         # 隐私设置
+/directory       # 目录管理
 /corgi           # 彩蛋
 ```
 

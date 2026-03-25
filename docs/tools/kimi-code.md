@@ -486,10 +486,7 @@ kimi --wire
 | `/yolo` | 切换 YOLO 模式 |
 | `/plan` | 切换 Plan 模式 |
 | `/model` | 切换模型和思维模式 |
-| `/login`, `/setup` | 登录认证 |
-| `/logout` | 登出 |
-| `/usage`, `/status` | 显示 API 使用量和配额 |
-| `/sessions` | 列出并切换会话 |
+| `/sessions`, `/resume` | 列出并切换/恢复会话 |
 | `/new` | 创建新会话 |
 | `/export` | 导出会话 |
 | `/import` | 导入上下文 |
@@ -497,10 +494,16 @@ kimi --wire
 | `/add-dir` | 添加工作目录 |
 | `/mcp` | 显示 MCP 状态 |
 | `/task` | 后台任务浏览器（TUI） |
+| `/web` | 抓取网页内容加入上下文 |
 | `/help` | 显示帮助 |
+| `/version` | 显示版本信息 |
 | `/changelog` | 显示更新日志 |
+| `/feedback` | 提交反馈 |
+| `/exit`, `/quit` | 退出 |
 | `/skill:<name>` | 加载标准 Skill |
 | `/flow:<name>` | 执行 Flow Skill |
+
+> **注意：** 认证（登录/登出）和用量查看通过 CLI 参数或配置命令处理，而非交互式斜杠命令。
 
 ### 键盘快捷键
 

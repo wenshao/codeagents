@@ -167,7 +167,7 @@ aider --auto-commit --auto-test --test-cmd "pytest tests/"
 # 会话内命令见下方"斜杠命令"章节
 ```
 
-### 斜杠命令（40 个）
+### 斜杠命令（42 个）
 
 #### 文件与上下文管理
 | 命令 | 用途 |
@@ -234,6 +234,9 @@ aider --auto-commit --auto-test --test-cmd "pytest tests/"
 | `/help` | 显示帮助信息 |
 | `/ok` | 无消息继续执行 |
 | `/report` | 报告问题 |
+| `/think-tokens` | 控制思维 token 预算 |
+| `/reasoning-effort` | 设置推理努力级别 |
+| `/copy-context` | 复制上下文信息 |
 | `/exit` | 退出 Aider |
 | `/quit` | 退出 Aider |
 

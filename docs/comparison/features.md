@@ -186,7 +186,7 @@
 
 | 能力 | Claude Code | Aider | Gemini CLI | Kimi CLI | Qwen Code | Copilot CLI | Codex CLI | Goose | OpenCode |
 |------|-------------|-------|-----------|----------|-----------|-------------|-----------|-------|---------|
-| **命令总数** | ~15 | ~40 | ~43 | ~22 | ~19 | 5 | 0 | CLI 子命令 | Ctrl+P 面板 |
+| **命令总数** | ~15 | ~42 | ~41 | ~20 | ~19 | 5 | 0 | CLI 子命令 | Ctrl+P 面板 |
 | **代码审查** | `/review` | — | — | — | — | — | — | — | — |
 | **模式切换** | — | `/code` `/architect` `/ask` | `/plan` | `/plan` `/yolo` | `/plan` | — | `--approval-mode` | — | `--agent` |
 | **模型切换** | `/model` | `/model` `/editor-model` `/weak-model` | `/model` | `/model` | `/model` | `/model` | `--model` | `--model` | — |
@@ -200,14 +200,14 @@
 | **会话恢复** | `--resume` | — | `/restore` `/resume` `/rewind` | `/sessions` `/new` | `/restore` `/resume` | — | — | — | `session list` |
 | **语音输入** | 内置 Voice | `/voice` | — | — | — | — | — | — | — |
 | **远程控制** | `/remote-control` | — | — | — | — | — | — | — | — |
-| **Web 抓取** | WebFetch 工具 | `/web` | — | — | — | — | — | — | — |
+| **Web 抓取** | WebFetch 工具 | `/web` | — | `/web` | — | — | — | — | — |
 | **LSP 集成** | — | — | — | — | — | `/lsp` | — | — | — |
-| **费用查看** | `/cost` | `/tokens` | `/stats` | `/usage` | `/stats` | — | — | — | `stats` |
-| **反馈报告** | `/bug` | `/report` | `/bug` | — | `/bug` | `/feedback` | — | — | — |
+| **费用查看** | `/cost` | `/tokens` | `/stats` | — | `/stats` | — | — | — | `stats` |
+| **反馈报告** | `/bug` | `/report` | `/bug` | `/feedback` | `/bug` | `/feedback` | — | — | — |
 | **Vim 模式** | `/vim` | — | `/vim` | — | — | — | — | — | — |
 
 **关键发现：**
-- **Aider** 命令最多（~40），文件/上下文管理和模式切换最细粒度
+- **Aider** 命令最多（~42），文件/上下文管理和模式切换最细粒度
 - **Gemini CLI / Qwen Code / Kimi CLI** 命令体系接近（Gemini CLI 分叉谱系）
 - **Claude Code** 独有 `/review`（代码审查）和 `/remote-control`（远程控制）
 - **Copilot CLI** 命令最少（5 个），侧重简洁
