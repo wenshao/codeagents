@@ -219,7 +219,7 @@ priority = 100
 - `allowRedirection` — 允许 Shell 重定向
 - `denyMessage` — 自定义拒绝消息
 
-**策略优先级**（从高到低）：Runtime → Project → User → System → Extensions
+**策略优先级**（5 级 Tier，从高到低）：Admin（Tier 5）→ User（Tier 4，含 settings 动态规则）→ Workspace/Project（Tier 3）→ Extension（Tier 2）→ Default（Tier 1）
 
 **内置策略文件**（9 个）：conseca.toml、discovered.toml、memory-manager.toml、plan.toml、read-only.toml、sandbox-default.toml、tracker.toml、write.toml、yolo.toml
 
@@ -354,7 +354,7 @@ priority = 100
 
 **协议支持**：Stdio、SSE 传输
 **配置方式**：
-```json
+```jsonc
 // settings.json
 {
   "mcp": {
