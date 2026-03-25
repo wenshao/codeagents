@@ -706,12 +706,70 @@ CLAUDE.md 是 Claude Code 的项目级指令文件，类似于 Gemini CLI 的 GE
 - 文件命名使用 kebab-case
 - 测试文件使用 .test.ts 后缀
 
-## 架构说明
-- src/components/ - React 组件
-- src/hooks/ - 自定义 Hooks
-- src/utils/ - 工具函数
-- src/api/ - API 请求层
-```
+## 技术架构（二进制逆向分析）
+
+> 以下基于 v2.1.81 二进制分析。Claude Code 是闭源产品，无公开源码。
+
+### 运行时
+
+| 项目 | 详情 |
+|------|------|
+| **二进制格式** | ELF 64-bit LSB executable, x86-64, dynamically linked |
+| **大小** | ~227 MB（单文件可执行） |
+| **运行时** | **Bun v1.2**（非 Node.js），Bun 编译的单文件打包 |
+| **UI 框架** | Ink（React for CLI）+ Yoga 布局引擎 |
+| **分发方式** | `curl install.sh` 下载二进制到 `~/.local/share/claude/versions/` |
+
+### 内嵌原生模块
+
+| 模块 | 用途 |
+|------|------|
+| `tree-sitter-bash.node` | Bash AST 解析 |
+| `tree-sitter-typescript.node` | TypeScript AST 解析 |
+| `tree-sitter-json.node` | JSON 解析 |
+| `tree-sitter-yaml.node` | YAML 解析 |
+| `tree-sitter-kotlin.node` | Kotlin 解析 |
+| `sharp.node` / `image-processor.node` | 图片处理（Sharp 库） |
+| `audio-capture.node` | 音频捕获（语音模式） |
+| `file-index.node` | 文件索引（代码搜索） |
+| `color-diff.node` | 颜色 diff 显示 |
+| `yaml.node` | YAML 解析 |
+| `resvg.wasm` | SVG 渲染（WebAssembly） |
+
+### API 层
+
+| 端点 | 用途 |
+|------|------|
+| `api.anthropic.com/v1/messages` | 核心 LLM API（Claude 模型调用） |
+| `claude.ai/api/oauth/authorize` | OAuth 认证 |
+| `claude.ai/api/claude_code/settings` | 远程设置获取 |
+| `claude.ai/api/claude_code/policy_limits` | 策略限制查询 |
+| `claude.ai/api/claude_code/team_memory` | 团队记忆（按仓库） |
+| `claude.ai/api/ws/speech_to_text/voice_stream` | 语音转文字（WebSocket） |
+| `claude.ai/api/claude_cli_feedback` | 反馈提交 |
+| `claude.ai/api/claude_code/metrics` | 遥测上报 |
+
+### 遥测系统（tengu）
+
+内置 30+ 个 `tengu_` 前缀的遥测事件，涵盖：
+- **代理生命周期**：`tengu_agent_created`、`tengu_agent_tool_selected`、`tengu_agent_tool_completed`
+- **API 交互**：`tengu_api`、`tengu_api_error`、`tengu_api_opus_fallback_triggered`、`tengu_api_cache_breakpoints`
+- **特性标志**：`tengu_amber_flint`、`tengu_amber_prism`、`tengu_amber_quartz_disabled`（A/B 测试系统）
+- **压缩**：`tengu_compact_failed`
+- **Skill 变更**：`tengu_dynamic_skills_changed`
+
+### 消息类型（Content Block）
+
+| 类型 | 说明 |
+|------|------|
+| `Text` | 文本内容 |
+| `Thinking` / `RedactedThinking` | 思维过程（可编辑/可屏蔽） |
+| `ToolUse` / `ServerToolUse` | 客户端/服务端工具调用 |
+| `McpToolUse` / `McpToolResult` | MCP 工具调用与结果 |
+| `WebSearchToolResult` / `WebFetchToolResult` | Web 搜索/抓取结果 |
+| `CodeExecutionToolResult` / `BashCodeExecutionToolResult` | 代码执行结果 |
+| `Compaction` | 压缩摘要 |
+| `ContainerUpload` | 容器上传 |
 
 ## CLI 命令
 
