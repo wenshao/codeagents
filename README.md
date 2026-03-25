@@ -62,6 +62,8 @@
 - **[配置示例对比](./docs/guides/config-examples.md)** — CLAUDE.md/CODEX.md/GEMINI.md/AGENTS.md 并排写法
 - **[/review 命令全工具对比](./docs/comparison/review-command.md)** — 代码审查能力深度对比（9 步流水线 vs 4 代理并行 vs 8 维度）
 - **[/compact /plan /init 深度对比](./docs/comparison/key-commands-deep-dive.md)** — 压缩算法4阶段、TOML策略引擎、隔离执行、漫威英雄命名
+- **[/loop 与定时执行深度分析](./docs/comparison/loop-schedule.md)** — 本地循环 vs 远程调度 vs Cloud 执行 vs Autopilot
+- **[/simplify 命令深度分析](./docs/comparison/simplify-command.md)** — 三代理并行（复用7项+质量7项+效率7项）自动修复
 - **[架构深度对比](./docs/comparison/architecture-deep-dive.md)** — 11 个项目的代理循环、工具系统、安全模型等
 - **[Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md)** — 终端代理 vs AI IDE，两大商业头部对比
 - **[Claude Code vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md)** — 终端代理双雄对比
