@@ -4,7 +4,7 @@
 **许可证：** 专有
 **仓库：** [github.com/github/copilot-cli](https://github.com/github/copilot-cli)
 **文档：** [docs.github.com/copilot/concepts/agents/about-copilot-cli](https://docs.github.com/copilot/concepts/agents/about-copilot-cli)
-**源码版本：** v0.0.403（npm `@github/copilot`）
+**源码版本：** npm 包 v0.0.403（`@github/copilot`），原生二进制运行版本 v1.0.11
 **最后更新：** 2026-03
 
 ## 概述
@@ -452,6 +452,8 @@ try {
 - [About Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/about-copilot-cli)
 
 **未在二进制中确认的内容标记 `[web]`，仅在二进制中发现的内容标记 `[binary]`。**
+
+**版本说明：** npm 包版本（`package.json`）为 `0.0.403`，但 `npm-loader.js` 优先启动原生二进制（`@github/copilot-linux-x64/copilot`），该二进制的 `--version` 输出为 `1.0.11`。本文档分析覆盖两者——JS 回退代码（`index.js` 15MB）和原生二进制。
 
 ## 资源链接
 

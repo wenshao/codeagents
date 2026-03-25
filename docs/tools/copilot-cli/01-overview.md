@@ -4,7 +4,7 @@
 **许可证：** 专有
 **仓库：** [github.com/github/copilot-cli](https://github.com/github/copilot-cli)
 **文档：** [docs.github.com/copilot/concepts/agents/about-copilot-cli](https://docs.github.com/copilot/concepts/agents/about-copilot-cli)
-**源码版本：** v0.0.403（npm `@github/copilot`）
+**源码版本：** npm 包 v0.0.403（`@github/copilot`），原生二进制 v1.0.11
 **最后更新：** 2026-03
 
 ## 概述
