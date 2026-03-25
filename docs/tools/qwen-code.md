@@ -126,50 +126,85 @@ qwen --version
 | Google | Gemini 2.0 Flash 等 | API Key | 有限免费 |
 | 自定义 | OpenAI 兼容端点 | API Key | 取决于提供商 |
 
-## 斜杠命令
+## 斜杠命令（39 个 + 1 Skill，源码：`packages/cli/src/ui/commands/`）
 
-Qwen Code 基于 Gemini CLI 分叉，继承了大部分斜杠命令体系：
+> 从源码逐文件验证。Qwen Code 基于 Gemini CLI 分叉，继承核心命令并新增 Arena/语言/洞察等。
 
 ### 核心命令
-| 命令 | 用途 |
-|------|------|
-| `/help` | 显示帮助信息 |
-| `/auth` | 管理认证与登录 |
-| `/model` | 切换模型 |
-| `/clear` | 清除对话历史 |
-| `/compact` | 压缩上下文 |
-| `/memory` | 查看/编辑记忆 |
-| `/tools` | 查看可用工具列表 |
-| `/mcp` | 查看 MCP 服务器状态 |
-| `/settings` | 查看/修改设置 |
-| `/permissions` | 管理权限 |
+| 命令 | 用途 | 来源 |
+|------|------|------|
+| `/help` | 显示帮助信息 | 继承 Gemini |
+| `/auth` | 管理认证与登录（Qwen OAuth / API Key） | 继承+增强 |
+| `/model` | 切换模型 | 继承 |
+| `/clear` | 清除对话历史 | 继承 |
+| `/compress` | 压缩上下文（别名 `/compact`） | 继承 |
+| `/memory` | 查看/编辑记忆 | 继承 |
+| `/tools` | 查看可用工具列表 | 继承 |
+| `/mcp` | 查看/管理 MCP 服务器 | 继承 |
+| `/settings` | 查看/修改设置 | 继承 |
+| `/permissions` | 管理权限（allow/ask/deny） | 继承 |
+| `/context` | 查看上下文 token 用量 | 继承 |
+| `/copy` | 复制上次回复到剪贴板 | 继承 |
 
 ### 会话与导航
-| 命令 | 用途 |
-|------|------|
-| `/chat` | 切换会话 |
-| `/restore` | 恢复历史会话 |
-| `/resume` | 继续上次会话 |
-| `/rewind` | 回退到之前的检查点 |
+| 命令 | 用途 | 来源 |
+|------|------|------|
+| `/restore` | 恢复历史会话 | 继承 |
+| `/resume` | 继续上次会话 | 继承 |
+| `/export` | 导出当前会话 | 继承 |
+| `/quit` | 退出（别名 `/exit`） | 继承 |
 
 ### 开发辅助
-| 命令 | 用途 |
-|------|------|
-| `/agents` | 查看代理列表 |
-| `/skills` | 查看可用技能 |
-| `/plan` | 启用规划模式 |
-| `/stats` | 显示统计信息 |
-| `/editor` | 在外部编辑器中编辑 |
+| 命令 | 用途 | 来源 |
+|------|------|------|
+| `/agents` | 查看/管理代理 | 继承 |
+| `/skills` | 查看可用技能 | 继承 |
+| `/approval-mode` | 切换审批模式（plan/default/auto-edit/yolo） | 继承（Gemini 的 `/plan`） |
+| `/stats` | 显示统计信息 | 继承 |
+| `/editor` | 在外部编辑器中编辑 | 继承 |
+| `/hooks` | 查看 Hook 配置 | 继承 |
+| `/init` | 初始化项目配置（生成 GEMINI.md） | 继承 |
+| `/btw` | **快速旁问**——不中断主对话，开启独立侧边提问 | **继承 Gemini** |
+| `/trust` | 管理信任设置 | 继承 |
+| `/summary` | 生成对话摘要 | 继承 |
 
-### 其他
-| 命令 | 用途 |
-|------|------|
-| `/quit` | 退出 |
-| `/bug` | 报告 Bug |
-| `/about` | 显示版本信息 |
-| `/docs` | 打开文档 |
+### 终端与 UI
+| 命令 | 用途 | 来源 |
+|------|------|------|
+| `/theme` | 切换颜色主题 | 继承 |
+| `/vim` | 切换 Vim 编辑模式 | 继承 |
+| `/terminal-setup` | 配置终端集成 | 继承 |
+| `/ide` | IDE 集成管理 | 继承 |
+| `/directory` | 目录管理 | 继承 |
+| `/setup-github` | 设置 GitHub 集成 | 继承 |
 
-> 注：Qwen Code 可能根据自身定制增减了部分命令，以实际 `/help` 输出为准。
+### 信息与反馈
+| 命令 | 用途 | 来源 |
+|------|------|------|
+| `/about` | 显示版本信息 | 继承 |
+| `/bug` | 报告 Bug | 继承 |
+| `/docs` | 打开文档 | 继承 |
+
+### Qwen Code 新增命令
+| 命令 | 用途 | 来源 |
+|------|------|------|
+| `/arena` | **Arena 模式**——多模型在隔离 Git worktree 中竞争执行同一任务 | **Qwen 新增** |
+| `/language` | **切换 UI 语言**（中/英/日/法/德/俄/葡） | **Qwen 新增** |
+| `/insight` | **代码洞察**——分析代码库并生成洞察报告 | **Qwen 新增** |
+| `/extensions` | **扩展管理**——安装/卸载/列表（兼容 Claude Code + Gemini 扩展） | **Qwen 新增** |
+
+### Skill 命令
+| 命令 | 用途 | 实现 |
+|------|------|------|
+| `/review` | **代码审查**——四代理并行审查（正确性+安全/代码质量/性能/自由审计） | Skill（`skills/bundled/review/SKILL.md`） |
+
+> `/review` 的四个审查代理维度（源码：`SKILL.md`）：
+> 1. **Agent 1: Correctness & Security** — 逻辑错误、空值处理、竞态条件、注入漏洞、类型安全
+> 2. **Agent 2: Code Quality** — 代码风格一致性、命名规范、重复代码、过度工程
+> 3. **Agent 3: Performance & Efficiency** — N+1 查询、内存泄漏、不必要重渲染、包大小影响
+> 4. **Agent 4: Undirected Audit** — 无预设维度，全新视角捕获其他代理遗漏的问题
+>
+> 输出格式：Summary → Findings（Critical/Suggestion/Nice to have）→ Verdict（Approve/Request changes/Comment）
 
 ## 优势
 
