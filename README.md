@@ -41,6 +41,9 @@
 
 ### 工具详情（源码级）
 - **[工具索引](./docs/tools/)** — 16 个工具的详细分析，含架构图和代码引用
+- **[Claude Code 专题](./docs/tools/claude-code/)** — 7 篇深度文档（概述/60+ 命令/架构/工具/Skill/设置/会话）
+- **[Copilot CLI 专题](./docs/tools/copilot-cli/)** — 3 篇深度文档（概述/32 命令 + 65 工具/架构）
+- **[Codex CLI 专题](./docs/tools/codex-cli/)** — 3 篇深度文档（概述/20+ 命令/Rust 架构）
 
 ### 对比文档
 - **[功能对比矩阵](./docs/comparison/features.md)** — 14 工具横向对比（模型、架构、Git、安全、多模态、平台、成本等）
