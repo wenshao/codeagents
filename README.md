@@ -82,10 +82,17 @@
 </details>
 
 ### 使用指南
-- **[入门指南](./docs/guides/getting-started.md)** — 决策树和安装教程
-- **[实操工作流教程](./docs/guides/workflows.md)** — 5 个真实场景的完整操作流程
-- **[工具迁移指南](./docs/guides/migration.md)** — 配置映射与迁移路径
-- **[故障排查指南](./docs/guides/troubleshooting.md)** — 常见问题与解决方案
+
+**入门：**
+- [入门指南](./docs/guides/getting-started.md) — 决策树和安装教程
+- [Claude Code 用户指南](./docs/guides/claude-code-user-guide.md) — 从安装到精通（60+ 命令、8 进阶技巧）
+- [Qwen Code 用户指南](./docs/guides/qwen-code-user-guide.md) — 免费 1000 次/天、Arena 模式、中文原生
+
+**实操：**
+- [实操工作流教程](./docs/guides/workflows.md) | [配置示例对比](./docs/guides/config-examples.md) | [迁移指南](./docs/guides/migration.md) | [故障排查](./docs/guides/troubleshooting.md)
+
+**深度配置：**
+- [上下文管理](./docs/guides/context-management.md) | [Skill 设计](./docs/guides/skill-design.md) | [AGENTS.md 配置](./docs/guides/agents-md.md) | [Hooks 配置](./docs/guides/hooks-config.md)
 
 ### 参考文档
 - **[架构原理](./docs/architecture/overview.md)** — 代理循环、MCP、上下文管理
