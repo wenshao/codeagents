@@ -8,7 +8,7 @@
 
 ## 概述
 
-Gemini CLI 是 Google 官方的开源 AI 编程代理，运行在终端中，基于 TypeScript + Ink/React 19 构建。采用 ReAct 模式驱动代理循环，主循环最多 100 轮对话，子代理默认 30 轮/10 分钟。项目于 2025 年 6 月 25 日首次公开发布（v0.1.0），当前稳定版为 v0.34.0（2026-03-17），采用每周二稳定/预览/夜间三通道发布模式。整体代码量约 19 万行 TypeScript，是 GitHub 上增长最快的开源项目之一（不到一年从 0 到 ~99k Stars）。它也是 Qwen Code 的上游项目，其架构被广泛借鉴。
+Gemini CLI 是 Google 官方的开源 AI 编程代理，运行在终端中，基于 TypeScript + Ink/React 19 构建。采用 ReAct 模式驱动代理循环，主循环最多 100 轮对话，子代理默认 30 轮/10 分钟。项目于 2025 年 6 月 25 日首次公开发布（v0.1.0），当前稳定版为 v0.34.0（2026-03-17），采用每周二稳定/预览/夜间三通道发布模式。整体代码量约 22 万行 TypeScript（不含测试，含测试约 53 万行），是 GitHub 上增长最快的开源项目之一（不到一年从 0 到 ~99k Stars）。它也是 Qwen Code 的上游项目，其架构被广泛借鉴。
 
 ## 核心功能
 
@@ -172,7 +172,10 @@ Scheduler (事件驱动调度器)
 
 此外，MCP 工具以 `mcp_{serverName}_{toolName}` 格式动态注册，支持通配符策略（`mcp_*`、`mcp_serverName_*`）。工具发现命令注册的工具以 `discovered_tool_` 前缀标识。
 
-**Plan Mode 可用工具**（只读）：glob、grep_search、read_file、list_directory、google_web_search、ask_user、activate_skill、get_internal_docs、codebase_investigator、cli_help
+**Plan Mode 可用工具**：
+- **自动允许**：glob、grep_search、read_file、list_directory、google_web_search、activate_skill、get_internal_docs、codebase_investigator、cli_help
+- **需确认**：ask_user、save_memory、MCP 工具（readOnlyHint=true）
+- **受限写入**：write_file/replace 仅限 `.gemini/tmp/.../plans/*.md` 文件
 
 ### 策略/权限系统
 
@@ -419,7 +422,7 @@ priority = 100
 
 | 后端 | 命令 | 平台 | 说明 |
 |------|------|------|------|
-| **macOS Seatbelt** | `sandbox-exec` | macOS | 5 种配置文件（permissive-proxied、restrictive-open、restrictive-proxied、strict-open、strict-proxied） |
+| **macOS Seatbelt** | `sandbox-exec` | macOS | 6 种配置文件（permissive-open/proxied、restrictive-open/proxied、strict-open/proxied） |
 | **Bubblewrap** | `bwrap` | Linux | 用户命名空间 + Seccomp 系统调用过滤，原生轻量隔离 |
 | **Docker** | `docker` | 跨平台 | 容器化隔离 |
 | **Podman** | `podman` | 跨平台 | 无 daemon 容器化隔离（Docker 替代） |
