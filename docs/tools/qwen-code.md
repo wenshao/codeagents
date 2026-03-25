@@ -16,7 +16,7 @@ Qwen Code 是阿里云推出的开源 AI 编程代理，运行在终端中。基
 ### 基础能力
 - **终端原生**：基于 Ink + React 的终端 UI
 - **16 个内置工具**：文件编辑、Bash 执行、Grep 搜索、Web 抓取等
-- **多提供商**：Qwen OAuth（免费）、DashScope、OpenAI、Anthropic、Gemini
+- **多提供商**：Qwen OAuth（免费）、DashScope、ModelScope、Anthropic、Google、自定义端点（6+）
 - **MCP 支持**：模型上下文协议（SSE + Stdio）
 - **LSP 集成**：语言服务器协议支持
 - **多语言 UI**：中/英/日/德/俄/葡 6 种语言

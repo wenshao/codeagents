@@ -128,11 +128,11 @@
 
 ### 1. `--bare` 模式（脚本/CI 场景）
 
-**Claude Code 实现**：
-- `--bare` 标志跳过 hooks、LSP、插件同步、技能目录扫描
-- 要求显式 API key
-- 自动禁用 auto-memory
-- 专为 `-p` 脚本调用优化
+**Claude Code 实现**（来源：`claude --help` v2.1.83）：
+- `--bare` 最小模式：跳过 hooks、LSP、插件同步、归因、auto-memory、后台预取、keychain 读取、CLAUDE.md 自动发现
+- 认证限制：仅 `ANTHROPIC_API_KEY` 或 `apiKeyHelper`（OAuth/keychain 不可用）
+- Skills 仍可通过 `/skill-name` 使用
+- 上下文需显式提供：`--system-prompt`、`--add-dir`、`--mcp-config`、`--settings` 等
 
 **Qwen Code 缺失影响**：非交互模式仍加载完整启动链（包括 React/Ink），CI/CD 集成启动慢。
 
@@ -293,9 +293,9 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 ### 10. Teammates（多代理团队）
 
 **Claude Code 实现**：
-- Leader agent 在 tmux/iTerm2 分屏中启动 teammate agents
-- Teammate 继承 leader 的模型配置
-- 本质是 **AI-AI 团队协作**（非人-AI），leader 分派任务给 teammates
+- Leader agent 在 tmux/iTerm2 分屏中启动 teammate agents，每个代理独立 worktree
+- 每个代理可分配**不同的模型和角色**（非继承 leader 配置）
+- 本质是 **AI-AI 团队协作**（非人-AI），leader 分派不同子任务给 teammates
 
 **Qwen Code 现状**：有功能相似的 **Arena 模式**（`ArenaManager.ts`），支持多模型并行 worktree 对比。但 Arena 侧重竞争评估，Claude 的 Teammates 侧重分工协作。
 
@@ -307,8 +307,8 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 
 ### 11. Channels（MCP 消息推送）
 
-**Claude Code 实现**：
-- `--channels` 允许 MCP 服务器主动推送消息到会话
+**Claude Code 实现**（来源：二进制 strings 提取，命令文档未详述）：
+- `--channels` 参数允许 MCP 服务器主动推送消息到会话
 - 用于外部事件通知（CI/CD 状态、监控告警等）
 
 **工作量**：中（1-2 周）

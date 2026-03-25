@@ -10,7 +10,7 @@
 | **定位** | Anthropic 官方终端代理 | 阿里云开源终端代理 |
 | **语言** | Rust（闭源） | TypeScript（开源，Gemini CLI 分叉） |
 | **许可证** | 专有 | Apache-2.0 |
-| **模型** | Claude 系列（锁定） | Qwen + OpenAI + Anthropic + Gemini（5 提供商） |
+| **模型** | Claude 系列（锁定） | Qwen OAuth + DashScope + ModelScope + Anthropic + Google + 自定义（6+ 提供商） |
 | **上下文** | 100 万 token（Opus 4.6） | 100 万 token（Qwen3 商用版） |
 | **免费层** | Claude Pro/Max 订阅内含 | 每天 1000 次免费（OAuth） |
 | **插件仓库** | 13 个官方插件 | 扩展系统 + Claude/Gemini 格式转换 |
@@ -211,20 +211,32 @@ Shell 分析：
 
 ## 4. Hook 系统
 
-### Claude Code Hook 事件
+### Claude Code Hook 事件（22 个）
 
-| 事件 | 触发时机 | 输入 | 输出 |
-|------|---------|------|------|
-| **PreToolUse** | 工具执行前 | tool_name, tool_input | allow/deny/ask |
-| **PostToolUse** | 执行成功后 | tool_name, tool_result | 附加上下文 |
-| **UserPromptSubmit** | 用户提交输入 | user_prompt | 修改/阻止 |
-| **Stop** | 代理尝试停止 | transcript | 允许/阻止停止 |
-| **SubagentStop** | 子代理停止 | transcript | 允许/阻止 |
-| **SessionStart** | 会话开始 | session_id | 上下文注入 |
-| **SessionEnd** | 会话结束 | session_id | 清理 |
-| **PreCompact** | 上下文压缩前 | messages | 保护关键信息 |
-| **Notification** | 通知发送 | content | 修改/阻止 |
-| **StopFailure** | API 错误终止 | error | 处理策略 |
+| 事件 | 触发时机 |
+|------|---------|
+| **PreToolUse** | 工具执行前 |
+| **PostToolUse** | 执行成功后 |
+| **PostToolUseFailure** | 执行失败后 |
+| **UserPromptSubmit** | 用户提交输入 |
+| **Stop** | 代理尝试停止 |
+| **StopFailure** | API 错误终止 |
+| **SubagentStart** | 子代理启动 |
+| **SubagentStop** | 子代理停止 |
+| **SessionStart** | 会话开始 |
+| **SessionEnd** | 会话结束 |
+| **PermissionRequest** | 权限请求 |
+| **Notification** | 通知发送 |
+| **PreCompact** | 上下文压缩前 |
+| **PostCompact** | 上下文压缩后 |
+| **TaskCompleted** | 任务完成 |
+| **TeammateIdle** | Teammate 空闲 |
+| **InstructionsLoaded** | 指令加载完成 |
+| **ConfigChange** | 配置变更 |
+| **WorktreeCreate** | Worktree 创建 |
+| **WorktreeRemove** | Worktree 移除 |
+| **Elicitation** | 向用户提问 |
+| **ElicitationResult** | 用户回答结果 |
 
 ### Qwen Code Hook 事件
 
@@ -247,8 +259,9 @@ Shell 分析：
 
 | 维度 | Claude Code | Qwen Code |
 |------|------------|-----------|
-| **事件数** | 10 | 12 |
-| **独有事件** | StopFailure | PostToolUseFailure, SubagentStart, PermissionRequest |
+| **事件数** | **22** | 12 |
+| **Claude 独有事件（10 个）** | StopFailure, PostCompact, TaskCompleted, TeammateIdle, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, Elicitation, ElicitationResult | — |
+| **共有事件（12 个）** | PreToolUse, PostToolUse, PostToolUseFailure, UserPromptSubmit, Stop, SubagentStart, SubagentStop, SessionStart, SessionEnd, PreCompact, Notification, PermissionRequest | 全部 12 个 |
 | **Hook 类型** | Prompt（LLM 驱动）+ Command（脚本） | Command（脚本） |
 | **执行方式** | 子进程 JSON stdin/stdout | 子进程 JSON stdin/stdout |
 | **超时** | 可配置 | 可配置 |
@@ -507,7 +520,7 @@ interface SubagentConfig {
 | 特性 | 说明 |
 |------|------|
 | **免费 OAuth** | 通义账号每天 1000 次 |
-| **5 提供商** | Qwen + OpenAI + Anthropic + Gemini + Vertex |
+| **6+ 提供商** | Qwen OAuth + DashScope + ModelScope + Anthropic + Google + 自定义 |
 | **Arena 模式** | 多代理竞争/协作（Team/Swarm/Arena） |
 | **Tmux/iTerm2 分屏** | 可视化并行代理 |
 | **6 语言 UI** | 中/英/日/德/俄/葡 |
@@ -529,7 +542,7 @@ interface SubagentConfig {
 | **复杂推理** | Claude Code | Claude 模型推理能力最强 |
 | **企业部署** | Claude Code | 5 层设置 + 企业管控 + 沙箱 |
 | **免费使用** | Qwen Code | OAuth 1000 次/天 |
-| **多模型切换** | Qwen Code | 5 提供商灵活切换 |
+| **多模型切换** | Qwen Code | 6+ 提供商灵活切换 |
 | **中文开发** | Qwen Code | 6 语言 UI + Qwen 模型中文能力 |
 | **代码审查** | Claude Code | code-review 插件（4 并行代理） |
 | **多代理协作** | Qwen Code | Arena + Tmux 可视化 |
@@ -543,7 +556,7 @@ interface SubagentConfig {
 
 **Claude Code** 是闭源但功能最完善的商业代理——Rust 原生性能、Prompt Hook 的 LLM 驱动决策、5 层企业管控、13 个官方插件构成了最成熟的生态。但模型锁定和付费门槛是限制。
 
-**Qwen Code** 是功能最丰富的开源代理——5 提供商灵活接入、Arena 多代理框架、6 语言国际化、免费 OAuth 额度构成了最有吸引力的开源方案。但作为 Gemini CLI 分叉，部分代码仍带上游痕迹。
+**Qwen Code** 是功能最丰富的开源代理——6+ 提供商灵活接入、Arena 多代理框架、6 语言国际化、免费 OAuth 额度构成了最有吸引力的开源方案。但作为 Gemini CLI 分叉，部分代码仍带上游痕迹。
 
 两者在工具系统、Hook 架构、技能系统上有**高度相似性**（均为声明式工具 + 事件 Hook + Markdown 技能），说明业界正在收敛到一套共同的代理架构模式。
 
