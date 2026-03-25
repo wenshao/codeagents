@@ -146,8 +146,8 @@ codex completion fish >> ~/.config/fish/completions/codex.fish
 | 参数 | 简写 | 说明 | 默认值 |
 |------|------|------|--------|
 | `--model` | `-m` | 指定使用的模型 | `gpt-5.1-codex` |
-| `--ask-for-approval` | `-a` | 审批模式（4 种）：untrusted/on-request/on-failure/never | `untrusted` |
-| `--sandbox` | `-s` | 沙箱模式：`read-only` / `workspace-write` / `danger-full-access` | - |
+| `--ask-for-approval` | `-a` | 审批模式（5 种）：untrusted/on-request/on-failure/never/granular（granular 在 v0.116.0 中未实现） | `untrusted` |
+| `--sandbox` | `-s` | 沙箱模式：`read-only` / `restricted-read-access` / `workspace-write` / `danger-full-access` | - |
 | `--full-auto` | - | 便捷别名 = `--ask-for-approval on-request --sandbox workspace-write` | - |
 | `--config` | `-c` | 覆盖配置值（`key=value` 格式，支持点路径如 `foo.bar.baz`） | - |
 | `--profile` | `-p` | 使用 config.toml 中定义的配置 profile | - |
@@ -169,16 +169,17 @@ codex completion fish >> ~/.config/fish/completions/codex.fish
 
 ---
 
-## 审批模式（4 种）
+## 审批模式（5 种）
 
-> 验证方式：`codex --help` 输出确认仅接受 untrusted/on-request/on-failure/never 四种值。`codex -a granular` 返回 "error: invalid value 'granular'"。`granular` 模式不存在，`suggest` 和 `full-auto` 是别名而非独立模式。
+> 验证方式：v0.116.0 二进制 `codex --help` 仅接受 untrusted/on-request/on-failure/never 四种值。第六轮 Web 验证确认官方文档（developers.openai.com/codex/agent-approvals-security）已列出 `granular` 模式并移除 `on-failure` 模式。`suggest` 和 `full-auto` 是别名而非独立模式。
 
 | 模式 | 说明 |
 |------|------|
 | `untrusted` | **默认模式**。仅执行受信任的命令，其他操作需用户确认 |
 | `on-request` | 模型自行决定何时询问用户。适合半自动工作流 |
-| `on-failure` | **已弃用**。仅在操作失败时询问用户 |
+| `on-failure` | **已弃用**。仅在操作失败时询问用户。官方文档已完全移除，仅在二进制中保留向后兼容 |
 | `never` | 从不询问用户审批，执行失败时将错误反馈给模型继续尝试 |
+| `granular` | 细粒度控制：可分别配置 sandbox、rules、MCP、权限、skill 的审批策略。官方文档确认，v0.116.0 二进制未实现（`codex -a granular` 返回 error），可能在更新版本中添加 |
 
 ### 模式选择逻辑
 
@@ -197,6 +198,7 @@ codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 | `untrusted` | 每次询问 | 每次询问 | 每次询问 |
 | `on-request` | 模型决定 | 模型决定（推荐组合） | 模型决定 |
 | `never` | 自动执行 | 自动执行 | 自动执行 |
+| `granular` | 按类别策略决定 | 按类别策略决定 | 按类别策略决定 |
 
 ---
 
@@ -487,8 +489,8 @@ codex features disable multi_agent           # 禁用指定标志
 
 | 配置键 | 类型 | 说明 | 默认值 |
 |--------|------|------|--------|
-| `approval_mode` | string | 审批模式（untrusted/on-request/on-failure/never） | `untrusted` |
-| `sandbox` | string | 沙箱级别（read-only/workspace-write/danger-full-access） | `read-only` |
+| `approval_mode` | string | 审批模式（untrusted/on-request/on-failure/never/granular） | `untrusted` |
+| `sandbox` | string | 沙箱级别（read-only/restricted-read-access/workspace-write/danger-full-access） | `read-only` |
 | `model` | string | 默认模型 | `gpt-5.1-codex` |
 | `model_reasoning_effort` | string | 模型推理努力程度（low/medium/high） | `medium` |
 | `plan_mode_reasoning_effort` | string | Plan 模式下的推理努力程度 | `high` |

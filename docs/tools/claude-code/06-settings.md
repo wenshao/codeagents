@@ -1,20 +1,20 @@
 # 6. 设置与安全
 
-## 7 层设置系统
+## 5 层设置优先级体系
 
-Claude Code 采用 7 层优先级设置体系，从高到低：
+Claude Code 采用 5 层优先级设置体系，从高到低：
 
-| 层级 | 来源 | 路径/方式 | 说明 |
-|------|------|-----------|------|
-| 1（最高） | 系统/企业 | managed-settings 远程下发 | 管理员强制策略，不可覆盖 |
-| 2 | 工作区 | `.claude/settings.json`（项目根目录） | 项目级共享配置 |
-| 3 | 用户 | `~/.claude/settings.json` | 个人全局偏好 |
-| 4 | 组织 | 组织级配置 | 跨项目组织策略 |
-| 5 | 本地 | `.claude/settings.local.json`（项目根目录） | 本地覆盖，不提交到 Git |
-| 6 | CLI 参数 | `--model`、`--allowedTools` 等 | 命令行临时覆盖 |
-| 7（最低） | 默认 | 内置默认值 | 兜底配置 |
+| 优先级 | 来源 | 路径/方式 | 说明 |
+|--------|------|-----------|------|
+| 1（最高） | Managed（托管） | `managed-settings.json`（MDM 部署/服务器下发） | 管理员强制策略，不可覆盖 |
+| 2 | CLI 参数 | `--model`、`--allowedTools` 等 | 命令行参数覆盖所有项目及用户设置 |
+| 3 | 本地项目 | `.claude/settings.local.json`（项目根目录） | 本地覆盖，不提交到 Git |
+| 4 | 共享项目 | `.claude/settings.json`（项目根目录） | 项目级共享配置，提交到 Git |
+| 5（最低） | 用户 | `~/.claude/settings.json` | 个人全局偏好 |
 
-**注意**：系统设置（managed-settings）优先级最高，工作区设置优先于用户设置。
+**注意**：Managed 设置优先级最高；CLI 参数优先级高于项目设置；本地项目设置（`.local.json`）优先于共享项目设置。
+
+> **第六轮修正：** 原文档声称"7 层设置系统"，经官方文档（code.claude.com/docs/en/settings）验证，实际为 5 层优先级体系。优先级从高到低为：Managed > CLI 参数 > 本地项目 > 共享项目 > 用户。原"Organization"层不存在，CLI 参数优先级高于项目设置（非最低）。
 
 **设置文件示例**（`~/.claude/settings.json`）：
 ```json
