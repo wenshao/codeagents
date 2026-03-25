@@ -79,6 +79,10 @@
 - [Hook/插件/扩展](./docs/comparison/hook-plugin-extension-deep-dive.md) — 22 事件 + Prompt Hook vs 17 Hook 类型
 - [Skill/技能系统](./docs/comparison/skill-system-deep-dive.md) — SKILL.md frontmatter vs Flow Skill vs Recipe
 - [长期记忆与项目指令](./docs/comparison/memory-system-deep-dive.md) — 4 层 CLAUDE.md vs AI memory_manager vs 跨格式读取
+- [终端 UI/UX 框架](./docs/comparison/terminal-ui-deep-dive.md) — Ink+React vs prompt_toolkit vs Rust 原生 vs GPU 渲染
+- [Git 集成与版本控制](./docs/comparison/git-integration-deep-dive.md) — 自动提交归因 vs Esc 检查点 vs /rewind 三选项
+- [测试/Lint 反射循环](./docs/comparison/test-reflection-deep-dive.md) — 3 次反射 vs 实际编译验证 vs 沙箱测试
+- [遥测与隐私实现](./docs/comparison/telemetry-privacy-deep-dive.md) — 782 事件 vs 零遥测 vs Opt-in 10%
 
 **工具间 1v1 对比：**
 - [Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md) | [vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md) | [Aider vs Goose](./docs/comparison/aider-vs-goose.md)
