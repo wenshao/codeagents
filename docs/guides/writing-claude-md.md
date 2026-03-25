@@ -418,7 +418,7 @@ CLAUDE.md 应该像代码一样维护：
 
 CLAUDE.md 不仅被 Claude Code 读取。以下工具也会加载它：
 
-| 工具 | 是否读取 CLAUDE.md | 原生指令文件 |
+| Agent | 是否读取 CLAUDE.md | 原生指令文件 |
 |------|-------------------|-------------|
 | Claude Code | 是（原生） | `CLAUDE.md` |
 | Copilot CLI | 是 | `.github/copilot-instructions.md` |

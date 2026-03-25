@@ -150,7 +150,7 @@ code.alibaba-inc.com/qoder-core/qodercli/
 
 从 `tui/theme/` 包提取：catppuccin, dracula, flexoki, gruvbox, monokai, onedark, **qoder**（自定义）, tokyonight, tron + 默认主题。
 
-## 与其他闭源工具的架构对比
+## 与其他闭源 Agent 的架构对比
 
 | 维度 | Qoder CLI | Claude Code | Copilot CLI | Codex CLI |
 |------|-----------|-------------|-------------|-----------|

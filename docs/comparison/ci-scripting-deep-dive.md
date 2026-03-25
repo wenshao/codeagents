@@ -4,7 +4,7 @@
 
 ## 总览
 
-| 工具 | 主要标志 | 输出格式 | 结构化输出 | 成本控制 | 无头模式 |
+| Agent | 主要标志 | 输出格式 | 结构化输出 | 成本控制 | 无头模式 |
 |------|---------|---------|-----------|---------|---------|
 | **Claude Code** | `-p / --print` | text/json/**stream-json** | **✓ JSON Schema** | **✓ --max-budget-usd** | ✗（需显式） |
 | **Gemini CLI** | `-p` | text | ✗ | ✗ | **✓（TTY 自动检测）** |
@@ -228,7 +228,7 @@ Recipe 是 Goose 的 CI 等价物——参数化 YAML 模板 + Cron 调度。
 
 ## 证据来源
 
-| 工具 | 来源 | 获取方式 |
+| Agent | 来源 | 获取方式 |
 |------|------|---------|
 | Claude Code | `claude --help` v2.1.83 | 本地二进制 |
 | Gemini CLI | 01-overview.md | 开源 |

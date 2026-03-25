@@ -4,7 +4,7 @@
 
 ## 总览
 
-| 工具 | 模型槽位 | 路由方式 | 自动 Fallback | 多提供商 | 复杂度 |
+| Agent | 模型槽位 | 路由方式 | 自动 Fallback | 多提供商 | 复杂度 |
 |------|---------|---------|-------------|---------|--------|
 | **Gemini CLI** | 1（内部多策略） | **8 策略类自动路由** | ✓（FallbackStrategy） | ✗（仅 Google） | ★★★★★ |
 | **Aider** | **3**（主/编辑/弱） | 配置文件 `model-settings.yml` | ✗（手动切换） | ✓（100+ 通过 LiteLLM） | ★★★★☆ |
@@ -334,7 +334,7 @@ goose --model claude-opus-4     # 启动时指定
 
 ### 模式 3：容错与可用性
 
-| 工具 | Fallback 方式 | 触发条件 | 用户感知 |
+| Agent | Fallback 方式 | 触发条件 | 用户感知 |
 |------|-------------|---------|---------|
 | **Gemini CLI** | FallbackStrategy 自动 | API 错误/超时 | 透明（日志记录决策来源） |
 | **Claude Code** | `--fallback-model` | 模型过载 | 仅 `--print` 模式 |
@@ -354,7 +354,7 @@ goose --model claude-opus-4     # 启动时指定
 
 ## 证据来源
 
-| 工具 | 来源 | 获取方式 |
+| Agent | 来源 | 获取方式 |
 |------|------|---------|
 | Gemini CLI 路由 | `packages/core/src/routing/*.ts` | GitHub 源码 |
 | Aider 三槽位 | `aider/models.py` + `aider/coders/architect_coder.py` | GitHub 源码 |

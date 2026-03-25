@@ -235,7 +235,7 @@ export GOOSE_TELEMETRY_OFF=1
 
 ## 禁用方式速查
 
-| 工具 | 环境变量 |
+| Agent | 环境变量 |
 |------|---------|
 | Claude Code | `DISABLE_TELEMETRY=true` |
 | Gemini CLI | `GEMINI_TELEMETRY_ENABLED=false` |
@@ -251,7 +251,7 @@ export GOOSE_TELEMETRY_OFF=1
 
 ## 证据来源
 
-| 工具 | 来源 | 获取方式 |
+| Agent | 来源 | 获取方式 |
 |------|------|---------|
 | Claude Code | EVIDENCE.md（259-309 行） | 二进制反编译 |
 | Gemini CLI | EVIDENCE.md（遥测章节） | 开源 |

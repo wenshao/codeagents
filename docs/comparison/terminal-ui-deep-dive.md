@@ -4,7 +4,7 @@
 
 ## 总览
 
-| 工具 | UI 框架 | 语言 | Vim 模式 | 主题 | 多客户端 | 启动速度 |
+| Agent | UI 框架 | 语言 | Vim 模式 | 主题 | 多客户端 | 启动速度 |
 |------|--------|------|---------|------|---------|---------|
 | **Claude Code** | Ink + React（Rust 原生二进制） | Rust | ✓ `/vim` | ✓ `/theme` `/color` | 终端 + Desktop + Mobile + Chrome | 亚秒级 |
 | **Gemini CLI** | Ink 6 + React 19 | TypeScript | ✗ | ✗ | 终端 | ~2-3 秒 |
@@ -229,7 +229,7 @@ cursor: "#f5e0dc"
 
 ## 证据来源
 
-| 工具 | 来源 | 获取方式 |
+| Agent | 来源 | 获取方式 |
 |------|------|---------|
 | Claude Code | 03-architecture.md（Rust 原生，Bun v1.2 构建） | 二进制分析 |
 | Gemini CLI | 03-architecture.md（Ink 6.4 + React 19） | 开源 |

@@ -107,7 +107,7 @@ cat error.log | codex "分析这个错误日志"
 
 支持的格式：PNG、JPEG、GIF、WebP
 
-## 与其他工具对比
+## 与其他 Agent 对比
 
 | 特性 | Codex CLI | Claude Code | Qwen Code | Aider | Gemini CLI |
 |------|----------|-------------|-----------|-------|------------|

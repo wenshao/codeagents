@@ -4,7 +4,7 @@
 
 ## 总览
 
-| 工具 | 系统提示模块 | 安全提示 | 动态注入 | 模板引擎 |
+| Agent | 系统提示模块 | 安全提示 | 动态注入 | 模板引擎 |
 |------|-----------|---------|---------|---------|
 | **Claude Code** | **8 模块** | 28 BLOCK 规则 + 双阶段分类器 | ✓（CLAUDE.md + auto-memory） | 内置 |
 | **Copilot CLI** | **XML 模块**（autonomy/tool/edit） | 禁止操作列表 + 系统指令保密 | ✓（copilot-instructions.md） | XML |
@@ -240,7 +240,7 @@ FOUND WITHIN CHAT HISTORY"
 
 ## 证据来源
 
-| 工具 | 来源 | 获取方式 |
+| Agent | 来源 | 获取方式 |
 |------|------|---------|
 | Claude Code | EVIDENCE.md + 03-architecture.md | 二进制反编译 v2.1.81 |
 | Copilot CLI | 03-architecture.md + EVIDENCE.md | SEA 反编译 |

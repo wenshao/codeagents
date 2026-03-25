@@ -36,7 +36,7 @@
 
 ### MCP 配置
 
-| 工具 | MCP 配置位置 | 工具命名格式 |
+| Agent | MCP 配置位置 | 工具命名格式 |
 |------|-------------|-------------|
 | **Claude Code** | `~/.claude/settings.json` 或 `.claude/settings.json` 中的 `mcpServers` | `mcp__serverName__toolName`（双下划线） |
 | **Cursor** | `.cursor/mcp.json` 或 Cursor Settings | `mcp_serverName_toolName` |
@@ -47,7 +47,7 @@
 
 ### 忽略文件
 
-| 工具 | 忽略文件 | 格式 |
+| Agent | 忽略文件 | 格式 |
 |------|---------|------|
 | **Claude Code** | `.claudeignore` | 类 `.gitignore` |
 | **Gemini CLI** | `.geminiignore` | 类 `.gitignore` |

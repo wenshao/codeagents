@@ -10,7 +10,7 @@
 
 ### 算法架构对比
 
-| 工具 | 算法 | 阶段数 | 验证 | 增量 | 递归 |
+| Agent | 算法 | 阶段数 | 验证 | 增量 | 递归 |
 |------|------|--------|------|------|------|
 | **Gemini CLI** | 截断+分割+摘要+Probe验证 | **4** | ✓（二次LLM验证） | 截断阶段 | ✗ |
 | **Goose** | 工具对摘要+全量压缩+渐进移除 | **3** | ✗ | **✓（后台工具对摘要）** | ✗ |
@@ -23,7 +23,7 @@
 
 ### 触发机制（源码常量提取）
 
-| 工具 | 触发阈值 | 源码常量 | 自动触发 |
+| Agent | 触发阈值 | 源码常量 | 自动触发 |
 |------|---------|---------|---------|
 | **Gemini CLI** | **50%** 容量 | `DEFAULT_COMPRESSION_TOKEN_THRESHOLD = 0.5` | ✓ |
 | **Goose** | **80%** 容量 | `GOOSE_AUTO_COMPACT_THRESHOLD`（默认 0.8，[官方文档](https://block.github.io/goose/docs/guides/sessions/smart-context-management/)） | ✓ |
@@ -68,7 +68,7 @@ done_messages ──→ 总 token > max_tokens?
 
 ### 摘要 Prompt 对比
 
-| 工具 | 输出格式 | 视角 | 关键指令 |
+| Agent | 输出格式 | 视角 | 关键指令 |
 |------|---------|------|---------|
 | **Aider** | 自由文本 | **第一人称**（"I asked you..."） | "必须包含函数名、库名、文件名" |
 | **Kimi CLI** | **6 段结构化 XML** | 客观 | 优先级：当前任务 > 错误 > 代码 > 上下文 > 设计 > TODO |
@@ -80,7 +80,7 @@ done_messages ──→ 总 token > max_tokens?
 
 ### 自定义焦点
 
-| 工具 | 支持自定义 | 用法 | 源码实现 |
+| Agent | 支持自定义 | 用法 | 源码实现 |
 |------|-----------|------|---------|
 | **Claude Code** | ✓ | `/compact 保留数据库讨论` | API `compact-2026-01-12` 支持 instructions |
 | **Kimi CLI** | ✓ | `/compact keep db discussions` | `custom_instruction` 参数追加到 prompt，优先级覆盖默认 |
@@ -96,7 +96,7 @@ done_messages ──→ 总 token > max_tokens?
 
 ### 架构设计对比
 
-| 工具 | 实现方式 | 工具限制 | 计划持久化 | 退出机制 |
+| Agent | 实现方式 | 工具限制 | 计划持久化 | 退出机制 |
 |------|---------|---------|-----------|---------|
 | **Gemini CLI** | **TOML 策略引擎** | deny all → allow 只读白名单（优先级 60/70） | `.gemini/tmp/<session>/plans/*.md` | `exit_plan_mode` 工具（需计划文件） |
 | **Kimi CLI** | **工具绑定 + 动态注入** | 工具调用时自检计划模式状态 | `~/.kimi/plans/<hero-slug>.md`（漫威/DC 英雄名） | `ExitPlanMode` 工具 / `/plan off` |
@@ -156,7 +156,7 @@ message = "Write operations are limited to .md files in the plans directory"
 
 ### 输出文件对比
 
-| 工具 | 生成文件 | 分析深度 | 执行方式 |
+| Agent | 生成文件 | 分析深度 | 执行方式 |
 |------|---------|---------|---------|
 | **Claude Code** | `CLAUDE.md` | 项目结构 + 构建命令 | prompt Skill |
 | **Gemini CLI** | `GEMINI.md` | 目录概览 + README + 最多 10 个文件深度读取 | `submit_prompt` 到 LLM |
@@ -228,7 +228,7 @@ LLM 被指示按以下顺序分析项目：
 
 ## 证据来源
 
-| 工具 | 源码文件 | 获取方式 |
+| Agent | 源码文件 | 获取方式 |
 |------|---------|---------|
 | Aider /compact | `aider/history.py` (143行) + `aider/prompts.py` | GitHub API |
 | Kimi CLI /compact | `soul/compaction.py` + `prompts/compact.md` | GitHub API |

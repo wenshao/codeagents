@@ -4,7 +4,7 @@
 
 ## 总览
 
-| 工具 | Hook 事件数 | Hook 类型 | 插件/扩展 | Marketplace | Skill 系统 |
+| Agent | Hook 事件数 | Hook 类型 | 插件/扩展 | Marketplace | Skill 系统 |
 |------|-----------|----------|----------|------------|-----------|
 | **Claude Code** | **22** | command/http/**prompt** | 13 官方插件 | ✓ | 10+ 内置 Skill |
 | **OpenCode** | **17 类型** | npm + file 插件 | Hook-based | ✗ | SKILL.md |
@@ -334,7 +334,7 @@ YAML/JSON 定义的可复用任务模板 + Cron 调度（`goose schedule`）。
 
 ## 证据来源
 
-| 工具 | 来源 | 获取方式 |
+| Agent | 来源 | 获取方式 |
 |------|------|---------|
 | Claude Code | 06-settings.md + 05-skills.md + hooks-config.md | 二进制分析 + 文档 |
 | OpenCode | 01-overview.md + 03-architecture.md | 开源 |

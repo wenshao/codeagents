@@ -49,7 +49,7 @@ opencode uninstall
 
 ### 当前工具（Go 版，源码：`internal/llm/agent/tools.go`，12 个）
 
-| 工具 | 用途 | 来源 |
+| Agent | 用途 | 来源 |
 |------|------|------|
 | **bash** | Shell 命令执行 | Go 源码确认 |
 | **edit** | 文件编辑 | Go 源码确认 |

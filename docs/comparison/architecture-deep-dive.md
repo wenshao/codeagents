@@ -160,7 +160,7 @@ Action → EventStream → Runtime → Observation → 订阅者通知
 
 ### 模型选择与路由
 
-| 工具 | 模型路由 | 弱模型 | 回退 |
+| Agent | 模型路由 | 弱模型 | 回退 |
 |------|---------|--------|------|
 | **Aider** | model-settings.yml 预配置 | ✓（历史摘要用便宜模型） | 手动切换 |
 | **Gemini CLI** | ModelRouterService（Fallback/Override/Classifier） | | ✓ 自动回退链 |
@@ -174,7 +174,7 @@ Action → EventStream → Runtime → Observation → 订阅者通知
 
 ### 工具数量与类型
 
-| 工具 | 内置工具数 | 文件操作 | Bash | 搜索 | Web | 浏览器 | MCP |
+| Agent | 内置工具数 | 文件操作 | Bash | 搜索 | Web | 浏览器 | MCP |
 |------|-----------|---------|------|------|-----|--------|-----|
 | **Aider** | ~15 命令 | ✓ | ✓ | ✓ | ✓ | | |
 | **Goose** | MCP 驱动 | ✓ | ✓ | | ✓ | ✓（截图） | ✓ 原生 |
@@ -197,7 +197,7 @@ Action → EventStream → Runtime → Observation → 订阅者通知
 
 ### 编辑策略
 
-| 工具 | 编辑方式 | 特色 |
+| Agent | 编辑方式 | 特色 |
 |------|---------|------|
 | **Aider** | 14 种编辑格式（whole/diff/udiff/patch/architect...） | 按模型能力自动选择 |
 | **Claude Code** | 原生编辑工具 | 差异预览 |
@@ -213,7 +213,7 @@ Action → EventStream → Runtime → Observation → 订阅者通知
 
 ### 安全模型对比
 
-| 工具 | 权限模型 | 策略格式 | 特殊能力 |
+| Agent | 权限模型 | 策略格式 | 特殊能力 |
 |------|---------|---------|---------|
 | **Claude Code** | 精细工具权限 | 配置文件 | 沙箱网络控制 |
 | **OpenCode** | 分层规则 (allow/deny/ask) | JSON | Tree-sitter bash AST 分析 |
@@ -244,7 +244,7 @@ Action → EventStream → Runtime → Observation → 订阅者通知
 
 ### 上下文窗口策略
 
-| 工具 | 最大上下文 | 压缩策略 | 特殊优化 |
+| Agent | 最大上下文 | 压缩策略 | 特殊优化 |
 |------|-----------|---------|---------|
 | **Claude Code** | 100 万 token | 自动压缩 | 最大上下文窗口 |
 | **Aider** | 按模型 | ChatChunks 分块 + 弱模型摘要 | Prompt 缓存保活 ping |
@@ -272,7 +272,7 @@ Tree-sitter AST 解析（30+ 语言）
 
 ## 6. 存储架构
 
-| 工具 | 存储方式 | 查询能力 | 持久化 |
+| Agent | 存储方式 | 查询能力 | 持久化 |
 |------|---------|---------|--------|
 | **OpenCode** | SQLite（go-sqlite3 + sqlc + goose） | SQL 查询 | 完整关系存储 |
 | **OpenHands** | EventStream + FileStore (PostgreSQL V1) | 事件过滤 + SQL | 事件持久化 |
@@ -289,7 +289,7 @@ Tree-sitter AST 解析（30+ 语言）
 
 ### MCP 支持程度
 
-| 工具 | MCP 客户端 | MCP 服务器 | 传输方式 |
+| Agent | MCP 客户端 | MCP 服务器 | 传输方式 |
 |------|-----------|-----------|---------|
 | **Goose** | ✓（原生） | ✓（内置） | Stdio, HTTP, Builtin |
 | **Claude Code** | ✓ | | Stdio, SSE, Streamable-HTTP |
@@ -304,7 +304,7 @@ Tree-sitter AST 解析（30+ 语言）
 
 ### 扩展系统
 
-| 工具 | 扩展类型 | 加载方式 |
+| Agent | 扩展类型 | 加载方式 |
 |------|---------|---------|
 | **OpenCode** | npm 插件 + Hook | 配置文件引用 |
 | **Qwen Code** | 扩展 + Claude/Gemini 格式转换 | Git clone / Release |
@@ -317,7 +317,7 @@ Tree-sitter AST 解析（30+ 语言）
 
 ## 8. TUI/UI 框架
 
-| 工具 | 框架 | 特点 |
+| Agent | 框架 | 特点 |
 |------|------|------|
 | **Aider** | prompt_toolkit + Rich | Python 终端，最轻量 |
 | **Goose** | Rust CLI + Electron 桌面 | Rust 原生性能 |
@@ -332,7 +332,7 @@ Tree-sitter AST 解析（30+ 语言）
 
 ## 9. 多代理设计
 
-| 工具 | 代理类型 | 并行能力 | 委托 |
+| Agent | 代理类型 | 并行能力 | 委托 |
 |------|---------|---------|------|
 | **OpenCode** | build, plan, general, explore + 自定义 | ✓（子代理） | @ 引用 |
 | **Qwen Code** | 主代理 + 子代理 + Arena | ✓（Tmux/iTerm2） | agent 工具 |
@@ -347,7 +347,7 @@ Tree-sitter AST 解析（30+ 语言）
 
 ## 10. 技术栈总览
 
-| 工具 | 语言 | 运行时 | 包管理 | 构建 |
+| Agent | 语言 | 运行时 | 包管理 | 构建 |
 |------|------|--------|--------|------|
 | **Aider** | Python | CPython | pip/pipx | setuptools |
 | **SWE-agent** | Python | CPython | pip | setuptools |

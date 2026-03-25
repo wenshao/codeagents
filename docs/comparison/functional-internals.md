@@ -4,7 +4,7 @@
 
 ## 1. API 调用参数
 
-| 工具 | Temperature | Max Tokens | Top-P | 重试策略 | 请求超时 |
+| Agent | Temperature | Max Tokens | Top-P | 重试策略 | 请求超时 |
 |------|------------|-----------|-------|----------|----------|
 | **Claude Code** | 0（分类器/安全），1（对话） | 4096（分类器），默认由模型决定 | — | 指数退避（`maxRetries` 125 refs） | — |
 | **Copilot CLI** | 0（工具调用），1（对话） | 1024（某些场景） | — | — | — |
@@ -18,7 +18,7 @@
 
 ## 2. 代理循环控制
 
-| 工具 | 最大迭代 | 反射/重试 | 停止条件 | 循环架构 |
+| Agent | 最大迭代 | 反射/重试 | 停止条件 | 循环架构 |
 |------|---------|-----------|---------|----------|
 | **Claude Code** | `maxTurns`（74 refs，值可配置） | 安全分类器双阶段检查 | `end_turn` / `stop_sequence` | 工具调用循环，直到模型停止 |
 | **Copilot CLI** | 可配置（`max-autopilot-continues`） | — | `end_turn` / `stop_reason` | Agent → Tool → Response 循环 |
@@ -53,7 +53,7 @@
 
 ### 其他工具
 
-| 工具 | 格式 | 说明 |
+| Agent | 格式 | 说明 |
 |------|------|------|
 | **Claude Code** | `Edit`（old_string→new_string） + `Write`（完整文件） + `MultiEdit`（多处编辑） | 3 种互补工具，模型自行选择 |
 | **Copilot CLI** | `edit`（差异） + `replace`（替换） + `create`（创建） + `apply_patch`（补丁） | 4 种工具 |
@@ -64,7 +64,7 @@
 
 ## 4. 上下文管理
 
-| 工具 | 上下文窗口 | 压缩触发 | 压缩算法 | 仓库索引 |
+| Agent | 上下文窗口 | 压缩触发 | 压缩算法 | 仓库索引 |
 |------|-----------|---------|---------|---------|
 | **Claude Code** | 1M（Opus 4.6[1m]） | ~95% 容量 | 三层（微压缩+自动+手动），`<summary>` 标签 | `file-index.node`（原生索引） |
 | **Copilot CLI** | 模型依赖 | `backgroundCompactionThreshold` | 无限会话 + 后台压缩，保留检查点标题 | ripgrep 搜索 |
@@ -78,7 +78,7 @@
 
 ## 5. Prompt Caching（提示缓存）
 
-| 工具 | 缓存机制 | 证据 |
+| Agent | 缓存机制 | 证据 |
 |------|---------|------|
 | **Claude Code** | Anthropic `cache_control: ephemeral`（65 refs） | 二进制中 `cache_control` 65 处引用 |
 | **Copilot CLI** | 未确认 | — |
@@ -90,7 +90,7 @@
 
 ## 6. 工具调用策略
 
-| 工具 | 并行调用 | 调用上限 | 工具选择 |
+| Agent | 并行调用 | 调用上限 | 工具选择 |
 |------|---------|---------|---------|
 | **Claude Code** | ✓（Agent 工具支持并行子代理） | 无固定上限 | 模型自行选择 |
 | **Copilot CLI** | ✓（`multi_tool_use.parallel`） | 无固定上限 | 模型选择，Codex 模型用 apply-patch |
@@ -102,7 +102,7 @@
 
 ## 证据来源
 
-| 工具 | 分析方法 |
+| Agent | 分析方法 |
 |------|---------|
 | Claude Code | `strings` 二进制提取 API 参数常量 |
 | Copilot CLI | `grep` index.js minified 源码 |

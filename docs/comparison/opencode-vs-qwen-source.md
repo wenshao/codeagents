@@ -231,7 +231,7 @@ Qwen Code:
 
 ### 内置工具对比
 
-| 工具 | OpenCode | Qwen Code |
+| Agent | OpenCode | Qwen Code |
 |------|----------|-----------|
 | edit | ✓ | ✓ |
 | write | ✓ | ✓ (write_file) |

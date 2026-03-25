@@ -4,7 +4,7 @@
 
 ## 总览
 
-| 工具 | 自动提交 | 归因系统 | 检查点/回退 | Worktree 隔离 | Git 命令 | 独特设计 |
+| Agent | 自动提交 | 归因系统 | 检查点/回退 | Worktree 隔离 | Git 命令 | 独特设计 |
 |------|---------|---------|-----------|-------------|---------|---------|
 | **Aider** | **✓（每次编辑）** | **✓（3 标志）** | /undo | ✗ | /commit /undo /diff /git | Co-authored-by 归因 |
 | **Claude Code** | ✗（需指令） | ✗ | **✓ /rewind + Esc** | **✓** | 对话式 | Esc 键快速回退 |
@@ -239,7 +239,7 @@ SessionRevert.revert() → git checkout {hash} -- {file}
 
 ## 证据来源
 
-| 工具 | 来源 | 获取方式 |
+| Agent | 来源 | 获取方式 |
 |------|------|---------|
 | Aider | 02-commands.md + 03-architecture.md | 开源 |
 | Claude Code | 02-commands.md + 07-session.md | 二进制分析 |

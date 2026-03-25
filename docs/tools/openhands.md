@@ -76,7 +76,7 @@ Runtime.execute(action) → Observation
 
 ### CodeAct 代理工具
 
-| 工具 | 说明 |
+| Agent | 说明 |
 |------|------|
 | BashTool | 执行 bash 命令 |
 | IPythonTool | 交互式 Python |

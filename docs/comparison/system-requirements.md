@@ -4,7 +4,7 @@
 
 ## 语言与运行时要求
 
-| 工具 | 实现语言 | 运行时 | 最低版本 | 安装方式 |
+| Agent | 实现语言 | 运行时 | 最低版本 | 安装方式 |
 |------|---------|--------|---------|---------|
 | **Claude Code** | TypeScript (Bun 编译) | **Bun**（内嵌，无需安装） | — | `curl install.sh \| bash` / `brew install` |
 | **Copilot CLI** | TypeScript (Node.js SEA) | **Node.js ≥ 24**（回退模式） | v24+ | `curl install.sh \| bash` / `brew` / `npm` / `winget` |
@@ -23,7 +23,7 @@
 
 ## 操作系统支持
 
-| 工具 | macOS | Linux | Windows | WSL | Docker |
+| Agent | macOS | Linux | Windows | WSL | Docker |
 |------|-------|-------|---------|-----|--------|
 | **Claude Code** | ✓ | ✓ | WSL 推荐 | ✓ | ✓ |
 | **Copilot CLI** | ✓ | ✓ | ✓（原生） | ✓ | — |
@@ -37,7 +37,7 @@
 
 ## 二进制大小
 
-| 工具 | 二进制大小 | 包含内容 |
+| Agent | 二进制大小 | 包含内容 |
 |------|-----------|---------|
 | **Claude Code** | ~227 MB | Bun 运行时 + JS bundle + 原生模块 (tree-sitter, sharp, audio) |
 | **Copilot CLI** | ~133 MB | Node.js SEA + JS bundle (15MB + 11MB) + 原生模块 (keytar, pty) |
@@ -50,7 +50,7 @@
 
 ## 沙箱依赖
 
-| 工具 | macOS 沙箱 | Linux 沙箱 | Windows 沙箱 |
+| Agent | macOS 沙箱 | Linux 沙箱 | Windows 沙箱 |
 |------|-----------|-----------|-------------|
 | **Claude Code** | sandbox-exec (内置) | Docker (需安装) | — |
 | **Codex CLI** | sandbox-exec (内置) | Bubblewrap/Landlock (需安装) | Restricted Tokens (内置) |
@@ -61,7 +61,7 @@
 
 ## 网络要求
 
-| 工具 | 必需的网络访问 | 离线模式 |
+| Agent | 必需的网络访问 | 离线模式 |
 |------|--------------|---------|
 | **Claude Code** | Anthropic API (api.anthropic.com) | ✗（需要 API） |
 | **Copilot CLI** | GitHub API (api.githubcopilot.com) | ✗ |

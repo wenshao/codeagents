@@ -326,7 +326,7 @@ terminal_colors:
 设置 → Editor → Tab Size：缩进宽度
 ```
 
-## 与传统终端和 AI CLI 工具的对比
+## 与传统终端和 AI CLI Agent 的对比
 
 | 特性 | Warp | iTerm2 / GNOME Terminal | Claude Code | GitHub Copilot CLI |
 |------|------|-------------------------|-------------|-------------------|

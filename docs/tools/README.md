@@ -44,8 +44,8 @@
 - [迁移指南](../guides/migration.md)
 - [故障排查](../guides/troubleshooting.md)
 
-## 新增工具
+## 新增 Agent
 
-| 工具 | 文件 | 行数 | 特色 |
+| Agent | 文件 | 行数 | 特色 |
 |------|------|------|------|
 | [Qoder CLI](./qoder-cli/) | 单文件 | 179 | Go 原生，Quest 模式，Claude Code 兼容，信用制 |

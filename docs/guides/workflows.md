@@ -612,7 +612,7 @@ git apply trajectories/*/patches/*.patch
 
 ### 上下文管理
 
-| 工具 | 上下文策略 |
+| Agent | 上下文策略 |
 |------|-----------|
 | Claude Code | 让工具自动搜索，只在需要时用 `@file` 主动指定 |
 | Aider | 精确使用 `/add` 和 `/drop` 管理，利用 `/tokens` 监控用量 |

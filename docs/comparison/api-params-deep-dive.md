@@ -4,7 +4,7 @@
 
 ## 总览
 
-| 工具 | 默认温度 | 重试策略 | 循环上限 | 流式输出 | LLM SDK | Prompt 缓存 |
+| Agent | 默认温度 | 重试策略 | 循环上限 | 流式输出 | LLM SDK | Prompt 缓存 |
 |------|---------|---------|---------|---------|---------|-----------|
 | **Claude Code** | 0/1（模式相关） | 指数退避 | 可配置 maxTurns | ✓ | 原生 Anthropic | **✓ cache_control** |
 | **Gemini CLI** | 0(base)/1(chat) | 10 次，5-30s | **100 轮** | ✓ | @google/genai | ✓ cachedContent |
@@ -105,7 +105,7 @@ response = litellm.completion(
 
 ### 跨 Agent 重试对比
 
-| 工具 | 初始延迟 | 最大延迟 | 最大次数 | 重试条件 | 抖动 |
+| Agent | 初始延迟 | 最大延迟 | 最大次数 | 重试条件 | 抖动 |
 |------|---------|---------|---------|---------|------|
 | **Aider** | 0.125s | 60s | — | LiteLLM 可重试错误 | ✗ |
 | **Gemini CLI** | **5s** | **30s** | **10** | 429 + 5xx | ✗ |
@@ -138,7 +138,7 @@ async def _step(self):
 
 ### 循环上限
 
-| 工具 | 上限 | 源码位置 | 说明 |
+| Agent | 上限 | 源码位置 | 说明 |
 |------|------|---------|------|
 | **Gemini CLI** | **100 轮** | `client.ts:81` MAX_TURNS | 硬编码 |
 | **Kimi CLI** | **100 步/轮** | `config.py:71-72` max_steps_per_turn | 可配置 |
@@ -149,7 +149,7 @@ async def _step(self):
 
 ### 停止条件
 
-| 工具 | 停止方式 |
+| Agent | 停止方式 |
 |------|---------|
 | Claude Code | `end_turn` / `stop_sequence` / 用户中断 |
 | Gemini CLI | 轮次耗尽 / 模型停止 / 用户中断 |
@@ -161,7 +161,7 @@ async def _step(self):
 
 ## 四、上下文窗口与压缩阈值
 
-| 工具 | 最大上下文 | 压缩阈值 | 预留空间 |
+| Agent | 最大上下文 | 压缩阈值 | 预留空间 |
 |------|-----------|---------|---------|
 | **Claude Code** | 100 万 token（Opus 4.6[1m]） | ~95% | — |
 | **Gemini CLI** | ~100 万 | **50%** | — |
@@ -174,7 +174,7 @@ async def _step(self):
 
 ## 五、Prompt 缓存
 
-| 工具 | 缓存机制 | 效果 |
+| Agent | 缓存机制 | 效果 |
 |------|---------|------|
 | **Claude Code** | Anthropic `cache_control: ephemeral` | 系统提示和工具定义缓存，减少重复 token |
 | **Aider** | Anthropic prompt caching（通过 LiteLLM） | 后台保活 ping 维持缓存 |
@@ -186,7 +186,7 @@ async def _step(self):
 
 ## 六、工具调用策略
 
-| 工具 | 并行调用 | 工具选择 | 特殊机制 |
+| Agent | 并行调用 | 工具选择 | 特殊机制 |
 |------|---------|---------|---------|
 | **Claude Code** | ✓（Agent 子代理） | 模型自选 | ToolSearch 延迟加载 |
 | **Gemini CLI** | ✓ | 模型自选 | TailToolCall 链式调用 |
@@ -240,7 +240,7 @@ pub struct ModelConfig {
 
 ## 证据来源
 
-| 工具 | 源码文件 | 获取方式 |
+| Agent | 源码文件 | 获取方式 |
 |------|---------|---------|
 | Aider | `models.py:988`（temp）, `history.py`（压缩）| GitHub 源码 |
 | Gemini CLI | `defaultModelConfigs.ts`, `retry.ts`, `client.ts:81` | GitHub 源码 |

@@ -4,7 +4,7 @@
 
 ## 遥测系统对比
 
-| 工具 | 遥测提供商 | 默认状态 | 采集 Machine ID | 采集硬件信息 | 采集 MAC 地址 |
+| Agent | 遥测提供商 | 默认状态 | 采集 Machine ID | 采集硬件信息 | 采集 MAC 地址 |
 |------|-----------|---------|-----------------|-------------|-------------|
 | **Claude Code** | Anthropic Metrics + Datadog + Segment | 开启 | **是**（IOPlatformUUID / /etc/machine-id） | **是**（CPU、主机名、平台） | **否** |
 | **Copilot CLI** | GitHub/Microsoft 内部 | 开启 | 未确认 | **是**（平台信息） | 未确认 |
@@ -19,7 +19,7 @@
 
 ## 遥测端点
 
-| 工具 | 端点 | 说明 |
+| Agent | 端点 | 说明 |
 |------|------|------|
 | **Claude Code** | `api.anthropic.com/api/claude_code/metrics` | 主遥测 |
 | | `http-intake.logs.us5.datadoghq.com` | Datadog 日志 |
@@ -64,7 +64,7 @@
 
 ## 隐私控制
 
-| 工具 | 禁用方式 | 默认 |
+| Agent | 禁用方式 | 默认 |
 |------|----------|------|
 | **Claude Code** | `DISABLE_TELEMETRY=true` 或 `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=true` | 开启 |
 | **Copilot CLI** | 无明确公开方式 | 开启 |
@@ -77,7 +77,7 @@
 
 ## 安全监控系统
 
-| 工具 | 安全分类器 | 沙箱 | 命令阻止 | 提示注入检测 |
+| Agent | 安全分类器 | 沙箱 | 命令阻止 | 提示注入检测 |
 |------|-----------|------|----------|-------------|
 | **Claude Code** | **是**（双阶段 LLM 分类器，28 条 BLOCK 规则） | macOS Seatbelt + Linux 容器 | **是**（Security Monitor） | **是**（通过安全分类器） |
 | **Copilot CLI** | **否** | 无原生沙箱 | **否** | **否** |
@@ -90,7 +90,7 @@
 
 ## 环境变量清洗
 
-| 工具 | 清洗机制 | 阻止模式 |
+| Agent | 清洗机制 | 阻止模式 |
 |------|----------|----------|
 | **Claude Code** | 未公开（闭源） | 未公开 |
 | **Gemini CLI** | **全面**（`environmentSanitization.ts`） | TOKEN, SECRET, PASSWORD, KEY, AUTH, CREDENTIAL, 私钥模式, GitHub tokens, AWS keys, JWTs |
@@ -102,7 +102,7 @@
 
 ## 证据来源
 
-| 工具 | 分析方式 | 证据文件 |
+| Agent | 分析方式 | 证据文件 |
 |------|----------|----------|
 | Claude Code | Bun 字节码反编译（v2.1.81） | `claude-code/EVIDENCE.md` |
 | Copilot CLI | Node.js SEA 反编译（v1.0.11/0.0.403） | `copilot-cli/EVIDENCE.md` |

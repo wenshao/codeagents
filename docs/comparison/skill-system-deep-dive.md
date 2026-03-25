@@ -4,7 +4,7 @@
 
 ## 总览
 
-| 工具 | Skill 格式 | 内置数 | 条件激活 | 工具白名单 | 模型覆盖 | 上下文隔离 | 工作流编排 |
+| Agent | Skill 格式 | 内置数 | 条件激活 | 工具白名单 | 模型覆盖 | 上下文隔离 | 工作流编排 |
 |------|-----------|--------|---------|-----------|---------|-----------|-----------|
 | **Claude Code** | SKILL.md（YAML frontmatter） | **10+** | ✓（paths glob） | **✓** | **✓** | **✓（fork）** | ✗ |
 | **Kimi CLI** | SKILL.md + **Flow Skill** | 标准+Flow | ✓（三层发现） | ✗ | ✗ | ✓（子代理） | **✓（Mermaid/D2）** |
@@ -257,7 +257,7 @@ Claude Code 插件               Qwen Code / Gemini CLI
 
 ## 证据来源
 
-| 工具 | 来源 | 获取方式 |
+| Agent | 来源 | 获取方式 |
 |------|------|---------|
 | Claude Code | 05-skills.md（271 行）+ 二进制分析 | 反编译 + 文档 |
 | Kimi CLI | 03-architecture.md + EVIDENCE.md | 开源 |

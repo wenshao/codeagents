@@ -4,7 +4,7 @@
 
 ## 总览
 
-| 工具 | 指令文件 | 层级数 | 自动学习 | AI 管理 | 跨项目 | 跨格式读取 |
+| Agent | 指令文件 | 层级数 | 自动学习 | AI 管理 | 跨项目 | 跨格式读取 |
 |------|---------|--------|---------|---------|--------|-----------|
 | **Claude Code** | CLAUDE.md | **4 层** | **✓** | ✗（用户编辑） | ✓ | ✗ |
 | **Gemini CLI** | GEMINI.md | **4 层** | **✓** | **✓（memory_manager）** | ✓ | ✗ |
@@ -282,7 +282,7 @@ CODEX.md 或 AGENTS.md       ← 项目级（同等优先级）
 
 ## 证据来源
 
-| 工具 | 来源 | 获取方式 |
+| Agent | 来源 | 获取方式 |
 |------|------|---------|
 | Claude Code | 03-architecture.md + 07-session.md + EVIDENCE.md | 二进制分析 |
 | Gemini CLI | 04-tools.md + 05-policies.md + 03-architecture.md | 开源 |

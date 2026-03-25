@@ -8,7 +8,7 @@ Skill 是终端 AI 编程代理的**命令扩展机制**。用户通过 `/comman
 
 各工具的 Skill 实现：
 
-| 工具 | Skill 文件 | 加载路径 | 说明 |
+| Agent | Skill 文件 | 加载路径 | 说明 |
 |------|-----------|----------|------|
 | **Claude Code** | `SKILL.md`（YAML Frontmatter） | `~/.claude/skills/`、`<project>/.claude/skills/` | 最成熟，支持条件激活、插件分发 |
 | **Gemini CLI** | `SKILL.md`（TypeScript 接口） | `~/.gemini/skills/`、`.gemini/skills/`、`~/.agents/skills/`、`.agents/skills/` | 支持 `activate_skill` 工具动态激活 |

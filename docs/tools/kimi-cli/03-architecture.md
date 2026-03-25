@@ -65,7 +65,7 @@ KimiCLI.create() [工厂模式]
 
 ## 工具系统
 
-| 工具 | 用途 | 关键参数 |
+| Agent | 用途 | 关键参数 |
 |------|------|---------|
 | **Agent** | 委派任务给子代理 | description, prompt, subagent_type (coder/explore/plan), model, resume, run_in_background |
 | **Shell** | 执行 bash/PowerShell 命令 | command, timeout (1-86400s), run_in_background, description |

@@ -8,7 +8,7 @@ AGENTS.md 是放在项目根目录（或子目录）的 Markdown 文件，用于
 
 AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 
-| 工具 | 原生指令文件 | 是否读取 AGENTS.md | 说明 |
+| Agent | 原生指令文件 | 是否读取 AGENTS.md | 说明 |
 |------|------------|-------------------|------|
 | **Codex CLI** | `CODEX.md` | 原生支持 | 最早引入 AGENTS.md 概念 |
 | **Kimi CLI** | `AGENTS.md` | 原生支持 | 作为主要项目指令文件 |

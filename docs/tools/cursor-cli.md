@@ -431,7 +431,7 @@ Business 和 Enterprise 计划默认强制开启 Privacy Mode。
 - **适合**：团队协作、需要多模型切换、希望异步委托任务（Background Agent）
 - **不太适合**：纯终端工作流、服务器端开发、CI/CD 自动化、需要开源审计
 
-## 与其他工具对比
+## 与其他 Agent 对比
 
 | 特性 | Cursor | Claude Code | Aider | Windsurf | GitHub Copilot |
 |------|--------|-------------|-------|----------|----------------|

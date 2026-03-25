@@ -4,7 +4,7 @@
 
 ## 总览
 
-| 工具 | 架构角色 | 传输协议 | 工具命名 | 策略控制 | OAuth |
+| Agent | 架构角色 | 传输协议 | 工具命名 | 策略控制 | OAuth |
 |------|---------|---------|---------|---------|-------|
 | **Goose** | **全部工具基于 MCP** | Stdio/StreamableHTTP/Builtin | 标准 MCP 发现 | 4 模式 + Per-tool | ✗ |
 | **Claude Code** | 扩展 | Stdio/SSE/Streamable-HTTP | `mcp__server__tool`（双下划线） | deny→ask→allow 3 层 | ✓ |
@@ -226,7 +226,7 @@ Copilot CLI 内置 `github-mcp-server`，但**默认不启用所有工具**：
 
 ## 工具命名约定对比
 
-| 工具 | 命名格式 | 示例 |
+| Agent | 命名格式 | 示例 |
 |------|---------|------|
 | **Claude Code** | `mcp__server__tool`（双下划线） | `mcp__github__create_issue` |
 | **Gemini CLI** | `mcp_{server}_{tool}`（单下划线） | `mcp_github_create_issue` |
@@ -252,7 +252,7 @@ Copilot CLI 内置 `github-mcp-server`，但**默认不启用所有工具**：
 
 ## 证据来源
 
-| 工具 | 来源 | 获取方式 |
+| Agent | 来源 | 获取方式 |
 |------|------|---------|
 | Goose | [官方文档](https://block.github.io/goose/docs/) + EVIDENCE.md | 开源 |
 | Claude Code | `claude --help` + 06-settings.md | 二进制 + 文档 |

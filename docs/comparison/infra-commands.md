@@ -10,7 +10,7 @@
 
 ### 总览对比
 
-| 工具 | 命令 | 槽位数 | 可选模型范围 | 运行时切换 | 多供应商 |
+| Agent | 命令 | 槽位数 | 可选模型范围 | 运行时切换 | 多供应商 |
 |------|------|--------|-------------|-----------|---------|
 | **Claude Code** | `/model` | **1** | Sonnet / Opus / Haiku | ✓ | ✗（仅 Anthropic） |
 | **Copilot CLI** | `/model` | **1** | 14+ 模型（Claude + GPT + Gemini + o 系列） | ✓ | ✓（模型乘数计费） |
@@ -148,7 +148,7 @@ codex --oss --model qwen3-coder  # 使用本地开源模型
 
 ### 总览对比
 
-| 工具 | 命令 | 规则类型 | 层级数 | 模式匹配 | 表达力 |
+| Agent | 命令 | 规则类型 | 层级数 | 模式匹配 | 表达力 |
 |------|------|---------|--------|---------|--------|
 | **Claude Code** | `/permissions` | allow / ask / deny | **5 层** | 前缀匹配 `Bash(git:*)` | ★★★★☆ |
 | **Gemini CLI** | `/permissions` + `/policies` | TOML 策略引擎 | **5 层** | 通配符 + 正则 | ★★★★★ |
@@ -310,7 +310,7 @@ Aider 完全没有权限管理机制。所有文件编辑操作通过 `/add` 和
 
 ### 总览对比
 
-| 工具 | 命令 | 传输协议 | 配置方式 | OAuth | 可作为 MCP Server | 内置 MCP 工具 |
+| Agent | 命令 | 传输协议 | 配置方式 | OAuth | 可作为 MCP Server | 内置 MCP 工具 |
 |------|------|---------|---------|-------|-----------------|-------------|
 | **Claude Code** | `/mcp` | stdio / SSE / streamable-http | `.mcp.json` | ✗ | ✗ | ✗ |
 | **Copilot CLI** | `/mcp` | stdio / SSE | `mcp-config.json` | ✗ | ✗ | ✓（GitHub MCP） |
@@ -474,7 +474,7 @@ extensions:
 
 ### 总览对比
 
-| 工具 | 命令 | 事件数 | Hook 类型 | 运行时管理 | LLM 推理 Hook |
+| Agent | 命令 | 事件数 | Hook 类型 | 运行时管理 | LLM 推理 Hook |
 |------|------|--------|----------|-----------|-------------|
 | **Claude Code** | `/hooks` | **22** | command / http / prompt | 仅查看 | **✓** |
 | **Gemini CLI** | `/hooks` | **11** | command | 查看 / 启用 / 禁用 | ✗ |
@@ -590,7 +590,7 @@ PostFileWrite        # 文件写入后
 
 ### 其他工具：无 Hook 系统
 
-| 工具 | 替代方案 |
+| Agent | 替代方案 |
 |------|---------|
 | **Copilot CLI** | 无 Hook 也无替代方案 |
 | **Codex CLI** | 无 Hook，通过 `--ask-for-approval` 间接控制 |
@@ -610,7 +610,7 @@ PostFileWrite        # 文件写入后
 
 ### 总览对比
 
-| 工具 | macOS | Linux | Windows | 沙箱技术 | 深度 |
+| Agent | macOS | Linux | Windows | 沙箱技术 | 深度 |
 |------|-------|-------|---------|---------|------|
 | **Codex CLI** | ✓ Seatbelt | ✓ Bubblewrap + Landlock + Seccomp | ✓ Restricted Tokens | 内核级 × 3 平台 | ★★★★★ |
 | **Gemini CLI** | ✓ Seatbelt | ✓ seccomp BPF | ✓ C# 沙箱 | 内核级 × 3 平台 | ★★★★☆ |
@@ -753,7 +753,7 @@ Claude Code 在 Windows 上没有沙箱实现。建议 Windows 用户通过 WSL2
 
 ### 各工具在基础设施维度的最强项
 
-| 工具 | 最强维度 | 原因 |
+| Agent | 最强维度 | 原因 |
 |------|---------|------|
 | **Claude Code** | Hook 系统 | 22 事件 + Prompt Hook（LLM 推理）独一无二 |
 | **Copilot CLI** | 模型切换 | 14+ 多供应商模型 + 乘数计费最灵活 |

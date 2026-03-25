@@ -4,7 +4,7 @@
 
 ## 一句话定位
 
-| 工具 | 一句话 | 适合谁 |
+| Agent | 一句话 | 适合谁 |
 |------|--------|--------|
 | **Claude Code** | Anthropic 官方终端代理，安全最严格（28 条阻止规则），插件生态最丰富（14 个官方插件） | 需要企业级安全和深度推理的团队 |
 | **Copilot CLI** | GitHub 原生集成，读取所有主流指令文件（CLAUDE.md/GEMINI.md/AGENTS.md），67 个内置工具 | GitHub 重度用户和企业团队 |
@@ -67,7 +67,7 @@ Kimi CLI   OpenCode   Aider      Goose     Claude Code   Copilot   Gemini CLI
 
 ## 技术栈快览
 
-| 工具 | 语言 | 运行时 | 二进制大小 | 最低要求 |
+| Agent | 语言 | 运行时 | 二进制大小 | 最低要求 |
 |------|------|--------|-----------|---------|
 | Claude Code | TS/Bun | Bun（内嵌） | 227 MB | 无 |
 | Copilot CLI | TS/Node | Node ≥ 24 | 133 MB | Node 24 |

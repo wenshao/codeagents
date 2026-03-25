@@ -230,7 +230,7 @@ Claude Code 与 Anthropic 后端通信使用以下 API 端点：
 
 Claude Code 提供 Chrome 浏览器扩展，支持在终端代理中直接操作浏览器标签页。通过 MCP 协议桥接，提供以下工具：
 
-| 工具 | 用途 |
+| Agent | 用途 |
 |------|------|
 | **tabs_context_mcp** | 获取当前打开的标签页上下文信息 |
 | **tabs_create_mcp** | 创建新的浏览器标签页 |

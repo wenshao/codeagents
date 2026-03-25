@@ -4,7 +4,7 @@
 
 ## 定价模式总览
 
-| 工具 | 模式 | 月费 | 免费层 | 按量计费 |
+| Agent | 模式 | 月费 | 免费层 | 按量计费 |
 |------|------|------|--------|---------|
 | **Claude Code** | 订阅 + API | Pro $20, Max $100/$200 | 无 | API: 按 token |
 | **Copilot CLI** | 订阅 | Free/Pro $10/Business $19/Enterprise $39 | ✓（有限） | Premium Requests 配额 |
@@ -57,7 +57,7 @@ API 按量价格（参考）：
 
 ### 场景 1：修复一个简单 Bug（~5 分钟）
 
-| 工具 | 模型 | 估算 token | 估算费用 |
+| Agent | 模型 | 估算 token | 估算费用 |
 |------|------|-----------|---------|
 | Claude Code (Pro) | Sonnet 4.6 | ~50K in + ~10K out | 包含在 $20/月 |
 | Claude Code (API) | Sonnet 4.6 | ~50K in + ~10K out | ~$0.30 |
@@ -69,7 +69,7 @@ API 按量价格（参考）：
 
 ### 场景 2：开发一个新功能（~30 分钟）
 
-| 工具 | 模型 | 估算 token | 估算费用 |
+| Agent | 模型 | 估算 token | 估算费用 |
 |------|------|-----------|---------|
 | Claude Code (Pro) | Sonnet 4.6 | ~500K in + ~100K out | 包含在 $20/月 |
 | Claude Code (API) | Sonnet 4.6 | ~500K in + ~100K out | ~$3.00 |
@@ -81,7 +81,7 @@ API 按量价格（参考）：
 
 ### 场景 3：大规模重构（~2 小时）
 
-| 工具 | 模型 | 估算 token | 估算费用 |
+| Agent | 模型 | 估算 token | 估算费用 |
 |------|------|-----------|---------|
 | Claude Code (Max) | Opus 4.6 | ~2M in + ~500K out | 包含在 $100/月 |
 | Claude Code (API) | Opus 4.6 | ~2M in + ~500K out | ~$67.50 |
