@@ -154,7 +154,7 @@ Action → EventStream → Runtime → Observation → 订阅者通知
 |------|---------|-----------|--------|
 | **LiteLLM 统一** | Python 包装 100+ 模型 | 100+ | Aider, SWE-agent, OpenHands |
 | **Vercel AI SDK** | TS SDK 统一 streamText() + models.dev 动态加载 | 100+ | OpenCode（TUI 层） |
-| **独立 Generator** | 每个提供商独立实现 | 3-5 | Qwen Code, Gemini CLI |
+| **独立 Generator** | 每个提供商独立实现 | 1（Gemini CLI）/ 6+（Qwen Code） | Gemini CLI, Qwen Code |
 | **Provider trait** | Rust trait 抽象 | 58+ | Goose |
 | **Handler 工厂** | 每个提供商一个 Handler | 48+ | Cline |
 | **单提供商** | 直连特定 API | 1 | Claude Code |
@@ -179,10 +179,10 @@ Action → EventStream → Runtime → Observation → 订阅者通知
 |------|-----------|---------|------|------|-----|--------|-----|
 | **Aider** | ~15 命令 | ✓ | ✓ | ✓ | ✓ | | |
 | **Goose** | MCP 驱动 | ✓ | ✓ | | ✓ | ✓（截图） | ✓ 原生 |
-| **Gemini CLI** | 27+ | ✓ | ✓ | ✓ | ✓ | | ✓ |
+| **Gemini CLI** | 23（17 核心 + 6 任务追踪） | ✓ | ✓ | ✓ | ✓ | | ✓ |
 | **Qwen Code** | 16 | ✓ | ✓ | ✓ | ✓ | | ✓ |
-| **OpenCode** | 40+ | ✓ | ✓ | ✓ | ✓ | | ✓ |
-| **Cline** | 23 | ✓ | ✓ | ✓ | ✓ | ✓（Headless） | ✓ |
+| **OpenCode** | 18（14 无条件 + 4 有条件） | ✓ | ✓ | ✓ | ✓ | | ✓ |
+| **Cline** | 24+ | ✓ | ✓ | ✓ | ✓ | ✓（Headless） | ✓ |
 | **SWE-agent** | Bundle 驱动 | ✓ | ✓ | ✓ | ✓ | | |
 | **OpenHands** | 8 核心 | ✓ | ✓ | | ✓ | ✓（Playwright） | ✓ |
 
