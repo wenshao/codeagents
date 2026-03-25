@@ -8,7 +8,7 @@
 
 ## 概述
 
-本仓库提供了 16 款 AI 编程 CLI 工具的全面对比。**核心内容基于源码分析（开源工具）和二进制反编译（闭源工具）**，并附带 EVIDENCE.md 证据文件支撑每项声明。
+本仓库提供了 17 款 AI 编程 CLI 工具的全面对比。**核心内容基于源码分析（开源工具）和二进制反编译（闭源工具）**，并附带 EVIDENCE.md 证据文件支撑每项声明。
 
 ### 源码分析纠正的重要事实
 
@@ -38,6 +38,7 @@
 | [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | - | Rust | 1 (Claude) | 13 官方插件，Prompt Hook，100 万上下文 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | - | TypeScript | 多种 | AI 原生 IDE，Background Agent |
 | [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | 9k+ | Shell | 多种 | 终端原生代理，GitHub 深度集成，MCP 扩展 |
+| [Qoder CLI](./docs/tools/qoder-cli.md) | QoderAI（阿里） | 专有 | - | **Go** | 多种 | Quest 模式，Claude Code 兼容，信用制定价 |
 
 ## 文档导航
 

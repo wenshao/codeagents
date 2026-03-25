@@ -184,13 +184,14 @@
 
 ### 跨工具指令文件兼容
 
-| 文件 | Claude Code | Copilot CLI | Codex CLI | Gemini CLI | Qwen Code | Kimi CLI |
-|------|-------------|-------------|-----------|-----------|-----------|----------|
-| `CLAUDE.md` | ✓（原生） | ✓（读取） | ✗ | ✗ | ✓（读取） | ✗ |
-| `AGENTS.md` | ✗ | ✓（读取） | ✓（原生） | ✗ | ✓（读取） | ✓（原生） |
-| `GEMINI.md` | ✗ | ✓（读取） | ✗ | ✓（原生） | ✓（原生） | ✗ |
-| `CODEX.md` | ✗ | ✗ | ✓（原生） | ✗ | ✗ | ✗ |
-| `.github/copilot-instructions.md` | ✗ | ✓（原生） | ✗ | ✗ | ✗ | ✗ |
-| `.cursor/rules/` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
+| 文件 | Claude Code | Copilot CLI | Codex CLI | Gemini CLI | Qwen Code | Kimi CLI | Qoder CLI |
+|------|-------------|-------------|-----------|-----------|-----------|----------|-----------|
+| `CLAUDE.md` | ✓（原生） | ✓（读取） | ✗ | ✗ | ✓（读取） | ✗ | ✓（`--with-claude-config`） |
+| `AGENTS.md` | ✗ | ✓（读取） | ✓（原生） | ✗ | ✓（读取） | ✓（原生） | ✓（原生） |
+| `GEMINI.md` | ✗ | ✓（读取） | ✗ | ✓（原生） | ✓（原生） | ✗ | ✗ |
+| `CODEX.md` | ✗ | ✗ | ✓（原生） | ✗ | ✗ | ✗ | ✗ |
+| `QWEN.md` | ✗ | ✗ | ✗ | ✗ | ✓（原生） | ✗ | ✗ |
+| `.github/copilot-instructions.md` | ✗ | ✓（原生） | ✗ | ✗ | ✗ | ✗ | ✗ |
+| `.cursor/rules/` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
 
-> **关键发现：** Copilot CLI 读取最多格式（CLAUDE.md + GEMINI.md + AGENTS.md + copilot-instructions）。Qwen Code 同时支持 CLAUDE.md 和 GEMINI.md（分叉兼容策略）。
+> **关键发现：** Copilot CLI 读取最多格式（CLAUDE.md + GEMINI.md + AGENTS.md + copilot-instructions）。Qoder CLI 通过 `--with-claude-config` 兼容 Claude Code 完整配置（skills、commands、subagents）。Qwen Code 使用 QWEN.md（兼容 GEMINI.md）。

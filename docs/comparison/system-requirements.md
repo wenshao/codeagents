@@ -72,3 +72,13 @@
 | **Kimi CLI** | Moonshot/所选 API | 部分（本地模型） |
 | **Goose** | 所选模型的 API | 部分（Ollama 本地模型） |
 | **OpenCode** | 所选模型的 API | 部分（本地模型） |
+
+### Qoder CLI 补充
+
+| 项目 | 值 |
+|------|-----|
+| 实现语言 | Go |
+| 运行时 | 无需额外运行时（静态链接二进制） |
+| 二进制大小 | 43 MB |
+| 安装 | `npm install -g @qoder-ai/qodercli` |
+| Node.js 要求 | 仅 npm 安装需要（二进制本身不依赖 Node.js） |

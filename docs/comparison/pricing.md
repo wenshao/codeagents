@@ -104,3 +104,14 @@ API 按量价格（参考）：
 ---
 
 > **数据来源：** Claude Code 定价来自 [claude.ai/pricing](https://claude.ai/pricing)，Copilot CLI 来自 [github.com/features/copilot/plans](https://github.com/features/copilot/plans)，其他工具为各官方文档和 API 定价页。费用估算基于 2026 年 3 月 token 定价。
+
+## Qoder CLI 定价（信用制）
+
+| 计划 | 月费 | 月信用 |
+|------|------|--------|
+| Free | $0 | 300 |
+| Pro | $10（50% off） | 2,000 |
+| Pro+ | $30（50% off） | 6,000 |
+| Ultra | $100（50% off） | 20,000 |
+
+> 附加信用 $0.01/个，1000 起购。
