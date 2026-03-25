@@ -9,7 +9,7 @@
 | **核心代理循环** | ✅ | ✅ | 对等 |
 | 工具系统（声明式） | ✅ | ✅ | 对等 |
 | 事件驱动调度器 | ✅ Scheduler | ✅ CoreToolScheduler | 对等（实现不同） |
-| Hook 系统 | ✅ | ✅ 12 事件 | 对等 |
+| Hook 系统 | ✅ 11 事件（BeforeTool/AfterTool 等） | ✅ 12 事件（PreToolUse/PostToolUse 等） | 近似对等（Qwen 多 1 个事件，事件命名不同） |
 | MCP 集成 | ✅ Stdio/SSE/HTTP | ✅ Stdio/SSE/HTTP（`StreamableHTTPClientTransport`） | 对等 |
 | 会话管理 | ✅ | ✅ + `chatRecordingService`（JSONL 持久化） | 对等 |
 | Ink + React TUI | ✅ | ✅ | 对等 |
@@ -166,13 +166,14 @@ interface ToolResult {
 
 ### 7. A2A 协议服务器
 
-**Gemini CLI 实现**（`packages/a2a-server/`）：
-- 完整的 Agent-to-Agent 通信服务器
-- 基于 `@a2a-js/sdk`
-- Express.js HTTP 实现
-- 支持分层记忆和扩展加载
+**Gemini CLI 实现**（`packages/a2a-server/`，[PR #3079](https://github.com/google-gemini/gemini-cli/pull/3079)）：
+- 完整的 Agent-to-Agent 通信服务器，基于 `@a2a-js/sdk`
+- v0.33.0（2026-03-11）引入 HTTP 认证 + 已认证 Agent Card 发现
+- `@a2a` 工具允许模型向其他 Agent 发送消息
+- 远程子代理通过 `.well-known/agent.json` 服务发现
+- 远程子代理定义为 Markdown 文件（YAML frontmatter），放在项目级或用户级目录
 
-**评估**：A2A 是实验性协议，生态尚不成熟。Qwen Code 有 Arena 和子代理作为替代方案。
+**评估**：A2A 协议已升级到 v0.3（支持 gRPC、安全签名），但生态仍在建设中。Qwen Code 有 Arena 和子代理作为替代方案。
 
 **工作量**：高（2-3 周）
 
