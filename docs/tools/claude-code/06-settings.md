@@ -158,14 +158,85 @@ Hook 脚本通过 stdout 输出 JSON 控制行为：
 | **macOS** | sandbox-exec（Seatbelt） | 基于 Apple 沙箱配置文件，限制文件系统和网络访问 |
 | **Linux** | Docker 容器 | 通过容器隔离文件系统和网络 |
 
-### 权限控制
-- **工具级白名单**：通过 `permissions.allow` 精确控制哪些工具/参数可自动执行
-- **工具级黑名单**：通过 `permissions.deny` 禁止特定操作
-- **模式匹配**：`Bash(npm test)` 只允许 `npm test` 命令
-- **交互式确认**：未在白名单中的操作需要用户确认
-- **域名限制**：网络访问可限制到特定域名
+### 权限规则语法（二进制提取 + 官方文档）
 
-### 权限配置模式
+规则格式：`ToolName` 或 `ToolName(specifier)`，支持通配符 `*`。
+
+**Bash 命令规则（从二进制提取的内置模式，38 个）：**
+
+| 模式 | 说明 |
+|------|------|
+| `Bash(git:*)` | 所有 git 命令 |
+| `Bash(git add:*)` | git add 及其参数 |
+| `Bash(git commit:*)` | git commit |
+| `Bash(git push:*)` | git push |
+| `Bash(git diff:*)` | git diff |
+| `Bash(git log:*)` | git log |
+| `Bash(git status:*)` | git status |
+| `Bash(git show:*)` | git show |
+| `Bash(git checkout -b:*)` | 创建新分支 |
+| `Bash(git checkout --branch:*)` | 创建新分支（长参数） |
+| `Bash(git remote show:*)` | 查看远程信息 |
+| `Bash(gh:*)` | 所有 GitHub CLI 命令 |
+| `Bash(gh pr:*)` | GitHub PR 操作 |
+| `Bash(gh pr create:*)` | 创建 PR |
+| `Bash(gh pr edit:*)` | 编辑 PR |
+| `Bash(gh pr merge:*)` | 合并 PR |
+| `Bash(gh pr view:*)` | 查看 PR |
+| `Bash(npm:*)` | 所有 npm 命令 |
+| `Bash(npm install)` | npm install（精确匹配） |
+| `Bash(npm run *)` | npm run 脚本 |
+| `Bash(npm run build)` | npm run build（精确） |
+| `Bash(npm run lint)` | npm run lint（精确） |
+| `Bash(npm run test)` | npm run test（精确） |
+| `Bash(pnpm:*)` | 所有 pnpm 命令 |
+| `Bash(yarn:*)` | 所有 yarn 命令 |
+| `Bash(bun:*)` | 所有 bun 命令 |
+| `Bash(curl:*)` | curl 命令（通常放 deny） |
+| `Bash(http:*)` | HTTP 相关命令 |
+| `Bash(asciinema:*)` | 终端录制 |
+| `Bash(rm -rf:*)` | 危险删除（通常放 deny） |
+| `Bash(sleep ...)` | sleep 命令 |
+
+**文件操作规则：**
+
+| 模式 | 说明 |
+|------|------|
+| `Read` | 允许所有文件读取 |
+| `Read(~/**)` | 允许读取用户目录 |
+| `Read(~/.zshrc)` | 只允许读取特定文件 |
+| `Write(/etc/*)` | 允许写入 /etc（危险） |
+| `Edit(.claude)` | 允许编辑 .claude 目录 |
+| `Edit(~/.claude/settings.json)` | 编辑特定设置文件 |
+| `Edit(docs/**)` | 编辑 docs 目录下所有文件 |
+
+**网络规则：**
+
+| 模式 | 说明 |
+|------|------|
+| `WebFetch(domain:example.com)` | 限制到特定域名 |
+| `WebFetch(domain:github.com)` | 允许 GitHub |
+| `WebFetch(domain:*.google.com)` | 通配符域名 |
+| `WebSearch(claude ai)` | 搜索特定主题 |
+
+**MCP 工具规则：** `mcp__serverName__toolName` 格式（双下划线）
+
+**三层评估顺序**（官方文档）：deny → ask → allow → 默认需确认
+
+### --permission-mode 选项（`claude --help` 确认）
+
+| 模式 | 说明 |
+|------|------|
+| `default` | 默认模式——未匹配规则的操作需确认 |
+| `acceptEdits` | 自动接受文件编辑，其他操作仍需确认 |
+| `plan` | 规划模式——仅允许只读操作 |
+| `auto` | 自动模式——减少确认频率 |
+| `dontAsk` | 不询问——自动执行所有操作 |
+| `bypassPermissions` | 绕过所有权限检查（需 `--dangerously-skip-permissions`） |
+
+> 证据：`claude --help` 输出 `--permission-mode <mode> (choices: "acceptEdits", "bypassPermissions", "default", "dontAsk", "plan", "auto")`
+
+### 权限配置示例
 ```json
 {
   "permissions": {
@@ -173,14 +244,14 @@ Hook 脚本通过 stdout 输出 JSON 控制行为：
       "Read",
       "Glob",
       "Grep",
-      "Bash(npm test)",
-      "Bash(npm run lint)",
-      "Bash(git status)",
-      "Bash(git diff *)"
+      "Bash(npm run *)",
+      "Bash(git:*)",
+      "Bash(gh pr view:*)"
     ],
     "deny": [
       "Bash(curl *)",
-      "Bash(wget *)"
+      "Bash(rm -rf:*)",
+      "Write(/etc/*)"
     ]
   }
 }

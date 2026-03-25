@@ -128,15 +128,68 @@ claude --allowedTools "Read,Glob,Grep"    # 限制可用工具
 claude --bare                             # 脚本模式（跳过 hooks/插件）
 ```
 
-### 高级选项
+### 高级选项（`claude --help` 确认，47 个参数）
 ```bash
-claude --channels                         # 启用 MCP 消息推送
-claude --worktree                         # 在独立 worktree 中运行
-claude --output-format json               # JSON 输出格式
-claude --output-format stream-json        # 流式 JSON 输出
-claude --max-turns 10                     # 限制最大轮次
-claude --verbose                          # 详细日志输出
+# 会话管理
+claude -c / --continue                    # 继续最近对话
+claude -r / --resume [id]                 # 恢复指定会话
+claude --session-id <uuid>                # 使用指定会话 ID
+claude --fork-session                     # 恢复时创建新会话 ID
+claude --from-pr [PR]                     # 恢复 PR 关联的会话
+claude -n / --name <name>                 # 设置会话显示名
+
+# 输入输出
+claude -p / --print                       # 管道模式（非交互）
+claude --output-format json|stream-json   # 输出格式
+claude --input-format text|stream-json    # 输入格式
+claude --json-schema <schema>             # 结构化输出验证
+claude --include-partial-messages         # 包含流式部分消息
+
+# 模型与工具
+claude --model <model>                    # 指定模型
+claude --fallback-model <model>           # 过载时回退模型（仅 --print）
+claude --effort low|medium|high|max       # 推理努力级别
+claude --allowedTools "Read,Glob"         # 允许的工具
+claude --disallowedTools "Write"          # 禁止的工具
+claude --tools "Bash,Edit,Read"           # 指定可用工具列表
+
+# 提示与指令
+claude --system-prompt <prompt>           # 替换系统提示
+claude --append-system-prompt <prompt>    # 追加系统提示
+claude --agent <agent>                    # 指定代理
+claude --agents <json>                    # 自定义代理定义（JSON）
+
+# MCP 与扩展
+claude --mcp-config <file|json>           # MCP 服务器配置
+claude --strict-mcp-config                # 仅使用 --mcp-config 中的 MCP
+claude --chrome                           # 启用 Chrome 集成
+claude --no-chrome                        # 禁用 Chrome 集成
+claude --plugin-dir <path>                # 加载插件目录
+claude --ide                              # 自动连接 IDE
+
+# 安全与权限
+claude --permission-mode <mode>           # acceptEdits|default|plan|auto|dontAsk|bypassPermissions
+claude --dangerously-skip-permissions     # 绕过所有权限检查
+claude --allow-dangerously-skip-permissions  # 允许绕过权限作为选项
+claude --settings <file|json>             # 额外设置文件
+claude --setting-sources user,project,local  # 设置来源
+
+# 运行模式
+claude --bare                             # 跳过 hooks/插件/LSP/归因/记忆
+claude --brief                            # 启用简洁代理通信模式
+claude --verbose                          # 详细日志
+claude -d / --debug [filter]              # 调试模式
+claude --debug-file <path>                # 调试日志文件
+claude --tmux                             # tmux 会话（需 --worktree）
+claude -w / --worktree [name]             # 独立 Git worktree
+claude --max-budget-usd <amount>          # 最大花费（仅 --print）
+claude --betas <headers>                  # Beta 功能头
+claude --file <specs>                     # 启动时下载文件
+claude --disable-slash-commands           # 禁用所有技能
+claude --no-session-persistence           # 禁用会话持久化
 ```
+
+> 证据：`claude --help` 完整输出已记录在 [EVIDENCE.md](./EVIDENCE.md)
 
 ## 使用场景
 
