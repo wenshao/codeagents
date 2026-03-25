@@ -332,7 +332,7 @@ export ANTHROPIC_API_KEY="sk-xxx"
 | **开源** | **✓ Apache-2.0** | ✗ | ✗ |
 | **Arena 模式** | **✓ 独有** | ✗ | ✗ |
 | **/review 代理数** | 4 | 4-6 | 1 |
-| **模型提供商** | 5+ | 1 (Anthropic) | 多个 |
+| **模型提供商** | 6+（Qwen/DashScope/OpenAI/Anthropic/DeepSeek/OpenRouter） | 1 (Anthropic) | 多个 |
 | **指令文件** | QWEN.md（兼容 GEMINI.md） | CLAUDE.md | AGENTS.md |
 | **扩展兼容** | Gemini + Claude | Claude 插件 | — |
 | **安全监控** | 继承 Gemini 策略 | 28 条 BLOCK | — |
