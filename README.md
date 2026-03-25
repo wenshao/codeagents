@@ -60,6 +60,7 @@
 - **[定价与成本对比](./docs/comparison/pricing.md)** — 定价模式、典型任务费用估算、成本优化建议
 - **[系统要求对比](./docs/comparison/system-requirements.md)** — Node.js/Python 版本、OS 支持、二进制大小、沙箱依赖
 - **[配置示例对比](./docs/guides/config-examples.md)** — CLAUDE.md/CODEX.md/GEMINI.md/AGENTS.md 并排写法
+- **[/review 命令全工具对比](./docs/comparison/review-command.md)** — 代码审查能力深度对比（9 步流水线 vs 4 代理并行 vs 8 维度）
 - **[架构深度对比](./docs/comparison/architecture-deep-dive.md)** — 11 个项目的代理循环、工具系统、安全模型等
 - **[Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md)** — 终端代理 vs AI IDE，两大商业头部对比
 - **[Claude Code vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md)** — 终端代理双雄对比
