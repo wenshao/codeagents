@@ -14,16 +14,16 @@
 | 会话管理 | ✅ | ✅ + `chatRecordingService`（JSONL 持久化） | 对等 |
 | Ink + React TUI | ✅ | ✅ | 对等 |
 | 审批模式（4 种） | ✅ DEFAULT/AUTO_EDIT/YOLO/PLAN | ✅ 同 4 种 | 对等 |
-| Memory 工具 | ✅ 仅项目级 | ✅ 全局 + 项目级 | **Qwen 更强** |
-| 多提供商 | ❌ 仅 Gemini | ✅ 5 提供商 | **Qwen 独有** |
+| Memory 工具 | ✅ 全局 + 扩展 + 项目 + 子目录 | ✅ 全局 + 项目级 | 对等（Qwen 继承 Gemini 多层记忆） |
+| 多提供商 | ❌ 仅 Gemini | ✅ 6+ 提供商 | **Qwen 独有** |
 | 免费 OAuth | ❌ | ✅ 1000 次/天 | **Qwen 独有** |
 | 6 语言 UI | ❌ | ✅ | **Qwen 独有** |
 | Arena 多代理 | ❌ | ✅ | **Qwen 独有** |
 | 子代理管理 | ❌ | ✅ | **Qwen 独有** |
 | 扩展格式转换 | ❌ | ✅ Claude/Gemini | **Qwen 独有** |
-| **模型路由器** | ✅ 8 种路由策略 | ❌ | **需补全** |
+| **模型路由器** | ✅ 8 种路由策略类（7 种用户策略） | ❌ | **需补全** |
 | **外挂安全检查器** | ✅ CheckerRunner | ❌ | **需补全** |
-| **TOML 策略文件** | ✅ 6 个预定义策略 | ❌ | **需补全** |
+| **TOML 策略文件** | ✅ 9 个预定义策略 | ❌ | **需补全** |
 | **A2A 协议服务器** | ✅ | ❌ | **需补全** |
 | **工具链式调用** | ✅ TailToolCall | ❌ | **需补全** |
 | **模型粘性** | ✅ currentSequenceModel | ❌ | **需补全** |
@@ -36,11 +36,11 @@
 
 ## 一、高优先级（核心能力差距）
 
-### 1. 模型路由器（8 种策略）
+### 1. 模型路由器（8 种策略类 / 7 种用户策略）
 
 **Gemini CLI 实现**（`packages/core/src/routing/`）：
 - `modelRouterService.ts`：完整的模型路由服务
-- **8 种可插拔路由策略**：
+- **8 种可插拔路由策略类**（源码 TypeScript 实现）：
   - `fallbackStrategy.ts` — 主模型失败自动切换备用
   - `overrideStrategy.ts` — 强制覆盖模型选择
   - `approvalModeStrategy.ts` — 按审批模式选择模型
@@ -130,13 +130,16 @@ interface ToolResult {
 
 **Gemini CLI 实现**（`packages/core/src/policy/`）：
 - `toml-loader.ts`：TOML 文件解析
-- **6 个预定义策略文件**：
+- **9 个预定义策略文件**（源码：`packages/core/src/policy/policies/`）：
   - `read-only.toml` — 只读模式
   - `write.toml` — 写入权限
   - `yolo.toml` — 全自动模式
   - `plan.toml` — 规划模式
   - `discovered.toml` — 发现的工具
   - `conseca.toml` — CONSECA 策略
+  - `memory-manager.toml` — 记忆管理器策略
+  - `sandbox-default.toml` — 沙箱默认策略
+  - `tracker.toml` — 追踪器策略
 - `integrity.ts`：策略完整性校验
 
 **Qwen Code 现状**：使用 JSON settings 的 permission 规则（`deny > ask > allow`），功能等价但格式不同。
@@ -208,13 +211,12 @@ interface ToolResult {
 
 | 功能 | Qwen Code 增强 | Gemini CLI 缺失 |
 |------|---------------|----------------|
-| **多提供商** | OpenAI + Anthropic + Gemini + Vertex + Qwen OAuth | 仅 Gemini |
+| **多提供商** | Qwen OAuth + DashScope + ModelScope + Anthropic + Google + 自定义（6+） | 仅 Gemini |
 | **免费 OAuth** | 每天 1000 次 | 无 |
 | **6 语言 UI** | 中/英/日/德/俄/葡 | 仅英文 |
 | **Arena 模式** | 多模型并行竞争 | 无 |
 | **子代理管理** | SubagentManager + 多终端后端 | 无 |
 | **扩展格式转换** | Claude/Gemini 扩展自动转换 | 无 |
-| **Memory 双作用域** | 全局 `~/.qwen/QWEN.md` + 项目级 | 仅项目级 |
 | **Session Token 限制** | 硬性 Token 预算 | 无 |
 | **MessageBus Hook** | 事件驱动 Hook | 回调式 Hook |
 
@@ -226,7 +228,7 @@ interface ToolResult {
 
 **1 个开发者体验 P1**：LLM 响应录制回放（`--fake-responses` 离线测试）
 
-**Qwen Code 作为分叉已大幅超越上游**——多提供商、免费 OAuth、Arena、6 语言 UI 是独有竞争力。上游的模型路由器和安全检查器值得借鉴，但 A2A 和 Code Assist 是 Google 专属功能，无需复制。
+**Qwen Code 作为分叉已大幅超越上游**——6+ 提供商、免费 OAuth、Arena、6 语言 UI 是独有竞争力。上游的模型路由器（8 策略类）和安全检查器值得借鉴，但 A2A 和 Code Assist 是 Google 专属功能，无需复制。
 
 ---
 
