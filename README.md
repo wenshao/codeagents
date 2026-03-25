@@ -72,6 +72,11 @@
 - [/btw /rewind](./docs/comparison/btw-rewind.md) — 旁问与回退
 - [内置命令总览](./docs/comparison/slash-commands-deep-dive.md) — 全命令对比表
 - [模型路由与自动选择](./docs/comparison/model-routing.md) — 8 策略自动路由 vs 三槽位 vs 手动切换
+- [上下文压缩算法](./docs/comparison/context-compression-deep-dive.md) — 四阶段验证 vs 递归分割 vs 渐进移除
+- [MCP 集成实现](./docs/comparison/mcp-integration-deep-dive.md) — MCP 原生 vs TOML 策略 vs 双下划线命名
+- [沙箱与安全隔离](./docs/comparison/sandbox-security-deep-dive.md) — OS 沙箱 vs 28 规则 vs 三层分析
+- [多代理架构](./docs/comparison/multi-agent-deep-dive.md) — Teammates 协作 vs Arena 竞争 vs A2A 远程
+- [Hook/插件/扩展](./docs/comparison/hook-plugin-extension-deep-dive.md) — 22 事件 + Prompt Hook vs 17 Hook 类型
 
 **工具间 1v1 对比：**
 - [Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md) | [vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md) | [Aider vs Goose](./docs/comparison/aider-vs-goose.md)
