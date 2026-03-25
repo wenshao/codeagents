@@ -409,15 +409,20 @@ claude --verbose                          # 详细日志输出
 
 | 命令 | 用途 |
 |------|------|
+| `/review` | 代码审查——自动分析当前 diff 或指定 PR，生成审查意见 |
 | `/help` | 显示帮助信息 |
-| `/compact` | 压缩对话历史 |
+| `/compact` | 压缩对话历史，释放上下文空间 |
 | `/clear` | 清除对话历史 |
-| `/memory` | 查看/编辑记忆 |
-| `/model` | 切换模型 |
-| `/permissions` | 管理权限 |
-| `/mcp` | 查看 MCP 服务器状态 |
-| `/remote-control` | 启用远程控制 |
+| `/memory` | 查看/编辑记忆文件 |
+| `/model` | 切换模型（Sonnet/Opus/Haiku） |
+| `/permissions` | 管理工具权限（allow/deny 规则） |
+| `/mcp` | 查看 MCP 服务器连接状态 |
+| `/remote-control` | 启用远程控制，桥接到 claude.ai/code |
 | `/cost` | 查看当前会话 token 消耗和费用 |
+| `/login` | 切换账户或重新登录 |
+| `/logout` | 登出当前账户 |
+| `/config` | 查看/修改配置（主题、通知等） |
+| `/vim` | 切换 Vim 编辑模式 |
 
 ## Teammates 与远程控制
 
