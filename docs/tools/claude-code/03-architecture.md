@@ -90,6 +90,65 @@ FEEDBACK_CHANNEL: "https://github.com/anthropics/claude-code/issues"
 README_URL: "https://code.claude.com/docs/en/overview"
 ```
 
+## 遥测与数据采集（反编译提取）
+
+### 遥测端点
+
+| 端点 | 用途 |
+|------|------|
+| `api.anthropic.com/api/claude_code/metrics` | 主遥测上报 |
+| `http-intake.logs.us5.datadoghq.com/api/v` | Datadog 日志（US5 区域） |
+| `api.segment.io` | Segment 用户分析 |
+| `beacon.claude-ai.staging.ant.dev` | Staging 环境信标 |
+
+### Machine ID 采集（OpenTelemetry `getMachineId()`，反编译确认）
+
+| 平台 | 采集方式 | 来源 |
+|------|----------|------|
+| **macOS** | `IOPlatformUUID` | `ioreg -rd1 -c IOPlatformExpertDevice` |
+| **Linux** | machine-id 文件 | `/etc/machine-id` → `/var/lib/dbus/machine-id` |
+| **Windows** | 注册表 | `HKLM\SOFTWARE\Microsoft\Cryptography\MachineGuid` |
+| **FreeBSD** | hostid / smbios | `/etc/hostid` → `kenv -q smbios.system.uuid` |
+
+> **注意：** MAC 地址**未被采集**（`getMacAddress` 在二进制中 0 引用）。Machine ID 用于 OpenTelemetry 遥测的设备标识。
+
+### 遥测数据点
+
+| 字段 | 内容 |
+|------|------|
+| `accountUuid` | Anthropic 账户 UUID |
+| `organizationUuid` | 组织 UUID |
+| `userType` | "external" |
+| `subscriptionType` | 订阅类型 |
+| `rateLimitTier` | 速率限制层级 |
+| `platform` | 操作系统/架构信息（通过 `oOH()` 函数） |
+| `firstTokenTime` | 首 token 时间 |
+| `githubActionsMetadata`（CI 环境） | GITHUB_ACTOR, GITHUB_REPOSITORY 等（含 ID） |
+
+### 遥测事件规模
+
+- **782 个唯一 `tengu_*` 事件类型**（从二进制提取，涵盖代理生命周期、API 交互、UI 操作、错误追踪等）
+- 主要分类：`tengu_agent_*`、`tengu_api_*`、`tengu_auto_mode_*`、`tengu_session_*`、`tengu_tool_*`
+
+### 隐私控制（环境变量）
+
+| 变量 | 作用 |
+|------|------|
+| `DISABLE_TELEMETRY=true` | 完全禁用遥测 |
+| `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=true` | 禁用非必要网络流量 |
+| `CLAUDE_CODE_ENABLE_TELEMETRY=false` | 禁用遥测（同 DISABLE_TELEMETRY） |
+
+### MDM 企业管理
+
+| 平台 | 策略路径 |
+|------|----------|
+| macOS | plist 托管设置 |
+| Windows | `HKLM\SOFTWARE\Policies\ClaudeCode` / `HKCU\SOFTWARE\Policies\ClaudeCode` |
+
+### 环境变量总量
+
+**161 个 `CLAUDE_CODE_*` 环境变量**，其中 19 个 `DISABLE_*` 开关。完整列表见 [EVIDENCE.md](./EVIDENCE.md)。
+
 ## 运行时
 
 | 项目 | 详情 |
