@@ -83,16 +83,15 @@
 
 ### 使用指南
 
-**入门：**
-- [入门指南](./docs/guides/getting-started.md) — 决策树和安装教程
-- [Claude Code 用户指南](./docs/guides/claude-code-user-guide.md) — 从安装到精通（60+ 命令、8 进阶技巧）
-- [Qwen Code 用户指南](./docs/guides/qwen-code-user-guide.md) — 免费 1000 次/天、Arena 模式、中文原生
+**用户指南：**
+- [Claude Code](./docs/guides/claude-code-user-guide.md) | [Copilot CLI](./docs/guides/copilot-cli-user-guide.md) | [Qwen Code](./docs/guides/qwen-code-user-guide.md) | [入门指南](./docs/guides/getting-started.md)
 
 **实操：**
-- [实操工作流教程](./docs/guides/workflows.md) | [配置示例对比](./docs/guides/config-examples.md) | [迁移指南](./docs/guides/migration.md) | [故障排查](./docs/guides/troubleshooting.md)
+- [工作流教程](./docs/guides/workflows.md) | [配置示例](./docs/guides/config-examples.md) | [迁移指南](./docs/guides/migration.md) | [故障排查](./docs/guides/troubleshooting.md) | [高效提示词](./docs/guides/effective-prompts.md)
 
 **深度配置：**
-- [上下文管理](./docs/guides/context-management.md) | [Skill 设计](./docs/guides/skill-design.md) | [AGENTS.md 配置](./docs/guides/agents-md.md) | [Hooks 配置](./docs/guides/hooks-config.md)
+- [CLAUDE.md 写作](./docs/guides/writing-claude-md.md) | [AGENTS.md 配置](./docs/guides/agents-md.md) | [Skill 设计](./docs/guides/skill-design.md) | [Hooks 配置](./docs/guides/hooks-config.md)
+- [上下文管理](./docs/guides/context-management.md) | [安全加固](./docs/guides/security-hardening.md)
 
 ### 参考文档
 - **[架构原理](./docs/architecture/overview.md)** — 代理循环、MCP、上下文管理
