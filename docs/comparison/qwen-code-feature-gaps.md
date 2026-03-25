@@ -118,7 +118,7 @@
 | Skill 类型 | **10** | 1（`/review`） |
 | Claude 独有（无对应） | — | **~34 个命令** |
 | Qwen 独有（无对应） | **~8 个命令** | — |
-| 功能等价但命名不同 | ~6 对 | ~6 对 |
+| 功能等价但命名不同 | ~10 对 | ~10 对 |
 
 > **核心差距：** Claude Code 的 10 个 Skill 命令（`/loop`、`/schedule`、`/security-review`、`/simplify` 等）是 Qwen Code 完全缺失的类别。此外 Claude Code 的 prompt 命令中 `/commit`、`/commit-push-pr`、`/init-verifiers`、`/insights` 是 Qwen Code 没有的（Qwen Code 已有 `/review` Skill 和继承的 `/init`）。
 
@@ -384,4 +384,4 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 
 ---
 
-*分析基于 Claude Code 二进制反编译（v2.1.81）和 Qwen Code 开源代码，截至 2026 年 3 月。*
+*分析基于 Claude Code 二进制反编译（v2.1.81 ~ v2.1.83）和 Qwen Code 开源代码，截至 2026 年 3 月。*
