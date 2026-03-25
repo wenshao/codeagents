@@ -61,6 +61,7 @@
 | `/insight` | **代码分析生成报告** | ❌ 无 |
 | `/btw` | **快速旁问**（不中断主对话） | ❌ 无（Gemini CLI 仓库搜索 0 匹配） |
 | `/review` | **代码审查**（Skill，4 代理并行） | ❌ 无（需安装扩展 `/code-review`） |
+| `/summary` | **生成对话摘要**（独立于 /compress 压缩） | ❌ 无（`/compress` 是压缩，非导出摘要） |
 | `/extensions` | 扩展管理（兼容 Claude + Gemini 格式） | Gemini CLI 有自己的扩展系统 |
 
 ### 命名差异但功能等价的命令
@@ -69,8 +70,7 @@
 |------|-----------|-----------|------|
 | 审批模式 | 集成在 `/plan` + `Shift+Tab` | `/approval-mode` | Qwen 独立为命令 |
 | 上下文压缩 | `/compress`（别名 `compact`） | `/compress`（别名 `compact`） | 完全一致 |
-| 对话摘要 | — | `/summary` | Qwen 新增 |
-| 信任管理 | — | `/trust` | Qwen 新增 |
+| 信任管理 | `/permissions trust`（子命令） | `/trust`（顶级命令） | 功能等价，命令层级不同 |
 
 ### 命令差距总结
 
@@ -78,7 +78,7 @@
 |------|-----------|-----------|
 | 总命令数 | **39** | **40** |
 | Gemini 独有（无对应） | **~8 个** | — |
-| Qwen 独有（无对应） | — | **~5 个**（/arena, /language, /insight, /btw, /review） |
+| Qwen 独有（无对应） | — | **~6 个**（/arena, /language, /insight, /btw, /review, /summary） |
 | 继承命令 | — | ~35 个 |
 
 > **核心发现：** 命令数量几乎对等（39 vs 40）。Gemini CLI 独有的命令主要是管理类（/policies、/shortcuts、/shells），Qwen Code 独有的命令是高价值功能（/arena、/btw、/review）——**质量上 Qwen 的独有命令价值更高**。
@@ -267,10 +267,8 @@ interface ToolResult {
 | **免费 OAuth** | 每天 1000 次 | 无 |
 | **6 语言 UI** | 中/英/日/德/俄/葡 | 仅英文 |
 | **Arena 模式** | 多模型并行竞争 | 无 |
-| **多终端后端** | SubagentManager 支持 tmux/iTerm2/VS Code 等 | 仅内置终端 |
+| **Arena 多终端后端** | Arena 模式支持 iTerm/Tmux/InProcess 后端 | 无 Arena 模式 |
 | **扩展格式转换** | Claude/Gemini 扩展自动转换 | 无 |
-| **Session Token 限制** | 硬性 Token 预算 | 无 |
-| **MessageBus Hook** | 事件驱动 Hook | 回调式 Hook |
 
 ---
 
