@@ -83,6 +83,9 @@
 - [Git 集成与版本控制](./docs/comparison/git-integration-deep-dive.md) — 自动提交归因 vs Esc 检查点 vs /rewind 三选项
 - [测试/Lint 反射循环](./docs/comparison/test-reflection-deep-dive.md) — 3 次反射 vs 实际编译验证 vs 沙箱测试
 - [遥测与隐私实现](./docs/comparison/telemetry-privacy-deep-dive.md) — 782 事件 vs 零遥测 vs Opt-in 10%
+- [非交互/CI 模式](./docs/comparison/ci-scripting-deep-dive.md) — stream-json 协议 vs TTY 自动检测 vs 批量评估
+- [系统提示与 Prompt 工程](./docs/comparison/system-prompt-deep-dive.md) — 8 模块硬编码 vs XML 结构 vs Jinja2 动态
+- [API 参数与重试策略](./docs/comparison/api-params-deep-dive.md) — 温度/重试/循环上限/缓存/工具调用跨工具对比
 
 **工具间 1v1 对比：**
 - [Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md) | [vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md) | [Aider vs Goose](./docs/comparison/aider-vs-goose.md)
