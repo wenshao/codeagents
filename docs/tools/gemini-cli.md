@@ -581,7 +581,7 @@ gemini --resume <session-id>
 gemini --version
 ```
 
-### 斜杠命令（会话内，源码验证 37 个命令 + 1 隐藏 + 1 开发专用）
+### 斜杠命令（会话内，源码验证 40 个命令 + 1 隐藏 + 1 开发专用 + 1 维护者专用）
 
 以下命令均从源码 `packages/cli/src/ui/commands/` 目录逐一提取，列出每个命令的名称、别名、描述、子命令、autoExecute 属性及核心实现逻辑。
 
@@ -602,7 +602,8 @@ gemini --version
 
 # ── 记忆 & 会话 ──
 /memory          # 管理记忆。子命令: show（显示当前记忆内容）、add <text>（添加记忆条目）、reload|refresh（从源文件重新加载，调用 refreshMemory()）、list（列出所有 GEMINI.md 文件路径）
-/resume          # 浏览自动保存的会话（打开 sessionBrowser 对话框）。子命令: save <tag>（保存当前对话为检查点，含覆盖确认）、resume|load <tag>（恢复检查点）、list（列出已保存的手动检查点）、delete <tag>、export <path>
+/chat            # 浏览自动保存的会话并管理对话检查点（autoExecute: true）。子命令: save <tag>、resume|load <tag>、list、delete <tag>、share <file>（导出为 markdown/json）、debug、checkpoints（hidden）。与 /resume 共享 chatResumeSubCommands
+/resume          # /chat 的遗留别名（功能完全相同，导入 chatResumeSubCommands）。子命令: save <tag>、resume|load <tag>、list、delete <tag>、share <file>
 /restore         # 恢复 Git 检查点。读取 .gemini 目录中的检查点文件，调用 performRestore() 恢复 Git 状态和对话历史
 /rewind          # 回退到特定消息并重启对话。打开 RewindViewer 组件，支持三种结果: Cancel、RevertOnly（仅恢复文件变更）、RewindAndRevert（恢复文件并回退对话历史）。调用 recordingService.rewindTo()、revertFileChanges()、client.setHistory()
 

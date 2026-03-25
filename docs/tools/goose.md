@@ -181,3 +181,28 @@ extensions:
 - [快速入门](https://block.github.io/goose/docs/quickstart/)
 - [GitHub](https://github.com/block/goose)
 - [Recipe 文档](https://block.github.io/goose/docs/recipes/)
+
+## 交互式斜杠命令（16 个，源码：`crates/goose-cli/src/session/input.rs`）
+
+> 从 `handle_slash_command()` 函数和 `print_help()` 函数提取。
+
+| 命令 | 用途 |
+|------|------|
+| `/help`, `/?` | 显示帮助信息 |
+| `/exit`, `/quit` | 退出会话 |
+| `/t` | 切换主题（Light/Dark/Ansi 循环） |
+| `/t <name>` | 设置指定主题（light/dark/ansi） |
+| `/r` | 切换完整工具输出（显示未截断的工具参数） |
+| `/mode <name>` | 设置模式（Auto/Approve/SmartApprove/Chat） |
+| `/plan <message>` | 进入规划模式，创建执行计划 |
+| `/endplan` | 退出规划模式 |
+| `/compact` | 压缩对话上下文 |
+| `/clear` | 清除聊天历史 |
+| `/extension <command>` | 添加 stdio 扩展 |
+| `/builtin <names>` | 添加内置扩展 |
+| `/prompts [--extension <name>]` | 列出可用提示模板 |
+| `/prompt <n> [--info] [key=value...]` | 执行或查看提示模板 |
+| `/recipe [filepath]` | 从当前对话生成 Recipe |
+| `/summarize` | 压缩上下文（已弃用，用 `/compact`） |
+
+> 来源: `handle_slash_command()` in `crates/goose-cli/src/session/input.rs`

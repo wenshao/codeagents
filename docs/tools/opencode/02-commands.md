@@ -45,30 +45,51 @@ opencode uninstall
 
 ## 工具系统
 
-注册在 `registry.ts` 中的工具（14 无条件 + 4 有条件）：
+> **⚠ 重大修正（第 N 轮审核）：** 原文档基于旧 TypeScript 版本。OpenCode 当前为 **Go 实现**（`internal/` 目录），工具列表已完全不同。
 
-| 工具 | 用途 | 条件 |
+### 当前工具（Go 版，源码：`internal/llm/agent/tools.go`，12 个）
+
+| 工具 | 用途 | 来源 |
 |------|------|------|
-| **bash** | Shell 命令执行 | 始终可用 |
-| **read** | 读取文件内容 | 始终可用 |
-| **write** | 创建/覆写文件 | 始终注册，GPT-5+ 模型排除（改用 apply_patch） |
-| **edit** | 精确字符串替换编辑 | 始终注册，GPT-5+ 模型排除（改用 apply_patch） |
-| **glob** | 文件模式匹配搜索 | 始终可用 |
-| **grep** | 正则内容搜索 | 始终可用 |
-| **apply_patch** | Git 补丁格式应用 | 始终注册，仅 GPT-5+ 模型启用（替代 edit/write） |
-| **websearch** | Web 搜索（Exa） | 需 opencode provider 或 OPENCODE_ENABLE_EXA |
-| **codesearch** | 代码搜索（Exa） | 需 opencode provider 或 OPENCODE_ENABLE_EXA |
-| **webfetch** | 抓取 Web 页面 | 始终可用 |
-| **task** | 任务创建/更新/查询 | 始终可用 |
-| **todowrite** | 待办写入 | 始终可用 |
-| **skill** | 执行自定义 Skill | 始终可用 |
-| **invalid** | 无效工具标记 | 始终可用 |
-| **question** | 向用户提问 | 需客户端为 app/cli/desktop |
-| **lsp** | LSP 语言服务交互 | 需 OPENCODE_EXPERIMENTAL_LSP_TOOL |
-| **batch** | 批量工具执行 | 需 experimental.batch_tool = true |
-| **plan_exit** | 退出 Plan 模式 | 需 OPENCODE_EXPERIMENTAL_PLAN_MODE + CLI |
+| **bash** | Shell 命令执行 | Go 源码确认 |
+| **edit** | 文件编辑 | Go 源码确认 |
+| **write** | 文件写入 | Go 源码确认 |
+| **view** | 读取文件内容（带行号） | Go 源码确认 |
+| **glob** | 文件模式匹配搜索 | Go 源码确认 |
+| **grep** | 正则内容搜索 | Go 源码确认 |
+| **ls** | 列出目录内容 | Go 源码确认 |
+| **fetch** | 抓取 Web 内容 | Go 源码确认 |
+| **patch** | 应用代码补丁 | Go 源码确认 |
+| **sourcegraph** | Sourcegraph 代码搜索 | Go 源码确认 |
+| **agent** | 启动搜索子代理 | Go 源码确认 |
+| **diagnostics** | LSP 诊断（需 LSP 客户端） | Go 源码确认（条件加载） |
 
-此外，`ls`、`multiedit`、`todoread`、`plan_enter` 定义了工具文件但未注册到 registry，属于未启用/预留代码。
+**TaskAgent 只读工具子集**（用于子代理）：glob, grep, ls, sourcegraph, view
+
+### 内置命令（2 个，源码：`RegisterCommand`）
+
+| 命令 | 用途 |
+|------|------|
+| `init` | 初始化项目（创建/更新 OpenCode.md） |
+| `compact` | 压缩会话（摘要后创建新会话） |
+
+支持自定义命令：`~/.config/opencode/commands/` 和 `.opencode/commands/` 目录。
+
+### 快捷键（Go TUI，源码：`internal/tui/tui.go`）
+
+| 快捷键 | 功能 |
+|--------|------|
+| **Ctrl+K** | 命令面板（**非 Ctrl+P**，原文档有误） |
+| Ctrl+L | 查看日志 |
+| Ctrl+S | 切换会话 / 发送消息 |
+| Ctrl+F | 文件选择器（上传） |
+| Ctrl+O | 模型选择 |
+| Ctrl+T | 切换主题 |
+| Ctrl+N | 新建会话 |
+| Ctrl+E | 打开外部编辑器 |
+| Ctrl+H / Ctrl+? | 切换帮助 |
+| @ | 补全对话框 |
+| Esc | 取消 |
 
 ## 多代理系统
 
