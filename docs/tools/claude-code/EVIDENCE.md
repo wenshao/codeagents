@@ -307,3 +307,48 @@ Date: 2026-03-25
 - Distinguish user's request from agent's action
 - Scope escalation = autonomous behavior → evaluate against BLOCK normally
 - Ambiguous requests don't authorize dangerous interpretation
+
+########## DECOMPILATION: Telemetry, System Info, Network Targets ##########
+
+### Telemetry Endpoints (from binary)
+1. https://api.anthropic.com/api/claude_code/metrics — 主遥测上报
+2. https://api.anthropic.com/api/claude_code/organizations/metrics_enabled — 组织级遥测开关查询
+3. https://http-intake.logs.us5.datadoghq.com/api/v — Datadog 日志采集 (US5 区域)
+4. https://api.segment.io — Segment 分析
+5. https://beacon.claude-ai.staging.ant.dev — Staging 环境信标
+
+### System Information Collection
+- platform() / process.platform — 操作系统类型
+- process.arch — CPU 架构
+- oOH() — 平台信息聚合函数 (28 refs in binary)
+- os.hostname / gethostname — 主机名
+- uv_cpu_info / os.cpus — CPU 信息
+- hardwareConcurrency — 硬件并发数
+- macOS 版本号映射: Darwin kernel 22→macOS 13, 21→12, etc.
+
+### Environment Variables (161 total CLAUDE_CODE_*)
+Key categories:
+- Telemetry: ENABLE_TELEMETRY, ENHANCED_TELEMETRY_BETA, DIAGNOSTICS_FILE, DATADOG_*, OTEL_*, PERFETTO_TRACE
+- Disable switches: 19 DISABLE_* flags
+- Auth: OAUTH_*, API_KEY_*, SESSION_ACCESS_TOKEN, WEBSOCKET_AUTH_*
+- Sandbox: BUBBLEWRAP, FORCE_SANDBOX, BASH_SANDBOX_SHOW_INDICATOR
+- Model: SUBAGENT_MODEL, EFFORT_LEVEL, MAX_OUTPUT_TOKENS, DISABLE_THINKING
+- Network: HOST_HTTP_PROXY_PORT, HOST_SOCKS_PROXY_PORT, PROXY_RESOLVES_HOSTS, SSE_PORT
+- IDE: IDE_HOST_OVERRIDE, IDE_SKIP_AUTO_INSTALL, AUTO_CONNECT_IDE
+- Git: BASE_REF, GIT_BASH_PATH
+- Container: CONTAINER_ID, REMOTE, REMOTE_ENVIRONMENT_TYPE, WORKSPACE_HOST_PATHS
+
+### DISABLE Switches (19 total)
+DISABLE_ADAPTIVE_THINKING, DISABLE_ATTACHMENTS, DISABLE_AUTO_MEMORY,
+DISABLE_BACKGROUND_TASKS, DISABLE_CLAUDE_MDS, DISABLE_COMMAND_INJECTION_CHECK,
+DISABLE_CRON, DISABLE_EXPERIMENTAL_BETAS, DISABLE_FAST_MODE,
+DISABLE_FEEDBACK_SURVEY, DISABLE_FILE_CHECKPOINTING, DISABLE_GIT_INSTRUCTIONS,
+DISABLE_LEGACY_MODEL_REMAP, DISABLE_NONESSENTIAL_TRAFFIC,
+DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL, DISABLE_PRECOMPACT_SKIP,
+DISABLE_TERMINAL_TITLE, DISABLE_THINKING, DISABLE_VIRTUAL_SCROLL
+
+### Key Constants
+- MEMORY.md line limit: 200 lines (lines after 200 truncated)
+- MAX_MCP_OUTPUT_TOKENS: 25000 (env override available)
+- MCP output truncation multiplier: 0.5
+- Image token estimate: 1600 tokens per image
