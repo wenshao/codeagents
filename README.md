@@ -44,6 +44,7 @@
 
 ### 对比文档
 - **[功能对比矩阵](./docs/comparison/features.md)** — 14 工具横向对比（模型、架构、Git、安全、多模态、平台、成本等）
+- **[内置命令能力深度对比](./docs/comparison/slash-commands-deep-dive.md)** — 10 大关键命令的源码级实现对比
 - **[架构深度对比](./docs/comparison/architecture-deep-dive.md)** — 11 个项目的代理循环、工具系统、安全模型等
 - **[Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md)** — 终端代理 vs AI IDE，两大商业头部对比
 - **[Claude Code vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md)** — 终端代理双雄对比

@@ -280,30 +280,62 @@ priority = 100
 - **事件类型**：agent_start、agent_end、tool_call、thought
 - **会话压缩**：长对话自动压缩（`/compress` 命令）
 - **会话恢复**：`gemini --resume <session-id>`
-- **检查点（Checkpointing）**：
-  - 基于 Git 快照存储在 `~/.gemini/history/<project_hash>`
-  - 对话历史存储在 `~/.gemini/tmp/<project_hash>/checkpoints`
-  - 通过 `settings.general.checkpointing.enabled` 开关
-- **回退（Rewind）**：
-  - `Esc Esc` 快速回退或 `/rewind` 命令
-  - 计算受影响文件统计和回退影响分析
-  - 确认 UI 显示变更详情
+- **检查点（Checkpointing）**（源码：`checkpointing.md`、`rewindCommand.tsx`、`rewindFileOps.ts`）：
+  - 默认关闭，需在 `settings.json` 中启用：`{ "general": { "checkpointing": { "enabled": true } } }`
+  - 当批准文件修改工具（write_file/replace）时自动创建检查点
+  - 每个检查点包含三部分：
+    1. **Git 快照**：在影子 Git 仓库 `~/.gemini/history/<project_hash>` 中创建提交（不影响用户项目 Git）
+    2. **对话历史**：完整会话上下文保存在 `~/.gemini/tmp/<project_hash>/checkpoints`
+    3. **工具调用**：记录即将执行的工具调用参数
+  - 恢复检查点（`/restore` 命令）：还原文件 + 恢复对话 + 重新提议原工具调用
+- **回退（Rewind）**（源码：`rewindCommand.tsx`、`rewindFileOps.ts`、`docs/cli/rewind.md`）：
+  - 触发方式：`/rewind` 命令或 `Esc Esc` 快捷键
+  - 交互式 UI：上下箭头选择回退点，显示每步的用户提示和文件变更统计
+  - 三种回退选项（确认对话框）：
+    1. **回退对话 + 还原代码**：同时撤销聊天和文件修改
+    2. **仅回退对话**：保留文件修改，仅撤销聊天历史
+    3. **仅还原代码**：保留聊天历史，仅撤销文件修改
+  - 文件变更统计（`rewindFileOps.ts:calculateTurnStats()`）：基于工具调用结果的 diff 计算添加/删除行数和文件数
+  - 限制：仅回退 AI 工具造成的文件修改，不回退手动编辑或 Shell 工具（`!`）执行的变更
+  - 支持跨会话压缩点回退（从存储的 session 数据重建历史）
 
-### 记忆系统
+### 记忆系统（源码：`memoryTool.ts`、`memory.ts`、`memoryDiscovery.ts`）
 
-**分层记忆结构**：
+**分层记忆结构**（`HierarchicalMemory` 接口，`config/memory.ts`）：
 ```typescript
 {
   global: string    // ~/.gemini/GEMINI.md（全局记忆）
   extension: string // 扩展级记忆
-  project: string   // .gemini/GEMINI.md（项目级记忆）
+  project: string   // ./GEMINI.md 或 .gemini/GEMINI.md（项目级记忆）
 }
 ```
 
-- **save_memory 工具**：以 Markdown 列表格式（`- fact text`）存储事实
-- **记忆区段**：`## Gemini Added Memories` 头部标记
-- **记忆管理代理**：专用 memory_manager 代理处理增删改、去重、组织
-- **`/memory` 命令**：查看、添加、清除记忆
+展平时按 `--- Global ---`、`--- Extension ---`、`--- Project ---` 区段拼接（`flattenMemory()` 函数）。
+
+**GEMINI.md 层级**（`memoryDiscovery.ts`）：
+1. `~/.gemini/GEMINI.md` — 全局（所有项目通用偏好）
+2. 项目根目录 `GEMINI.md` — 项目级（提交到 Git 共享给团队）
+3. 子目录 `GEMINI.md` — 目录特定规则
+4. 文件名可自定义（`setGeminiMdFilename()`），支持数组配置多个文件名
+
+**save_memory 工具**（`memoryTool.ts`）：
+- 存储格式：Markdown 列表项（`- fact text`）
+- 写入位置：全局 GEMINI.md（`~/.gemini/GEMINI.md`）
+- 区段标记：`## Gemini Added Memories` 头部，追加写入
+- 需用户确认（工具调用前显示 diff 预览）
+
+**文件发现**（`memoryDiscovery.ts`）：
+- BFS 搜索发现所有 GEMINI.md 文件
+- 按文件标识（device + inode）去重（处理大小写不敏感文件系统和符号链接）
+- 支持 `@import` 语法导入其他 Markdown 文件（`memoryImportProcessor.ts`）
+
+**`/memory` 命令**（`packages/core/src/commands/memory.ts`）：
+- `/memory show`：显示所有层级的记忆内容和文件数
+- `/memory add <text>`：触发 save_memory 工具保存事实
+- `/memory reload`：重新扫描并加载所有 GEMINI.md 文件
+- `/memory files`：列出当前生效的所有 GEMINI.md 文件路径
+
+**记忆管理代理**：专用 memory_manager 代理（条件注册，需设置启用）处理增删改、去重、组织，使用 Flash 模型
 
 ### 技能系统（Agent Skills）
 

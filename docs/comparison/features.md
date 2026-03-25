@@ -187,7 +187,7 @@
 | 能力 | Claude Code | Aider | Gemini CLI | Kimi CLI | Qwen Code | Copilot CLI | Codex CLI | Goose | OpenCode |
 |------|-------------|-------|-----------|----------|-----------|-------------|-----------|-------|---------|
 | **命令总数** | ~15 | ~42 | ~41 | ~20 | ~23 | 5 | 0 | CLI 子命令 | Ctrl+P 面板 |
-| **代码审查** | `/review` | — | — | — | — | — | — | — | — |
+| **代码审查** | `/review` 插件 | — | `/code-review`（扩展） | — | — | `/review` | `@codex review` | — | — |
 | **模式切换** | — | `/code` `/architect` `/ask` | `/plan` | `/plan` `/yolo` | `/plan` | — | `--approval-mode` | — | `--agent` |
 | **模型切换** | `/model` | `/model` `/editor-model` `/weak-model` | `/model` | `/model` | `/model` | `/model` | `--model` | `--model` | — |
 | **上下文压缩** | `/compact` | `/clear` `/reset` | `/compress` | `/compact` | `/compact` | — | — | — | — |

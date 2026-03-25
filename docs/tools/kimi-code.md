@@ -299,6 +299,25 @@ MCP 工具：需要用户审批
 - **凭证注入**：`inject` 声明自动从宿主 LLM 配置注入 `api_key` 和 `base_url`（OAuth 令牌实时刷新）
 - **存储**：`~/.kimi/plugins/`
 
+### `/init` 与 AGENTS.md（源码：`soul/slash.py`、`soul/agent.py`）
+
+**`/init` 命令**：分析代码库并自动生成 `AGENTS.md` 项目配置文件。
+
+**实现机制**（`slash.py:init()`）：
+1. 创建临时目录和临时上下文（`Context(file_backend=...)`），避免污染当前会话
+2. 使用临时 `KimiSoul` 实例运行内置 `prompts.INIT` 提示，让 LLM 分析代码库结构
+3. LLM 生成 `AGENTS.md` 文件到项目工作目录（`KIMI_WORK_DIR`）
+4. 生成完成后，通过 `load_agents_md()` 读取文件内容，注入到当前会话上下文
+
+**AGENTS.md 加载**（`agent.py:load_agents_md()`）：
+- 查找路径：`<work_dir>/AGENTS.md` 或 `<work_dir>/agents.md`（大小写不敏感）
+- 文件内容作为 `KIMI_AGENTS_MD` 变量注入到系统提示模板（Jinja2）
+- 在 `Runtime.create()` 时自动加载
+
+**与其他工具对比**：
+- 类似 Claude Code 的 `CLAUDE.md` 和 Gemini CLI 的 `GEMINI.md`
+- 不同之处：Kimi CLI 提供 `/init` 自动生成功能（Claude Code 和 Gemini CLI 需手动创建）
+
 ## 安装
 
 ```bash
@@ -480,7 +499,7 @@ kimi --wire
 
 | 命令 | 用途 |
 |------|------|
-| `/init` | 分析代码库，生成 AGENTS.md |
+| `/init` | 分析代码库，生成 AGENTS.md（见下方详细说明） |
 | `/compact [FOCUS]` | 压缩上下文历史（可指定保留重点） |
 | `/clear`, `/reset` | 清除上下文 |
 | `/yolo` | 切换 YOLO 模式 |

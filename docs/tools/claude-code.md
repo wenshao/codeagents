@@ -267,26 +267,28 @@ Git worktree 隔离允许多个 Claude Code 实例在不同分支上并行工作
 
 ## 内存系统
 
-Claude Code 的自动记忆系统跨会话保存用户偏好和项目知识：
+Claude Code 的记忆系统通过 CLAUDE.md 文件跨会话保存项目知识和用户偏好：
 
-### 记忆存储位置
+### CLAUDE.md 层级结构
+
 ```
-~/.claude/
-├── CLAUDE.md                    # 全局用户记忆
-└── projects/
-    └── <project-hash>/
-        └── CLAUDE.md            # 项目特定记忆
+~/.claude/CLAUDE.md                      # 全局记忆（所有项目通用偏好）
+<project-root>/CLAUDE.md                 # 项目级记忆（提交到 Git 共享给团队）
+<project-root>/.claude/CLAUDE.md         # 项目隐藏配置目录下的记忆
+<subdirectory>/CLAUDE.md                 # 子目录级记忆（操作该目录文件时加载）
+~/.claude/projects/<project-hash>/CLAUDE.md  # 用户私有的项目特定记忆（不提交到 Git）
 ```
 
-### 记忆类型
-- **用户偏好**：编码风格、命名规范、语言偏好
-- **项目知识**：架构决策、依赖关系、构建命令
-- **工作流程**：常用命令序列、测试策略
+### 记忆内容类型
+- **项目知识**：架构决策、技术栈说明、构建/测试命令
+- **代码规范**：编码风格、命名约定、文件组织规则
+- **用户偏好**：语言偏好、交互风格、常用工作流
 
 ### 记忆管理
-- **自动学习**：Claude Code 自动从对话中提取有用信息
-- **手动管理**：`/memory` 命令查看和编辑记忆
-- **MEMORY.md**：项目记忆索引文件
+- **自动学习**：Claude Code 在对话中识别到有价值的项目知识时，自动提议保存到 CLAUDE.md
+- **手动管理**：`/memory` 命令查看和编辑记忆文件（在外部编辑器中打开）
+- **层级合并**：会话开始时自动加载所有层级的 CLAUDE.md，合并为系统提示的一部分
+- **与 Gemini CLI 对比**：机制类似（分层 Markdown 文件），但 Claude Code 使用 CLAUDE.md，Gemini CLI 使用 GEMINI.md
 
 ## MCP 集成
 
