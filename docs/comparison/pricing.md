@@ -100,3 +100,7 @@ API 按量价格（参考）：
 | **Aider 的 /architect** | Aider | 用强模型规划、弱模型执行，节省 50%+ |
 | **Copilot 免费模型** | Copilot CLI | gpt-5-mini 和 gpt-4.1 为 0x 倍率 |
 | **订阅 vs API** | Claude Code | 日均 >$3.3 时 Max $100 更划算 |
+
+---
+
+> **数据来源：** Claude Code 定价来自 [claude.ai/pricing](https://claude.ai/pricing)，Copilot CLI 来自 [github.com/features/copilot/plans](https://github.com/features/copilot/plans)，其他工具为各官方文档和 API 定价页。费用估算基于 2026 年 3 月 token 定价。
