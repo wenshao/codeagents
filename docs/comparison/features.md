@@ -33,7 +33,7 @@
 | Warp | ✓ | ✓ | | | 多个 |
 | Gemini CLI | | | ✓ | | 仅 Gemini |
 | OpenHands | ✓ | ✓ | ✓ | ✓ | 灵活 |
-| Qwen Code | ✓ | ✓ | ✓ | | 5 提供商（Qwen/OpenAI/Anthropic/Gemini/自定义） |
+| Qwen Code | ✓ | ✓ | ✓ | | 6+ 提供商（Qwen OAuth/DashScope/ModelScope/Anthropic/Google/自定义） |
 | Kimi CLI | ✓ | ✓ | ✓ | | 6 种 provider type（Kimi/OpenAI Legacy/OpenAI Responses/Anthropic/Gemini/Vertex AI） |
 
 ### 架构与设计

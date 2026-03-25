@@ -9,7 +9,7 @@
 
 ## 概述
 
-Qwen Code 是阿里云推出的开源 AI 编程代理，运行在终端中。基于 Google Gemini CLI 分叉并大幅增强，针对 Qwen3-Coder 系列模型优化，是中国首款由大模型厂商发布的终端编程工具。支持多提供商（Qwen/OpenAI/Anthropic/Gemini），提供免费 OAuth 额度和完整的多语言国际化。
+Qwen Code 是阿里云推出的开源 AI 编程代理，运行在终端中。基于 Google Gemini CLI 分叉并大幅增强，针对 Qwen3-Coder 系列模型优化，是中国首款由大模型厂商发布的终端编程工具。支持 6+ 提供商（Qwen OAuth/DashScope/ModelScope/Anthropic/Google/自定义），提供免费 OAuth 额度和完整的多语言国际化。
 
 ## 核心功能
 

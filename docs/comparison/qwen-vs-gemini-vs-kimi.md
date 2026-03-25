@@ -365,7 +365,7 @@ def create_llm(provider: str, model: str, config: Config) -> LLM:
 | 特性 | 说明 |
 |------|------|
 | **免费 OAuth** | 通义账号每天 1000 次免费 |
-| **5 提供商支持** | OpenAI + Anthropic + Gemini + Vertex + Qwen OAuth |
+| **6+ 提供商支持** | OpenAI + Anthropic + Gemini + Vertex + Qwen OAuth |
 | **Arena 模式** | 多代理竞争/协作框架 |
 | **子代理管理** | 委托工作给专用子代理 |
 | **6 语言 UI** | 中/英/日/德/俄/葡 |
@@ -400,7 +400,7 @@ def create_llm(provider: str, model: str, config: Config) -> LLM:
 | 文件 | Gemini CLI | Qwen Code 改动 |
 |------|-----------|----------------|
 | `client.ts` | 纯 Gemini 代理循环 | +SendMessageType 枚举, +Arena 集成, +子代理, +Token 限制, +MessageBus Hook |
-| `contentGenerator.ts` | 单提供商接口 | +5 提供商, +采样参数, +模态声明, +配置源追踪, +summarizedThinking |
+| `contentGenerator.ts` | 单提供商接口 | +6+ 提供商, +采样参数, +模态声明, +配置源追踪, +summarizedThinking |
 | `scheduler.ts` → `coreToolScheduler.ts` | 事件驱动状态机 | 简化为 Hook 驱动, +交互式编辑, +Levenshtein 匹配, +截断检测 |
 | `policy-engine.ts` → `permission-manager.ts` | TOML 策略引擎 | 简化为配置驱动, +持久/会话规则分离, +虚拟操作提取, +Legacy 兼容 |
 
@@ -430,7 +430,7 @@ def create_llm(provider: str, model: str, config: Config) -> LLM:
 | 场景 | 最佳选择 | 原因 |
 |------|---------|------|
 | **Google 生态** | Gemini CLI | 原生集成，策略引擎最强 |
-| **多模型切换** | Qwen Code | 5 提供商 + 免费 OAuth |
+| **多模型切换** | Qwen Code | 6+ 提供商 + 免费 OAuth |
 | **中文开发** | Qwen Code / Kimi CLI | 国际化 / Moonshot 优化 |
 | **双模式终端** | Kimi CLI | Ctrl-X 无缝 Agent↔Shell |
 | **企业安全** | Gemini CLI | TOML 策略 + 外挂安全检查 |
