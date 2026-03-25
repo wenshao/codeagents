@@ -3,26 +3,28 @@
 **开发者：** Cline
 **许可证：** Apache-2.0
 **仓库：** [github.com/cline/cline](https://github.com/cline/cline)
-**Stars：** 约 58k+
+**Stars：** 约 59k+
 **最后更新：** 2026-03
 
 ## 概述
 
-Cline 是最受欢迎的 AI 编程 VS Code 扩展，同时提供独立 CLI。基于 TypeScript 构建，核心 Task 循环（3764 行）实现了完整的代理工作流。支持 48+ LLM 提供商，内置 Git Checkpoint 系统实现操作回滚，通过 MCP 和 Hook 系统提供强大的扩展能力。
+Cline 是最受欢迎的 AI 编程 VS Code 扩展（5M+ 开发者），同时提供独立 CLI。基于 TypeScript 构建，核心 Task 循环实现了完整的代理工作流。支持 43+ LLM 提供商，内置 Git Checkpoint 系统实现操作回滚，通过 MCP、Hook 系统和原生 Subagent 提供强大的扩展能力。
 
 ## 核心功能
 
 ### 基础能力
 - **VS Code 深度集成**：WebView UI + 编辑器 API
-- **23 种内置工具**：文件读写、Bash 执行、浏览器操作、MCP 工具等
-- **48+ LLM 提供商**：Anthropic、OpenAI、Google、AWS、Azure 等
+- **24+ 种内置工具**：文件读写、Bash 执行、浏览器操作、MCP 工具、Subagent 等
+- **43+ LLM 提供商**：Anthropic、OpenAI、Google、AWS、Azure、DeepSeek、xAI 等
 - **Plan/Act 双模式**：规划阶段探索，执行阶段修改
 - **Checkpoint 系统**：基于 Git 的操作回滚
-- **MCP 支持**：外部 MCP 服务器集成（1400+ 行 McpHub）
+- **MCP 支持**：外部 MCP 服务器集成（McpHub + OAuth 支持）
 - **独立 CLI**：可脱离 VS Code 运行
 
 ### 独特功能
 - **Git Checkpoint**：每步操作自动保存 Git 快照，可回滚到任意步骤
+- **Subagent 系统**：原生并行子代理，独立上下文窗口，可并发执行只读任务
+- **new_task 工具**：跨会话上下文传递，解决长任务上下文窗口限制
 - **Strict Plan Mode**：强制先规划再执行
 - **Focus Chain**：交互式任务清单
 - **扩展思维**：Claude/O1/Gemini 思维链可视化
@@ -40,15 +42,18 @@ cline/
 │   ├── extension.ts          # VS Code 扩展入口
 │   ├── core/
 │   │   ├── controller/       # 主控制器（1000+ 行）
-│   │   ├── task/             # 代理循环（3764 行）
-│   │   ├── api/              # LLM 提供商工厂（48+）
+│   │   ├── task/             # 代理循环 + 工具处理器
+│   │   ├── api/              # LLM 提供商工厂（43+）
 │   │   ├── prompts/          # 系统提示组件
 │   │   ├── permissions/      # 命令权限
+│   │   ├── slash-commands/    # Slash 命令
 │   │   └── hooks/            # Hook 系统
 │   ├── integrations/
-│   │   └── checkpoints/      # Git Checkpoint（931 行）
+│   │   ├── checkpoints/      # Git Checkpoint（多文件模块化）
+│   │   ├── claude-code/      # Claude Code 集成
+│   │   └── openai-codex/     # OpenAI Codex 集成
 │   └── services/
-│       └── mcp/McpHub.ts     # MCP 集成（1400+ 行）
+│       └── mcp/              # MCP 集成（McpHub + OAuth）
 ├── webview-ui/               # React WebView UI
 ├── cli/                      # 独立 CLI
 └── proto/                    # Protocol Buffers 定义
@@ -71,7 +76,7 @@ cline/
     → 循环直到 attempt_completion
 ```
 
-### 工具系统（23 种）
+### 工具系统（24+ 种）
 
 | 类别 | 工具 |
 |------|------|
@@ -82,7 +87,9 @@ cline/
 | MCP | use_mcp_tool, access_mcp_resource, load_mcp_documentation |
 | 交互 | ask_followup_question, attempt_completion |
 | 规划 | plan_mode_respond, act_mode_respond |
-| 任务 | focus_chain |
+| 任务 | focus_chain, new_task |
+| 子代理 | use_subagents（并行只读子代理） |
+| 其他 | condense, summarize_task, report_bug, generate_explanation, apply_patch |
 
 ### Checkpoint 系统
 
@@ -113,15 +120,15 @@ npm install -g @cline/cli
 
 ## 支持的提供商（48+）
 
-Anthropic, OpenRouter, OpenAI, Google Gemini, AWS Bedrock, Azure, GCP Vertex, SAP AI Core, Cerebras, Groq, DeepSeek, Qwen, Mistral, xAI, Ollama, LM Studio, OpenAI 兼容 API 等。
+Anthropic, OpenRouter, OpenAI, Google Gemini, AWS Bedrock, Azure, GCP Vertex, SAP AI Core, Cerebras, Groq, DeepSeek, Qwen, Mistral, xAI, Ollama, LM Studio, HuggingFace, LiteLLM, Fireworks, SambaNova, Together, Doubao, AiHubMix, Requesty 等（43+ 提供商文件）。
 
 ## 优势
 
 1. **VS Code 原生**：最佳 IDE 集成体验
 2. **Checkpoint 回滚**：Git 快照保证安全
-3. **提供商丰富**：48+ 提供商支持
+3. **提供商丰富**：43+ 提供商支持
 4. **Plan/Act 模式**：规划和执行分离
-5. **社区庞大**：58k+ Stars，活跃开发
+5. **社区庞大**：59k+ Stars，5M+ 用户，活跃开发
 6. **MCP + Hook**：强大的扩展能力
 
 ## 劣势

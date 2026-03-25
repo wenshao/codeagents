@@ -2,7 +2,7 @@
 
 **开发者：** Princeton NLP
 **许可证：** MIT
-**仓库：** [github.com/princeton-nlp/SWE-agent](https://github.com/princeton-nlp/SWE-agent)
+**仓库：** [github.com/SWE-agent/SWE-agent](https://github.com/SWE-agent/SWE-agent)
 **论文：** [SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering](https://arxiv.org/abs/2405.15793)
 **Stars：** 约 19k+
 **最后更新：** 2026-03
@@ -107,7 +107,7 @@ tools:
 pip install sweagent
 
 # 或从源码
-git clone https://github.com/princeton-nlp/SWE-agent.git
+git clone https://github.com/SWE-agent/SWE-agent.git
 cd SWE-agent && pip install -e .
 ```
 
@@ -173,6 +173,6 @@ sweagent inspector
 
 ## 资源链接
 
-- [GitHub](https://github.com/princeton-nlp/SWE-agent)
+- [GitHub](https://github.com/SWE-agent/SWE-agent)
 - [论文](https://arxiv.org/abs/2405.15793)
-- [文档](https://princeton-nlp.github.io/SWE-agent/)
+- [文档](https://swe-agent.com/)

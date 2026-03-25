@@ -4,7 +4,7 @@
 **许可证：** MIT
 **仓库：** [github.com/All-Hands-AI/OpenHands](https://github.com/All-Hands-AI/OpenHands)
 **文档：** [docs.all-hands.dev](https://docs.all-hands.dev/)
-**Stars：** 约 32k+
+**Stars：** 约 70k+
 **最后更新：** 2026-03
 
 ## 概述
@@ -128,7 +128,7 @@ cd OpenHands && pip install -e .
 
 | 基准 | 得分 |
 |------|------|
-| SWE-bench Verified | ~55% |
+| SWE-bench Verified | ~77.6% |
 | SWE-bench Lite | ~50% |
 
 ## 使用场景
