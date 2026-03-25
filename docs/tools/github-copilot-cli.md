@@ -70,6 +70,16 @@ copilot
 }
 ```
 
+## 斜杠命令
+
+| 命令 | 用途 |
+|------|------|
+| `/login` | GitHub 账户认证登录 |
+| `/model` | 切换模型（Claude Sonnet 4.5、Claude Sonnet 4、GPT-5） |
+| `/experimental` | 启用/查看实验性功能 |
+| `/lsp` | 查看已配置的 LSP 服务器状态 |
+| `/feedback` | 提交保密反馈调查 |
+
 ## 架构
 
 - **实现方式**：独立二进制（`copilot` 命令）

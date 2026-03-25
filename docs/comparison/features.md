@@ -180,6 +180,40 @@
 | Qwen Code | 免费/API | 免费 | 免费 | 每日 1000 次 |
 | Kimi CLI | API 按量 | ~$0.01-0.05 | ~$0.20-1 | 国内模型成本低 |
 
+### 内置命令能力对比
+
+> 对比各工具的交互式斜杠命令/内置命令体系。Cline（VS Code 扩展）和 Warp（终端应用）使用 GUI 交互而非斜杠命令。
+
+| 能力 | Claude Code | Aider | Gemini CLI | Kimi CLI | Qwen Code | Copilot CLI | Codex CLI | Goose | OpenCode |
+|------|-------------|-------|-----------|----------|-----------|-------------|-----------|-------|---------|
+| **命令总数** | ~15 | ~40 | ~43 | ~22 | ~19 | 5 | 0 | CLI 子命令 | Ctrl+P 面板 |
+| **代码审查** | `/review` | — | — | — | — | — | — | — | — |
+| **模式切换** | — | `/code` `/architect` `/ask` | `/plan` | `/plan` `/yolo` | `/plan` | — | `--approval-mode` | — | `--agent` |
+| **模型切换** | `/model` | `/model` `/editor-model` `/weak-model` | `/model` | `/model` | `/model` | `/model` | `--model` | `--model` | — |
+| **上下文压缩** | `/compact` | `/clear` `/reset` | `/compress` | `/compact` | `/compact` | — | — | — | — |
+| **文件管理** | 自动 | `/add` `/drop` `/read-only` `/ls` | 自动 | `/add-dir` | 自动 | 自动 | 自动 | 自动 | 自动 |
+| **Git 操作** | 内置工具 | `/commit` `/undo` `/diff` `/git` | 内置工具 | — | 内置工具 | 内置 GitHub MCP | — | — | 内置工具 |
+| **仓库地图** | — | `/map` `/map-refresh` | — | — | — | — | — | — | — |
+| **MCP 状态** | `/mcp` | — | `/mcp` | `/mcp` | `/mcp` | — | — | — | `mcp list` |
+| **权限管理** | `/permissions` | — | `/permissions` `/policies` | — | `/permissions` | — | — | — | — |
+| **记忆系统** | `/memory` | — | `/memory` | — | `/memory` | — | — | — | — |
+| **会话恢复** | `--resume` | — | `/restore` `/resume` `/rewind` | `/sessions` `/new` | `/restore` `/resume` | — | — | — | `session list` |
+| **语音输入** | 内置 Voice | `/voice` | — | — | — | — | — | — | — |
+| **远程控制** | `/remote-control` | — | — | — | — | — | — | — | — |
+| **Web 抓取** | WebFetch 工具 | `/web` | — | — | — | — | — | — | — |
+| **LSP 集成** | — | — | — | — | — | `/lsp` | — | — | — |
+| **费用查看** | `/cost` | `/tokens` | `/stats` | `/usage` | `/stats` | — | — | — | `stats` |
+| **反馈报告** | `/bug` | `/report` | `/bug` | — | `/bug` | `/feedback` | — | — | — |
+| **Vim 模式** | `/vim` | — | `/vim` | — | — | — | — | — | — |
+
+**关键发现：**
+- **Aider** 命令最多（~40），文件/上下文管理和模式切换最细粒度
+- **Gemini CLI / Qwen Code / Kimi CLI** 命令体系接近（Gemini CLI 分叉谱系）
+- **Claude Code** 独有 `/review`（代码审查）和 `/remote-control`（远程控制）
+- **Copilot CLI** 命令最少（5 个），侧重简洁
+- **Codex CLI** 无斜杠命令，完全通过 CLI 参数控制
+- **OpenCode** 使用 Ctrl+P 命令面板而非斜杠命令
+
 ## 使用场景推荐
 
 ### 最适合复杂重构

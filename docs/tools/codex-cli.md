@@ -280,6 +280,8 @@ codex --model gpt-4.1 "分析这个大型代码库"
 
 ## CLI 命令详情
 
+> **注意：** Codex CLI 没有交互式斜杠命令系统。它通过 CLI 启动参数（如 `--model`、`--approval-mode`）和运行时审批提示进行交互，而非像 Claude Code 或 Aider 那样的 `/command` 命令。
+
 ### 基本用法
 
 ```bash
