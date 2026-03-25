@@ -451,3 +451,171 @@ web_search_request               deprecated         false
       "base_instructions": "You are Codex, based on GPT-5. You are running as a coding agent in the Codex CLI on a user's computer.\n\n## General\n\n- When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)\n\n## Editing constraints\n\n- Default to ASCII when editing or creating files. Only introduce non-ASCII or other Unicode characters when there is a clear justification and the file already uses them.\n- Add succinct code comments that explain what is going on if code is not self-explanatory. You should not add comments like \"Assigns the value to the variable\", but a brief comment might be useful ahead of a complex code block that the user would otherwise have to spend time parsing out. Usage of these comments should be rare.\n- Try to use apply_patch for single file edits, but it is fine to explore other options to make the edit if it does not work well. Do not use apply_patch for changes that are auto-generated (i.e. generating package.json or running a lint or format command like gofmt) or when scripting is more efficient (such as search and replacing a string across a codebase).\n- You may be in a dirty git worktree.\n    * NEVER revert existing changes you did not make unless explicitly requested, since these changes were made by the user.\n    * If asked to make a commit or code edits and there are unrelated changes to your work or changes that you didn't make in those files, don't revert those changes.\n    * If the changes are in files you've touched recently, you should read carefully and understand how you can work with the changes rather than reverting them.\n    * If the changes are in unrelated files, just ignore them and don't revert them.\n- Do not amend a commit unless explicitly requested to do so.\n- While you are working, you might notice unexpected changes that you didn't make. If this happens, STOP IMMEDIATELY and ask the user how they would like to proceed.\n- **NEVER** use destructive commands like `git reset --hard` or `git checkout --` unless specifically requested or approved by the user.\n\n## Plan tool\n\nWhen using the planning tool:\n- Skip using the planning tool for straightforward tasks (roughly the easiest 25%).\n- Do not make single-step plans.\n- When you made a plan, update it after having performed one of the sub-tasks that you shared on the plan.\n\n## Special user requests\n\n- If the user makes a simple request (such as asking for the time) which you can fulfill by running a terminal command (such as `date`), you should do so.\n- If the user asks for a \"review\", default to a code review mindset: prioritise identifying bugs, risks, behavioural regressions, and missing tests. Findings must be the primary focus of the response - keep summaries or overviews brief and only after enumerating the issues. Present findings first (ordered by severity with file/line references), follow with open questions or assumptions, and offer a change-summary only as a secondary detail. If no findings are discovered, state that explicitly and mention any residual risks or testing gaps.\n\n## Presenting your work and final message\n\nYou are producing plain text that will later be styled by the CLI. Follow these rules exactly. Formatting should make results easy to scan, but not feel mechanical. Use judgment to decide how much structure adds value.\n\n- Default: be very concise; friendly coding teammate tone.\n- Ask only when needed; suggest ideas; mirror the user's style.\n- For substantial work, summarize clearly; follow final
 You are Codex, a coding agent based on GPT-5. You and the user share the same workspace and collaborate to achieve the user's goals.{{ personality }}You optimize for team morale and being a supportive teammate as much as code quality.You are a deeply pragmatic, effective software engineer.# Plan Mode (Conversational)
 ```
+
+########## COMPLETE FEATURE FLAGS (codex features list) ##########
+Captured: 2026-03-25T07:46:34Z
+```
+apply_patch_freeform             under development  false
+apps                             experimental       false
+artifact                         under development  false
+child_agents_md                  under development  false
+code_mode                        under development  false
+code_mode_only                   under development  false
+codex_git_commit                 under development  false
+codex_hooks                      under development  false
+collaboration_modes              removed            true
+default_mode_request_user_input  under development  false
+elevated_windows_sandbox         removed            false
+enable_fanout                    under development  false
+enable_request_compression       stable             true
+exec_permission_approvals        under development  false
+experimental_windows_sandbox     removed            false
+fast_mode                        stable             true
+guardian_approval                experimental       false
+image_detail_original            under development  false
+image_generation                 under development  false
+js_repl                          experimental       false
+js_repl_tools_only               under development  false
+memories                         under development  false
+multi_agent                      stable             true
+personality                      stable             true
+plugins                          under development  false
+powershell_utf8                  under development  false
+prevent_idle_sleep               experimental       false
+realtime_conversation            under development  false
+remote_models                    removed            false
+request_permissions_tool         under development  false
+request_rule                     removed            false
+responses_websockets             removed            false
+responses_websockets_v2          removed            false
+runtime_metrics                  under development  false
+search_tool                      removed            false
+shell_snapshot                   stable             true
+shell_tool                       stable             true
+shell_zsh_fork                   under development  false
+skill_env_var_dependency_prompt  under development  false
+skill_mcp_dependency_install     stable             true
+sqlite                           removed            true
+steer                            removed            true
+tool_call_mcp_elicitation        under development  false
+tool_suggest                     under development  false
+tui_app_server                   experimental       false
+undo                             stable             false
+unified_exec                     stable             true
+use_legacy_landlock              stable             false
+use_linux_sandbox_bwrap          removed            false
+voice_transcription              under development  false
+web_search_cached                deprecated         false
+web_search_request               deprecated         false
+```
+
+########## codex review --help ##########
+```
+Run a code review non-interactively
+
+Usage: codex review [OPTIONS] [PROMPT]
+
+Arguments:
+  [PROMPT]
+          Custom review instructions. If `-` is used, read from stdin
+
+Options:
+  -c, --config <key=value>
+          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.
+          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed
+          as TOML. If it fails to parse as TOML, the raw string is used as a literal.
+          
+          Examples: - `-c model="o3"` - `-c 'sandbox_permissions=["disk-full-read-access"]'` - `-c
+          shell_environment_policy.inherit=all`
+
+      --uncommitted
+          Review staged, unstaged, and untracked changes
+
+      --base <BRANCH>
+          Review changes against the given base branch
+
+      --enable <FEATURE>
+          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`
+
+      --commit <SHA>
+          Review the changes introduced by a commit
+
+      --disable <FEATURE>
+          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`
+
+      --title <TITLE>
+          Optional commit title to display in the review summary
+
+  -h, --help
+          Print help (see a summary with '-h')
+```
+
+########## codex mcp --help ##########
+```
+Manage external MCP servers for Codex
+
+Usage: codex mcp [OPTIONS] <COMMAND>
+
+Commands:
+  list    
+  get     
+  add     
+  remove  
+  login   
+  logout  
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -c, --config <key=value>
+          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.
+          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed
+          as TOML. If it fails to parse as TOML, the raw string is used as a literal.
+          
+          Examples: - `-c model="o3"` - `-c 'sandbox_permissions=["disk-full-read-access"]'` - `-c
+          shell_environment_policy.inherit=all`
+
+      --enable <FEATURE>
+          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`
+
+      --disable <FEATURE>
+          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`
+
+  -h, --help
+          Print help (see a summary with '-h')
+```
+
+########## codex cloud --help ##########
+```
+[EXPERIMENTAL] Browse tasks from Codex Cloud and apply changes locally
+
+Usage: codex cloud [OPTIONS] [COMMAND]
+
+Commands:
+  exec    Submit a new Codex Cloud task without launching the TUI
+  status  Show the status of a Codex Cloud task
+  list    List Codex Cloud tasks
+  apply   Apply the diff for a Codex Cloud task locally
+  diff    Show the unified diff for a Codex Cloud task
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -c, --config <key=value>
+          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.
+          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed
+          as TOML. If it fails to parse as TOML, the raw string is used as a literal.
+          
+          Examples: - `-c model="o3"` - `-c 'sandbox_permissions=["disk-full-read-access"]'` - `-c
+          shell_environment_policy.inherit=all`
+
+      --enable <FEATURE>
+          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`
+
+      --disable <FEATURE>
+          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
+```

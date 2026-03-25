@@ -125,3 +125,102 @@ cat error.log | codex "分析这个错误日志"
 | 技术栈 | Rust + Node.js | Rust/TypeScript | TypeScript | Python | TypeScript/Ink |
 | Cloud 执行 | 实验性 | 无 | 无 | 无 | 无 |
 | 定价模式 | API 按量 | API 按量/订阅 | API 按量 | 免费+API | API 按量 |
+
+## Feature Flags 完整清单（`codex features list` 输出）
+
+> 证据：`codex features list` 实时输出，已记录在 [EVIDENCE.md](./EVIDENCE.md)
+
+| Flag | 状态 | 默认 | 说明 |
+|------|------|------|------|
+| `shell_tool` | stable | true | Shell 工具 |
+| `shell_snapshot` | stable | true | Shell 状态快照 |
+| `fast_mode` | stable | true | 快速模式 |
+| `personality` | stable | true | 人格自定义 |
+| `multi_agent` | stable | true | 多代理支持 |
+| `skill_mcp_dependency_install` | stable | true | Skill MCP 依赖自动安装 |
+| `unified_exec` | stable | true | 统一执行模式 |
+| `enable_request_compression` | stable | true | 请求压缩 |
+| `undo` | stable | false | 撤销功能 |
+| `use_legacy_landlock` | stable | false | 旧版 Landlock 沙箱 |
+| `guardian_approval` | experimental | false | Guardian 审批系统（安全审查子代理） |
+| `js_repl` | experimental | false | JavaScript REPL |
+| `prevent_idle_sleep` | experimental | false | 防止空闲休眠 |
+| `apps` | experimental | false | ChatGPT Apps/Connectors |
+| `tui_app_server` | experimental | false | App-Server 驱动的 TUI |
+| `codex_hooks` | under dev | false | Hook 系统 |
+| `voice_transcription` | under dev | false | 语音转录 |
+| `realtime_conversation` | under dev | false | 实时对话 |
+| `memories` | under dev | false | 记忆系统 |
+| `plugins` | under dev | false | 插件系统 |
+| `enable_fanout` | under dev | false | 扇出并行 |
+| `code_mode` | under dev | false | 代码模式 |
+| `image_generation` | under dev | false | 图片生成 |
+| `collaboration_modes` | removed | true | 协作模式（已移除） |
+| `search_tool` | removed | false | 搜索工具（已移除） |
+| `web_search_cached` | deprecated | false | 缓存 Web 搜索（已弃用） |
+
+共 52 个 flag，其中 10 个 stable、4 个 experimental、18 个 under development、8 个 removed、2 个 deprecated。
+
+## `codex review` 深度（`codex review --help` 提取）
+
+```bash
+codex review [OPTIONS] [PROMPT]
+
+# 审查未提交的更改
+codex review --uncommitted
+
+# 审查相对于 main 分支的更改
+codex review --base main
+
+# 审查特定 commit 引入的更改
+codex review --commit abc123
+
+# 自定义审查指令
+codex review "重点关注安全性"
+
+# 从 stdin 读取指令
+echo "check error handling" | codex review -
+
+# 附加标题
+codex review --title "Feature: Auth Module" --base main
+```
+
+**参数（`codex review --help` 确认）：**
+
+| 参数 | 说明 |
+|------|------|
+| `[PROMPT]` | 自定义审查指令，`-` 表示从 stdin 读取 |
+| `--uncommitted` | 审查 staged + unstaged + untracked 更改 |
+| `--base <BRANCH>` | 审查相对于指定分支的更改 |
+| `--commit <SHA>` | 审查指定 commit 引入的更改 |
+| `--title <TITLE>` | 审查摘要中显示的可选标题 |
+
+## `codex cloud` 深度（实验性）
+
+```bash
+codex cloud exec "fix all failing tests"   # 提交任务到云端
+codex cloud status <TASK_ID>               # 查看任务状态
+codex cloud list                           # 列出所有云端任务
+codex cloud apply <TASK_ID>                # 将云端 diff 应用到本地
+codex cloud diff <TASK_ID>                 # 查看云端任务的 unified diff
+```
+
+**架构：** 每个 Cloud 任务在 Anthropic/OpenAI 云端创建隔离环境，执行 best-of-N 尝试（N=1-4），完成后可将 diff 拉回本地应用。
+
+## MCP 双向支持
+
+**客户端模式（`codex mcp` 子命令）：**
+```bash
+codex mcp list                 # 列出已配置的 MCP 服务器
+codex mcp add <name> <command> # 添加 MCP 服务器
+codex mcp remove <name>        # 移除 MCP 服务器
+codex mcp login <name>         # OAuth 认证（HTTP MCP）
+codex mcp logout <name>        # 移除 OAuth 凭据
+codex mcp get <name>           # 查看服务器详情
+```
+
+**服务器模式（`codex mcp-server`）：**
+```bash
+codex mcp-server               # 将 Codex 作为 MCP 服务器启动（stdio 传输）
+```
+支持 MCP 协议版本 `2024-11-05`，暴露 tools、resources、prompts 能力。
