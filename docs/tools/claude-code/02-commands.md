@@ -88,7 +88,11 @@ Bash(gh pr list:*), mcp__github_inline_comment__create_inline_comment
 - 一般代码质量问题（除非 CLAUDE.md 明确要求）
 - 代码中用 lint ignore 注释显式屏蔽的问题
 
-**置信度评分体系：**
+**过滤机制（来源：命令源码 + README）：**
+
+命令提示词实现：步骤 5 启动**并行验证代理**，每个标记的问题由独立代理确认真实性。未通过验证的问题在步骤 6 被移除。
+
+README 描述的置信度评分体系（辅助理解）：
 
 | 分数 | 含义 |
 |------|------|
@@ -98,7 +102,7 @@ Bash(gh pr list:*), mcp__github_inline_comment__create_inline_comment
 | 75 | 高度确信，真实且重要 |
 | 100 | 绝对确定，一定是真的 |
 
-**阈值：80 分**——只有 ≥80 分的问题才会通过过滤。
+README 声明阈值 80 分（≥80 才通过），但命令源码中的实际过滤是通过验证代理的二元判断（通过/不通过）实现。
 
 **PR 评论格式（源码定义）：**
 ```markdown
