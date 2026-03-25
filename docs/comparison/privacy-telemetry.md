@@ -14,7 +14,7 @@
 | **Kimi CLI** | **无** | — | **否** | **否** | **否** |
 | **OpenCode** | **无** | — | **否** | **否** | **否** |
 | **Goose** | PostHog | **关闭**（opt-in） | **是**（随机 UUID） | **是**（OS、架构） | **否** |
-| **Qwen Code** | 继承 Gemini CLI | 开启 | 继承 Gemini | 继承 Gemini | **否** |
+| **Qwen Code** | OTEL（重品牌）+ **阿里云 RUM**（新增） | 开启 | **是**（继承 Gemini UUID） | **是**（继承 CPU/GPU/RAM） | **否** |
 
 ## 遥测端点
 
@@ -28,6 +28,8 @@
 | | 可配置 OTLP 端点 | OpenTelemetry |
 | **Goose** | `us.i.posthog.com/capture/` | PostHog |
 | | 可配置 OTLP + Langfuse 端点 | OpenTelemetry + LLM 可观测 |
+| **Qwen Code** | `gb4w8c3ygj-default-sea.rum.aliyuncs.com` | 阿里云 RUM（App ID: gb4w8c3ygj@851d5d500f08f92） |
+| | 可配置 OTLP 端点（继承 Gemini） | OpenTelemetry（Clearcut 已移除） |
 | **Kimi CLI** | **无** | — |
 | **OpenCode** | **无** | — |
 
