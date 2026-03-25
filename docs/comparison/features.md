@@ -186,7 +186,7 @@
 
 | 能力 | Claude Code | Aider | Gemini CLI | Kimi CLI | Qwen Code | Copilot CLI | Codex CLI | Goose | OpenCode |
 |------|-------------|-------|-----------|----------|-----------|-------------|-----------|-------|---------|
-| **命令总数** | ~15 | ~42 | ~41 | ~20 | ~19 | 5 | 0 | CLI 子命令 | Ctrl+P 面板 |
+| **命令总数** | ~15 | ~42 | ~41 | ~20 | ~23 | 5 | 0 | CLI 子命令 | Ctrl+P 面板 |
 | **代码审查** | `/review` | — | — | — | — | — | — | — | — |
 | **模式切换** | — | `/code` `/architect` `/ask` | `/plan` | `/plan` `/yolo` | `/plan` | — | `--approval-mode` | — | `--agent` |
 | **模型切换** | `/model` | `/model` `/editor-model` `/weak-model` | `/model` | `/model` | `/model` | `/model` | `--model` | `--model` | — |
@@ -197,7 +197,7 @@
 | **MCP 状态** | `/mcp` | — | `/mcp` | `/mcp` | `/mcp` | — | — | — | `mcp list` |
 | **权限管理** | `/permissions` | — | `/permissions` `/policies` | — | `/permissions` | — | — | — | — |
 | **记忆系统** | `/memory` | — | `/memory` | — | `/memory` | — | — | — | — |
-| **会话恢复** | `--resume` | — | `/restore` `/resume` `/rewind` | `/sessions` `/new` | `/restore` `/resume` | — | — | — | `session list` |
+| **会话恢复** | `--resume` | — | `/restore` `/resume` `/rewind` | `/sessions` `/resume` | `/restore` `/resume` `/rewind` | — | — | — | `session list` |
 | **语音输入** | 内置 Voice | `/voice` | — | — | — | — | — | — | — |
 | **远程控制** | `/remote-control` | — | — | — | — | — | — | — | — |
 | **Web 抓取** | WebFetch 工具 | `/web` | — | `/web` | — | — | — | — | — |
