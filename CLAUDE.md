@@ -32,12 +32,22 @@ docs/
 │   ├── system-requirements.md  # 系统要求/运行时版本
 │   ├── architecture-deep-dive.md
 │   └── claude-code-vs-*.md / aider-vs-goose.md / qwen-vs-*.md
-├── guides/                     # 使用指南（5 篇）
+├── guides/                     # 使用指南（15 篇）
 │   ├── getting-started.md
 │   ├── workflows.md
 │   ├── migration.md
 │   ├── troubleshooting.md
-│   └── config-examples.md      # 配置示例并排对比
+│   ├── config-examples.md
+│   ├── context-management.md
+│   ├── skill-design.md
+│   ├── agents-md.md
+│   ├── hooks-config.md
+│   ├── claude-code-user-guide.md
+│   ├── qwen-code-user-guide.md
+│   ├── copilot-cli-user-guide.md
+│   ├── writing-claude-md.md
+│   ├── security-hardening.md
+│   └── effective-prompts.md
 ├── architecture/
 ├── benchmarks/
 └── resources.md
