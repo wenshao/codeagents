@@ -26,7 +26,9 @@ Codex CLI 是 OpenAI 官方推出的开源终端编程代理。项目采用 Apac
 
 ## 审批模式
 
-Codex CLI 提供五种审批模式（approval mode），控制代理的自主程度：
+Codex CLI 提供四种审批模式（approval mode），控制代理的自主程度：
+
+> 验证方式：`codex --help` 输出确认仅接受 untrusted/on-request/on-failure/never 四种值。`codex -a granular` 返回 "error: invalid value 'granular'"。
 
 ### untrusted 模式（默认）
 
@@ -65,18 +67,6 @@ codex -a never "修复所有测试并确保通过"
 | 行为 | 从不请求审批，执行失败时将错误反馈给模型继续尝试 |
 | 风险等级 | 较高（依赖沙箱保护） |
 | 适用场景 | 批量任务、CI/CD 集成、自动化流水线 |
-
-### granular 模式
-
-```bash
-codex -a granular "精细控制审批"
-```
-
-| 项目 | 说明 |
-|------|------|
-| 行为 | 细粒度控制：sandbox_approval、rules、mcp_elicitations、request_permissions、skill_approval 分别配置 |
-| 风险等级 | 可调节 |
-| 适用场景 | 需要对不同操作类型设置不同审批策略的场景 |
 
 ### on-failure 模式（已弃用）
 

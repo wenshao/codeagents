@@ -142,42 +142,39 @@ codex completion fish >> ~/.config/fish/completions/codex.fish
 | 参数 | 简写 | 说明 | 默认值 |
 |------|------|------|--------|
 | `--model` | `-m` | 指定使用的模型 | `o4-mini` |
-| `--ask-for-approval` | `-a` | 审批模式（6 种，见下文） | `suggest` |
+| `--ask-for-approval` | `-a` | 审批模式（4 种）：untrusted/on-request/on-failure/never | `untrusted` |
 | `--sandbox` | - | 沙箱模式：`read-only` / `workspace-write` / `danger-full-access` | - |
 | `--full-auto` | - | 便捷别名 = `--ask-for-approval on-request --sandbox workspace-write` | - |
-| `--quiet` | `-q` | 安静模式，减少输出 | `false` |
 | `--config` | `-c` | 指定配置文件路径 | `~/.codex/config.toml` |
-| `--no-project-doc` | - | 不加载 CODEX.md | `false` |
-| `--project-doc` | - | 指定额外的项目指令文件路径 | - |
 | `--oss` | - | 使用本地 OSS 模型提供者 | - |
 | `--local-provider` | - | 指定本地模型提供者（`lmstudio` / `ollama`） | - |
 | `--reasoning-effort` | - | 模型推理努力程度 | 配置文件值 |
 | `--dangerously-bypass-approvals-and-sandbox` | `--yolo` | 绕过所有审批和沙箱（危险） | - |
 | `--help` | `-h` | 显示帮助信息 | - |
-| `--version` | `-v` | 显示版本号 | - |
+| `--version` | `-V` | 显示版本号 | - |
+
+> 验证方式：`codex --help` 确认 `--version` 简写为 `-V`（大写）而非 `-v`。`--quiet`、`--no-project-doc`、`--project-doc` 不在 `codex --help` 输出中，已移除。
 
 ---
 
-## 审批模式（6 种，源码确认计数）
+## 审批模式（4 种）
 
-二进制字符串分析显示 6 种审批模式，引用频次反映其在代码中的使用密度。
+> 验证方式：`codex --help` 输出确认仅接受 untrusted/on-request/on-failure/never 四种值。`codex -a granular` 返回 "error: invalid value 'granular'"。`granular` 模式不存在，`suggest` 和 `full-auto` 是别名而非独立模式。
 
-| 模式 | 引用次数 | 说明 |
-|------|---------|------|
-| `suggest` | 120 次 | **默认模式**。执行命令前询问用户确认，文件写入需审批 |
-| `never` | 145 次 | 从不询问用户。所有操作自动拒绝执行，仅生成建议 |
-| `on-request` | 25 次 | 模型自行决定何时询问用户。适合半自动工作流 |
-| `on-failure` | 21 次 | **已弃用**。仅在操作失败时询问用户 |
-| `granular` | - | 细粒度控制：sandbox_approval、rules、mcp_elicitations、request_permissions、skill_approval 分别配置 |
-| `full-auto` | 4 次 | 便捷别名，等价于 `-a on-request --sandbox workspace-write` |
+| 模式 | 说明 |
+|------|------|
+| `untrusted` | **默认模式**。仅执行受信任的命令，其他操作需用户确认 |
+| `on-request` | 模型自行决定何时询问用户。适合半自动工作流 |
+| `on-failure` | **已弃用**。仅在操作失败时询问用户 |
+| `never` | 从不询问用户审批，执行失败时将错误反馈给模型继续尝试 |
 
 ### 模式选择逻辑
 
 ```
-codex                              → suggest（默认）
-codex -a never                     → 仅建议，不执行任何操作
+codex                              → untrusted（默认）
 codex -a on-request                → 模型决定何时询问
-codex --full-auto                  → on-request + workspace-write 沙箱
+codex -a never                     → 从不询问，自动执行
+codex --full-auto                  → on-request + workspace-write 沙箱（便捷别名）
 codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 ```
 
@@ -185,9 +182,9 @@ codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 
 | 审批模式 | 沙箱 = read-only | 沙箱 = workspace-write | 沙箱 = danger-full-access |
 |----------|-----------------|----------------------|--------------------------|
-| `suggest` | 每次询问 | 每次询问 | 每次询问 |
+| `untrusted` | 每次询问 | 每次询问 | 每次询问 |
 | `on-request` | 模型决定 | 模型决定（推荐组合） | 模型决定 |
-| `never` | 全部拒绝 | 全部拒绝 | 全部拒绝 |
+| `never` | 自动执行 | 自动执行 | 自动执行 |
 
 ---
 
@@ -216,8 +213,9 @@ codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 | 命令 | 功能 |
 |------|------|
 | `/model` | 切换或查看当前使用的模型 |
-| `/config` | 查看或修改运行时配置 |
 | `/permissions` | 查看或修改当前权限设置 |
+
+> 验证方式：`/config` 未出现在 developers.openai.com/codex/cli/slash-commands 官方文档中，已移除。
 | `/personality` | 查看或设置代理人格（对应 personality 配置键） |
 | `/fast` | 切换快速模式（跳过部分确认步骤） |
 | `/debug-config` | 显示当前调试配置信息 |
@@ -228,8 +226,9 @@ codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 |------|------|
 | `/tools` | 列出当前可用的所有工具 |
 | `/mcp` | 管理 MCP 服务器连接 |
-| `/skills` | 列出所有可用技能 |
 | `/prompts` | 查看当前生效的提示词 |
+
+> 验证方式：`/skills` 未出现在 developers.openai.com/codex/cli/slash-commands 官方文档中，已移除。
 | `/memories` | 查看或管理代理记忆 |
 
 ### 工作流
@@ -249,8 +248,9 @@ codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 
 | 命令 | 功能 |
 |------|------|
-| `/login` | 在 TUI 内执行登录流程 |
 | `/logout` | 在 TUI 内登出当前账户 |
+
+> 验证方式：`/login` 未出现在 developers.openai.com/codex/cli/slash-commands 官方文档中，已移除。
 | `/init` | 初始化项目配置（生成 CODEX.md 等） |
 | `/realtime` | 切换实时对话模式（需启用 realtime_conversation flag） |
 | `/sandbox-add-read-dir` | 将指定目录添加到沙箱的只读访问列表 |
@@ -431,7 +431,7 @@ codex features disable multi_agent           # 禁用指定标志
 
 | 配置键 | 类型 | 说明 | 默认值 |
 |--------|------|------|--------|
-| `approval_mode` | string | 审批模式（suggest/never/on-request/on-failure/granular/full-auto） | `suggest` |
+| `approval_mode` | string | 审批模式（untrusted/on-request/on-failure/never） | `untrusted` |
 | `sandbox` | string | 沙箱级别（read-only/workspace-write/danger-full-access） | `read-only` |
 | `model` | string | 默认模型 | `o4-mini` |
 | `model_reasoning_effort` | string | 模型推理努力程度（low/medium/high） | `medium` |
@@ -450,7 +450,7 @@ codex features disable multi_agent           # 禁用指定标志
 ```toml
 # ~/.codex/config.toml
 model = "o4-mini"
-approval_mode = "suggest"
+approval_mode = "untrusted"
 sandbox = "workspace-write"
 model_reasoning_effort = "medium"
 plan_mode_reasoning_effort = "high"
@@ -480,7 +480,7 @@ approval_mode = "on-request"
 
 [profiles.personal]
 model = "o4-mini"
-approval_mode = "suggest"
+approval_mode = "untrusted"
 ```
 
 ### 指令文件层级
@@ -494,7 +494,7 @@ Codex CLI 按以下顺序加载指令，后加载的可覆盖先加载的：
 | 3 | `AGENTS.md` | 项目级 | 代理行为指令（替代名称，与 CODEX.md 共存） |
 | 4（最高） | `SKILL.md` | 技能级 | 定义特定技能的指令与约束 |
 
-使用 `--no-project-doc` 可跳过项目级指令加载；`--project-doc <path>` 可指定额外指令文件。
+<!-- --no-project-doc 和 --project-doc 未在 codex --help 输出中确认，暂不列入文档。 -->
 
 ### 环境变量
 

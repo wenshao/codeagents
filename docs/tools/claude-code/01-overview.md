@@ -173,6 +173,27 @@ claude --verbose                          # 详细日志输出
 - **插件结构**：`.claude-plugin/plugin.json` + commands/ + agents/ + skills/ + hooks/ + `.mcp.json`
 - **Hook 系统**：10 种事件 + UserPromptSubmit 上下文注入
 
+## 验证记录
+
+> 本文档通过二进制逆向分析和官方文档双重验证。
+
+**二进制分析（v2.1.81，227MB ELF x86-64，Bun v1.2 编译）：**
+- 斜杠命令：通过 `strings` + `d4({name:"..."})` 模式提取，确认 ~75 个注册命令
+- Hook 事件：通过事件名字符串匹配确认全部 22 个事件
+- 工具系统：通过工具名和 Schema 字符串确认 20+ 个内置工具
+- 模型 ID：通过 `claude-*` 模式匹配确认 12 个模型变体
+- 原生模块：确认 tree-sitter (5 语言)、sharp、audio-capture、file-index、resvg.wasm
+- 遥测系统：确认 30+ 个 `tengu_` 前缀事件
+- Skill 系统：确认 SKILL.md 解析器、Frontmatter 字段、加载路径
+
+**官方文档验证：**
+- [斜杠命令/Skills](https://code.claude.com/docs/en/slash-commands)
+- [Hooks 参考](https://code.claude.com/docs/en/hooks) — 22 个事件完整列表
+- [模型配置](https://code.claude.com/docs/en/model-config)
+- [code-review 插件源码](https://github.com/anthropics/claude-code/tree/main/plugins/code-review)
+
+**注意：** Anthropic 文档已从 `docs.anthropic.com` 迁移至 `code.claude.com/docs`（301 重定向）。
+
 ## 资源链接
 
 - [官方文档](https://docs.anthropic.com/en/docs/claude-code)

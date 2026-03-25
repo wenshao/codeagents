@@ -32,7 +32,7 @@ copilot
 
 支持 PAT 认证：创建带 "Copilot Requests" 权限的 fine-grained PAT，通过 `GH_TOKEN` 或 `GITHUB_TOKEN` 环境变量传入。
 
-## 斜杠命令（34 个）
+## 斜杠命令（33 个）
 
 | 命令 | 别名 | 用途 |
 |------|------|------|
@@ -48,7 +48,6 @@ copilot
 | `/exit` | `/quit` | 退出程序 |
 | `/experimental` | | 启用/查看实验性功能 |
 | `/feedback` | | 提交保密反馈调查 |
-| `/fleet` | | 拆分任务为并行子代理执行 |
 | `/help` | | 显示帮助信息 |
 | `/ide` | | IDE 集成 |
 | `/init` | | 初始化项目配置 |
@@ -417,7 +416,7 @@ try {
 2. **消耗 premium requests 配额**：高倍率模型（如 claude-opus-4.5 为 3x）消耗较快
 3. **需要 GitHub 账户**：依赖 GitHub 认证
 4. **部分功能需功能标志**：CUSTOM_AGENTS、PLAN_COMMAND 等需手动启用
-5. **较新产品**：仍在快速迭代中，功能迭代频繁（如 `/fleet`、新模型不断添加）
+5. **较新产品**：仍在快速迭代中，功能迭代频繁（新模型不断添加）
 
 ## 使用场景
 
@@ -430,6 +429,25 @@ try {
 - 包含在 GitHub Copilot 订阅中（每次提交消耗 premium request 配额，倍率因模型而异）
 - gpt-5-mini 和 gpt-4.1 为免费模型（0x 倍率）
 - 详见 [Copilot 计划](https://github.com/features/copilot/plans)
+
+## 验证记录
+
+> 本文档通过以下方式交叉验证：
+
+**二进制分析（v0.0.403）：**
+- 斜杠命令：通过 `grep -oP 'name:"/[a-z-]+"' index.js` 提取，确认 33 个命令
+- 核心工具：通过工具名字符串匹配确认 11 个
+- 浏览器工具：通过 `browser_` 前缀匹配确认 21 个
+- GitHub 工具：通过 `get_`/`list_`/`search_` 前缀匹配确认 35 个
+- 代理定义：通过 `cat definitions/*.agent.yaml` 确认 3 个 YAML 文件
+- 模型列表：通过模型名字符串匹配确认 14 个本地 + 11 个 web-only
+
+**官方文档验证：**
+- [CLI Command Reference](https://docs.github.com/en/copilot/reference/copilot-cli-reference/cli-command-reference)
+- [Supported AI Models](https://docs.github.com/en/copilot/reference/ai-models/supported-models)
+- [About Copilot CLI](https://docs.github.com/en/copilot/concepts/agents/about-copilot-cli)
+
+**未在二进制中确认的内容标记 `[web]`，仅在二进制中发现的内容标记 `[binary]`。**
 
 ## 资源链接
 

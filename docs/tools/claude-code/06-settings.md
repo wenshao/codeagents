@@ -79,7 +79,7 @@ Claude Code 的 Hook 系统是其最独特的能力之一。与传统脚本 Hook
 | `Elicitation` | 向用户请求信息时 | 官方 |
 | `ElicitationResult` | 用户回复请求时 | 官方 |
 
-> 来源：[官方 Hooks 文档](https://code.claude.com/docs/en/hooks)，部分事件同时在 v2.1.81 二进制中确认。
+> 来源：[官方 Hooks 文档](https://code.claude.com/docs/en/hooks)，全部 22 个事件在 v2.1.81 二进制中确认存在。
 
 ### Hook 配置示例
 

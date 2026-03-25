@@ -54,7 +54,9 @@ Codex CLI 是 OpenAI 官方推出的开源终端编程代理。项目采用 Apac
 
 ## 审批模式
 
-Codex CLI 提供五种审批模式（approval mode），控制代理的自主程度：
+Codex CLI 提供四种审批模式（approval mode），控制代理的自主程度：
+
+> 验证方式：`codex --help` 输出确认仅接受 untrusted/on-request/on-failure/never 四种值。`codex -a granular` 返回 "error: invalid value 'granular'"。
 
 ### untrusted 模式（默认）
 
@@ -93,18 +95,6 @@ codex -a never "修复所有测试并确保通过"
 | 行为 | 从不请求审批，执行失败时将错误反馈给模型继续尝试 |
 | 风险等级 | 较高（依赖沙箱保护） |
 | 适用场景 | 批量任务、CI/CD 集成、自动化流水线 |
-
-### granular 模式
-
-```bash
-codex -a granular "精细控制审批"
-```
-
-| 项目 | 说明 |
-|------|------|
-| 行为 | 细粒度控制：sandbox_approval、rules、mcp_elicitations、request_permissions、skill_approval 分别配置 |
-| 风险等级 | 可调节 |
-| 适用场景 | 需要对不同操作类型设置不同审批策略的场景 |
 
 ### on-failure 模式（已弃用）
 
@@ -203,11 +193,11 @@ Codex CLI 在交互式会话中提供 20+ 个斜杠命令：
 |------|------|
 | `/clear` | 清除当前对话上下文 |
 | `/compact` | 压缩对话历史，释放上下文窗口空间 |
-| `/history` | 显示对话历史记录 |
 | `/status` | 显示当前会话状态 |
 | `/resume` | 恢复之前的会话 |
 | `/fork` | 从当前会话分叉出新会话 |
-| `/undo` | 撤销上一步操作 |
+
+> 验证方式：`/history`、`/undo` 未出现在 developers.openai.com/codex/cli/slash-commands 官方文档中，已移除。
 
 ### 代码与差异
 
@@ -223,8 +213,9 @@ Codex CLI 在交互式会话中提供 20+ 个斜杠命令：
 | 命令 | 功能 |
 |------|------|
 | `/model` | 切换或查看当前模型 |
-| `/config` | 查看或修改运行时配置 |
 | `/permissions` | 查看或修改当前权限设置 |
+
+> 验证方式：`/config` 未出现在 developers.openai.com/codex/cli/slash-commands 官方文档中，已移除。
 | `/personality` | 查看或设置代理人格 |
 | `/fast` | 切换快速模式 |
 | `/debug-config` | 显示当前调试配置信息 |
@@ -235,17 +226,18 @@ Codex CLI 在交互式会话中提供 20+ 个斜杠命令：
 | 命令 | 功能 |
 |------|------|
 | `/plan` | 让代理制定计划而不执行 |
-| `/help` | 显示帮助信息 |
 | `/feedback` | 向代理提供反馈，引导其调整行为 |
-| `/skills` | 列出可用技能 |
+
+> 验证方式：`/help`、`/skills` 未出现在 developers.openai.com/codex/cli/slash-commands 官方文档中，已移除。
 | `/mcp` | 管理 MCP 服务器连接 |
 | `/ps` | 显示当前后台进程状态 |
 | `/new` | 开始新的会话 |
 | `/exit` | 退出当前会话 |
 | `/quit` | 退出当前会话（同 /exit） |
 | `/init` | 初始化项目配置（生成 CODEX.md 等） |
-| `/login` | 在 TUI 内执行登录流程 |
 | `/logout` | 在 TUI 内登出当前账户 |
+
+> 验证方式：`/login` 未出现在 developers.openai.com/codex/cli/slash-commands 官方文档中，已移除。
 | `/sandbox-add-read-dir` | 将指定目录添加到沙箱的只读访问列表 |
 | `/apps` | 管理应用集成 |
 | `/experimental` | 访问实验性功能 |
@@ -337,18 +329,17 @@ codex completion fish >> ~/.config/fish/completions/codex.fish
 | 参数 | 简写 | 说明 | 默认值 |
 |------|------|------|--------|
 | `--model` | `-m` | 指定使用的模型 | `o4-mini` |
-| `--ask-for-approval` | `-a` | 审批模式：untrusted/on-request/never/granular | `untrusted` |
+| `--ask-for-approval` | `-a` | 审批模式：untrusted/on-request/on-failure/never | `untrusted` |
 | `--sandbox` | | 沙箱模式：read-only/workspace-write/danger-full-access | - |
 | `--full-auto` | | `--ask-for-approval on-request --sandbox workspace-write` | - |
-| `--quiet` | `-q` | 安静模式，减少输出 | `false` |
 | `--config` | `-c` | 指定配置文件路径 | `~/.codex/config.toml` |
-| `--no-project-doc` | | 不加载 CODEX.md | `false` |
-| `--project-doc` | | 指定额外的项目指令文件 | - |
 | `--oss` | | 使用本地 OSS 模型提供者 | - |
 | `--local-provider` | | 指定本地模型提供者（lmstudio/ollama） | - |
 | `--dangerously-bypass-approvals-and-sandbox` | `--yolo` | 绕过所有审批和沙箱（危险） | - |
 | `--help` | `-h` | 显示帮助信息 | - |
-| `--version` | `-v` | 显示版本号 | - |
+| `--version` | `-V` | 显示版本号 | - |
+
+> 验证方式：`codex --help` 确认 `--version` 简写为 `-V`（大写）而非 `-v`。`--quiet`、`--no-project-doc`、`--project-doc` 不在 `codex --help` 输出中，已移除。`granular` 不是有效的审批模式值。
 
 ## MCP 支持
 
@@ -515,7 +506,6 @@ codex review --commit abc1234
 Codex CLI 支持技能（Skills）系统，通过 `SKILL.md` 文件定义特定能力：
 
 - **SKILL.md 文件**：定义技能的指令和行为
-- **`/skills` 命令**：列出所有可用技能
 - **`skill_mcp_dependency_install`**：功能标志，控制技能 MCP 依赖的自动安装
 
 ## 功能标志
