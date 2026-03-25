@@ -1,6 +1,6 @@
-# Code Agent CLI 工具对比
+# AI 编程 Code Agent 对比
 
-> 基于源码分析和二进制反编译的 AI 编程 CLI 工具全面对比 | 88 文件 | 28,800+ 行 | 9 个 EVIDENCE.md 证据文件
+> 基于源码分析和二进制反编译的 AI 编程 Code Agent 全面对比 | 88 文件 | 28,800+ 行 | 9 个 EVIDENCE.md 证据文件
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -8,11 +8,11 @@
 
 ## 概述
 
-本仓库提供了 17 款 AI 编程 CLI 工具的全面对比。**核心内容基于源码分析（开源工具）和二进制反编译（闭源工具）**，并附带 EVIDENCE.md 证据文件支撑每项声明。
+本仓库提供了 17 款 AI 编程 Code Agent 的全面对比。**核心内容基于源码分析（开源 Agent）和二进制反编译（闭源 Agent）**，并附带 EVIDENCE.md 证据文件支撑每项声明。
 
 ### 源码分析纠正的重要事实
 
-| 工具 | 官方/常见说法 | 源码实际情况 |
+| Agent | 官方/常见说法 | 源码实际情况 |
 |------|-------------|-------------|
 | **Goose** | TypeScript | **Rust**（55k 行） |
 | **OpenCode** | Go | **TypeScript**（Bun + Monorepo） |
@@ -21,7 +21,7 @@
 
 ## 快速对比表
 
-| 工具 | 开发者 | 许可证 | Stars | 语言 | LLM 提供商 | 特色 |
+| Agent | 开发者 | 许可证 | Stars | 语言 | LLM 提供商 | 特色 |
 |------|--------|--------|-------|------|-----------|------|
 | [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | 98k+ | TypeScript | 1 (Gemini) | Google 官方，Qwen Code 上游 |
 | [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | 69k+ | Python | 100+ | 浏览器操作，Docker 沙箱，多代理委托 |
@@ -42,8 +42,8 @@
 
 ## 文档导航
 
-### 工具详情（源码级）
-- **[工具索引](./docs/tools/)** — 16 个工具的详细分析，含架构图和代码引用
+### Agent 详情（源码级）
+- **[Agent 索引](./docs/tools/)** — 16 个 Agent 的详细分析，含架构图和代码引用
 - **[Claude Code 专题](./docs/tools/claude-code/)** — 7 篇深度文档（概述/79 命令/架构/工具/Skill+13 插件/设置/会话）
 - **[Copilot CLI 专题](./docs/tools/copilot-cli/)** — 3 篇深度文档（概述/34 命令 + 67 工具 + 3 代理/架构）
 - **[Codex CLI 专题](./docs/tools/codex-cli/)** — 3 篇深度文档（概述/28 交互命令 + 15 CLI/Rust 架构）
@@ -55,7 +55,7 @@
 ### 对比文档
 
 **全局对比（选型必读）：**
-- [功能对比矩阵](./docs/comparison/features.md) — 14 工具 × 多维度横向对比
+- [功能对比矩阵](./docs/comparison/features.md) — 14 Agent × 多维度横向对比
 - [隐私与遥测对比](./docs/comparison/privacy-telemetry.md) — 遥测端点、数据采集、安全监控
 - [定价与成本](./docs/comparison/pricing.md) | [系统要求](./docs/comparison/system-requirements.md) | [版本迭代](./docs/comparison/evolution-community.md)
 
@@ -85,9 +85,9 @@
 - [遥测与隐私实现](./docs/comparison/telemetry-privacy-deep-dive.md) — 782 事件 vs 零遥测 vs Opt-in 10%
 - [非交互/CI 模式](./docs/comparison/ci-scripting-deep-dive.md) — stream-json 协议 vs TTY 自动检测 vs 批量评估
 - [系统提示与 Prompt 工程](./docs/comparison/system-prompt-deep-dive.md) — 8 模块硬编码 vs XML 结构 vs Jinja2 动态
-- [API 参数与重试策略](./docs/comparison/api-params-deep-dive.md) — 温度/重试/循环上限/缓存/工具调用跨工具对比
+- [API 参数与重试策略](./docs/comparison/api-params-deep-dive.md) — 温度/重试/循环上限/缓存/工具调用跨 Agent 对比
 
-**工具间 1v1 对比：**
+**Agent 间 1v1 对比：**
 - [Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md) | [vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md) | [Aider vs Goose](./docs/comparison/aider-vs-goose.md)
 - [Qwen vs Claude Code](./docs/comparison/qwen-vs-claude-code.md) | [vs Gemini vs Kimi](./docs/comparison/qwen-vs-gemini-vs-kimi.md) | [OpenCode vs Qwen](./docs/comparison/opencode-vs-qwen-source.md)
 
@@ -116,7 +116,7 @@
 
 ## 架构流派（源码分析发现）
 
-| 流派 | 代表工具 | 核心模式 |
+| 流派 | 代表 Agent | 核心模式 |
 |------|---------|---------|
 | **编辑优先** | Aider | LLM 直接输出代码修改（14 种格式），工具是辅助 |
 | **工具调用** | Claude Code, Codex CLI, OpenCode, Cline, Goose | 结构化 function calling 操作环境 |
@@ -125,8 +125,8 @@
 
 ## 技术栈分布
 
-| 语言 | 工具 | 特点 |
-|------|------|------|
+| 语言 | Agent | 特点 |
+|------|-------|------|
 | **Rust** | Goose, Claude Code, Warp | 性能最佳，内存最低 |
 | **TypeScript** | Gemini CLI, Qwen Code, OpenCode, Codex CLI, Cline, Continue | Ink/React TUI 成熟，生态丰富 |
 | **Python** | Aider, SWE-agent, OpenHands, Kimi CLI | LiteLLM 100+ 模型，学术研究首选 |
@@ -187,4 +187,4 @@
 
 ---
 
-**注意**：本项目与上述任何工具无关联。信息基于源码分析，仅供参考。
+**注意**：本项目与上述任何 Agent 无关联。信息基于源码分析，仅供参考。
