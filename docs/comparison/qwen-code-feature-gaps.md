@@ -307,11 +307,16 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 
 ### 11. Channels（MCP 消息推送）
 
-**Claude Code 实现**（来源：二进制 strings 提取，命令文档未详述）：
-- `--channels` 参数允许 MCP 服务器主动推送消息到会话
-- 用于外部事件通知（CI/CD 状态、监控告警等）
+**Claude Code 实现**（来源：[Channels 参考文档](https://code.claude.com/docs/en/channels-reference)，2026-03-20 研究预览）：
+- `--channels` 参数激活 Channel 插件，允许 MCP 服务器主动推送消息到会话
+- Channel 是特殊 MCP 服务器，将外部平台事件包装为 `<channel>` 事件推入会话
+- 当前支持 Telegram 和 Discord（插件架构，可扩展更多平台）
+- 安全模型：发送者白名单 + `--channels` 双重控制（仅 `.mcp.json` 配置不够，还需在 `--channels` 中激活）
+- 要求 claude.ai 登录（不支持 API key 认证）
 
-**工作量**：中（1-2 周）
+**Qwen Code 缺失影响**：无法从外部消息平台远程触发/交互。
+
+**工作量**：高（2-3 周），需实现 MCP Channel 协议 + 平台集成
 
 ---
 
@@ -348,7 +353,7 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 | 丰富官方插件库 | 中（持续） | **高**（生态） | **P1** |
 | Remote Control | 高（2-3 周） | 中 | P2 |
 | Notebook 编辑 | 中（1-2 周） | 中 | P2 |
-| Channels | 中（1-2 周） | 中 | P2 |
+| Channels（MCP 消息推送） | 高（2-3 周） | 中 | P2 |
 | 细粒度工具流（更多工具支持 updateOutput） | 中（1-2 周） | 中 | P2 |
 | Teammates 协作模式（扩展 Arena） | 中（1-2 周） | 中 | P2 |
 | Voice 模式 | 高（3-4 周） | 低 | P3 |
