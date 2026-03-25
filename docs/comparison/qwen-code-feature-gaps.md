@@ -10,7 +10,7 @@
 | Git Worktree | ✅ | ✅ `gitWorktreeService.ts` | 对等 |
 | 子代理/Task 工具 | ✅ | ✅ `subagent-manager.ts` | 对等 |
 | Plan 模式 | ✅ | ✅ | 对等 |
-| Hook 系统（12 事件） | ✅ | ✅ 12 个事件类型 | 对等 |
+| Hook 系统 | ✅ **22 个事件类型** | ✅ 12 个事件类型 | **Claude 更强**（多 10 个事件：TaskCompleted/TeammateIdle/ConfigChange 等） |
 | MCP 集成 | ✅ | ✅ `mcp-client.ts` | 对等 |
 | 会话恢复 | ✅ `--resume` | ✅ `resumeHistoryUtils.ts` | 对等 |
 | 自动记忆 | ✅ | ✅ `memoryTool.ts` | 对等 |
@@ -152,7 +152,7 @@ Claude Code 用 `! command` 单行前缀，Qwen Code 用 `!` 模式切换——*
 ### 6. 企业管控（Managed Settings）
 
 **Claude Code 实现**：
-- 5 层设置优先级（企业→组织→用户→项目→本地→CLI→默认）
+- 5 层设置优先级（Managed → CLI 参数 → 本地项目 → 共享项目 → 用户）
 - `managed-settings.json` 远程下发
 - `allowManagedHooksOnly` / `allowManagedPermissionRulesOnly`
 - `strictKnownMarketplaces` 限制插件来源
@@ -194,7 +194,7 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 ### 9. Voice 模式
 
 **Claude Code 实现**：
-- Push-to-talk（Ctrl+K）
+- Push-to-talk（`/voice` 命令启动，按住指定键说话）
 - 音频流式传输（WebSocket）
 - 多语言支持
 - 音频恢复（断线重连）
@@ -282,7 +282,7 @@ Qwen Code 已有 `generateJson()` 方法（`baseLlmClient.ts:72-130`），支持
 | **视觉模型 YOLO 自动切换** | 根据输入自动切换视觉模型（Claude Code 支持图片但无自动切换） | 多模态体验更流畅 |
 | **6 语言 UI** | 中/英/日/德/俄/葡完整本地化 | 全球化覆盖 |
 | **免费 OAuth** | 每天 1000 次 | 零门槛试用 |
-| **多提供商** | Qwen + OpenAI + Anthropic + Gemini + Vertex | 模型灵活性 |
+| **多提供商** | Qwen OAuth + DashScope + ModelScope + Anthropic + Google + 自定义（6+） | 模型灵活性 |
 | **Claude/Gemini 扩展转换** | 自动格式转换 | 跨生态兼容 |
 | **操作检查点** | `/restore` 命令回滚 | 安全网 |
 
