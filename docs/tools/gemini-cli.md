@@ -5,6 +5,7 @@
 **仓库：** [github.com/google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)（npm: `@google/gemini-cli`）
 **文档：** [geminicli.com](https://geminicli.com)
 **Stars：** ~99k（100+ 贡献者，12.5k Forks）
+**最后更新：** 2026-03
 
 ## 概述
 

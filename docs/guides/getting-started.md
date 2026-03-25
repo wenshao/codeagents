@@ -128,14 +128,15 @@ kimi
 ### GitHub Copilot CLI
 
 ```bash
-# 安装
-gh extension install github/gh-copilot
+# 安装（任选一种）
+curl -fsSL https://gh.io/copilot-install | bash
+# 或
+brew install copilot-cli
+# 或
+npm install -g @github/copilot
 
-# 设置
-gh auth login
-
-# 首次使用
-gh copilot explain "kubectl get pods"
+# 首次使用（会引导登录）
+copilot
 ```
 
 ### Cline

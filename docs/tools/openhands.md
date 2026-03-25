@@ -5,6 +5,7 @@
 **仓库：** [github.com/All-Hands-AI/OpenHands](https://github.com/All-Hands-AI/OpenHands)
 **文档：** [docs.all-hands.dev](https://docs.all-hands.dev/)
 **Stars：** 约 32k+
+**最后更新：** 2026-03
 
 ## 概述
 

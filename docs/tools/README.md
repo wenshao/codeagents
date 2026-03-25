@@ -12,7 +12,7 @@
 ### [GitHub Copilot CLI](./github-copilot-cli.md)
 **开发者：** GitHub
 **最适合：** GitHub 生态集成
-**核心特性：** 企业功能
+**核心特性：** 终端原生代理，MCP 扩展，多模型（Claude/GPT）
 
 ### [Cursor CLI](./cursor-cli.md)
 **开发者：** Cursor
@@ -104,10 +104,10 @@
 
 | 模型 | 主要工具 |
 |------|----------|
-| Claude | Claude Code, Aider, Cline |
-| GPT-4 | Copilot CLI, Continue, Goose |
+| Claude | Claude Code, Aider, Cline, Copilot CLI |
+| GPT-4/5 | Copilot CLI, Continue, Goose |
 | Gemini | Gemini CLI, OpenCode, Goose |
-| 多模型 | Goose, Continue, OpenHands, Kimi CLI |
+| 多模型 | Goose, Continue, OpenHands, Kimi CLI, Copilot CLI |
 
 ## 按许可证分类
 
@@ -122,7 +122,7 @@
 # 安装命令
 curl -fsSL https://claude.ai/install.sh | bash  # Claude Code
 pip install aider-chat                         # Aider
-gh extension install github/gh-copilot           # Copilot CLI
+brew install copilot-cli                          # Copilot CLI
 brew install --cask warp                       # Warp
 npm install -g @google/gemini-cli              # Gemini CLI
 ```
@@ -130,5 +130,12 @@ npm install -g @google/gemini-cli              # Gemini CLI
 ## 相关文档
 
 - [功能对比](../comparison/features.md)
+- [Claude Code vs Cursor](../comparison/claude-code-vs-cursor.md)
+- [Claude Code vs Copilot CLI](../comparison/claude-code-vs-copilot-cli.md)
+- [Aider vs Goose](../comparison/aider-vs-goose.md)
 - [入门指南](../guides/getting-started.md)
+- [实操工作流教程](../guides/workflows.md)
+- [迁移指南](../guides/migration.md)
+- [故障排查](../guides/troubleshooting.md)
 - [架构解析](../architecture/overview.md)
+- [基准测试](../benchmarks/overview.md)

@@ -23,7 +23,7 @@
 |------|--------|-------|--------|----------|------|
 | Claude Code | ✓ | | | | 仅 Claude |
 | Aider | ✓ | ✓ | | ✓ | 通过 Ollama |
-| Copilot CLI | | ✓ | | | 仅 GPT |
+| Copilot CLI | ✓ | ✓ | | | Claude Sonnet 4.5 默认，可选 GPT-5 |
 | Cursor | ✓ | ✓ | ✓ | | 多提供商 |
 | SWE-agent | ✓ | ✓ | | ✓ | 灵活 |
 | Cline | ✓ | | | | 仅 Claude |
@@ -42,7 +42,7 @@
 |------|----------|--------------|-------------------|
 | Claude Code | Rust | 原生 CLI | 代理式编程工具 |
 | Aider | Python | Git 原生 | 结对编程 |
-| Copilot CLI | TypeScript | CLI 扩展 | GitHub 集成 |
+| Copilot CLI | Shell | 独立二进制 | 终端原生代理，GitHub 集成 |
 | Cursor | TypeScript | IDE (VS Code) | AI 原生编辑器 |
 | SWE-agent | Python | Agent-Computer Interface | 基准性能 |
 | Cline | TypeScript | IDE 扩展 | 自主编码 |
@@ -97,7 +97,7 @@
 |------|---------|-------------|---------|-------|
 | Claude Code | ✓ | ✓ | ✓ | 精细权限 |
 | Aider | | ✓ | | 透明 |
-| Copilot CLI | | | | 企业 |
+| Copilot CLI | | ✓ | | 操作需确认，企业合规 |
 | Cursor | | ✓ | | IDE 内权限 |
 | SWE-agent | ✓ | | | Docker |
 | Cline | ✓ | ✓ | | 基于权限 |
@@ -107,6 +107,79 @@
 | Qwen Code | ✓ | ✓ | | deny>ask>allow + Hook |
 | Kimi CLI | | ✓ | | YOLO / 会话级审批 / 逐次确认 + feedback |
 
+### 多模态能力
+
+| 工具 | 图片输入 | 截图分析 | PDF | 说明 |
+|------|----------|----------|-----|------|
+| Claude Code | ✓ | ✓ | ✓ | 原生多模态（通过 Read 工具） |
+| Aider | ✓ | | | 通过 --image 参数 |
+| Copilot CLI | | | | 暂不支持 |
+| Cursor | ✓ | ✓ | | 拖拽图片到 Chat |
+| SWE-agent | | | | 不支持 |
+| Cline | ✓ | ✓ | | 拖拽图片 |
+| Goose | ✓ | | | 取决于模型 |
+| OpenCode | | | | 不支持 |
+| Continue | ✓ | | | 多模态模型支持 |
+| Warp | | | | 不支持 |
+| Gemini CLI | ✓ | ✓ | | Gemini 原生多模态 |
+| OpenHands | ✓ | ✓ | | 浏览器截图 |
+| Qwen Code | ✓ | | | 通义千问多模态 |
+| Kimi CLI | | | | 暂不支持 |
+
+### 平台支持
+
+| 工具 | macOS | Linux | Windows | 说明 |
+|------|-------|-------|---------|------|
+| Claude Code | ✓ | ✓ | WSL | 原生 macOS/Linux |
+| Aider | ✓ | ✓ | ✓ | Python 跨平台 |
+| Copilot CLI | ✓ | ✓ | ✓ | 全平台原生 |
+| Cursor | ✓ | ✓ | ✓ | Electron 跨平台 |
+| SWE-agent | ✓ | ✓ | Docker | 需要 Docker |
+| Cline | ✓ | ✓ | ✓ | VS Code 扩展 |
+| Goose | ✓ | ✓ | WSL | Rust 原生 |
+| OpenCode | ✓ | ✓ | ✓ | 多客户端跨平台 |
+| Continue | ✓ | ✓ | ✓ | VS Code/JetBrains |
+| Warp | ✓ | ✓ | 预览版 | 终端应用 |
+| Gemini CLI | ✓ | ✓ | ✓ | Node.js 跨平台 |
+| OpenHands | ✓ | ✓ | Docker | Docker 部署 |
+| Qwen Code | ✓ | ✓ | ✓ | Node.js 跨平台 |
+| Kimi CLI | ✓ | ✓ | WSL | Python 原生 |
+
+### 断点恢复能力
+
+| 工具 | 会话恢复 | 检查点 | 撤销/回退 | 说明 |
+|------|----------|--------|-----------|------|
+| Claude Code | ✓ | ✓ | ✓ | 会话恢复 + worktree |
+| Aider | | | ✓ | Git undo (/undo) |
+| Copilot CLI | | | | 基础会话 |
+| Cursor | | | ✓ | IDE 撤销 |
+| SWE-agent | | ✓ | | Docker 快照 |
+| Cline | ✓ | ✓ | ✓ | Git Checkpoint |
+| Goose | ✓ | | | 会话保存 |
+| OpenCode | ✓ | ✓ | ✓ | Git snapshot + worktree |
+| Continue | | | | VS Code 撤销 |
+| Warp | | | | 无 |
+| Gemini CLI | ✓ | ✓ | ✓ | 会话恢复 + rewind |
+| OpenHands | ✓ | ✓ | | Docker 检查点 |
+| Qwen Code | ✓ | ✓ | ✓ | 会话恢复（继承 Gemini CLI） |
+| Kimi CLI | ✓ | | | 会话保存 |
+
+### 成本参考（单次典型任务）
+
+> 以下为估算值，实际成本取决于任务复杂度和 token 用量
+
+| 工具 | 定价模式 | 简单任务 | 复杂任务 | 说明 |
+|------|----------|----------|----------|------|
+| Claude Code | API 按量 / 订阅 | ~$0.05-0.20 | ~$1-5 | Max 订阅 $100/月 或 API |
+| Aider | API 按量 | ~$0.02-0.10 | ~$0.50-3 | 取决于所选模型 |
+| Copilot CLI | 订阅制 | 1 premium request | 1 premium request | Copilot 订阅含配额 |
+| Cursor | 订阅制 | 1 fast request | 多个 request | Pro $20/月 500 次 |
+| Goose | API 按量 | ~$0.02-0.10 | ~$0.50-3 | 多提供商 |
+| Gemini CLI | API 按量/免费 | 免费 | ~$0.10-1 | 有免费层级 |
+| OpenHands | API 按量 | ~$0.05-0.20 | ~$2-10 | 多代理消耗更高 |
+| Qwen Code | 免费/API | 免费 | 免费 | 每日 1000 次 |
+| Kimi CLI | API 按量 | ~$0.01-0.05 | ~$0.20-1 | 国内模型成本低 |
+
 ## 使用场景推荐
 
 ### 最适合复杂重构
@@ -115,7 +188,7 @@
 3. **Aider** - Git 纪律
 
 ### 最适合快速编辑
-1. **Copilot CLI** - 快速命令补全
+1. **Copilot CLI** - 终端原生代理
 2. **Gemini CLI** - 轻量级
 3. **Aider** - 专注编辑
 
@@ -151,7 +224,7 @@
 | Claude Code | ~60% | 中等 | 高 | 最佳推理 |
 | Cursor | N/A | 快 | 中等 | IDE 集成 |
 | Aider | ~45% | 快 | 低 | 良好平衡 |
-| Copilot CLI | N/A | 快 | 低 | 快速任务 |
+| Copilot CLI | N/A | 快 | 中等 | 终端代理 |
 | SWE-agent | 74% | 慢 | 高 | 基准之王 |
 | Cline | ~40% | 中等 | 中等 | IDE 原生 |
 | OpenHands | ~55% | 慢 | 很高 | 完全自主 |

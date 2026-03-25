@@ -5,6 +5,7 @@
 **仓库：** [github.com/Aider-AI/aider](https://github.com/Aider-AI/aider)
 **文档：** [aider.chat/docs](https://aider.chat/docs/)
 **Stars：** 约 40k+
+**最后更新：** 2026-03
 
 ## 概述
 

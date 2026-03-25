@@ -35,16 +35,19 @@
 | [Kimi CLI](./docs/tools/kimi-code.md) | 月之暗面 | Apache-2.0 | 7k+ | **Python** | 6 | 双模式 Agent↔Shell，Wire 协议，子代理系统 |
 | [Claude Code](./docs/tools/claude-code.md) | Anthropic | 专有 | - | Rust | 1 (Claude) | 13 官方插件，Prompt Hook，100 万上下文 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | - | TypeScript | 多种 | AI 原生 IDE，Background Agent |
-| [Copilot CLI](./docs/tools/github-copilot-cli.md) | GitHub | 专有 | - | TypeScript | GPT-4 | gh copilot 命令解释/生成 |
+| [Copilot CLI](./docs/tools/github-copilot-cli.md) | GitHub | 专有 | 9k+ | Shell | 多种 | 终端原生代理，GitHub 深度集成，MCP 扩展 |
 
 ## 文档导航
 
 ### 工具详情（源码级）
-- **[工具索引](./docs/tools/)** — 15 个工具的详细分析，含架构图和代码引用
+- **[工具索引](./docs/tools/)** — 16 个工具的详细分析，含架构图和代码引用
 
 ### 对比文档
-- **[功能对比矩阵](./docs/comparison/features.md)** — 14 工具 × 8 维度横向对比
+- **[功能对比矩阵](./docs/comparison/features.md)** — 14 工具横向对比（模型、架构、Git、安全、多模态、平台、成本等）
 - **[架构深度对比](./docs/comparison/architecture-deep-dive.md)** — 11 个项目的代理循环、工具系统、安全模型等
+- **[Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md)** — 终端代理 vs AI IDE，两大商业头部对比
+- **[Claude Code vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md)** — 终端代理双雄对比
+- **[Aider vs Goose](./docs/comparison/aider-vs-goose.md)** — 开源代理双雄对比
 - **[Qwen Code vs Claude Code](./docs/comparison/qwen-vs-claude-code.md)** — 开源 vs 闭源头部代理全面对比
 - **[Claude Code 为什么更快？Qwen Code 改进建议](./docs/comparison/claude-code-speed-qwen-improvements.md)** — 性能差距根因 + 改进路线图
 - **[Qwen Code 功能补全：对标 Claude Code](./docs/comparison/qwen-code-feature-gaps.md)** — 功能缺口与优先级
@@ -54,10 +57,16 @@
 - **[Qwen vs Gemini vs Kimi](./docs/comparison/qwen-vs-gemini-vs-kimi.md)** — 三者谱系与分叉差异
 - **[OpenCode vs Qwen Code](./docs/comparison/opencode-vs-qwen-source.md)** — 15 维度源码对比
 
+### 使用指南
+- **[入门指南](./docs/guides/getting-started.md)** — 决策树和安装教程
+- **[实操工作流教程](./docs/guides/workflows.md)** — 5 个真实场景的完整操作流程
+- **[工具迁移指南](./docs/guides/migration.md)** — 配置映射与迁移路径
+- **[故障排查指南](./docs/guides/troubleshooting.md)** — 常见问题与解决方案
+
 ### 参考文档
 - **[架构原理](./docs/architecture/overview.md)** — 代理循环、MCP、上下文管理
-- **[基准测试](./docs/benchmarks/overview.md)** — SWE-bench 等性能数据
-- **[入门指南](./docs/guides/getting-started.md)** — 决策树和安装教程
+- **[基准测试](./docs/benchmarks/overview.md)** — SWE-bench、Aider Benchmark、Terminal-Bench 等
+- **[外部资源](./docs/resources.md)** — 视频教程、博客、论文、社区
 
 ## 架构流派（源码分析发现）
 

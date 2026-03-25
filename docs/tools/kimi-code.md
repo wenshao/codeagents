@@ -5,6 +5,7 @@
 **仓库：** [github.com/MoonshotAI/kimi-cli](https://github.com/MoonshotAI/kimi-cli)（PyPI: `kimi-cli`）
 **文档：** [moonshotai.github.io/kimi-cli](https://moonshotai.github.io/kimi-cli/en/)（英/中双语）
 **Stars：** 7k+
+**最后更新：** 2026-03
 
 ## 概述
 

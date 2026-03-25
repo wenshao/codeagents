@@ -4,6 +4,7 @@
 **许可证：** MIT
 **仓库：** [github.com/SWE-agent/mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent)
 **父项目**：[SWE-agent](https://github.com/princeton-nlp/SWE-agent)
+**最后更新：** 2026-03
 
 ## 概述
 

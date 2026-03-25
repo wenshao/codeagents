@@ -5,6 +5,7 @@
 **仓库：** [github.com/continuedev/continue](https://github.com/continuedev/continue)
 **文档：** [docs.continue.dev](https://docs.continue.dev/)
 **Stars：** 约 27k+
+**最后更新：** 2026-03
 
 ## 概述
 

@@ -5,6 +5,7 @@
 **仓库：** [github.com/princeton-nlp/SWE-agent](https://github.com/princeton-nlp/SWE-agent)
 **论文：** [SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering](https://arxiv.org/abs/2405.15793)
 **Stars：** 约 19k+
+**最后更新：** 2026-03
 
 ## 概述
 
