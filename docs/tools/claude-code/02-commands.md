@@ -31,40 +31,114 @@ Claude Code 的斜杠命令按实现方式分为四种类型：
 
 ---
 
-### /review
+### /review（`/code-review` 插件）
 
-- **类型：** prompt
-- **功能：** 审查当前分支的代码变更，生成结构化的 Code Review 反馈
-- **别名：** 无
+- **类型：** prompt（内置 Skill） + code-review 插件（多代理编排）
+- **功能：** 自动化代码审查，多代理并行审计 + 置信度评分过滤假阳性
+- **作者：** Boris Cherny (boris@anthropic.com)，Anthropic 官方插件
+- **源码：** [`plugins/code-review/`](https://github.com/anthropics/claude-code/tree/main/plugins/code-review)
 
 **使用示例：**
+```bash
+# 本地审查（输出到终端）
+/code-review
+
+# 审查并发布 PR 内联评论
+/code-review --comment
 ```
-/review
-/review 请重点关注安全性问题
-/review --diff main...feature-branch
+
+**允许的工具**（源码 Frontmatter 限制）：
+```
+Bash(gh issue view:*), Bash(gh search:*), Bash(gh issue list:*),
+Bash(gh pr comment:*), Bash(gh pr diff:*), Bash(gh pr view:*),
+Bash(gh pr list:*), mcp__github_inline_comment__create_inline_comment
 ```
 
-**工作原理：**
-1. 命令收集当前分支相对于 base 分支的 diff 信息和 PR 上下文
-2. 将 diff + 项目结构 + 用户指令打包成 Prompt 发送给 LLM
-3. LLM 分析代码变更，必要时调用 Read、Grep 等工具查看完整文件上下文
-4. 生成结构化的审查结果：问题列表、严重程度、改进建议
+**9 步流水线（源码：`commands/code-review.md`）：**
 
-**关联：code-review 插件**
+| 步骤 | 代理 | 模型 | 任务 |
+|------|------|------|------|
+| 1 | 前置检查 | Haiku | 检查是否应跳过：已关闭/草稿/trivial/已审查。Claude 生成的 PR 仍然审查 |
+| 2 | 收集规范 | Haiku | 搜集仓库中所有相关 CLAUDE.md 文件（根目录 + PR 涉及文件的目录） |
+| 3 | 变更摘要 | Sonnet | 生成 PR 变更的结构化摘要 |
+| 4a | CLAUDE.md 合规 #1 | Sonnet | 审计代码是否违反 CLAUDE.md 规范（仅检查文件路径匹配的 CLAUDE.md） |
+| 4b | CLAUDE.md 合规 #2 | Sonnet | 冗余审计（双重检查降低遗漏率） |
+| 4c | Bug 扫描 | **Opus** | 只关注 diff 本身，不读额外上下文。只标记重大缺陷 |
+| 4d | 安全/逻辑分析 | **Opus** | 分析新增代码中的安全隐患和逻辑错误 |
+| 5 | 并行验证 | Opus/Sonnet | 每个标记的问题由独立验证代理确认（Opus 验证 Bug，Sonnet 验证合规） |
+| 6 | 过滤 | — | 移除未通过验证的问题 |
+| 7 | 输出 | — | 终端输出审查报告；若无 `--comment` 则到此结束 |
+| 8 | 评论准备 | — | 内部列出所有计划发布的评论（自检，不公开） |
+| 9 | 发布评论 | — | 通过 MCP GitHub 工具发布内联 PR 评论 |
 
-内置的 code-review 插件提供更强大的审查能力：
-- 启动 4 个并行 Agent，每个 Agent 负责审查不同方面
-- 采用 9 步流水线：文件分组 -> 上下文收集 -> 并行审查 -> 结果合并 -> 置信度过滤
-- 80/100 置信度阈值：低于该阈值的审查意见会被过滤掉，减少误报
-- 最终输出合并后的审查报告
+**审查维度（源码明确定义）：**
+
+| 维度 | 检查内容 | 代理 |
+|------|----------|------|
+| **编译/解析错误** | 语法错误、类型错误、缺失导入、未解析引用 | Agent 3 (Opus) |
+| **逻辑错误** | 无论输入如何都会产生错误结果的明确逻辑问题 | Agent 3 (Opus) |
+| **安全问题** | 新增代码中的安全隐患 | Agent 4 (Opus) |
+| **CLAUDE.md 合规** | 代码是否违反项目规范（必须引用被违反的具体规则） | Agent 1-2 (Sonnet) |
+
+**显式排除的假阳性（源码明确列出不得标记）：**
+- 已有代码中的问题（非 PR 引入）
+- 看起来像 Bug 但实际正确的代码
+- 资深工程师不会标记的吹毛求疵
+- Linter 会捕获的问题（不要运行 linter 验证）
+- 一般代码质量问题（除非 CLAUDE.md 明确要求）
+- 代码中用 lint ignore 注释显式屏蔽的问题
+
+**置信度评分体系：**
+
+| 分数 | 含义 |
+|------|------|
+| 0 | 不确信，假阳性 |
+| 25 | 有些确信，可能是真的 |
+| 50 | 中度确信，真实但次要 |
+| 75 | 高度确信，真实且重要 |
+| 100 | 绝对确定，一定是真的 |
+
+**阈值：80 分**——只有 ≥80 分的问题才会通过过滤。
+
+**PR 评论格式（源码定义）：**
+```markdown
+## Code review
+
+Found 3 issues:
+
+1. Missing error handling for OAuth callback (CLAUDE.md says "Always handle OAuth errors")
+   https://github.com/owner/repo/blob/abc123.../src/auth.ts#L67-L72
+
+2. Memory leak: OAuth state not cleaned up
+   https://github.com/owner/repo/blob/abc123.../src/auth.ts#L88-L95
+```
+
+链接要求：必须使用完整 SHA（不能缩写）、`#L` 标记、至少 1 行上下文。
+
+**实际效果**（来源：[TechCrunch 报道](https://techcrunch.com/2026/03/09/anthropic-launches-code-review-tool-to-check-flood-of-ai-generated-code/)）：
+- 收到实质性审查评论的 PR 从 16% 提升到 54%
+- 假阳性率 <1%
+
+---
+
+**关联插件：pr-review-toolkit（6 个专项审查代理）**
+
+| 代理 | 专注领域 |
+|------|---------|
+| comment-analyzer | 注释准确性、文档完整性、注释腐化 |
+| test-coverage | 测试覆盖率、边界条件、测试质量 |
+| error-handling | 错误处理完整性、异常流程 |
+| type-design | 类型设计、接口契约 |
+| code-quality | 代码质量、复杂度、可维护性 |
+| simplify | 代码简化、冗余消除 |
 
 ---
 
 ### /commit
 
-- **类型：** prompt
+- **类型：** prompt（commit-commands 插件）
 - **功能：** 分析 Git 暂存区变更，自动生成 commit message 并执行 `git commit`
-- **别名：** 无（另有同名 Skill 提供额外能力）
+- **源码：** [`plugins/commit-commands/`](https://github.com/anthropics/claude-code/tree/main/plugins/commit-commands)
 
 **使用示例：**
 ```
