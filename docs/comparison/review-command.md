@@ -164,7 +164,7 @@ codex review [--uncommitted] [--base BRANCH] [--commit SHA] [--title TITLE] [PRO
 
 | 维度 | Claude Code | Copilot CLI | Qwen Code |
 |------|------------|-------------|-----------|
-| **编译/解析错误** | "code will fail to compile or parse (syntax errors, type errors, missing imports, unresolved references)" | — | — |
+| **编译/解析错误** | "code will fail to compile or parse (syntax errors, type errors, missing imports, unresolved references)" | 通过实际 `bash` 编译验证（非声明维度，但实际执行） | — |
 | **逻辑错误** | "code will definitely produce wrong results regardless of inputs (clear logic errors)" | "Bugs and logic errors" | "Logic errors and edge cases" |
 | **安全漏洞** | "security issues, incorrect logic" (Agent 4) | "Security vulnerabilities" | "Security vulnerabilities (injection, XSS, SSRF, path traversal, etc.)" |
 | **竞态条件** | — | "Race conditions or concurrency issues" | "Race conditions and concurrency issues" |
@@ -353,7 +353,7 @@ Approve | Request changes | Comment
 | **最少 API 调用** | 7+N（N=问题数） | 1 | 5（1 调度 + 4 代理） | 1 |
 | **使用的模型** | Haiku+Sonnet+Opus（3 级） | claude-sonnet-4.5（1 级） | 继承主模型（1 级） | GPT-5 系列（1 级） |
 | **估算 token** | 高（多代理冗余） | 中 | 中高（4 代理） | 低（单次） |
-| **估算延迟** | 30-120 秒 | 10-30 秒 | 20-60 秒 | 5-15 秒 |
+| **估算延迟** | 30-120 秒 | 10-60 秒（含编译/测试时间） | 20-60 秒 | 5-15 秒 |
 | **并行度** | 高（Step 4: 4 并行 + Step 5: N 并行） | 低（串行） | 中（Step 2: 4 并行） | 低（单次） |
 
 ---
