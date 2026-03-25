@@ -14,7 +14,7 @@
 | 会话管理 | ✅ | ✅ + `chatRecordingService`（JSONL 持久化） | 对等 |
 | Ink + React TUI | ✅ | ✅ | 对等 |
 | 审批模式（4 种） | ✅ DEFAULT/AUTO_EDIT/YOLO/PLAN | ✅ 同 4 种 | 对等 |
-| Memory 工具 | ✅ 全局 + 扩展 + 项目 + 子目录 | ✅ 全局 + 项目级 | 对等（Qwen 继承 Gemini 多层记忆） |
+| Memory 工具 | ✅ 全局 + 扩展 + 项目 + 子目录 | ✅ 继承同一多层体系 | 对等 |
 | 多提供商 | ❌ 仅 Gemini | ✅ 6+ 提供商 | **Qwen 独有** |
 | 免费 OAuth | ❌ | ✅ 1000 次/天 | **Qwen 独有** |
 | 6 语言 UI | ❌ | ✅ | **Qwen 独有** |
@@ -282,4 +282,4 @@ interface ToolResult {
 
 ---
 
-*分析基于 Gemini CLI 和 Qwen Code 本地源码，截至 2026 年 3 月。*
+*分析基于 Gemini CLI 开源代码、Qwen Code 开源代码及官方文档，截至 2026 年 3 月。*
