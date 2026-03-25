@@ -323,7 +323,7 @@ export ANTHROPIC_API_KEY="sk-xxx"
 
 ---
 
-## 与其他工具对比
+## 与其他 Agent 对比
 
 | 维度 | Qwen Code | Claude Code | Copilot CLI |
 |------|-----------|-------------|-------------|
