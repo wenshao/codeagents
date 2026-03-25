@@ -57,9 +57,37 @@ Fail-safe: "blocking for safety"
 
 ### 输出风格指令
 
-两种内置风格：
+两种内置风格（通过插件激活）：
 - **Explanatory**："提供关于代码库模式的教育性洞察"
 - **Learning**："暂停并让用户自己写代码进行动手练习"
+
+### 变量名映射（二进制反混淆）
+
+```
+L8 = Read       y8 = Edit       Z9 = Write
+CD = Bash       jK = Glob       F_ = Grep
+Hf = Agent      CP = WebFetch   sE = WebSearch
+Qj = NotebookEdit  xw = Skill  Tz = ToolSearch
+f4 = AskUserQuestion
+ZT = TaskCreate  Mh = TaskUpdate
+d38 = 安全监控系统提示
+wSA = 权限模板
+```
+
+### `# Executing actions with care` 核心逻辑
+
+```
+评估每个操作的：
+  1. 可逆性（Reversibility）— 能否回退？
+  2. 影响范围（Blast Radius）— 影响多大？
+  3. 可见性（Visibility）— 其他人能看到吗？
+
+规则：
+  - 本地、可逆操作 → 自由执行
+  - 不可逆、影响他人 → 先确认再执行
+  - 示例：git push（影响远程）→ 每次都确认
+  - 用户一次批准不代表永久授权
+```
 
 ---
 

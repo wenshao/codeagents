@@ -50,13 +50,39 @@ AI 编辑 → auto_commit(aider_edits=True)
 /git log --oneline -5     # 执行任意 Git 命令
 ```
 
-### /undo 安全检查
+### /undo 安全检查（源码：`commands.py` raw_cmd_undo，103 行）
 
-`raw_cmd_undo()` 实现 4 层安全检查：
-1. 仅撤销 `aider_commit_hashes` 集合中的提交
-2. 拒绝撤销已推送的提交
-3. 拒绝撤销 merge 提交
-4. 检查工作目录是否 dirty
+```python
+def raw_cmd_undo():
+    last_commit = repo.head.commit
+
+    # 检查 1: 仅撤销 aider 创建的提交
+    if last_commit.hexsha not in aider_commit_hashes:
+        error("Can only undo aider-created commits")
+        return
+
+    # 检查 2: 拒绝撤销已推送的提交
+    if is_pushed(last_commit):
+        error("Cannot undo commits already pushed to remote")
+        return
+
+    # 检查 3: 拒绝撤销 merge 提交
+    if is_merge_commit(last_commit):
+        error("Cannot undo merge commits")
+        return
+
+    # 检查 4: 拒绝 dirty 工作目录
+    if repo.is_dirty():
+        error("Cannot undo with uncommitted changes")
+        return
+
+    # 执行撤销：逐文件恢复 + soft reset
+    for file in affected_files:
+        repo.git.checkout("HEAD~1", "--", file)
+    repo.git.reset("--soft", "HEAD~1")
+```
+
+**设计理念**：4 层安全检查确保 /undo 永远不会破坏用户的工作——不碰非 aider 提交、不碰远程历史、不碰复杂合并、不丢未保存修改。
 
 ---
 
@@ -109,17 +135,35 @@ claude --tmux                  # tmux 分屏 + worktree
 | **仅回退对话** | ✗ | ✓ | 代码正确但对话被污染 |
 | **仅回退代码** | ✓ | ✗ | 对话有价值但代码改坏了 |
 
-### 影响分析 UI
+### RewindViewer 交互式 UI 流程
 
-回退前自动展示：
-- 哪些文件会被修改（变更行数统计）
-- 哪些新文件会被删除
-- 对话历史回退到哪个节点
+```
+1. 用户输入 /rewind（或按 Esc Esc）
+2. RewindViewer 组件显示检查点列表：
+   ┌─ Checkpoint #3 (2 minutes ago)
+   │  Modified: src/index.ts (+15, -3)
+   │  Created: src/utils.ts (+42)
+   │  Deleted: src/old.ts (-28)
+   └─
+3. 上下箭头选择目标检查点
+4. 确认对话框：三种选项
+5. 执行选中的回退策略
+6. 显示回退结果摘要
+```
+
+### 影响分析（`rewindFileOps.ts:calculateTurnStats()`）
+
+基于 diff 计算的文件变更统计：
+- 添加行数 / 删除行数 / 修改文件数
+- **限制**：仅回退 AI 工具造成的修改，不回退手动编辑或 Shell 工具（`!`）执行的变更
 
 ### 检查点存储
 
-- Git 快照：`~/.gemini/history/<project_hash>`
-- 对话历史 + 工具调用：`~/.gemini/tmp/<project_hash>/checkpoints`
+| 组件 | 位置 | 格式 |
+|------|------|------|
+| 文件快照 | `~/.gemini/history/<project_hash>` | Git 影子仓库（不影响用户 Git） |
+| 对话索引 | `~/.gemini/tmp/<project_hash>/checkpoints` | 消息位置标记 |
+| 工具参数 | 检查点元数据 | 参数快照 |
 
 ---
 

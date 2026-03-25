@@ -22,16 +22,55 @@
 
 > 源码：`base_coder.py:101`、`commands.py`
 
-### 完整反射循环
+### 完整反射循环（源码：`base_coder.py`）
 
 ```
-AI 编辑
-  → apply_edits()
-  → auto_commit()
-  → auto_lint()  ──→ 失败？→ 错误信息发给 LLM → 自动修复 → 重新 lint
-  → auto_test()  ──→ 失败？→ 错误信息发给 LLM → 自动修复 → 重新 test
-  → 反射循环（最多 3 次）
-  → 3 次仍失败？→ 停止，输出失败信息
+用户输入
+  → format_messages()        # 系统提示 + 示例 + 仓库映射 + 文件 + 历史
+  → send() → litellm.completion()  # 流式 LLM 调用
+  → parse response
+  → apply_updates()
+  → apply_edits()            # 干运行检查 → 实际修改文件
+  → auto_commit()            # Git 提交 + Co-authored-by 归因
+  → auto_lint()  ──→ 失败？
+  │   ├── clone() 当前 coder 实例  # 创建独立修复器
+  │   ├── 错误信息发给 LLM
+  │   ├── LLM 生成修复 → apply_edits() → auto_commit()
+  │   └── 重新 lint（最多 3 次）
+  → auto_test()  ──→ 失败？
+  │   ├── add_on_nonzero_exit=True  # 非零退出码自动加入对话
+  │   ├── 测试输出作为 LLM 上下文
+  │   └── LLM 分析错误 → 修复 → 重新测试
+  → reflected_message 检查  # 是否需要反射？
+  → 3 次仍失败？→ 停止
+```
+
+### /lint 命令实现（源码：`commands.py`，54 行）
+
+```python
+# 伪代码（源码分析提取）
+def cmd_lint(args):
+    # 1. 确定目标文件
+    files = args if args else get_dirty_files()  # 指定文件或所有 dirty 文件
+
+    # 2. 执行 lint 检查
+    result = run_lint_cmd(files)
+
+    # 3. 发现问题 → 克隆 coder 实例自动修复
+    if result.has_errors:
+        fix_coder = self.clone()  # 独立修复环境
+        fix_coder.run(lint_errors)  # LLM 生成修复
+        auto_commit()  # 提交修复
+```
+
+### /test 命令实现（源码：`commands.py`，19 行）
+
+```python
+def cmd_test(args):
+    test_cmd = args or self.test_cmd  # 用户指定或配置默认
+    # add_on_nonzero_exit=True: 失败输出自动加入对话上下文
+    return cmd_run(test_cmd, add_on_nonzero_exit=True)
+    # → 非零退出 → 测试输出进入 LLM → LLM 分析修复 → 闭环
 ```
 
 ### 配置

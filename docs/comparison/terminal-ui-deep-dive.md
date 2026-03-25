@@ -86,9 +86,9 @@ Rust 原生 CLI / Metal(macOS) + Vulkan(Linux/Win) GPU 渲染
 
 **多客户端**：终端 CLI + Claude Desktop（Mac/Win）+ 移动应用 + Chrome 扩展 + Web（claude.ai/code）。
 
-### Gemini CLI：Ink 6 + 模式切换
+### Gemini CLI：Ink 6 + 模式切换 + 11 Hook 事件
 
-> 源码：03-architecture.md
+> 源码：03-architecture.md、05-policies.md
 
 **交互命令**：
 
@@ -96,9 +96,26 @@ Rust 原生 CLI / Metal(macOS) + Vulkan(Linux/Win) GPU 渲染
 |------|------|
 | `/shortcuts` | 显示所有键盘快捷键 |
 | `/theme` | 打开主题选择器 |
-| `/footer`（别名 `statusline`） | 配置状态栏显示内容 |
+| `/footer`（别名 `statusline`） | 配置状态栏（`FooterConfigDialog` 组件） |
 | `/vim` | 切换 Vim 模式 |
 | Shift+Tab | 循环切换审批模式（DEFAULT → AUTO_EDIT → PLAN → YOLO） |
+| Esc Esc | 触发 `/rewind`（RewindViewer 组件） |
+
+**Hook 系统对 UI 的影响**：
+
+11 个 Hook 事件中，`BeforeModel`/`AfterModel` 可拦截 LLM 调用前后的 UI 渲染；`BeforeToolSelection` 可在工具选择 UI 前注入自定义逻辑。
+
+```jsonc
+// settings.json Hook 配置
+{
+  "hooks": {
+    "BeforeTool": [{
+      "matcher": "shell",
+      "hook": { "type": "command", "command": "node validate.js", "timeout": 5000 }
+    }]
+  }
+}
+```
 
 ### Aider：prompt_toolkit + Rich（1000+ 行 UI）
 

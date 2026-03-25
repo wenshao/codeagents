@@ -41,16 +41,50 @@
 | **Windows** | `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\MachineGuid` |
 | **FreeBSD** | `/etc/hostid` 或 `kenv -q smbios.system.uuid` |
 
-### 782 事件类型
+### 782 事件类型 + 功能标志
 
-`tengu_` 前缀事件覆盖：
-- `tengu_agent_*`：代理生命周期
-- `tengu_api_*`：API 调用（含 `tengu_api_opus_fallback_triggered`）
-- `tengu_auto_mode_*`：自动模式
-- `tengu_session_*`：会话管理
-- `tengu_tool_*`：工具使用
-- `tengu_dynamic_skills_changed`：技能变更
-- 功能标志：`tengu_defer_all_bn4`、`tengu_turtle_carbon` 等
+`tengu_` 前缀事件覆盖所有代理行为：
+
+| 事件类别 | 示例 | 说明 |
+|---------|------|------|
+| `tengu_agent_*` | agent_start, agent_stop | 代理生命周期 |
+| `tengu_api_*` | api_call, api_error, **api_opus_fallback_triggered** | API 调用与 fallback |
+| `tengu_auto_mode_*` | auto_mode_start | 自动模式 |
+| `tengu_session_*` | session_start, session_end | 会话管理 |
+| `tengu_tool_*` | tool_use, tool_result | 工具使用追踪 |
+| `tengu_dynamic_skills_changed` | — | 技能激活/停用 |
+| `tengu_compact_*` | compact_start, compact_end | 压缩操作 |
+
+**功能标志（Feature Flags，从二进制提取）**：
+
+```
+tengu_defer_all_bn4        — 延迟工具加载（ToolSearch）
+tengu_defer_caveat_m9k     — 延迟工具提示消息
+tengu_turtle_carbon        — Ultrathink 模式（扩展思维）
+tengu_marble_anvil         — Thinking Edits（思考中编辑建议）
+tengu_hawthorn_steeple     — 内容去重
+tengu_hawthorn_window      — 去重窗口大小配置
+```
+
+### 发送的数据字段
+
+```json
+{
+  "accountUuid": "...",           // Anthropic 账号 ID
+  "organizationUuid": "...",      // 组织 ID
+  "userType": "external",         // 用户类型
+  "subscriptionType": "pro",      // 订阅层级
+  "rateLimitTier": "tier_1",      // 速率限制层级
+  "platform": "darwin-arm64",     // 平台信息（oOH() 函数）
+  "firstTokenTime": 1234,         // 首 token 延迟（ms）
+  // CI 环境额外字段：
+  "githubActionsMetadata": {
+    "GITHUB_ACTOR": "...",
+    "GITHUB_REPOSITORY": "org/repo",
+    "GITHUB_REPOSITORY_OWNER": "org"
+  }
+}
+```
 
 ### 禁用方式
 
