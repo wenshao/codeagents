@@ -117,6 +117,95 @@ try {
 - **禁止**：不尝试修复错误、不分析问题、不提建议、不重试
 - **超时**：测试/构建 200-300 秒，lint 60 秒
 
+## CLI 参数完整列表（57 个，`copilot --help` 提取）
+
+> 证据：`copilot --help` 完整输出已记录在 [EVIDENCE.md](./EVIDENCE.md)
+
+### 权限与安全
+
+| 参数 | 说明 |
+|------|------|
+| `--allow-all` / `--yolo` | 允许所有权限（工具+路径+URL） |
+| `--allow-all-tools` | 允许所有工具自动执行 |
+| `--allow-all-paths` | 禁用文件路径验证 |
+| `--allow-all-urls` | 允许访问所有 URL |
+| `--allow-tool <tool>` | 允许特定工具 |
+| `--allow-url <url>` | 允许特定 URL |
+| `--deny-tool <tool>` | 禁止特定工具 |
+| `--deny-url <url>` | 禁止特定 URL |
+| `--available-tools <tools>` | 指定可用工具列表 |
+| `--excluded-tools <tools>` | 排除特定工具 |
+| `--secret-env-vars <vars>` | 标记为敏感的环境变量 |
+
+### 模型与推理
+
+| 参数 | 说明 |
+|------|------|
+| `--model <model>` | 指定模型 |
+| `--effort` / `--reasoning-effort <level>` | 推理努力级别（low/medium/high/xhigh） |
+| `--autopilot` | 启用 Autopilot 持续执行模式 |
+| `--max-autopilot-continues <n>` | 最大 Autopilot 持续次数 |
+
+### MCP 与扩展
+
+| 参数 | 说明 |
+|------|------|
+| `--additional-mcp-config <json>` | 额外 MCP 服务器配置（JSON 或 @文件） |
+| `--add-github-mcp-tool <tool>` | 添加 GitHub MCP 工具 |
+| `--add-github-mcp-toolset <set>` | 添加 GitHub MCP 工具集（`all` 为全部） |
+| `--enable-all-github-mcp-tools` | 启用所有 GitHub MCP 工具 |
+| `--disable-builtin-mcps` | 禁用内置 MCP |
+| `--disable-mcp-server <name>` | 禁用特定 MCP 服务器 |
+| `--plugin-dir <path>` | 插件目录 |
+
+### 会话与输出
+
+| 参数 | 说明 |
+|------|------|
+| `--continue` | 继续上次对话 |
+| `--resume <id>` | 恢复指定会话 |
+| `-p` / `--prompt <text>` | 非交互式提示 |
+| `--output-format <fmt>` | 输出格式 |
+| `--stream` | 流式输出 |
+| `--share` / `--share-gist` | 分享会话 |
+| `--silent` | 静默模式 |
+
+### 目录与文件
+
+| 参数 | 说明 |
+|------|------|
+| `--add-dir <dir>` | 添加工作目录 |
+| `--disallow-temp-dir` | 禁止临时目录访问 |
+| `--no-custom-instructions` | 禁用自定义指令文件 |
+| `--config-dir <dir>` | 配置目录 |
+| `--log-dir <dir>` | 日志目录 |
+| `--log-level <level>` | 日志级别 |
+
+### 终端与 UI
+
+| 参数 | 说明 |
+|------|------|
+| `--agent <agent>` | 指定代理 |
+| `--banner` | 显示启动横幅 |
+| `--alt-screen` / `--no-alt-screen` | 备用屏幕模式 |
+| `--mouse` / `--no-mouse` | 鼠标支持 |
+| `--no-color` | 禁用颜色 |
+| `--plain-diff` | 纯文本 diff |
+| `--screen-reader` | 屏幕阅读器模式 |
+| `--bash-env` / `--no-bash-env` | Bash 环境继承 |
+| `--no-ask-user` | 禁用 ask_user 工具 |
+| `--no-auto-update` | 禁用自动更新 |
+| `--interactive` | 强制交互模式 |
+
+### 协议与服务
+
+| 参数 | 说明 |
+|------|------|
+| `--acp` | 作为 Agent Client Protocol 服务器启动 |
+| `--experimental` / `--no-experimental` | 实验性功能 |
+| `--version` | 显示版本 |
+| `--help` | 显示帮助 |
+
 ## API 层
 
 - `api.github.com` — 标准 GitHub API

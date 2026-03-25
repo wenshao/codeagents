@@ -432,3 +432,65 @@ prompt: |
 
   Remember: Your job is to execute commands efficiently and minimize context pollution from verbose successful output while providing complete failure information for debugging.
 ```
+
+########## COMPLETE CLI FLAGS (copilot --help, 2026-03-25T08:07:04Z) ##########
+Total flags: 57
+```
+  --effort, --reasoning-effort <level>  Set the reasoning effort level (choices:
+  --acp                                 Start as Agent Client Protocol server
+  --add-dir <directory>                 Add a directory to the allowed list for
+  --add-github-mcp-tool <tool>          Add a tool to enable for the GitHub MCP
+  --add-github-mcp-toolset <toolset>    Add a toolset to enable for the GitHub
+  --additional-mcp-config <json>        Additional MCP servers configuration as
+  --agent <agent>                       Specify a custom agent to use
+  --allow-all                           Enable all permissions (equivalent to
+                                        --allow-all-tools --allow-all-paths
+                                        --allow-all-urls)
+  --allow-all-paths                     Disable file path verification and allow
+  --allow-all-tools                     Allow all tools to run automatically
+  --allow-all-urls                      Allow access to all URLs without
+  --allow-tool[=tools...]               Tools the CLI has permission to use;
+  --allow-url[=urls...]                 Allow access to specific URLs or domains
+  --alt-screen[=value]                  Use the terminal alternate screen buffer
+  --autopilot                           Enable autopilot continuation in prompt
+  --available-tools[=tools...]          Only these tools will be available to
+  --banner                              Show the startup banner
+  --bash-env[=value]                    Enable BASH_ENV support for bash shells
+  --config-dir <directory>              Set the configuration directory
+  --continue                            Resume the most recent session
+  --deny-tool[=tools...]                Tools the CLI does not have permission
+  --deny-url[=urls...]                  Deny access to specific URLs or domains,
+  --disable-builtin-mcps                Disable all built-in MCP servers
+  --disable-mcp-server <server-name>    Disable a specific MCP server (can be
+  --disallow-temp-dir                   Prevent automatic access to the system
+  --enable-all-github-mcp-tools         Enable all GitHub MCP server tools
+                                        --add-github-mcp-tool options.
+  --excluded-tools[=tools...]           These tools will not be available to the
+  --experimental                        Enable experimental features
+  --log-dir <directory>                 Set log file directory (default:
+  --log-level <level>                   Set the log level (choices: "none",
+  --max-autopilot-continues <count>     Maximum number of continuation messages
+  --model <model>                       Set the AI model to use
+  --mouse[=value]                       Enable mouse support in alt screen mode
+  --no-alt-screen                       Disable the terminal alternate screen
+  --no-ask-user                         Disable the ask_user tool (agent works
+  --no-auto-update                      Disable downloading CLI update
+  --no-bash-env                         Disable BASH_ENV support for bash shells
+  --no-color                            Disable all color output
+  --no-custom-instructions              Disable loading of custom instructions
+  --no-experimental                     Disable experimental features
+  --no-mouse                            Disable mouse support in alt screen mode
+  --output-format <format>              Output format: 'text' (default) or
+  --plain-diff                          Disable rich diff rendering (syntax
+  --plugin-dir <directory>              Load a plugin from a local directory
+  --resume[=sessionId]                  Resume from a previous session
+  --screen-reader                       Enable screen reader optimizations
+  --secret-env-vars[=vars...]           Environment variable names whose values
+                                        --secret-env-vars=MY_KEY,OTHER_KEY)
+  --share[=path]                        Share session to markdown file after
+  --share-gist                          Share session to a secret GitHub gist
+  --stream <mode>                       Enable or disable streaming mode
+  --yolo                                Enable all permissions (equivalent to
+                                        --allow-all-tools --allow-all-paths
+                                        --allow-all-urls)
+```
