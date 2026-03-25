@@ -9,25 +9,25 @@
 
 ## 概述
 
-GitHub Copilot CLI 是 GitHub 推出的终端原生 AI 编程代理。基于与 GitHub Copilot coding agent 相同的代理框架，提供代码构建、调试、重构等智能辅助能力，并深度集成 GitHub 工作流。以独立二进制形式运行（`copilot` 命令），支持 macOS、Linux 和 Windows。内置 11 个核心工具、19 个浏览器工具、35 个 GitHub 平台工具、3 个内置代理和 14 个模型。
+GitHub Copilot CLI 是 GitHub 推出的终端原生 AI 编程代理。基于与 GitHub Copilot coding agent 相同的代理框架，提供代码构建、调试、重构等智能辅助能力，并深度集成 GitHub 工作流。以独立二进制形式运行（`copilot` 命令），支持 macOS、Linux 和 Windows。内置 12 个核心工具、21 个浏览器工具、48 个 GitHub 平台工具、3 个内置代理和 14 个模型。
 
 ## 核心功能
 
 ### 代理式编程
 
-- 11 个核心工具（bash、文件操作、搜索等）
+- 12 个核心工具（bash、文件操作、搜索等）
 - 3 个内置代理（code-review、explore、task）
 - 代码搜索子代理
 
 ### GitHub 集成
 
-- 35 个 GitHub 平台工具
+- 48 个 GitHub 平台工具
 - Actions、PR、Issues、代码扫描、密钥扫描原生联动
 - SSO、审计日志、合规、安全扫描集成
 
 ### 扩展能力
 
-- 19 个浏览器工具（基于 Playwright）
+- 21 个浏览器工具（基于 Playwright）
 - MCP 服务器支持
 - LSP 语言服务器集成
 - 自定义代理（`.agent.md` / `.agent.yaml`）
@@ -85,7 +85,7 @@ copilot
 
 ## 优势
 
-1. **完整代理能力**：11 个核心工具 + 19 个浏览器工具 + 35 个 GitHub 工具
+1. **完整代理能力**：12 个核心工具 + 21 个浏览器工具 + 48 个 GitHub 工具
 2. **GitHub 生态深度集成**：Actions、PR、Issues、代码扫描、密钥扫描原生联动
 3. **多模型选择**：14 个模型，涵盖 Claude、GPT、Gemini 系列
 4. **内置代理系统**：code-review、explore、task 三个专用代理

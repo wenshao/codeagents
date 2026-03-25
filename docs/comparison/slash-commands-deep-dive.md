@@ -823,9 +823,9 @@ Admin 目录强制严格所有权检查，防止权限提升。
 | **Aider** | Git 原生，编辑优先 | 最多命令（42），细粒度控制每个操作 |
 | **Claude Code** | 对话式代理 | ~60 命令（含 Skill），对话 + 插件驱动 |
 | **Gemini CLI** | 全面可配置 | 中等命令量（41），策略引擎驱动 |
-| **Kimi CLI** | 双模式交互 | 精简命令（20），Shell 模式补充 |
+| **Kimi CLI** | 双模式交互 | 28 命令（8 Soul + 20 Shell），双注册表 |
 | **Qwen Code** | 继承 Gemini + 中文优化 | 继承命令体系（23），保持兼容 |
-| **Copilot CLI** | GitHub 原生 | 32 命令 + 65 工具 + 3 内置代理 |
+| **Copilot CLI** | GitHub 原生 | 38 命令 + 81 工具 + 3 内置代理 |
 | **Codex CLI** | 安全第一 | 20+ 交互命令 + 15 CLI 子命令 + Rust 沙箱 |
 | **Goose** | MCP 原生 | CLI 子命令，MCP 驱动一切 |
 | **Cursor** | IDE 原生 | GUI 交互，CLI 是辅助 |

@@ -42,10 +42,10 @@
 ### 工具详情（源码级）
 - **[工具索引](./docs/tools/)** — 16 个工具的详细分析，含架构图和代码引用
 - **[Claude Code 专题](./docs/tools/claude-code/)** — 7 篇深度文档（概述/60+ 命令/架构/工具/Skill+13 插件/设置/会话）
-- **[Copilot CLI 专题](./docs/tools/copilot-cli/)** — 3 篇深度文档（概述/32 命令 + 65 工具/架构）
-- **[Codex CLI 专题](./docs/tools/codex-cli/)** — 3 篇深度文档（概述/20+ 命令/Rust 架构）
-- **[Gemini CLI 专题](./docs/tools/gemini-cli/)** — 5 篇深度文档（概述/41 命令/架构/23 工具/策略引擎）
-- **[Kimi CLI 专题](./docs/tools/kimi-cli/)** — 3 篇深度文档（概述/22 命令/Wire 协议+18 工具）
+- **[Copilot CLI 专题](./docs/tools/copilot-cli/)** — 3 篇深度文档（概述/38 命令 + 81 工具 + 3 代理/架构）
+- **[Codex CLI 专题](./docs/tools/codex-cli/)** — 3 篇深度文档（概述/26+ 交互命令 + 15 CLI/Rust 架构）
+- **[Gemini CLI 专题](./docs/tools/gemini-cli/)** — 5 篇深度文档（概述/39 命令/架构/23 工具/策略引擎）
+- **[Kimi CLI 专题](./docs/tools/kimi-cli/)** — 3 篇深度文档（概述/28 命令/Wire 协议+18 工具）
 - **[Aider 专题](./docs/tools/aider/)** — 3 篇深度文档（概述/42 命令/PageRank RepoMap）
 - **[OpenCode 专题](./docs/tools/opencode/)** — 3 篇深度文档（概述/18 工具+7 代理/多客户端架构）
 
