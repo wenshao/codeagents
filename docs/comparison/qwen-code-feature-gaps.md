@@ -39,6 +39,92 @@
 
 ---
 
+## 内置命令对比（Claude Code ~79 vs Qwen Code 40）
+
+### Claude Code 有而 Qwen Code 没有的命令
+
+| Claude Code 命令 | 类型 | 功能 | Qwen Code 对应 |
+|-----------------|------|------|----------------|
+| `/commit` | prompt | 分析暂存区，自动生成 commit message 并提交 | ❌ 无 |
+| `/commit-push-pr` | prompt | 提交+推送+创建 PR 一站式 | ❌ 无 |
+| `/init-verifiers` | prompt | 创建代码验证器 Skill | ❌ 无 |
+| `/insights` | prompt | 会话洞察/年度回顾 | `/insight`（代码分析，非会话洞察） |
+| `/rewind` | local-jsx | 回退到之前的检查点 | `/restore`（功能类似） |
+| `/tag` | local-jsx | 为会话打标签 | ❌ 无 |
+| `/rename` | local-jsx | 重命名当前会话 | ❌ 无 |
+| `/session` | local-jsx | 远程会话 URL + 二维码 | ❌ 无 |
+| `/effort` | local-jsx | 调整推理 effort | ❌ 无 |
+| `/fast` | local-jsx | 切换快速模式 | ❌ 无 |
+| `/brief` | local-jsx | 切换简洁模式 | ❌ 无 |
+| `/diff` | local-jsx | 查看文件变更 diff | ❌ 无 |
+| `/tasks` | local-jsx | 管理后台任务 | ❌ 无 |
+| `/plugin` | local-jsx | 管理插件（marketplace） | `/extensions`（类似） |
+| `/agents` | local-jsx | 管理多代理 | ✅ 有（继承） |
+| `/remote-control` | local-jsx | 远程控制桥接 | ❌ 无 |
+| `/remote-env` | local-jsx | 远程环境设置 | ❌ 无 |
+| `/desktop` | local-jsx | 在 Claude Desktop 继续 | ❌ 无（无桌面应用） |
+| `/mobile` | local-jsx | 移动应用二维码 | ❌ 无 |
+| `/install-github-app` | local-jsx | 安装 GitHub App | `/setup-github`（类似） |
+| `/install-slack-app` | local-jsx | 安装 Slack 应用 | ❌ 无 |
+| `/reload-plugins` | local-jsx | 重新加载插件 | ❌ 无 |
+| `/chrome` | local-jsx | Chrome 集成 | ❌ 无 |
+| `/web-setup` | local-jsx | Web 集成设置 | ❌ 无 |
+| `/install` | local-jsx | 安装原生构建 | ❌ 无 |
+| `/upgrade` | local-jsx | 升级到 Max 计划 | ❌ 无（不同商业模式） |
+| `/passes` | local-jsx | 免费体验周分享 | ❌ 无 |
+| `/think-back` | local-jsx | 2025 年度回顾 | ❌ 无 |
+| `/branch` | local-jsx | 创建对话分支 | ❌ 无 |
+| `/cost` | local | 显示 token 消耗和费用 | ❌ 无（`/context` 仅显示 token） |
+| `/doctor` | local | 诊断安装健康状况 | ❌ 无 |
+| `/voice` | local | 语音输入模式 | ❌ 无 |
+| `/keybindings` | local | 快捷键配置 | ❌ 无 |
+| `/release-notes` | local | 版本发布说明 | ❌ 无 |
+| `/files` | local | 列出上下文中的文件 | ❌ 无 |
+| `/loop` | skill | 循环执行命令 | ❌ 无 |
+| `/schedule` | skill | 定时调度任务（CCR 云端） | ❌ 无 |
+| `/security-review` | skill | 安全漏洞分析 | ❌ 无 |
+| `/pr-comments` | skill | 处理 PR 评论 | ❌ 无 |
+| `/simplify` | skill | 简化代码 | ❌ 无 |
+| `/claude-api` | skill | Claude API 辅助 | ❌ 无 |
+| `/update-config` | skill | 对话式更新配置 | ❌ 无 |
+| `/keybindings-help` | skill | 快捷键帮助 | ❌ 无 |
+| `/statusline` | skill | 配置状态栏 UI | ❌ 无 |
+| `/suggestions` | skill | 分析使用数据建议改进 | ❌ 无 |
+
+### Qwen Code 有而 Claude Code 没有的命令
+
+| Qwen Code 命令 | 功能 | Claude Code 对应 |
+|---------------|------|------------------|
+| `/arena` | 多模型并行 worktree 竞争 | ❌ 无（Teammates 是协作非竞争） |
+| `/language` | 切换 UI 语言（7 种） | ❌ 无（仅英文 UI） |
+| `/insight` | 代码分析生成报告 | `/insights`（会话洞察，非代码分析） |
+| `/extensions` | 扩展管理（兼容 Claude+Gemini 扩展） | `/plugin`（类似） |
+| `/auth` | 认证管理（OAuth/API Key） | `/login` + `/logout`（分开的命令） |
+| `/about` | 版本信息 | ❌ 无（通过 `--version` 或 `/help`） |
+| `/bug` | 报告 Bug | `/feedback`（类似） |
+| `/docs` | 打开文档 | ❌ 无 |
+| `/approval-mode` | 切换审批模式 | `/plan`（仅计划模式切换） |
+| `/tools` | 查看可用工具列表 | ❌ 无（无直接等价命令） |
+| `/settings` | 查看/修改设置 | `/config`（类似） |
+| `/trust` | 管理信任设置 | `/permissions`（类似） |
+| `/summary` | 生成对话摘要 | ❌ 无（`/compact` 压缩但不导出摘要） |
+| `/directory` | 目录管理 | `/add-dir`（类似） |
+
+### 命令差距总结
+
+| 维度 | Claude Code | Qwen Code |
+|------|------------|-----------|
+| 总命令数 | **~79** | **40** |
+| Prompt 类型 | 6 | 0（无等价分类） |
+| Skill 类型 | **10** | 1（`/review`） |
+| Claude 独有（无对应） | — | **~35 个命令** |
+| Qwen 独有（无对应） | **~8 个命令** | — |
+| 功能等价但命名不同 | ~6 对 | ~6 对 |
+
+> **核心差距：** Claude Code 的 10 个 Skill 命令（`/loop`、`/schedule`、`/security-review`、`/simplify` 等）是 Qwen Code 完全缺失的类别。此外 Claude Code 的 6 个 prompt 命令（`/commit`、`/review`、`/init` 等）提供了 Git 工作流集成，Qwen Code 仅有 `/review` Skill。
+
+---
+
 ## 一、高优先级（用户体验核心差距）
 
 ### 1. `--bare` 模式（脚本/CI 场景）
