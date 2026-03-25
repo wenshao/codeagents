@@ -540,11 +540,11 @@ sort -u .claudeignore -o .claudeignore
 
 ## 参考资源
 
-- [Claude Code 完整文档](../tools/claude-code.md)
+- [Claude Code 完整文档](../tools/claude-code/)
 - [Cursor CLI 文档](../tools/cursor-cli.md)
-- [Aider 文档](../tools/aider.md)
-- [Gemini CLI 文档](../tools/gemini-cli.md)
+- [Aider 文档](../tools/aider/)
+- [Gemini CLI 文档](../tools/gemini-cli/)
 - [Qwen Code 文档](../tools/qwen-code.md)
-- [Codex CLI 文档](../tools/codex-cli.md)
-- [GitHub Copilot CLI 文档](../tools/github-copilot-cli.md)
+- [Codex CLI 文档](../tools/codex-cli/)
+- [GitHub Copilot CLI 文档](../tools/copilot-cli/)
 - [功能对比表](../comparison/features.md)

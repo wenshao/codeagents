@@ -23,21 +23,21 @@
 
 | 工具 | 开发者 | 许可证 | Stars | 语言 | LLM 提供商 | 特色 |
 |------|--------|--------|-------|------|-----------|------|
-| [Gemini CLI](./docs/tools/gemini-cli.md) | Google | Apache-2.0 | 98k+ | TypeScript | 1 (Gemini) | Google 官方，Qwen Code 上游 |
+| [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | 98k+ | TypeScript | 1 (Gemini) | Google 官方，Qwen Code 上游 |
 | [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | 69k+ | Python | 100+ | 浏览器操作，Docker 沙箱，多代理委托 |
-| [Codex CLI](./docs/tools/codex-cli.md) | OpenAI | Apache-2.0 | 66k+ | TypeScript | 1 (OpenAI) | OpenAI 官方，默认网络隔离沙箱 |
+| [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | 66k+ | TypeScript | 1 (OpenAI) | OpenAI 官方，默认网络隔离沙箱 |
 | [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | 59k+ | TypeScript | 48+ | VS Code 原生，Git Checkpoint 回滚 |
-| [Aider](./docs/tools/aider.md) | Paul Gauthier | GPL-3.0 | 42k+ | Python | 100+ | 14 种编辑格式，Git 原生自动提交 |
+| [Aider](./docs/tools/aider/) | Paul Gauthier | GPL-3.0 | 42k+ | Python | 100+ | 14 种编辑格式，Git 原生自动提交 |
 | [Goose](./docs/tools/goose.md) | Block | Apache-2.0 | 33k+ | **Rust** | 58+ | MCP 原生，Recipe 任务模板 |
 | [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | 31k+ | TypeScript | 60+ | PR Checks CI 审查，语义索引 |
 | [Warp](./docs/tools/warp.md) | Warp | 专有 | 26k+ | Rust | 多种 | 终端替代品，GPU 渲染 |
 | [Qwen Code](./docs/tools/qwen-code.md) | 阿里云 | Apache-2.0 | 20k+ | TypeScript | 5 | 免费 OAuth 1000 次/天，6 语言 UI |
 | [SWE-agent](./docs/tools/swe-agent.md) | Princeton NLP | MIT | 18k+ | Python | 100+ | SWE-bench 74%（增强版），Docker 沙箱 |
-| [OpenCode](./docs/tools/opencode.md) | Anomaly | MIT | 130k+ | **TypeScript** | 100+ | 多客户端（TUI+Web+桌面），37 LSP，26 Formatter，ACP IDE 集成 |
-| [Kimi CLI](./docs/tools/kimi-code.md) | 月之暗面 | Apache-2.0 | 7k+ | **Python** | 6 | 双模式 Agent↔Shell，Wire 协议，子代理系统 |
-| [Claude Code](./docs/tools/claude-code.md) | Anthropic | 专有 | - | Rust | 1 (Claude) | 13 官方插件，Prompt Hook，100 万上下文 |
+| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | 130k+ | **TypeScript** | 100+ | 多客户端（TUI+Web+桌面），37 LSP，26 Formatter，ACP IDE 集成 |
+| [Kimi CLI](./docs/tools/kimi-cli/) | 月之暗面 | Apache-2.0 | 7k+ | **Python** | 6 | 双模式 Agent↔Shell，Wire 协议，子代理系统 |
+| [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | - | Rust | 1 (Claude) | 13 官方插件，Prompt Hook，100 万上下文 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | - | TypeScript | 多种 | AI 原生 IDE，Background Agent |
-| [Copilot CLI](./docs/tools/github-copilot-cli.md) | GitHub | 专有 | 9k+ | Shell | 多种 | 终端原生代理，GitHub 深度集成，MCP 扩展 |
+| [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | 9k+ | Shell | 多种 | 终端原生代理，GitHub 深度集成，MCP 扩展 |
 
 ## 文档导航
 
@@ -52,30 +52,34 @@
 - **[OpenCode 专题](./docs/tools/opencode/)** — 3 篇深度文档（概述/18 工具+7 代理/多客户端架构）
 
 ### 对比文档
-- **[功能对比矩阵](./docs/comparison/features.md)** — 14 工具横向对比（模型、架构、Git、安全、多模态、平台、成本等）
-- **[内置命令能力深度对比](./docs/comparison/slash-commands-deep-dive.md)** — 10 大关键命令的源码级实现对比
-- **[隐私与遥测对比](./docs/comparison/privacy-telemetry.md)** — 遥测端点、数据采集、安全监控、Machine ID 全工具对比
-- **[功能性内部机制对比](./docs/comparison/functional-internals.md)** — API 参数、代理循环、编辑格式、上下文管理、Prompt Caching
-- **[版本迭代与社区数据](./docs/comparison/evolution-community.md)** — Stars/贡献者/发布节奏/开发活跃度/未来方向
-- **[定价与成本对比](./docs/comparison/pricing.md)** — 定价模式、典型任务费用估算、成本优化建议
-- **[系统要求对比](./docs/comparison/system-requirements.md)** — Node.js/Python 版本、OS 支持、二进制大小、沙箱依赖
-- **[配置示例对比](./docs/guides/config-examples.md)** — CLAUDE.md/CODEX.md/GEMINI.md/AGENTS.md 并排写法
-- **[/review 命令全工具对比](./docs/comparison/review-command.md)** — 代码审查能力深度对比（9 步流水线 vs 4 代理并行 vs 8 维度）
-- **[/compact /plan /init 深度对比](./docs/comparison/key-commands-deep-dive.md)** — 压缩算法4阶段、TOML策略引擎、隔离执行、漫威英雄命名
-- **[/loop 与定时执行深度分析](./docs/comparison/loop-schedule.md)** — 本地循环 vs 远程调度 vs Cloud 执行 vs Autopilot
-- **[/simplify 命令深度分析](./docs/comparison/simplify-command.md)** — 三代理并行（复用7项+质量7项+效率7项）自动修复
-- **[架构深度对比](./docs/comparison/architecture-deep-dive.md)** — 11 个项目的代理循环、工具系统、安全模型等
-- **[Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md)** — 终端代理 vs AI IDE，两大商业头部对比
-- **[Claude Code vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md)** — 终端代理双雄对比
-- **[Aider vs Goose](./docs/comparison/aider-vs-goose.md)** — 开源代理双雄对比
-- **[Qwen Code vs Claude Code](./docs/comparison/qwen-vs-claude-code.md)** — 开源 vs 闭源头部代理全面对比
-- **[Claude Code 为什么更快？Qwen Code 改进建议](./docs/comparison/claude-code-speed-qwen-improvements.md)** — 性能差距根因 + 改进路线图
-- **[Qwen Code 功能补全：对标 Claude Code](./docs/comparison/qwen-code-feature-gaps.md)** — 功能缺口与优先级
-- **[Qwen Code 功能补全：对标 OpenCode](./docs/comparison/qwen-code-vs-opencode-feature-gaps.md)** — 功能缺口与优先级
-- **[Qwen Code 功能补全：对标上游 Gemini CLI](./docs/comparison/qwen-code-vs-gemini-feature-gaps.md)** — 分叉后未移植的功能
-- **[Qwen Code vs Kimi CLI 双向缺口](./docs/comparison/qwen-code-vs-kimi-feature-gaps.md)** — 两个国内工具的功能互补
-- **[Qwen vs Gemini vs Kimi](./docs/comparison/qwen-vs-gemini-vs-kimi.md)** — 三者谱系与分叉差异
-- **[OpenCode vs Qwen Code](./docs/comparison/opencode-vs-qwen-source.md)** — 15 维度源码对比
+
+**全局对比（选型必读）：**
+- [功能对比矩阵](./docs/comparison/features.md) — 14 工具 × 多维度横向对比
+- [隐私与遥测对比](./docs/comparison/privacy-telemetry.md) — 遥测端点、数据采集、安全监控
+- [定价与成本](./docs/comparison/pricing.md) | [系统要求](./docs/comparison/system-requirements.md) | [版本迭代](./docs/comparison/evolution-community.md)
+
+**架构与内部机制：**
+- [架构深度对比](./docs/comparison/architecture-deep-dive.md) — 代理循环、Mermaid 架构图
+- [功能性内部机制](./docs/comparison/functional-internals.md) — API 参数、编辑格式、上下文管理
+
+**命令深度对比（源码级）：**
+- [/review](./docs/comparison/review-command.md) — 9 步流水线 vs 4 代理并行 vs 8 维度
+- [/compact /plan /init](./docs/comparison/key-commands-deep-dive.md) — 压缩算法、策略引擎、隔离执行
+- [/loop /schedule](./docs/comparison/loop-schedule.md) — 本地循环 vs 远程调度 vs Cloud
+- [/simplify](./docs/comparison/simplify-command.md) — 三代理 21 检查项自动修复
+- [/hooks /sandbox /model /permissions /mcp](./docs/comparison/infra-commands.md) — 基础设施命令
+- [/btw /rewind](./docs/comparison/btw-rewind.md) — 旁问与回退
+- [内置命令总览](./docs/comparison/slash-commands-deep-dive.md) — 全命令对比表
+
+**工具间 1v1 对比：**
+- [Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md) | [vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md) | [Aider vs Goose](./docs/comparison/aider-vs-goose.md)
+- [Qwen vs Claude Code](./docs/comparison/qwen-vs-claude-code.md) | [vs Gemini vs Kimi](./docs/comparison/qwen-vs-gemini-vs-kimi.md) | [OpenCode vs Qwen](./docs/comparison/opencode-vs-qwen-source.md)
+
+<details><summary>Qwen Code 功能补全系列（5 篇）</summary>
+
+- [对标 Claude Code](./docs/comparison/qwen-code-feature-gaps.md) | [对标 OpenCode](./docs/comparison/qwen-code-vs-opencode-feature-gaps.md) | [对标 Gemini CLI](./docs/comparison/qwen-code-vs-gemini-feature-gaps.md)
+- [vs Kimi CLI 双向缺口](./docs/comparison/qwen-code-vs-kimi-feature-gaps.md) | [性能差距+改进路线图](./docs/comparison/claude-code-speed-qwen-improvements.md)
+</details>
 
 ### 使用指南
 - **[入门指南](./docs/guides/getting-started.md)** — 决策树和安装教程

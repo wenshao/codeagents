@@ -15,4 +15,3 @@
 
 ---
 
-*拆分自 [codex-cli.md](../codex-cli.md)，保留完整内容。*

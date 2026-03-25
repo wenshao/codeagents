@@ -15,4 +15,3 @@
 
 - [GitHub 仓库](https://github.com/github/copilot-cli)
 - [官方文档](https://docs.github.com/copilot/concepts/agents/about-copilot-cli)
-- [原始单文件文档](../github-copilot-cli.md)

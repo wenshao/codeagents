@@ -10,6 +10,5 @@
 | [04-工具与代理](./04-tools.md) | 23 个内置工具表、5 个内置代理、MCP 集成、扩展系统、A2A 协议 |
 | [05-策略与安全](./05-policies.md) | 策略引擎（TOML/5 层优先级/4 审批模式/9 内置策略）、Hook 系统（11 事件）、会话管理、记忆系统、Skills 系统、安全 |
 
-**源文件：** [gemini-cli.md](../gemini-cli.md)
 **仓库：** [github.com/google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)
 **文档站：** [geminicli.com](https://geminicli.com)
