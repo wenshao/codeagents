@@ -1,12 +1,14 @@
 # Code Agent CLI 工具对比
 
-> 基于源码分析的 AI 编程助手命令行工具全面对比
+> 基于源码分析和二进制反编译的 AI 编程 CLI 工具全面对比 | 88 文件 | 28,800+ 行 | 9 个 EVIDENCE.md 证据文件
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+**👉 [一页总结（选型速查）](./docs/SUMMARY.md)** — 给没时间看全部文档的人
+
 ## 概述
 
-本仓库提供了 15 款 AI 编程 CLI 工具的全面对比。**核心内容基于 11 个开源项目的本地源码深度分析**，而非仅依赖官方文档，确保技术细节的准确性。
+本仓库提供了 16 款 AI 编程 CLI 工具的全面对比。**核心内容基于源码分析（开源工具）和二进制反编译（闭源工具）**，并附带 EVIDENCE.md 证据文件支撑每项声明。
 
 ### 源码分析纠正的重要事实
 
