@@ -680,7 +680,7 @@ kimi mcp test <name>
 | 工具 | 方式 | 粒度 | 层级 | 特殊能力 |
 |------|------|------|------|----------|
 | **Gemini CLI** | TOML 策略引擎 | 工具+参数+注解 | 5 层优先级 | 正则匹配、语义安全检查 |
-| **Claude Code** | JSON 规则 + Prompt Hook | 工具+参数模式 | 7 层设置 | **LLM 驱动决策** |
+| **Claude Code** | JSON 规则 + Prompt Hook | 工具+参数模式 | 5 层设置 | **LLM 驱动决策** |
 | **Qwen Code** | 继承 Gemini | 工具级 | 3 层 | Shell 命令语义解析 |
 | **Codex CLI** | 沙箱 + 审批模式 | 操作类型级 | 1 层 | **强制网络隔离沙箱** |
 | **Kimi CLI** | YOLO 切换 | 全局级 | 2 层 | — |
@@ -826,8 +826,8 @@ Admin 目录强制严格所有权检查，防止权限提升。
 | **Kimi CLI** | 双模式交互 | 28 命令（8 Soul + 20 Shell），双注册表 |
 | **Qwen Code** | 继承 Gemini + 中文优化 | 继承命令体系（23），保持兼容 |
 | **Copilot CLI** | GitHub 原生 | 38 命令 + 81 工具 + 3 内置代理 |
-| **Codex CLI** | 安全第一 | 20+ 交互命令 + 15 CLI 子命令 + Rust 沙箱 |
+| **Codex CLI** | 安全第一 | 28 交互命令（官方文档验证）+ 15 CLI 子命令 + Rust 沙箱 |
 | **Goose** | MCP 原生 | CLI 子命令，MCP 驱动一切 |
 | **Cursor** | IDE 原生 | GUI 交互，CLI 是辅助 |
 
-> **核心洞察：** 命令数量不等于能力强弱。Claude Code 用 ~60 个命令（含 Skill）+ 自然语言覆盖了最广泛的场景；Aider 用 42 个命令提供最细粒度的文件/Git 控制；Codex CLI 用 20+ 交互命令 + Rust 原生沙箱实现了最高安全性。选择取决于你偏好的交互范式。
+> **核心洞察：** 命令数量不等于能力强弱。Claude Code 用 ~60 个命令（含 Skill）+ 自然语言覆盖了最广泛的场景；Aider 用 42 个命令提供最细粒度的文件/Git 控制；Codex CLI 用 28 交互命令 + Rust 原生沙箱实现了最高安全性。选择取决于你偏好的交互范式。

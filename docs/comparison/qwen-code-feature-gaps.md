@@ -152,7 +152,7 @@ Claude Code 用 `! command` 单行前缀，Qwen Code 用 `!` 模式切换——*
 ### 6. 企业管控（Managed Settings）
 
 **Claude Code 实现**：
-- 7 层设置优先级（企业→组织→用户→项目→本地→CLI→默认）
+- 5 层设置优先级（企业→组织→用户→项目→本地→CLI→默认）
 - `managed-settings.json` 远程下发
 - `allowManagedHooksOnly` / `allowManagedPermissionRulesOnly`
 - `strictKnownMarketplaces` 限制插件来源

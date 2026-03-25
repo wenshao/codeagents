@@ -199,7 +199,7 @@ Shell 分析：
 
 | 维度 | Claude Code | Qwen Code |
 |------|------------|-----------|
-| **层级数** | 7 层（企业→默认） | 2 层（持久 + 会话） |
+| **层级数** | 5 层（Managed→用户） | 2 层（持久 + 会话） |
 | **沙箱** | ✓（文件/网络/进程） | ✓（Docker/Podman） |
 | **企业管控** | ✓（managed-settings） | ✗ |
 | **权限绕过** | ✓（可禁用） | ✓（yolo_mode） |
@@ -459,7 +459,7 @@ interface SubagentConfig {
 ├── commands/              # 自定义命令
 └── 插件数据
 
-7 层优先级：企业 → 组织 → 用户 → 项目 → 本地 → CLI 标志
+5 层优先级：企业 → 组织 → 用户 → 项目 → 本地 → CLI 标志
 ```
 
 ### Qwen Code
@@ -490,7 +490,7 @@ interface SubagentConfig {
 | 特性 | 说明 |
 |------|------|
 | **Prompt Hook** | LLM 推理驱动的 Hook 决策 |
-| **7 层设置优先级** | 企业→组织→用户→项目→本地→CLI |
+| **5 层设置优先级** | 企业→组织→用户→项目→本地→CLI |
 | **Bash 沙箱** | 文件系统+网络+进程隔离（4 种模式） |
 | **13 个官方插件** | code-review、feature-dev、security 等 |
 | **自然语言代理触发** | `<example>` 标签教 LLM 何时触发 |
@@ -527,7 +527,7 @@ interface SubagentConfig {
 | 场景 | 推荐 | 原因 |
 |------|------|------|
 | **复杂推理** | Claude Code | Claude 模型推理能力最强 |
-| **企业部署** | Claude Code | 7 层设置 + 企业管控 + 沙箱 |
+| **企业部署** | Claude Code | 5 层设置 + 企业管控 + 沙箱 |
 | **免费使用** | Qwen Code | OAuth 1000 次/天 |
 | **多模型切换** | Qwen Code | 5 提供商灵活切换 |
 | **中文开发** | Qwen Code | 6 语言 UI + Qwen 模型中文能力 |
@@ -541,7 +541,7 @@ interface SubagentConfig {
 
 ## 12. 总结
 
-**Claude Code** 是闭源但功能最完善的商业代理——Rust 原生性能、Prompt Hook 的 LLM 驱动决策、7 层企业管控、13 个官方插件构成了最成熟的生态。但模型锁定和付费门槛是限制。
+**Claude Code** 是闭源但功能最完善的商业代理——Rust 原生性能、Prompt Hook 的 LLM 驱动决策、5 层企业管控、13 个官方插件构成了最成熟的生态。但模型锁定和付费门槛是限制。
 
 **Qwen Code** 是功能最丰富的开源代理——5 提供商灵活接入、Arena 多代理框架、6 语言国际化、免费 OAuth 额度构成了最有吸引力的开源方案。但作为 Gemini CLI 分叉，部分代码仍带上游痕迹。
 

@@ -32,7 +32,7 @@ copilot
 
 支持 PAT 认证：创建带 "Copilot Requests" 权限的 fine-grained PAT，通过 `GH_TOKEN` 或 `GITHUB_TOKEN` 环境变量传入。
 
-## 斜杠命令（33 个）
+## 斜杠命令（34 个，二进制验证）
 
 | 命令 | 别名 | 用途 |
 |------|------|------|

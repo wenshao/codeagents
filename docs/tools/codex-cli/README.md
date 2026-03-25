@@ -5,7 +5,7 @@
 | 文档 | 内容 |
 |------|------|
 | [01-概述](./01-overview.md) | 核心功能、安装、模型、定价 |
-| [02-命令与工具](./02-commands.md) | CLI 子命令 + 20+ 交互命令 + 工具 |
+| [02-命令与工具](./02-commands.md) | CLI 子命令 + 28 交互命令 + 工具 |
 | [03-技术架构](./03-architecture.md) | Rust 二进制、沙箱、App-Server 协议 |
 
 **仓库：** [github.com/openai/codex](https://github.com/openai/codex)
