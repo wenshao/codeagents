@@ -51,7 +51,7 @@ Tech stack: Next.js 14, TypeScript, Tailwind CSS, PostgreSQL, Prisma
 - Never commit .env.local
 ```
 
-### Gemini CLI / Qwen Code — `GEMINI.md`
+### Gemini CLI — `GEMINI.md` / Qwen Code — `QWEN.md`
 
 ```markdown
 # Project: my-webapp

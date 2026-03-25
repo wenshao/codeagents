@@ -96,7 +96,7 @@ Claude Code 的 `/btw` 实现采用本地 JSX 渲染：
 |------|---------|--------|---------|------|
 | **Claude Code** | ✓ | `/rewind`（别名 `/checkpoint`） | 代码 + 对话 | Esc 键也可触发 |
 | **Gemini CLI** | ✓ | `/rewind` | 代码 / 对话 / 两者皆可 | RewindViewer 组件，3 种选项 |
-| **Qwen Code** | ✓ | `/rewind` | 继承 Gemini | 与 Gemini 实现一致 |
+| **Qwen Code** | `/restore` | **无 /rewind** | 有 `/restore` 恢复检查点 | 未继承 Gemini 的 /rewind 命令 |
 | **Aider** | 部分 | `/undo` | 仅代码（Git 提交） | 只回退 Aider 自己的提交 |
 | **Kimi CLI** | ✗ | — | — | 有实验性 D-Mail 时间旅行（okabe agent） |
 | **Goose** | ✗ | — | — | 无类似功能 |
@@ -289,7 +289,7 @@ Aider 的 `/undo` 是一个典型的**简单但有效**的设计：
 | 想快速查个东西 | **独立的临时问答** | 不适用 |
 | 代码改坏了 | 不适用 | **恢复文件系统快照** |
 
-理想的工具应该同时提供两者：用 `/btw` 预防上下文污染，用 `/rewind` 在出错时回退。目前只有 Claude Code、Gemini CLI 和 Qwen Code 同时支持这两个命令。
+理想的工具应该同时提供两者：用 `/btw` 预防上下文污染，用 `/rewind` 在出错时回退。目前只有 Claude Code 和 Gemini CLI 同时支持 /btw 和 /rewind。Qwen Code 有 /btw 和 /restore 但无 /rewind。
 
 ---
 

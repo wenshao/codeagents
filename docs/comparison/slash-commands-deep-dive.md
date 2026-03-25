@@ -333,7 +333,7 @@ async def yolo(soul: KimiSoul, args: str):
 | **Claude Code** | 对话式 | Esc 键 | 对话式 | 对话式 | ✗（需指令） | Checkpoint |
 | **Gemini CLI** | — | — | — | — | ✗ | `/rewind` |
 | **Kimi CLI** | — | — | — | — | ✗ | D-Mail（实验） |
-| **Qwen Code** | — | — | — | — | ✗ | `/rewind` |
+| **Qwen Code** | — | — | — | — | ✗ | `/restore`（无 /rewind） |
 | **Codex CLI** | — | — | — | — | ✗ | — |
 | **Copilot CLI** | 对话式 | — | — | — | ✗ | — |
 
@@ -515,7 +515,7 @@ async def yolo(soul: KimiSoul, args: str):
 | **Gemini CLI** | `/resume` | ✓ | `/rewind` | — | **✓** |
 | **Kimi CLI** | `/sessions` | ✓ | — | `/export` | ✗ |
 | **Claude Code** | `--resume` | ✓ | Esc | — | ✗ |
-| **Qwen Code** | `/resume` | ✓ | `/rewind` | — | ✓ |
+| **Qwen Code** | `/resume` | ✓ | `/restore`（无 /rewind） | — | ✓ |
 | **Aider** | `/load` | ✗ | — | `/save` | ✗ |
 
 ### Gemini CLI 的 `/rewind` 影响分析（最强）
