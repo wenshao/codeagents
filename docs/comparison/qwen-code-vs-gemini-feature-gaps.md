@@ -19,7 +19,7 @@
 | 免费 OAuth | ❌ | ✅ 1000 次/天 | **Qwen 独有** |
 | 6 语言 UI | ❌ | ✅ | **Qwen 独有** |
 | Arena 多代理 | ❌ | ✅ | **Qwen 独有** |
-| 子代理管理 | ❌ | ✅ | **Qwen 独有** |
+| 子代理管理 | ✅ 5 内置子代理 + /agents 命令（v0.12.0+） | ✅ SubagentManager + Arena 竞争模式 | 对等（Qwen 额外有 Arena） |
 | 扩展格式转换 | ❌ | ✅ Claude/Gemini | **Qwen 独有** |
 | **模型路由器** | ✅ 8 种路由策略类（7 种用户策略） | ❌ | **需补全** |
 | **外挂安全检查器** | ✅ CheckerRunner | ❌ | **需补全** |
@@ -31,6 +31,57 @@
 | **Code Assist 服务器** | ✅ 企业级 | ❌ | **需补全** |
 | **CONSECA 策略系统** | ✅ | ❌ | **需补全** |
 | 请求队列批量调度 | ✅ 高级 | ✅ 基础 | Qwen 较简单 |
+
+---
+
+## 内置命令对比（Gemini CLI 39 vs Qwen Code 40）
+
+> Qwen Code 继承了 Gemini CLI 大部分命令，同时新增了独有命令。以下对比关注差异。
+
+### Gemini CLI 有而 Qwen Code 没有的命令
+
+| Gemini CLI 命令 | 功能 | Qwen Code 对应 |
+|----------------|------|----------------|
+| `/rewind` | 回退到之前的对话状态（含影响分析 UI） | `/restore`（功能类似但无 /rewind） |
+| `/policies` | 策略管理（list） | ❌ 无（Qwen 用 JSON 权限，无 TOML 策略） |
+| `/shortcuts` | 显示键盘快捷键 | ❌ 无 |
+| `/privacy` | 打开隐私设置 | ❌ 无（通过 `/settings` 间接管理） |
+| `/footer` | 配置状态栏（别名 `statusline`） | ❌ 无 |
+| `/shells` | 列出活跃 Shell 进程（别名 `bashes`） | ❌ 无 |
+| `/commands` | 命令管理（reload） | ❌ 无 |
+| `/profile` | 性能分析（开发模式） | ❌ 无 |
+| `/corgi` | 彩蛋 | ❌ 无 |
+
+### Qwen Code 有而 Gemini CLI 没有的命令
+
+| Qwen Code 命令 | 功能 | Gemini CLI 对应 |
+|---------------|------|----------------|
+| `/arena` | **多模型并行 worktree 竞争** | ❌ 无 |
+| `/language` | **切换 UI 语言**（6 种） | ❌ 无（仅英文） |
+| `/insight` | **代码分析生成报告** | ❌ 无 |
+| `/btw` | **快速旁问**（不中断主对话） | ❌ 无（Gemini CLI 仓库搜索 0 匹配） |
+| `/review` | **代码审查**（Skill，4 代理并行） | ❌ 无（需安装扩展 `/code-review`） |
+| `/extensions` | 扩展管理（兼容 Claude + Gemini 格式） | Gemini CLI 有自己的扩展系统 |
+
+### 命名差异但功能等价的命令
+
+| 功能 | Gemini CLI | Qwen Code | 说明 |
+|------|-----------|-----------|------|
+| 审批模式 | 集成在 `/plan` + `Shift+Tab` | `/approval-mode` | Qwen 独立为命令 |
+| 上下文压缩 | `/compress`（别名 `compact`） | `/compress`（别名 `compact`） | 完全一致 |
+| 对话摘要 | — | `/summary` | Qwen 新增 |
+| 信任管理 | — | `/trust` | Qwen 新增 |
+
+### 命令差距总结
+
+| 维度 | Gemini CLI | Qwen Code |
+|------|-----------|-----------|
+| 总命令数 | **39** | **40** |
+| Gemini 独有（无对应） | **~8 个** | — |
+| Qwen 独有（无对应） | — | **~5 个**（/arena, /language, /insight, /btw, /review） |
+| 继承命令 | — | ~35 个 |
+
+> **核心发现：** 命令数量几乎对等（39 vs 40）。Gemini CLI 独有的命令主要是管理类（/policies、/shortcuts、/shells），Qwen Code 独有的命令是高价值功能（/arena、/btw、/review）——**质量上 Qwen 的独有命令价值更高**。
 
 ---
 
@@ -216,7 +267,7 @@ interface ToolResult {
 | **免费 OAuth** | 每天 1000 次 | 无 |
 | **6 语言 UI** | 中/英/日/德/俄/葡 | 仅英文 |
 | **Arena 模式** | 多模型并行竞争 | 无 |
-| **子代理管理** | SubagentManager + 多终端后端 | 无 |
+| **多终端后端** | SubagentManager 支持 tmux/iTerm2/VS Code 等 | 仅内置终端 |
 | **扩展格式转换** | Claude/Gemini 扩展自动转换 | 无 |
 | **Session Token 限制** | 硬性 Token 预算 | 无 |
 | **MessageBus Hook** | 事件驱动 Hook | 回调式 Hook |
