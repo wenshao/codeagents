@@ -8,7 +8,7 @@
 |------|---------|---------|-------------|---------|--------|
 | **Gemini CLI** | 1（内部多策略） | **8 策略类自动路由** | ✓（FallbackStrategy） | ✗（仅 Google） | ★★★★★ |
 | **Aider** | **3**（主/编辑/弱） | 配置文件 `model-settings.yml` | ✗（手动切换） | ✓（100+ 通过 LiteLLM） | ★★★★☆ |
-| **Copilot CLI** | 1 | 手动 `/model` + 智能调度 | ✗ | ✓（14+ 模型） | ★★★☆☆ |
+| **Copilot CLI** | 1 | 手动 `/model` + 配额倍率 | ✗ | ✓（14 模型） | ★★★☆☆ |
 | **Claude Code** | 1 | 手动 `/model` + `--fallback-model` | 部分（仅 `--print` 模式） | ✗（仅 Anthropic） | ★★☆☆☆ |
 | **Qwen Code** | 1 | 手动 `/model` + 提供商前缀 | ✗ | ✓（6+ 提供商） | ★★☆☆☆ |
 | **Kimi CLI** | 1 + thinking 开关 | 手动 `/model` | ✗ | ✓（5+ 提供商） | ★★☆☆☆ |
@@ -159,7 +159,7 @@ interface RoutingDecision {
 | 提交消息 | 文本摘要 | Mini/Haiku | 极低 |
 | 历史压缩 | 摘要能力 | Mini/Flash | 极低 |
 
-> **设计理念：** 不同任务用不同强度的模型——强模型思考，弱模型执行，最弱模型做杂活。成本可降低 60-80%。
+> **设计理念：** 不同任务用不同强度的模型——强模型思考，弱模型执行，最弱模型做杂活。成本可降低 ~60-80%（基于模型定价差异估算）。
 
 ---
 
@@ -209,22 +209,24 @@ Claude Code 的 Skill 系统有隐式模型选择：
 
 ```bash
 /model                    # 交互式选择
-# 可用模型（14+）：
+# 可用模型（14 个）：
 # Claude: Sonnet 4, Haiku 3.5
-# GPT: 4.1, 4.1-mini, o3, o4-mini
+# GPT: 4.1（免费）, 4.1-mini, gpt-5-mini（免费）, o3, o4-mini
 # Gemini: 2.5 Pro, 2.5 Flash
-# Grok: 系列
 ```
 
 ### 配额倍率系统
 
+> 来源：[GitHub Copilot 官方文档](https://docs.github.com/en/copilot)，倍率因版本/计划而异。
+
 | 模型 | 配额倍率 | 说明 |
 |------|---------|------|
-| GPT-4.1 | 1x | 基准 |
-| GPT-4.1-mini | 0.25x | 低成本 |
-| o3 | 1.5x | 高推理 |
-| Gemini 2.5 Pro | 0.5x | 中等 |
-| Claude Sonnet 4 | 1x | 基准 |
+| GPT-4.1 | ~1x | 基准（部分计划免费） |
+| GPT-4.1-mini | ~0.25x | 低成本 |
+| o3 | ~1.5x | 高推理 |
+| Gemini 2.5 Pro | ~0.5x | 中等 |
+| Claude Sonnet 4 | ~1x | 基准 |
+| Claude Opus 4.5 | ~3x | 高倍率 |
 
 > **隐式路由：** 虽然无自动 Fallback，但配额系统引导用户选择性价比最优的模型。
 
@@ -260,7 +262,7 @@ Claude Code 的 Skill 系统有隐式模型选择：
 > 源码：`soul/slash.py`、`config.py`
 
 ```bash
-/model kimi-k2              # 切换模型
+/model kimi-k2.5            # 切换模型
 /model --thinking            # 开启深度推理显示
 /model --no-thinking         # 关闭推理显示
 ```
@@ -325,10 +327,10 @@ goose --model claude-opus-4     # 启动时指定
 
 | 策略 | 工具 | 实现 | 节省比例 |
 |------|------|------|---------|
-| **任务分类路由** | Gemini CLI | Flash(简单) / Pro(复杂) | ~50-70% |
-| **三槽位分离** | Aider | 主(强) / 编辑(中) / 弱(低) | ~60-80% |
+| **任务分类路由** | Gemini CLI | Flash(简单) / Pro(复杂) | ~50-70%（估算） |
+| **三槽位分离** | Aider | 主(强) / 编辑(中) / 弱(低) | ~60-80%（估算） |
 | **配额倍率引导** | Copilot CLI | 低倍率模型更"便宜" | 用户自选 |
-| **子代理模型指定** | Claude Code | Haiku(前置) → Sonnet(主) → Opus(核心) | ~40-60% |
+| **子代理模型指定** | Claude Code | Haiku(前置) → Sonnet(主) → Opus(核心) | ~40-60%（估算） |
 
 ### 模式 3：容错与可用性
 
