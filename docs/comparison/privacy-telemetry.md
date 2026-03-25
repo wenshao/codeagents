@@ -15,6 +15,7 @@
 | **OpenCode** | **无** | — | **否** | **否** | **否** |
 | **Goose** | PostHog | **关闭**（opt-in） | **是**（随机 UUID） | **是**（OS、架构） | **否** |
 | **Qwen Code** | OTEL（重品牌）+ **阿里云 RUM**（新增） | 开启 | **是**（继承 Gemini UUID） | **是**（继承 CPU/GPU/RAM） | **否** |
+| **Qoder CLI** | Qoder 自有（api1.qoder.sh） | 开启 | **是**（`getMachineKey`） | 未确认 | **否** |
 
 ## 遥测端点
 

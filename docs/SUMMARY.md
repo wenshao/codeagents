@@ -15,6 +15,7 @@
 | **Kimi CLI** | 月之暗面出品，零遥测（隐私最佳），双模式交互（TUI + Shell） | 隐私敏感用户和国内开发者 |
 | **Goose** | Block 出品后捐赠 Linux 基金会，MCP 原生架构，398 个贡献者 | MCP 生态和开源社区 |
 | **OpenCode** | 多客户端（TUI+Web+桌面），37 个 LSP，100+ 模型提供商 | 需要多客户端和 IDE 集成的团队 |
+| **Qoder CLI** | 阿里通义灵码闭源代理，Go 原生 43MB，Quest 模式，`--with-claude-config` 兼容 Claude Code | 阿里云生态和 Quest 自主执行场景 |
 
 ## 30 秒决策树
 

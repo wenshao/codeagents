@@ -212,7 +212,8 @@
 - **Claude Code** 独有 `/review`（代码审查）和 `/remote-control`（远程控制）
 - **Copilot CLI** 34 命令 + 67 工具 + 3 内置代理，GitHub 生态深度集成
 - **Codex CLI** 28 交互命令（官方文档验证）+ 15 CLI 子命令 + Rust 原生沙箱
-- **OpenCode** 使用 Ctrl+P 命令面板而非斜杠命令
+- **OpenCode** 使用 Ctrl+K 命令面板而非斜杠命令
+- **Qoder CLI** 19+ 交互命令 + 7 CLI 子命令 + Go 原生 43MB + Quest 模式 + Claude Code 兼容（`--with-claude-config`）
 
 ## 使用场景推荐
 

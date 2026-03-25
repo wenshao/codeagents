@@ -10,8 +10,11 @@
 | **Copilot CLI** | `definitions/code-review.agent.yaml` | 94 | 本地 npm 包提取 |
 | **Qwen Code** | `packages/core/src/skills/bundled/review/SKILL.md` | 123 | GitHub API |
 | **Codex CLI** | `codex review --help` + 二进制分析 | 37 | 本地 --help |
+| **Qoder CLI** | 二进制 strings 提取 `/review-code` + `/review-pr` | — | Go 二进制分析 |
 
 ---
+
+> **注：** Qoder CLI 有两个独立的审查命令——`/review-code`（代码审查）和 `/review-pr`（PR 审查），区分了代码级和 PR 级审查。其他工具通常合并为一个 `/review` 命令。Qoder CLI 的审查实现细节未公开（闭源 Go 二进制），但从命令分离可推测其内部有不同的审查流水线。
 
 ## 一、架构设计对比
 
