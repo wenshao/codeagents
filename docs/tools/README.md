@@ -19,14 +19,14 @@
 | 工具 | 文件 | 行数 | 特色 |
 |------|------|------|------|
 | [Cursor CLI](./cursor-cli.md) | 单文件 | 476 | AI 原生 IDE，Background Agent，Rules 系统 |
-| [Warp](./warp.md) | 单文件 | 371 | GPU 终端替代品，Warp Agent，Warp Drive |
-| [Qwen Code](./qwen-code.md) | 单文件 | 297 | Gemini CLI 分叉，免费 1000 次/天 |
-| [Continue](./continue.md) | 单文件 | 190 | VS Code/JetBrains 插件，PR Checks CI |
-| [Goose](./goose.md) | 单文件 | 183 | MCP 原生，Recipe 模板，Block 出品 |
-| [SWE-agent](./swe-agent.md) | 单文件 | 178 | Princeton，SWE-bench 74%，Docker 沙箱 |
-| [Cline](./cline.md) | 单文件 | 144 | VS Code 扩展，Git Checkpoint 回滚 |
-| [OpenHands](./openhands.md) | 单文件 | 144 | EventStream 架构，浏览器操作，Docker |
-| [mini-swe-agent](./mini-swe-agent.md) | 单文件 | 93 | 教学用，100 行实现 |
+| [Warp](./warp.md) | 单文件 | 382 | Warp 2.0 ADE，Oz 代理，16 命令 |
+| [Qwen Code](./qwen-code.md) | 单文件 | 332 | Gemini CLI 分叉，免费 1000 次/天，40 命令 |
+| [Goose](./goose.md) | 单文件 | 208 | MCP 原生，16 命令，Recipe 模板 |
+| [Continue](./continue.md) | 单文件 | 190 | VS Code/JetBrains，68 提供商，37 上下文 |
+| [SWE-agent](./swe-agent.md) | 单文件 | 178 | SWE-bench 74%+，Docker 沙箱 |
+| [Cline](./cline.md) | 单文件 | 151 | VS Code 扩展，24+ 工具，子代理系统 |
+| [OpenHands](./openhands.md) | 单文件 | 144 | SWE-bench 77.6%，浏览器操作，Docker |
+| [mini-swe-agent](./mini-swe-agent.md) | 单文件 | 93 | 教学用，SWE-bench 74%+ |
 
 ## 对比文档
 
