@@ -188,7 +188,7 @@
 |------|-------------|-------|-----------|----------|-----------|-------------|-----------|-------|---------|
 | **命令总数** | ~60（含 Skill） | ~42 | ~39 | ~28 | ~23 | ~38 | 28 | CLI 子命令 | Ctrl+P 面板 |
 | **代码审查** | `/review` 插件 | — | `/code-review`（扩展） | — | — | `/review` | `@codex review` | — | — |
-| **模式切换** | — | `/code` `/architect` `/ask` | `/plan` | `/plan` `/yolo` | `/plan` | — | `--approval-mode` | — | `--agent` |
+| **模式切换** | — | `/code` `/architect` `/ask` | `/plan` | `/plan` `/yolo` | `/plan` | — | `--ask-for-approval` | — | `--agent` |
 | **模型切换** | `/model` | `/model` `/editor-model` `/weak-model` | `/model` | `/model` | `/model` | `/model` | `--model` | `--model` | — |
 | **上下文压缩** | `/compact` | `/clear` `/reset` | `/compress` | `/compact` | `/compact` | — | — | — | — |
 | **文件管理** | 自动 | `/add` `/drop` `/read-only` `/ls` | 自动 | `/add-dir` | 自动 | 自动 | 自动 | 自动 | 自动 |

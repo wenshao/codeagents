@@ -206,7 +206,7 @@ gemini extensions install https://github.com/gemini-cli-extensions/code-review
 | **Kimi CLI** | `/yolo`, `/plan` | 斜杠命令 | 审批级别切换 |
 | **Gemini CLI** | `/plan` + 设置 | 斜杠命令 + 配置 | 工具权限限制 |
 | **Qwen Code** | `/plan` | 斜杠命令 | 继承 Gemini CLI |
-| **Codex CLI** | `--approval-mode` | CLI 参数（非斜杠） | 三级审批 |
+| **Codex CLI** | `--ask-for-approval` | CLI 参数（非斜杠） | 三级审批 |
 | **Copilot CLI** | `Shift+Tab` | 快捷键 | Autopilot 实验性 |
 | **Claude Code** | — | 无模式切换 | 通过对话控制行为 |
 
