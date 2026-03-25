@@ -77,6 +77,8 @@
 - [沙箱与安全隔离](./docs/comparison/sandbox-security-deep-dive.md) — OS 沙箱 vs 28 规则 vs 三层分析
 - [多代理架构](./docs/comparison/multi-agent-deep-dive.md) — Teammates 协作 vs Arena 竞争 vs A2A 远程
 - [Hook/插件/扩展](./docs/comparison/hook-plugin-extension-deep-dive.md) — 22 事件 + Prompt Hook vs 17 Hook 类型
+- [Skill/技能系统](./docs/comparison/skill-system-deep-dive.md) — SKILL.md frontmatter vs Flow Skill vs Recipe
+- [长期记忆与项目指令](./docs/comparison/memory-system-deep-dive.md) — 4 层 CLAUDE.md vs AI memory_manager vs 跨格式读取
 
 **工具间 1v1 对比：**
 - [Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md) | [vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md) | [Aider vs Goose](./docs/comparison/aider-vs-goose.md)
