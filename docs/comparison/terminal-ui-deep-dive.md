@@ -6,7 +6,7 @@
 
 | 工具 | UI 框架 | 语言 | Vim 模式 | 主题 | 多客户端 | 启动速度 |
 |------|--------|------|---------|------|---------|---------|
-| **Claude Code** | Ink + React（Bun 编译） | Rust | ✓ `/vim` | ✓ `/theme` `/color` | 终端 + Desktop + Mobile + Chrome | 亚秒级 |
+| **Claude Code** | Ink + React（Rust 原生二进制） | Rust | ✓ `/vim` | ✓ `/theme` `/color` | 终端 + Desktop + Mobile + Chrome | 亚秒级 |
 | **Gemini CLI** | Ink 6 + React 19 | TypeScript | ✗ | ✗ | 终端 | ~2-3 秒 |
 | **Qwen Code** | Ink 6 + React 19（继承） | TypeScript | ✓ `/vim` | ✓ `/theme` | 终端 + Arena 多终端 | ~2-3 秒 |
 | **Copilot CLI** | Ink（React for CLI） | TypeScript(SEA) | ✗ | ✗ | 终端 | ~1-2 秒 |
@@ -61,11 +61,11 @@ Rust 原生 CLI / Metal(macOS) + Vulkan(Linux/Win) GPU 渲染
 
 ## 各工具 UI 详解
 
-### Claude Code：Ink + Bun 编译 + 丰富交互命令
+### Claude Code：Rust 原生二进制 + Ink/React + 丰富交互命令
 
 > 来源：02-commands.md、03-architecture.md（二进制分析 v2.1.81）
 
-**渲染架构**：JSX → React 组件 → Ink 渲染引擎 → Yoga 布局 → ANSI 输出。二进制为 227MB ELF x86-64，由 Bun v1.2 编译为单文件。
+**渲染架构**：JSX → React 组件 → Ink 渲染引擎 → Yoga 布局 → ANSI 输出。二进制为 227MB ELF x86-64 Rust 原生二进制（由 Bun v1.2 构建工具链编译）。
 
 **交互命令**：
 
@@ -231,7 +231,7 @@ cursor: "#f5e0dc"
 
 | 工具 | 来源 | 获取方式 |
 |------|------|---------|
-| Claude Code | 03-architecture.md（Bun v1.2 编译） | 二进制分析 |
+| Claude Code | 03-architecture.md（Rust 原生，Bun v1.2 构建） | 二进制分析 |
 | Gemini CLI | 03-architecture.md（Ink 6.4 + React 19） | 开源 |
 | Aider | 03-architecture.md（prompt-toolkit + Rich） | 开源 |
 | OpenCode | 03-architecture.md（OpenTUI + SolidJS） | 开源 |
