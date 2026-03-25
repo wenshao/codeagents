@@ -56,6 +56,7 @@
 - **[功能性内部机制对比](./docs/comparison/functional-internals.md)** — API 参数、代理循环、编辑格式、上下文管理、Prompt Caching
 - **[版本迭代与社区数据](./docs/comparison/evolution-community.md)** — Stars/贡献者/发布节奏/开发活跃度/未来方向
 - **[定价与成本对比](./docs/comparison/pricing.md)** — 定价模式、典型任务费用估算、成本优化建议
+- **[系统要求对比](./docs/comparison/system-requirements.md)** — Node.js/Python 版本、OS 支持、二进制大小、沙箱依赖
 - **[配置示例对比](./docs/guides/config-examples.md)** — CLAUDE.md/CODEX.md/GEMINI.md/AGENTS.md 并排写法
 - **[架构深度对比](./docs/comparison/architecture-deep-dive.md)** — 11 个项目的代理循环、工具系统、安全模型等
 - **[Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md)** — 终端代理 vs AI IDE，两大商业头部对比
