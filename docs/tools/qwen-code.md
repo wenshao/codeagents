@@ -189,7 +189,7 @@ qwen --version
 | 命令 | 用途 | 来源 |
 |------|------|------|
 | `/arena` | **Arena 模式**——多模型在隔离 Git worktree 中竞争执行同一任务 | **Qwen 新增** |
-| `/language` | **切换 UI 语言**（中/英/日/法/德/俄/葡） | **Qwen 新增** |
+| `/language` | **切换 UI 语言**（中/英/日/德/俄/葡） | **Qwen 新增** |
 | `/insight` | **代码洞察**——分析代码库并生成洞察报告 | **Qwen 新增** |
 | `/extensions` | **扩展管理**——安装/卸载/列表（兼容 Claude Code + Gemini 扩展） | **Qwen 新增** |
 

@@ -16,7 +16,7 @@
 | 自动记忆 | ✅ | ✅ `memoryTool.ts` | 对等 |
 | 非交互模式 | ✅ `-p` | ✅ `--prompt` + `--output-format` | 对等 |
 | 上下文压缩 | ✅ + 断路器（N 次计数） | ✅ + 简单断路器（布尔标志） | Qwen 断路器较简单 |
-| 操作检查点 | ✅ 隐含 | ✅ `restoreCommand.ts` + `/restore` | Qwen 更强 |
+| 操作检查点 | ✅ `/rewind` + Esc 键 + worktree | ✅ `restoreCommand.ts` + `/restore` | 对等（Claude 有 Esc 快捷键 + /rewind 别名） |
 | 扩展思维/推理 | ✅ | ✅ `thinkingConfig` | 对等 |
 | Agent Arena | ❌ | ✅ `ArenaManager.ts` | **Qwen 独有** |
 | 视觉/图像 | ✅ 图片粘贴/读取 | ✅ YOLO 自动切换视觉模型 | 对等（Qwen 自动切换更强） |
@@ -59,7 +59,6 @@
 | `/diff` | local-jsx | 查看文件变更 diff | ❌ 无 |
 | `/tasks` | local-jsx | 管理后台任务 | ❌ 无 |
 | `/plugin` | local-jsx | 管理插件（marketplace） | `/extensions`（类似） |
-| `/agents` | local-jsx | 管理多代理 | ✅ 有（继承） |
 | `/remote-control` | local-jsx | 远程控制桥接 | ❌ 无 |
 | `/remote-env` | local-jsx | 远程环境设置 | ❌ 无 |
 | `/desktop` | local-jsx | 在 Claude Desktop 继续 | ❌ 无（无桌面应用） |
@@ -96,7 +95,7 @@
 | Qwen Code 命令 | 功能 | Claude Code 对应 |
 |---------------|------|------------------|
 | `/arena` | 多模型并行 worktree 竞争 | ❌ 无（Teammates 是协作非竞争） |
-| `/language` | 切换 UI 语言（7 种） | ❌ 无（仅英文 UI） |
+| `/language` | 切换 UI 语言（6 种） | ❌ 无（仅英文 UI） |
 | `/insight` | 代码分析生成报告 | `/insights`（会话洞察，非代码分析） |
 | `/extensions` | 扩展管理（兼容 Claude+Gemini 扩展） | `/plugin`（类似） |
 | `/auth` | 认证管理（OAuth/API Key） | `/login` + `/logout`（分开的命令） |
@@ -117,11 +116,11 @@
 | 总命令数 | **~79** | **40** |
 | Prompt 类型 | 6 | 0（无等价分类） |
 | Skill 类型 | **10** | 1（`/review`） |
-| Claude 独有（无对应） | — | **~35 个命令** |
+| Claude 独有（无对应） | — | **~34 个命令** |
 | Qwen 独有（无对应） | **~8 个命令** | — |
 | 功能等价但命名不同 | ~6 对 | ~6 对 |
 
-> **核心差距：** Claude Code 的 10 个 Skill 命令（`/loop`、`/schedule`、`/security-review`、`/simplify` 等）是 Qwen Code 完全缺失的类别。此外 Claude Code 的 6 个 prompt 命令（`/commit`、`/review`、`/init` 等）提供了 Git 工作流集成，Qwen Code 仅有 `/review` Skill。
+> **核心差距：** Claude Code 的 10 个 Skill 命令（`/loop`、`/schedule`、`/security-review`、`/simplify` 等）是 Qwen Code 完全缺失的类别。此外 Claude Code 的 prompt 命令中 `/commit`、`/commit-push-pr`、`/init-verifiers`、`/insights` 是 Qwen Code 没有的（Qwen Code 已有 `/review` Skill 和继承的 `/init`）。
 
 ---
 
