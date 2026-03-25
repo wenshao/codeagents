@@ -1,5 +1,8 @@
 # Kimi Code CLI (月之暗面)
 
+> **📌 本文档已拆分为多文件目录，内容更详尽。请访问 [kimi-cli/](./kimi-cli/) 查看最新版本。**
+> 本单文件保留供向后兼容，可能与目录版本存在差异。
+
 **开发者：** Moonshot AI（[月之暗面](https://www.moonshot.cn/)）
 **许可证：** Apache 2.0
 **仓库：** [github.com/MoonshotAI/kimi-cli](https://github.com/MoonshotAI/kimi-cli)（PyPI: `kimi-cli`）

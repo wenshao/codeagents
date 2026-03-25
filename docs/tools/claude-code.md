@@ -1,5 +1,8 @@
 # Claude Code
 
+> **📌 本文档已拆分为多文件目录，内容更详尽。请访问 [claude-code/](./claude-code/) 查看最新版本。**
+> 本单文件保留供向后兼容，可能与目录版本存在差异。
+
 **开发者：** Anthropic
 **许可证：** 专有（Claude Pro/Max 订阅内含，或 API 按量付费）
 **仓库：** [github.com/anthropics/claude-code](https://github.com/anthropics/claude-code)（插件/示例仓库）

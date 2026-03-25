@@ -1,5 +1,8 @@
 # GitHub Copilot CLI
 
+> **📌 本文档已拆分为多文件目录，内容更详尽。请访问 [copilot-cli/](./copilot-cli/) 查看最新版本。**
+> 本单文件保留供向后兼容，可能与目录版本存在差异。
+
 **开发者：** GitHub (Microsoft)
 **许可证：** 专有
 **仓库：** [github.com/github/copilot-cli](https://github.com/github/copilot-cli)

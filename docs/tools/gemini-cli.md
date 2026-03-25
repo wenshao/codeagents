@@ -1,5 +1,8 @@
 # Gemini CLI
 
+> **📌 本文档已拆分为多文件目录，内容更详尽。请访问 [gemini-cli/](./gemini-cli/) 查看最新版本。**
+> 本单文件保留供向后兼容，可能与目录版本存在差异。
+
 **开发者：** Google
 **许可证：** Apache-2.0
 **仓库：** [github.com/google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)（npm: `@google/gemini-cli`）
@@ -278,7 +281,14 @@ priority = 100
 
 - **AgentSession**：实现 AsyncIterable 协议，支持事件流式订阅和回放
 - **事件类型**：agent_start、agent_end、tool_call、thought
-- **会话压缩**：长对话自动压缩（`/compress` 命令）
+- **会话压缩**（源码：`chatCompressionService.ts`）：
+  - 自动触发阈值：对话 token 数超过模型 token limit 的 50%（`DEFAULT_COMPRESSION_TOKEN_THRESHOLD = 0.5`）
+  - 保留最近 30% 的对话（`COMPRESSION_PRESERVE_THRESHOLD = 0.3`）
+  - 工具响应 token 预算：50,000 tokens（`COMPRESSION_FUNCTION_RESPONSE_TOKEN_BUDGET`）
+  - 超出预算的旧工具响应截断为最后 30 行并保存到临时文件
+  - 压缩模型选择：根据当前模型映射到对应的压缩配置别名（如 `chat-compression-2.5-pro`）
+  - 分割策略：在 user role 的非 functionResponse 消息处分割，确保不在 function call/response 对中间断开
+  - 也可通过 `/compress` 命令手动触发
 - **会话恢复**：`gemini --resume <session-id>`
 - **检查点（Checkpointing）**（源码：`checkpointing.md`、`rewindCommand.tsx`、`rewindFileOps.ts`）：
   - 默认关闭，需在 `settings.json` 中启用：`{ "general": { "checkpointing": { "enabled": true } } }`
@@ -291,10 +301,10 @@ priority = 100
 - **回退（Rewind）**（源码：`rewindCommand.tsx`、`rewindFileOps.ts`、`docs/cli/rewind.md`）：
   - 触发方式：`/rewind` 命令或 `Esc Esc` 快捷键
   - 交互式 UI：上下箭头选择回退点，显示每步的用户提示和文件变更统计
-  - 三种回退选项（确认对话框）：
-    1. **回退对话 + 还原代码**：同时撤销聊天和文件修改
-    2. **仅回退对话**：保留文件修改，仅撤销聊天历史
-    3. **仅还原代码**：保留聊天历史，仅撤销文件修改
+  - 三种回退选项（`RewindOutcome` 枚举，源码确认）：
+    1. **Cancel**：取消操作，仅移除组件
+    2. **RevertOnly**：仅还原文件变更（调用 `revertFileChanges()`），保留对话历史
+    3. **RewindAndRevert**：还原文件变更 + 回退对话历史（调用 `rewindConversation()` 设置 `client.setHistory()`、刷新 `contextManager`、重建 UI 历史）
   - 文件变更统计（`rewindFileOps.ts:calculateTurnStats()`）：基于工具调用结果的 diff 计算添加/删除行数和文件数
   - 限制：仅回退 AI 工具造成的文件修改，不回退手动编辑或 Shell 工具（`!`）执行的变更
   - 支持跨会话压缩点回退（从存储的 session 数据重建历史）
@@ -329,11 +339,11 @@ priority = 100
 - 按文件标识（device + inode）去重（处理大小写不敏感文件系统和符号链接）
 - 支持 `@import` 语法导入其他 Markdown 文件（`memoryImportProcessor.ts`）
 
-**`/memory` 命令**（`packages/core/src/commands/memory.ts`）：
-- `/memory show`：显示所有层级的记忆内容和文件数
-- `/memory add <text>`：触发 save_memory 工具保存事实
-- `/memory reload`：重新扫描并加载所有 GEMINI.md 文件
-- `/memory files`：列出当前生效的所有 GEMINI.md 文件路径
+**`/memory` 命令**（源码：`packages/cli/src/ui/commands/memoryCommand.ts`）：
+- `/memory show`：调用 `showMemory(config)` 显示所有层级的记忆内容
+- `/memory add <text>`：调用 `addMemory(args)` 返回 submit_prompt 类型触发 save_memory 工具
+- `/memory reload`（别名: refresh）：调用 `refreshMemory(config)` 重新扫描并加载所有 GEMINI.md 文件
+- `/memory list`：调用 `listMemoryFiles(config)` 列出当前生效的所有 GEMINI.md 文件路径
 
 **记忆管理代理**：专用 memory_manager 代理（条件注册，需设置启用）处理增删改、去重、组织，使用 Flash 模型
 
@@ -571,68 +581,79 @@ gemini --resume <session-id>
 gemini --version
 ```
 
-### 斜杠命令（会话内，41 个命令）
+### 斜杠命令（会话内，源码验证 37 个命令 + 1 隐藏 + 1 开发专用）
+
+以下命令均从源码 `packages/cli/src/ui/commands/` 目录逐一提取，列出每个命令的名称、别名、描述、子命令、autoExecute 属性及核心实现逻辑。
 
 ```bash
-# 核心操作
-/help            # 查看帮助
-/clear           # 清除对话
-/compress        # 压缩上下文
-/copy            # 复制内容
-/quit            # 退出
-/commands        # 列出所有可用命令
+# ── 核心操作 ──
+/help            # 显示帮助信息（autoExecute: true）
+/clear           # 清除屏幕和对话历史（触发 SessionEnd hook，重置 injectionService，生成新 sessionId，调用 geminiClient.resetChat()）
+/compress        # 压缩上下文（别名: /summarize, /compact）。调用 geminiClient.tryCompressChat() 强制压缩
+/copy            # 复制最后一条 AI 输出到剪贴板（从 history 中取 role=model 的最后一条）
+/quit            # 退出 CLI（别名: /exit）。计算 wallDuration 并显示
+/commands        # 管理自定义命令。子命令: reload（重新加载 .toml 文件中的自定义命令定义）
 
-# 代理 & 工具
-/agents          # 查看/调用代理
-/tools           # 查看可用工具
-/skills          # 管理技能
-/plan            # 进入规划模式
+# ── 代理 & 工具 ──
+/agents          # 管理代理。子命令: list（列出所有本地和远程代理的 name/displayName/description/kind）、enable <name>、disable <name>（通过 SettingScope 持久化）
+/tools           # 管理工具。子命令: list（列出非 MCP 的 Gemini 内置工具）、desc（带描述列出工具）
+/skills          # 管理技能。子命令: list [--all] [--nodesc]、link <path> [--scope user|workspace]、enable <name>、disable <name>。link 需要用户 consent 确认
+/plan            # 切换到 Plan Mode（设置 ApprovalMode.PLAN）。显示当前已批准的计划文件内容。子命令: copy（复制已批准计划到剪贴板）
 
-# 记忆 & 会话
-/memory          # 查看/添加/清除记忆
-/chat            # 对话管理
-/restore         # 恢复检查点
-/resume          # 恢复会话
-/rewind          # 回退操作（也可按 Esc Esc）
+# ── 记忆 & 会话 ──
+/memory          # 管理记忆。子命令: show（显示当前记忆内容）、add <text>（添加记忆条目）、reload|refresh（从源文件重新加载，调用 refreshMemory()）、list（列出所有 GEMINI.md 文件路径）
+/resume          # 浏览自动保存的会话（打开 sessionBrowser 对话框）。子命令: save <tag>（保存当前对话为检查点，含覆盖确认）、resume|load <tag>（恢复检查点）、list（列出已保存的手动检查点）、delete <tag>、export <path>
+/restore         # 恢复 Git 检查点。读取 .gemini 目录中的检查点文件，调用 performRestore() 恢复 Git 状态和对话历史
+/rewind          # 回退到特定消息并重启对话。打开 RewindViewer 组件，支持三种结果: Cancel、RevertOnly（仅恢复文件变更）、RewindAndRevert（恢复文件并回退对话历史）。调用 recordingService.rewindTo()、revertFileChanges()、client.setHistory()
 
-# 配置
-/settings        # 修改设置
-/model           # 切换模型
-/theme           # 切换主题
-/permissions     # 查看权限
-/policies        # 查看策略
-/hooks           # 管理 Hook
-/auth            # 认证管理
-/profile         # 配置文件
+# ── 配置 ──
+/settings        # 打开设置对话框（isSafeConcurrent: true）
+/model           # 管理模型。默认打开 model 对话框（先 refreshUserQuota）。子命令: set <model-name> [--persist]（设置模型，--persist 写入持久配置）、manage（打开对话框）
+/theme           # 打开主题选择对话框
+/permissions     # 管理文件夹信任设置。子命令: trust [<directory-path>]（信任指定目录，默认 cwd）
+/policies        # 管理策略。子命令: list（按 Normal/AutoEdit/Yolo/Plan 四种模式分组显示所有活跃策略规则，显示 decision/toolName/argsPattern/priority/source）
+/hooks           # 管理 Hook。默认打开 HooksDialog 面板（显示所有注册的 hook）。子命令: enable <name>、disable <name>（通过 hookSystem.setHookEnabled() 生效）
+/auth            # 认证管理。子命令: signin|login（打开 auth 对话框）、signout|logout（清除缓存凭据、重置 selectedType 设置、strip thoughts from history）
+/footer          # 配置底部状态栏显示项（别名: /statusline）。打开 FooterConfigDialog
 
-# 扩展 & MCP
-/extensions      # 管理扩展（安装/启用/禁用）
-/mcp             # 管理 MCP 服务器
+# ── 扩展 & MCP ──
+/extensions      # 管理扩展。子命令: list、update <names>|--all、explore（打开扩展画廊）、install、uninstall、enable、disable、config。使用 ExtensionManager 和 McpServerEnablementManager
+/mcp             # 管理 MCP 服务器。子命令: list [desc] [schema]（显示所有 MCP 服务器状态/工具/prompts/resources/auth 状态/enablement 状态）、auth [<server-name>]（OAuth 认证，支持自动发现和手动配置）、enable、disable、restart
 
-# 开发
-/stats           # 查看统计信息（含 Token 缓存）
-/shortcuts       # 查看快捷键
-/bug             # 报告 Bug
-/upgrade         # 升级版本
-/about           # 关于信息
-/docs            # 查看文档
+# ── 信息 & 调试 ──
+/stats           # 查看统计信息（别名: /usage，isSafeConcurrent: true）。默认显示会话统计（含 quota/tier/creditBalance）。子命令: session、model（显示模型配额信息）、tools（显示工具使用统计）
+/about           # 显示版本信息（autoExecute: true，isSafeConcurrent: true）。包含: OS、sandbox 环境、model 版本、CLI 版本、auth 类型、GCP 项目、IDE 客户端、用户邮箱
+/bug             # 提交 Bug 报告。收集 OS/sandbox/model/CLI 版本/内存使用/IDE/终端信息，导出对话历史，用 open 打开 GitHub issue 页面
+/docs            # 在浏览器中打开文档（URL: https://goo.gle/gemini-cli-docs）
+/upgrade         # 打开升级页面（仅 Google 登录用户可用，已是 Ultra tier 则提示已最高级）
 
-# IDE
-/ide             # IDE 集成管理
-/editor          # 编辑器设置
+# ── IDE ──
+/ide             # IDE 集成管理。显示连接状态（Connected/Connecting/Disconnected）。子命令: connect、disconnect、status、install（安装 Gemini CLI Companion 扩展）
+/editor          # 打开外部编辑器偏好设置对话框
 
-# 终端
-/shells          # Shell 管理
-/vim             # Vim 模式
-/terminalSetup   # 终端设置
+# ── 终端 ──
+/shells          # 切换后台 Shell 视图（别名: /bashes）
+/vim             # 切换 Vim 模式（isSafeConcurrent: true）
+/terminal-setup  # 配置终端多行输入键绑定（自动检测 VS Code/Cursor/Windsurf）
+/shortcuts       # 切换快捷键面板显示
 
-# 其他
-/init            # 初始化项目配置
-/setupGithub     # 设置 GitHub
-/privacy         # 隐私设置
-/directory       # 目录管理
-/corgi           # 彩蛋
+# ── 项目初始化 ──
+/init            # 分析项目并创建 GEMINI.md 文件（如不存在则先创建空文件，再提交分析 prompt）
+/setup-github    # 设置 GitHub Actions 工作流。下载 gemini-dispatch/gemini-assistant/issue-triage/pr-review 等工作流和命令文件
+
+# ── 其他 ──
+/privacy         # 显示隐私通知对话框
+/directory       # 目录管理。支持添加/删除包含目录，多文件夹信任对话框，自动 refreshServerHierarchicalMemory
+/oncall          # 维护者专用。子命令: dedup（对 status/possible-duplicate 标签的 issue 去重分类）、triage（issue 分类）
+/corgi           # 切换 corgi 模式（隐藏命令，hidden: true）
+/profile         # 切换调试性能分析显示（仅开发模式可用，isDevelopment 为 true 时才注册）
 ```
+
+**命令类型系统**（源码 `types.ts`）：
+- `CommandKind.BUILT_IN`：所有内置命令均使用此类型
+- `autoExecute`：true 表示无需参数立即执行，false 表示需要用户输入参数或确认
+- `isSafeConcurrent`：true 表示可在 AI 响应过程中安全执行（如 /about、/settings、/stats、/vim）
+- `SlashCommandActionReturn` 支持多种返回类型：`message`、`dialog`（内置对话框）、`custom_dialog`（自定义 React 组件）、`quit`、`submit_prompt`、`confirm_action`、`logout`
 
 ## 配置
 

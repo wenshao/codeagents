@@ -1,5 +1,8 @@
 # OpenCode
 
+> **📌 本文档已拆分为多文件目录，内容更详尽。请访问 [opencode/](./opencode/) 查看最新版本。**
+> 本单文件保留供向后兼容，可能与目录版本存在差异。
+
 **开发者：** Anomaly Innovations（[anoma.ly](https://anoma.ly)）
 **许可证：** MIT
 **仓库：** [github.com/anomalyco/opencode](https://github.com/anomalyco/opencode)（npm: `opencode-ai`）

@@ -1,5 +1,8 @@
 # Codex CLI
 
+> **📌 本文档已拆分为多文件目录，内容更详尽。请访问 [codex-cli/](./codex-cli/) 查看最新版本。**
+> 本单文件保留供向后兼容，可能与目录版本存在差异。
+
 **开发者：** OpenAI
 **许可证：** Apache-2.0
 **仓库：** [github.com/openai/codex](https://github.com/openai/codex)

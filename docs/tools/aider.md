@@ -1,5 +1,8 @@
 # Aider
 
+> **📌 本文档已拆分为多文件目录，内容更详尽。请访问 [aider/](./aider/) 查看最新版本。**
+> 本单文件保留供向后兼容，可能与目录版本存在差异。
+
 **开发者：** Paul Gauthier
 **许可证：** GPL-3.0
 **仓库：** [github.com/Aider-AI/aider](https://github.com/Aider-AI/aider)
