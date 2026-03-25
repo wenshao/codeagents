@@ -40,7 +40,7 @@ Vercel AI SDK v5 → models.dev 动态模型注册 → 100+ LLM 提供商
     ↓
 工具注册表 (18 工具) → 文件系统 / Shell / LSP / MCP
     ↓
-SQLite (Drizzle ORM, WAL) + Git Snapshot (~/.local/share/opencode/snapshot/)
+SQLite (go-sqlite3, sqlc 代码生成, goose 迁移) — 3 表: sessions + messages + files
     ↓
 远程工作区（实验性）← Adaptor + SSE 事件同步
 ```
@@ -50,7 +50,7 @@ SQLite (Drizzle ORM, WAL) + Git Snapshot (~/.local/share/opencode/snapshot/)
 - **运行时**：Bun 1.3.11（主要）/ Node.js 22（兼容，已有入口和构建脚本）
 - **TUI 框架**：OpenTUI + Solid.js（响应式信号驱动）
 - **HTTP 框架**：Hono（轻量级）
-- **数据库**：SQLite + Drizzle ORM（WAL 模式）+ Git 对象（快照）
+- **数据库**：SQLite（`ncruces/go-sqlite3`）+ sqlc 类型安全查询 + goose 迁移
 - **AI SDK**：Vercel AI SDK v5（统一 LLM 接口）+ models.dev 动态模型数据
 - **MCP SDK**：@modelcontextprotocol/sdk（StreamableHTTP / SSE / Stdio）
 - **桌面**：Tauri v2（主要）+ Electron（备选）
@@ -141,6 +141,41 @@ GlobalBus ←── 文件变更/状态事件（10 秒心跳 + 自动重连）
 - **Worktree 适配器**：基于 `git worktree`，随机人性化命名（如 "brave-cabin"）
 - **Workspace Server**：独立 HTTP + SSE 服务，通过 `x-opencode-directory` header 路由请求
 - 数据库表 `WorkspaceTable` 持久化工作区记录
+
+### SQLite 存储系统（Go 版源码：`internal/db/`）
+
+> OpenCode 是唯一使用**结构化数据库**（而非 JSON 文件）管理会话数据的 Code Agent。
+
+**技术栈：** `ncruces/go-sqlite3` + `sqlc`（编译时类型安全查询生成）+ `goose`（数据库迁移）
+
+**3 张表：**
+
+| 表 | 字段 | 用途 |
+|---|------|------|
+| **sessions** | id, parent_session_id, title, message_count, prompt_tokens, completion_tokens, cost, summary_message_id | 会话管理（支持子会话、token 用量追踪、费用统计、压缩摘要关联） |
+| **messages** | id, session_id, role, parts(JSON), model, created_at, finished_at | 消息历史（完整对话记录，含使用的模型和完成时间） |
+| **files** | id, session_id, path, content, version, UNIQUE(path,session_id,version) | 文件版本管理（每次修改保留版本快照，可按路径+会话查询最新版本） |
+
+**设计亮点：**
+- **自动触发器**：`updated_at` 自动更新 + `message_count` 自动增减（INSERT/DELETE 触发器）
+- **级联删除**：删除 session 自动清理关联的 messages 和 files（外键 ON DELETE CASCADE）
+- **文件版本唯一约束**：`UNIQUE(path, session_id, version)` 防止同一会话中重复版本
+- **摘要关联**：`summary_message_id` 字段将压缩摘要与源 session 关联（`compact` 命令创建新会话时使用）
+- **子会话支持**：`parent_session_id` 允许从已有会话分叉
+
+**与其他工具的存储方式对比：**
+
+| 工具 | 存储方式 | 会话数据 | 文件版本 |
+|------|---------|---------|---------|
+| **OpenCode** | **SQLite（3 表）** | 结构化查询（SQL） | 数据库版本管理 |
+| Claude Code | JSON 文件（`~/.claude/projects/`） | 文件系统 | 无 |
+| Aider | Git 提交历史 | 无持久化 | Git 版本管理 |
+| Gemini CLI | JSON + Git 快照（`~/.gemini/history/`） | JSON 文件 | Git 对象 |
+| Kimi CLI | Wire JSONL 格式 | JSONL 流式文件 | 无 |
+| Copilot CLI | 内部格式（`session-state/`） | 闭源 | 无 |
+| Codex CLI | JSON + SQLite（`codex.db`） | SQLite | 无 |
+
+> **关键差异：** OpenCode 的 SQLite 设计允许跨会话的文件版本追踪（同一文件在不同会话中的修改历史），这是其他工具不具备的能力。Codex CLI 也使用 SQLite 但主要用于会话索引，不存储文件版本。
 
 ### Git-backed Session Review
 
