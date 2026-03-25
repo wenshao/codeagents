@@ -54,6 +54,7 @@
 - **[内置命令能力深度对比](./docs/comparison/slash-commands-deep-dive.md)** — 10 大关键命令的源码级实现对比
 - **[隐私与遥测对比](./docs/comparison/privacy-telemetry.md)** — 遥测端点、数据采集、安全监控、Machine ID 全工具对比
 - **[功能性内部机制对比](./docs/comparison/functional-internals.md)** — API 参数、代理循环、编辑格式、上下文管理、Prompt Caching
+- **[版本迭代与社区数据](./docs/comparison/evolution-community.md)** — Stars/贡献者/发布节奏/开发活跃度/未来方向
 - **[架构深度对比](./docs/comparison/architecture-deep-dive.md)** — 11 个项目的代理循环、工具系统、安全模型等
 - **[Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md)** — 终端代理 vs AI IDE，两大商业头部对比
 - **[Claude Code vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md)** — 终端代理双雄对比
