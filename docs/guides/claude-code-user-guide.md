@@ -426,6 +426,129 @@ Claude Code 内置了业界最严格的安全系统：
 
 ---
 
+---
+
+## 高频技巧（来自社区最佳实践）
+
+> 以下技巧综合自 Builder.io、Anthropic 官方、DataCamp、awesome-claude-code 等高质量指南。
+
+### 9. `.claudeignore` 减少 token 浪费
+
+在项目根目录创建 `.claudeignore`（类似 .gitignore）：
+
+```
+node_modules/
+dist/
+build/
+*.min.js
+*.map
+coverage/
+.next/
+```
+
+> **效果：** 典型 Node.js 项目减少 ~25% token 消耗。Claude 不会读取被忽略的文件。
+
+### 10. 反馈循环：让 Claude 自验证
+
+**最高杠杆技巧**（Anthropic 官方推荐，质量提升 2-3 倍）：
+
+```
+你: 实现邮箱验证函数。
+    测试用例：user@example.com → true，"invalid" → false。
+    实现后运行测试。
+
+你: [粘贴截图] 实现这个设计。完成后截图对比原图，列出差异并修复。
+```
+
+关键：**给 Claude 一个检查自身工作的方法**——测试命令、linter 输出、截图对比。
+
+### 11. CLAUDE.md 最佳实践
+
+**控制长度：** 保持在 200 行以内。过长会导致规则被忽略（~80% 遵守率 vs 过长时下降）。
+
+**WHAT/WHY/HOW 框架：**
+```markdown
+## WHAT（技术栈和结构）
+Next.js 14 + TypeScript + Prisma
+
+## WHY（目的和约束）
+电商平台，需要 SEO 友好，支持多语言
+
+## HOW（工作流规则）
+- 先写测试再实现
+- 提交前运行 pnpm lint
+```
+
+**多级层级：**
+- `~/.claude/CLAUDE.md` — 个人全局默认
+- `项目根/CLAUDE.md` — 项目共享
+- `子目录/CLAUDE.md` — 模块级覆盖
+
+**关键区分：** CLAUDE.md 是**建议**（~80% 遵守）。需要 100% 强制执行的规则用 **Hooks**。
+
+### 12. `/clear` 纪律
+
+```bash
+# 完成一个任务后，开始另一个前
+/clear
+
+# 修正 3 次仍不对？不要继续修正——清除重来
+/clear
+# 用更好的初始提示重新开始
+```
+
+> **社区共识：** 一个干净的会话 + 更好的提示，几乎总是优于一个长会话 + 多次修正。
+
+### 13. 先规划再执行（最常被推荐的模式）
+
+```
+你: 我想添加 Google OAuth 登录。
+    先创建一个计划，不要写代码。
+    列出需要修改的文件和步骤。
+
+Claude: [只读分析] 计划如下：
+        1. 安装 next-auth
+        2. 修改 src/auth/...
+        ...
+
+你: 计划看起来可以。开始实施。
+    写完后运行测试套件，修复任何失败。
+```
+
+> **经验法则：** 如果你能一句话描述 diff，跳过规划。否则先规划。
+
+### 14. 写手/审查者分离
+
+```bash
+# 会话 A：实现
+claude
+你: 实现 API 限流中间件
+
+# 会话 B（新会话）：审查
+claude
+你: 审查 @src/middleware/rateLimiter.ts
+    检查边界条件、竞态、与现有中间件的一致性
+
+# 会话 A：修复
+你: 以下是审查反馈：[粘贴会话 B 的输出]
+    请修复这些问题。
+```
+
+> **原理：** 新会话没有"我刚写的代码"的偏见，审查更客观。
+
+### 15. 用 `@` 引用文件
+
+```
+你: 参考 @src/widgets/HotDogWidget.tsx 的实现模式，
+    创建一个新的 CalendarWidget
+
+你: 修复 @src/auth/session.ts:42 附近的 token 刷新逻辑
+```
+
+> **一个好的示例文件胜过十段描述。**
+
+---
+
 ## 延伸阅读
 
 - [60+ 命令完整参考](../tools/claude-code/02-commands.md)
