@@ -71,6 +71,7 @@
 - [/hooks /sandbox /model /permissions /mcp](./docs/comparison/infra-commands.md) — 基础设施命令
 - [/btw /rewind](./docs/comparison/btw-rewind.md) — 旁问与回退
 - [内置命令总览](./docs/comparison/slash-commands-deep-dive.md) — 全命令对比表
+- [模型路由与自动选择](./docs/comparison/model-routing.md) — 8 策略自动路由 vs 三槽位 vs 手动切换
 
 **工具间 1v1 对比：**
 - [Claude Code vs Cursor](./docs/comparison/claude-code-vs-cursor.md) | [vs Copilot CLI](./docs/comparison/claude-code-vs-copilot-cli.md) | [Aider vs Goose](./docs/comparison/aider-vs-goose.md)
