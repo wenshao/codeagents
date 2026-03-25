@@ -74,15 +74,34 @@
 
 **设计理念："$20 bill in jeans"** — 每条反馈都应该是惊喜，不是噪音。
 
-**与 Claude Code 的根本区别：** 没有独立的验证步骤。依赖单个强模型（claude-sonnet-4.5）的内部推理来判断置信度。没有多代理冗余。
+**与 Claude Code 的根本区别：** 没有独立的验证**代理**，但有**实际运行验证**。Claude Code 用独立 LLM 代理重新审查每个问题；Copilot CLI 用 `bash` 工具实际编译代码和运行测试来验证。这是两种不同的验证哲学：**LLM 推理验证 vs 代码执行验证。**
+
+**验证能力（源码原文，tools: `"*"`）：**
+```
+3. **Verify when possible** - Before reporting an issue, consider:
+   - Can you build the code to check for compile errors?
+   - Are there tests you can run to validate your concern?
+   - Is the "bug" actually handled elsewhere in the code?
+   - Do you have high confidence this is a real problem?
+```
+
+```
+Use `bash` to run git commands, build, run tests, execute code
+```
+
+> **重要发现：** Copilot CLI 拥有 `tools: ["*"]`（全部工具），prompt 明确指示它**编译代码、运行测试**来验证发现的问题。这意味着它的验证不是靠"第二个 LLM 思考"，而是靠**实际执行代码**。在某些场景下（如编译错误检测），这比 Claude Code 的 LLM 验证更可靠。
 
 **关键约束（源码原文）：**
 ```
 CRITICAL: You Must NEVER Modify Code.
-You have access to all tools for investigation purposes only.
+You have access to all tools for investigation purposes only:
+- Use `bash` to run git commands, build, run tests, execute code
+- Use `view` to read files and understand context
+- Use `grep` and `glob` to find related code
+- Do NOT use `edit` or `create` to change files
 ```
 
-这是唯一在 prompt 中**显式禁止修改代码**的实现——其他工具依赖工具白名单限制。
+这是唯一**同时禁止修改代码但允许运行代码**的实现——可以编译和测试，但不能修改。
 
 ---
 
@@ -190,7 +209,7 @@ Do NOT flag:
 **第三层：独立验证代理（唯一拥有此机制的工具）**
 每个被标记的问题由独立的验证代理重新审查，未通过验证的问题被移除。这相当于"二次确认"——发现者和验证者是不同的代理实例。
 
-### Copilot CLI 的两层过滤
+### Copilot CLI 的三层过滤（含代码执行验证）
 
 **第一层：Prompt 核心原则**
 ```
@@ -210,7 +229,16 @@ CRITICAL: What You Must NEVER Comment On:
 - Anything you're not confident is a real issue
 ```
 
-**无验证步骤**——依赖单个模型的内部判断。
+**第三层：代码执行验证（独有）**
+
+prompt 明确指示在报告问题前尝试**编译和运行测试**：
+```
+Verify when possible:
+- Can you build the code to check for compile errors?
+- Are there tests you can run to validate your concern?
+```
+
+> **这与 Claude Code 的验证步骤形成互补：** Claude Code 用独立 LLM 代理做"第二意见"验证；Copilot CLI 用 `bash` 实际运行代码验证。**编译错误和测试失败是 100% 确定的**——不存在 LLM 幻觉问题。
 
 ### Qwen Code 的一层过滤
 
@@ -332,11 +360,18 @@ Approve | Request changes | Comment
 
 ## 八、面向 Code Agent 开发者的设计洞察
 
-### 1. 验证步骤是否值得？
+### 1. 两种验证哲学
 
-Claude Code 是唯一有独立验证步骤的工具。这增加了延迟和成本（每个问题额外一次 API 调用），但实现了 <1% 假阳性率。其他工具依赖"不确定就不报告"的 prompt 约束——更便宜但假阳性率更高。
+| 工具 | 验证方式 | 原理 | 可靠性 |
+|------|---------|------|--------|
+| **Claude Code** | 独立 LLM 验证代理 | 另一个 LLM 重新审查每个问题 | 高（但 LLM 可能幻觉） |
+| **Copilot CLI** | **编译+运行测试** | `bash` 实际执行代码验证 | **最高**（编译错误 = 100% 确定） |
+| **Qwen Code** | 无 | 信任代理判断 | 中 |
+| **Codex CLI** | 无 | 信任模型 | 中 |
 
-**开发者决策：** 如果你的用户对假阳性零容忍（如 CI/CD 自动阻止合并），验证步骤是必须的。如果用户能手动过滤，单代理模式更经济。
+Claude Code 的 LLM 验证适合**逻辑错误和设计问题**（需要推理判断）。Copilot CLI 的代码执行验证适合**编译错误、类型错误、测试失败**（客观可验证）。
+
+**开发者决策：** 理想的 /review 实现应该**两者结合**——用代码执行验证客观问题，用 LLM 验证主观问题。目前没有工具做到这一点。
 
 ### 2. 多代理 vs 单代理
 
