@@ -141,3 +141,56 @@
 | **Gemini CLI** | 11 月 | v0.36（preview） | 大团队（447人） | ★★★☆☆ |
 | **Qwen Code** | 9 月 | v0.13（nightly） | 大团队（350人） | ★★★☆☆ |
 | **Kimi CLI** | 5 月 | v1.25（快速迭代） | 小核心（53人） | ★★☆☆☆ |
+
+## GitHub Issue 热门话题（2026-03-25）
+
+### Claude Code（7,693 open issues）
+- Rate Limit 相关问题频繁
+- 终端兼容性（CapsLock、ESC、VSCode 集成）
+- 无 Discussions 功能
+
+### Copilot CLI（1,281 open issues，有 Discussions）
+- MCP 服务器在恢复会话时停止工作
+- 记忆管理（无法查看/管理/退出存储的记忆）
+- FLEET 并行子代理功能请求
+- 企业数据策略合规问题
+
+### Codex CLI（2,260 open issues）
+- macOS 崩溃问题
+- 配置管理（per-profile exec policy）
+- 架构重构（提取 codex-core-skills/codex-analytics crate）
+
+## 官方插件生态
+
+### Claude Code 官方插件（14 个，源码: plugins/ 目录）
+
+| 插件 | 命令/Skill | 代理 | Hook |
+|------|-----------|------|------|
+| **code-review** | `/code-review` | 5 并行 Sonnet（合规+Bug+历史+PR+评论） | — |
+| **commit-commands** | `/commit`, `/commit-push-pr`, `/clean_gone` | — | — |
+| **feature-dev** | `/feature-dev` | code-explorer, code-architect, code-reviewer | — |
+| **hookify** | `/hookify`, `:list`, `:configure`, `:help` | conversation-analyzer | — |
+| **pr-review-toolkit** | `/pr-review-toolkit:review-pr` | 6 专项（comment/test/error/type/code/simplify） | — |
+| **plugin-dev** | `/plugin-dev:create-plugin` | agent-creator, plugin-validator, skill-reviewer | — |
+| **agent-sdk-dev** | `/new-sdk-app` | sdk-verifier-py, sdk-verifier-ts | — |
+| **security-guidance** | — | — | PreToolUse（9 安全模式监控） |
+| **ralph-wiggum** | `/ralph-loop`, `/cancel-ralph` | — | Stop（拦截退出） |
+| **frontend-design** | — | — | — (Skill: 自动触发) |
+| **explanatory-output-style** | — | — | SessionStart |
+| **learning-output-style** | — | — | SessionStart |
+| **claude-opus-4-5-migration** | — | — | — (Skill: 模型迁移) |
+
+> 来源: `gh api repos/anthropics/claude-code/contents/plugins/README.md`
+
+### 跨工具指令文件兼容
+
+| 文件 | Claude Code | Copilot CLI | Codex CLI | Gemini CLI | Qwen Code | Kimi CLI |
+|------|-------------|-------------|-----------|-----------|-----------|----------|
+| `CLAUDE.md` | ✓（原生） | ✓（读取） | ✗ | ✗ | ✓（读取） | ✗ |
+| `AGENTS.md` | ✗ | ✓（读取） | ✓（原生） | ✗ | ✓（读取） | ✓（原生） |
+| `GEMINI.md` | ✗ | ✓（读取） | ✗ | ✓（原生） | ✓（原生） | ✗ |
+| `CODEX.md` | ✗ | ✗ | ✓（原生） | ✗ | ✗ | ✗ |
+| `.github/copilot-instructions.md` | ✗ | ✓（原生） | ✗ | ✗ | ✗ | ✗ |
+| `.cursor/rules/` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
+
+> **关键发现：** Copilot CLI 读取最多格式（CLAUDE.md + GEMINI.md + AGENTS.md + copilot-instructions）。Qwen Code 同时支持 CLAUDE.md 和 GEMINI.md（分叉兼容策略）。
