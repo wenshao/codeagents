@@ -1,203 +1,375 @@
-# /review 命令全工具对比
+# /review 命令实现深度对比
 
-> 代码审查是 AI 编程助手的核心能力之一。本文对比各工具的 /review 实现深度。
+> 基于四个工具的 review 命令完整源码逐行分析。面向 Code Agent 开发者的技术对比。
 
-## 总览
+## 源码来源
 
-| 工具 | 有 /review | 实现方式 | 多代理 | 审查维度 | 自动 PR 评论 |
-|------|-----------|---------|--------|---------|-------------|
-| **Claude Code** | ✓ | Skill + code-review 插件（9 步流水线） | **4-6 代理**（Haiku/Sonnet/Opus） | 4 维度 + 验证 | ✓（`--comment`） |
-| **Copilot CLI** | ✓ | 内置命令 + code-review 代理（YAML） | **1 代理**（claude-sonnet-4.5） | 8 维度 | ✓（`gh pr`） |
-| **Codex CLI** | ✓ | CLI 子命令 `codex review` + TUI `/review` | **1 代理** | 通用 | ✓（`@codex review`） |
-| **Qwen Code** | ✓ | Skill（`skills/bundled/review/SKILL.md`） | **4 代理**（并行） | 4 维度 | ✗ |
-| **Gemini CLI** | ✓ | 官方扩展（`/code-review`） | **1 代理** | 通用 | ✓（via MCP） |
-| **Aider** | ✗ | 无（`/ask` 替代） | — | — | — |
-| **Kimi CLI** | ✗ | 无（explore 子代理替代） | — | — | — |
-| **Goose** | ✗ | 无（MCP + 提示词替代） | — | — | — |
-| **OpenCode** | ✗ | 无 | — | — | — |
+| 工具 | 源码文件 | 行数 | 获取方式 |
+|------|---------|------|---------|
+| **Claude Code** | `plugins/code-review/commands/code-review.md` | 109 | GitHub API |
+| **Copilot CLI** | `definitions/code-review.agent.yaml` | 94 | 本地 npm 包提取 |
+| **Qwen Code** | `packages/core/src/skills/bundled/review/SKILL.md` | 123 | GitHub API |
+| **Codex CLI** | `codex review --help` + 二进制分析 | 37 | 本地 --help |
 
 ---
 
-## Claude Code `/review`（最强实现）
+## 一、架构设计对比
 
-> 源码：[`plugins/code-review/commands/code-review.md`](https://github.com/anthropics/claude-code/tree/main/plugins/code-review)
+### Claude Code：编排者模式（Orchestrator）
 
-### 9 步流水线
-
-| 步骤 | 代理 | 模型 | 任务 |
-|------|------|------|------|
-| 1 | 前置检查 | Haiku | 跳过已关闭/草稿/trivial/已审查的 PR |
-| 2 | 收集规范 | Haiku | 搜集仓库中所有 CLAUDE.md 文件 |
-| 3 | 变更摘要 | Sonnet | 生成 PR 变更结构化摘要 |
-| 4a | CLAUDE.md 合规 #1 | Sonnet | 检查代码是否违反 CLAUDE.md 规范 |
-| 4b | CLAUDE.md 合规 #2 | Sonnet | 冗余审计（降低遗漏率） |
-| 4c | Bug 扫描 | **Opus** | 只关注 diff 中新引入的缺陷 |
-| 4d | 安全/逻辑分析 | **Opus** | 分析新增代码的安全隐患 |
-| 5 | 并行验证 | Opus/Sonnet | 每个问题由独立验证代理确认 |
-| 6-9 | 过滤+输出+评论 | — | 移除未验证问题，发布 PR 内联评论 |
-
-### 审查维度
-1. 编译/解析错误（语法、类型、缺失导入）
-2. 逻辑错误（无论输入都产生错误结果）
-3. 安全问题（注入、XSS 等）
-4. CLAUDE.md 合规（引用具体被违反的规则）
-
-### 显式排除
-- 代码风格/格式
-- Linter 能捕获的问题
-- 主观建议
-- 已有代码的问题（非 PR 引入）
-
-### 过滤机制
-- 验证代理二元判断（通过/不通过）
-- README 描述的 80/100 置信度阈值
-- 实际效果：审查命中率 16% → 54%，假阳性 <1%
-
----
-
-## Copilot CLI `/review`
-
-> 源码：[`definitions/code-review.agent.yaml`](EVIDENCE.md 中完整记录)
-
-### 内置 code-review 代理
-
-| 属性 | 值 |
-|------|-----|
-| 模型 | `claude-sonnet-4.5` |
-| 工具 | 全部（`*`），但 prompt 禁止使用 edit/create |
-
-### 审查维度（8 个，prompt 明确定义）
-1. Bugs and logic errors
-2. Security vulnerabilities
-3. Race conditions or concurrency issues
-4. Memory leaks or resource management
-5. Missing error handling that could cause crashes
-6. Incorrect assumptions about data or state
-7. Breaking changes to public APIs
-8. Performance issues with measurable impact
-
-### 核心原则
-> "Finding your feedback should feel like finding a $20 bill in your jeans after doing laundry"
-
-### 显式排除（8 类）
-- Style, formatting, naming
-- Grammar/spelling in comments
-- "Consider doing X" suggestions
-- Minor refactoring
-- Code organization preferences
-- Missing documentation
-- "Best practices" without actual problems
-- Anything uncertain
-
-### 审查流程
-1. 理解变更范围（git status → staged/unstaged/branch diff）
-2. 理解上下文（读取周围代码）
-3. 验证（尝试编译、运行测试）
-4. 仅报告高置信度问题
-
----
-
-## Codex CLI `codex review`
-
-> 源码：`codex review --help` 输出
-
-### CLI 子命令
-
-```bash
-codex review [PROMPT]               # 自定义审查指令
-codex review --uncommitted           # 审查未提交更改
-codex review --base main             # 审查相对于 main 的更改
-codex review --commit abc123         # 审查特定 commit
-codex review --title "Auth Module"   # 附加标题
-echo "check errors" | codex review - # 从 stdin 读取
+```
+用户 → /code-review [--comment]
+  │
+  ├── Step 1: Haiku 前置检查代理
+  │     └── 检查: 已关闭? 草稿? trivial? 已审查?
+  │
+  ├── Step 2: Haiku 规范收集代理
+  │     └── 搜集仓库中所有 CLAUDE.md 文件路径
+  │
+  ├── Step 3: Sonnet 摘要代理
+  │     └── 生成 PR 变更结构化摘要
+  │
+  ├── Step 4: 4 并行审查代理 ──┬── Sonnet: CLAUDE.md 合规 #1
+  │                            ├── Sonnet: CLAUDE.md 合规 #2（冗余）
+  │                            ├── Opus: Bug 扫描（仅 diff）
+  │                            └── Opus: 安全/逻辑分析（新增代码）
+  │
+  ├── Step 5: N 并行验证代理（每个问题一个）
+  │     ├── Opus 验证 Bug（读取完整上下文确认）
+  │     └── Sonnet 验证 CLAUDE.md 违规（确认规则范围）
+  │
+  ├── Step 6: 过滤未通过验证的问题
+  │
+  ├── Step 7: 终端输出
+  │
+  ├── Step 8: 内部自检（列出计划评论，不发布）
+  │
+  └── Step 9: 发布 PR 内联评论（如 --comment）
+        └── mcp__github_inline_comment__create_inline_comment
 ```
 
-### 特点
-- 非交互式（CLI 子命令，可用于 CI/CD）
-- 支持 `@codex review` PR 评论触发
-- 可启用自动审查（每个新 PR）
-- 推荐 GPT-5.2-Codex 模型
+**设计理念：高信号、低噪音。** 通过验证步骤（Step 5）和过滤步骤（Step 6）确保只有真正的问题被报告。宁可漏报也不误报。
+
+**模型分层策略：**
+- **Haiku**（最便宜）：前置检查、文件列表等低复杂度任务
+- **Sonnet**（平衡）：摘要、合规审计、CLAUDE.md 验证
+- **Opus**（最强）：Bug 检测、安全分析、Bug 验证（需要最深推理）
+
+**代理数量：** 最少 7 个代理（2 Haiku + 1 Sonnet + 4 审查），若发现 N 个问题则再增加 N 个验证代理。
 
 ---
 
-## Qwen Code `/review`
+### Copilot CLI：单代理深度模式（Single-Agent Deep）
 
-> 源码：[`skills/bundled/review/SKILL.md`](从 GitHub 完整提取)
+```
+用户 → /review
+  │
+  └── code-review 代理 (claude-sonnet-4.5, tools: *)
+        │
+        ├── 1. git status → staged/unstaged/branch diff
+        ├── 2. 读取周围代码理解上下文
+        ├── 3. 尝试编译/测试验证
+        └── 4. 仅报告高置信度问题
+```
 
-### 四代理并行审查
+**设计理念："$20 bill in jeans"** — 每条反馈都应该是惊喜，不是噪音。
 
-| 代理 | 维度 | 检查项 |
-|------|------|--------|
-| **Agent 1** | Correctness & Security | 逻辑错误、空值、竞态条件、注入漏洞、类型安全、错误处理 |
-| **Agent 2** | Code Quality | 代码风格一致性、命名规范、代码重复、过度工程、注释、死代码 |
-| **Agent 3** | Performance & Efficiency | N+1 查询、内存泄漏、不必要重渲染、低效算法、缓存、包大小 |
-| **Agent 4** | Undirected Audit | **无预设维度**——全新视角捕获其他代理遗漏的问题 |
+**与 Claude Code 的根本区别：** 没有独立的验证步骤。依赖单个强模型（claude-sonnet-4.5）的内部推理来判断置信度。没有多代理冗余。
+
+**关键约束（源码原文）：**
+```
+CRITICAL: You Must NEVER Modify Code.
+You have access to all tools for investigation purposes only.
+```
+
+这是唯一在 prompt 中**显式禁止修改代码**的实现——其他工具依赖工具白名单限制。
+
+---
+
+### Qwen Code：并行维度模式（Parallel Dimensions）
+
+```
+用户 → /review [PR号 | 文件路径]
+  │
+  ├── Step 1: 确定审查范围
+  │     ├── 无参数 → git diff + git diff --staged
+  │     ├── PR 号 → git stash → gh pr checkout → gh pr view → 保存到 /tmp
+  │     └── 文件路径 → git diff HEAD -- <file>
+  │
+  ├── Step 2: 4 并行审查代理 ──┬── Agent 1: Correctness & Security
+  │                            ├── Agent 2: Code Quality
+  │                            ├── Agent 3: Performance & Efficiency
+  │                            └── Agent 4: Undirected Audit（无预设）
+  │
+  └── Step 3: 环境恢复 + 汇总输出
+        ├── checkout 原始分支
+        ├── git stash pop
+        ├── 删除临时文件
+        └── 合并四个代理结果 → Summary + Findings + Verdict
+```
+
+**设计理念：全维度覆盖 + 自由探索。** 前三个代理覆盖已知维度，第四个代理（Undirected Audit）用全新视角捕获其他代理遗漏的问题。
+
+**与 Claude Code 的关键差异：**
+1. **无验证步骤** — 信任每个代理的判断
+2. **无 CLAUDE.md 合规检查** — 只看代码本身
+3. **有环境恢复** — 审查 PR 后自动恢复（Claude Code 没有）
+4. **diff 不复制** — 源码明确要求"Do NOT paste the full diff into each agent's prompt"，而是让代理自己获取
+5. **有 Verdict** — 输出包含 Approve/Request changes/Comment 决定（Claude Code 不做决定）
+
+---
+
+### Codex CLI：CLI-first 模式（非交互式）
+
+```
+codex review [--uncommitted] [--base BRANCH] [--commit SHA] [--title TITLE] [PROMPT]
+  │
+  └── 单代理审查（GPT-5 系列模型）
+        ├── 确定审查目标（uncommitted/base/commit）
+        └── 生成审查报告
+```
+
+**设计理念：CI/CD 优先。** 作为 CLI 子命令（非交互式斜杠命令），可直接嵌入 GitHub Actions、GitLab CI 等。
+
+**与其他工具的根本区别：**
+- 不在交互式会话中运行
+- 支持从 stdin 读取指令（`echo "check errors" | codex review -`）
+- 支持 `@codex review` PR 评论触发
+- 可指定审查范围（`--uncommitted` / `--base` / `--commit`）
+
+---
+
+## 二、审查维度深度对比
+
+### 维度定义（源码逐字提取）
+
+| 维度 | Claude Code | Copilot CLI | Qwen Code |
+|------|------------|-------------|-----------|
+| **编译/解析错误** | "code will fail to compile or parse (syntax errors, type errors, missing imports, unresolved references)" | — | — |
+| **逻辑错误** | "code will definitely produce wrong results regardless of inputs (clear logic errors)" | "Bugs and logic errors" | "Logic errors and edge cases" |
+| **安全漏洞** | "security issues, incorrect logic" (Agent 4) | "Security vulnerabilities" | "Security vulnerabilities (injection, XSS, SSRF, path traversal, etc.)" |
+| **竞态条件** | — | "Race conditions or concurrency issues" | "Race conditions and concurrency issues" |
+| **内存泄漏** | — | "Memory leaks or resource management problems" | "Memory leaks or excessive memory usage" |
+| **错误处理** | — | "Missing error handling that could cause crashes" | "Error handling gaps" |
+| **数据假设** | — | "Incorrect assumptions about data or state" | "Null/undefined handling" + "Type safety issues" |
+| **API 破坏** | — | "Breaking changes to public APIs" | — |
+| **性能问题** | — | "Performance issues with measurable impact" | 整个 Agent 3: "N+1 queries, memory leaks, unnecessary re-renders, inefficient algorithms, missing caching, bundle size" |
+| **代码质量** | — | — | 整个 Agent 2: "style consistency, naming, duplication, over-engineering, comments, dead code" |
+| **CLAUDE.md 合规** | 整个 Agents 1+2: "CLAUDE.md compliance" | — | — |
+| **自由审计** | — | — | 整个 Agent 4: "business logic, boundary interactions, implicit assumptions, unexpected side effects" |
+
+**统计：**
+- Claude Code: 3 个明确维度 + CLAUDE.md 合规（独有）
+- Copilot CLI: **8 个明确维度**（最多）
+- Qwen Code: 4 个代理维度，每个含 5-7 个子项 ≈ **24 个检查项**（最细）
+
+---
+
+## 三、假阳性控制对比
+
+### Claude Code 的三层过滤（业界最严格）
+
+**第一层：Prompt 指令排除（源码原文）**
+```
+Do NOT flag:
+- Code style or quality concerns
+- Potential issues that depend on specific inputs or state
+- Subjective suggestions or improvements
+```
+
+**第二层：显式假阳性清单（6 类）**
+```
+- Pre-existing issues（已有代码中的问题，非 PR 引入）
+- Something that appears to be a bug but is actually correct
+- Pedantic nitpicks that a senior engineer would not flag
+- Issues that a linter will catch (do not run the linter to verify)
+- General code quality concerns unless explicitly required in CLAUDE.md
+- Issues mentioned in CLAUDE.md but explicitly silenced in the code (via lint ignore comment)
+```
+
+**第三层：独立验证代理（唯一拥有此机制的工具）**
+每个被标记的问题由独立的验证代理重新审查，未通过验证的问题被移除。这相当于"二次确认"——发现者和验证者是不同的代理实例。
+
+### Copilot CLI 的两层过滤
+
+**第一层：Prompt 核心原则**
+```
+If you're unsure whether something is a problem, DO NOT MENTION IT.
+```
+
+**第二层：显式排除清单（8 类，源码原文）**
+```
+CRITICAL: What You Must NEVER Comment On:
+- Style, formatting, or naming conventions
+- Grammar or spelling in comments/strings
+- "Consider doing X" suggestions that aren't bugs
+- Minor refactoring opportunities
+- Code organization preferences
+- Missing documentation or comments
+- "Best practices" that don't prevent actual problems
+- Anything you're not confident is a real issue
+```
+
+**无验证步骤**——依赖单个模型的内部判断。
+
+### Qwen Code 的一层过滤
+
+**仅有 Guidelines 指导：**
+```
+- Be specific and actionable. Avoid vague feedback.
+- Reference the existing codebase conventions.
+- Focus on the diff, not pre-existing issues.
+- Keep the review concise.
+- Flag any exposed secrets, credentials, API keys, or tokens as Critical.
+```
+
+**无显式排除清单，无验证步骤。** 依赖四个代理的专注维度来自然过滤。
+
+### Codex CLI
+
+**无公开的假阳性控制机制。** 审查行为由模型内部判断决定。
+
+---
+
+## 四、输入/输出协议对比
 
 ### 输入方式
-- 无参数：审查本地未提交更改（`git diff` + `git diff --staged`）
-- PR 号/URL：checkout PR 分支，用 `gh pr view` 获取上下文
-- 文件路径：审查指定文件的最近更改
+
+| 输入类型 | Claude Code | Copilot CLI | Qwen Code | Codex CLI |
+|---------|------------|-------------|-----------|-----------|
+| 未提交更改 | ✓ | ✓（自动检测） | ✓（`git diff`） | ✓（`--uncommitted`） |
+| 分支 diff | ✓（自动） | ✓（`git diff main...HEAD`） | ✓（PR checkout） | ✓（`--base BRANCH`） |
+| 特定 PR | ✓（PR 号） | ✗（需手动 checkout） | ✓（PR 号/URL） | ✗ |
+| 特定 commit | ✗ | ✗ | ✗ | ✓（`--commit SHA`） |
+| 特定文件 | ✗ | ✗ | ✓（文件路径） | ✗ |
+| 自定义指令 | ✗ | ✗ | ✗ | ✓（`[PROMPT]` 或 stdin） |
 
 ### 输出格式
+
+**Claude Code：** 问题列表 + 可选 PR 内联评论
+```markdown
+## Code review
+Found 3 issues:
+1. Missing error handling for OAuth callback (CLAUDE.md says "Always handle OAuth errors")
+   https://github.com/owner/repo/blob/abc123/src/auth.ts#L67-L72
 ```
+- 链接格式要求：完整 SHA + `#L` 标记 + 至少 1 行上下文
+- 可提交建议：小修复包含 committable suggestion block，大修复只描述
+
+**Copilot CLI：** 结构化问题报告
+```markdown
+## Issue: [Brief title]
+**File:** path/to/file.ts:123
+**Severity:** Critical | High | Medium
+**Problem:** Clear explanation
+**Evidence:** How you verified this
+**Suggested fix:** Brief description (but do not implement it)
+```
+- 无问题时："No significant issues found in the reviewed changes."
+- 无填充："Do not pad your response with filler. Do not summarize what you looked at. Do not give compliments."
+
+**Qwen Code：** 三段式报告 + Verdict
+```markdown
 ### Summary
 1-2 句概述
 
 ### Findings
-- **Critical** — 必须修复（Bug、安全、数据丢失）
-- **Suggestion** — 建议改进
-- **Nice to have** — 可选优化
+- **Critical** — Must fix before merging.
+- **Suggestion** — Recommended improvement.
+- **Nice to have** — Optional optimization.
 
 ### Verdict
 Approve | Request changes | Comment
 ```
+- 每个 finding 包含：文件:行号 + 问题 + 影响 + 建议修复
+- **唯一输出 Verdict（审查决定）的工具**
 
-### 环境恢复
-审查 PR 后自动恢复原始分支和 stash。
-
----
-
-## Gemini CLI `/code-review`
-
-> 来源：官方扩展 `gemini-cli-extensions/code-review`
-
-- 需要安装：`gemini extensions install https://github.com/gemini-cli-extensions/code-review`
-- 两个命令：`/code-review`（分支变更）和 `/pr-code-review`（PR 变更）
-- 单代理审查
-- 通过 MCP GitHub 工具发布 PR 评论
+**Codex CLI：** 无公开的输出格式规范（由模型自由生成）
 
 ---
 
-## 无 /review 的工具替代方案
+## 五、工具权限对比
 
-| 工具 | 替代 | 说明 |
+| 工具 | 允许的工具 | 禁止的工具 | 约束方式 |
+|------|-----------|-----------|---------|
+| **Claude Code** | `Bash(gh:*)`, `mcp__github_inline_comment__*` | 所有其他工具 | **Frontmatter `allowed-tools` 白名单**（最严格） |
+| **Copilot CLI** | `*`（全部） | edit, create | **Prompt 文本禁止**（"You Must NEVER Modify Code"） |
+| **Qwen Code** | task, run_shell_command, grep_search, read_file, glob | 其他 | **Frontmatter `allowedTools` 白名单** |
+| **Codex CLI** | 全部（CLI 子命令，非 Skill） | — | 由审批模式控制 |
+
+**关键设计差异：**
+- Claude Code 只允许 `gh` CLI 和一个 MCP 工具——**连文件读取都不在白名单中**（代理必须通过 `gh pr diff` 获取代码）
+- Copilot CLI 给了全部工具但用 prompt 约束——**可以运行测试、编译代码来验证问题**
+- Qwen Code 允许读取和搜索但不允许 GitHub 交互——**无法自动发布 PR 评论**
+
+---
+
+## 六、PR 评论集成
+
+| 维度 | Claude Code | Copilot CLI | Codex CLI | Qwen Code |
+|------|------------|-------------|-----------|-----------|
+| **触发方式** | `/code-review --comment` | `/review` 后手动 | `@codex review` PR 评论 | 无 |
+| **评论位置** | **内联评论**（代码行级别） | 终端输出（需手动复制） | **PR 评论** | 终端输出 |
+| **评论工具** | MCP `create_inline_comment` | — | GitHub API | — |
+| **可提交建议** | ✓（小修复包含 suggestion block） | ✗ | ✗ | ✗ |
+| **去重** | ✓（"Only post ONE comment per unique issue"） | — | — | — |
+| **无问题评论** | ✓（"No issues found"模板） | ✓（"No significant issues"） | — | — |
+| **链接格式** | 完整 SHA + `#Lstart-Lend` | `file:line` | — | `file:line` |
+
+---
+
+## 七、性能与成本考量
+
+| 维度 | Claude Code | Copilot CLI | Qwen Code | Codex CLI |
+|------|------------|-------------|-----------|-----------|
+| **最少 API 调用** | 7+N（N=问题数） | 1 | 5（1 调度 + 4 代理） | 1 |
+| **使用的模型** | Haiku+Sonnet+Opus（3 级） | claude-sonnet-4.5（1 级） | 继承主模型（1 级） | GPT-5 系列（1 级） |
+| **估算 token** | 高（多代理冗余） | 中 | 中高（4 代理） | 低（单次） |
+| **估算延迟** | 30-120 秒 | 10-30 秒 | 20-60 秒 | 5-15 秒 |
+| **并行度** | 高（Step 4: 4 并行 + Step 5: N 并行） | 低（串行） | 中（Step 2: 4 并行） | 低（单次） |
+
+---
+
+## 八、面向 Code Agent 开发者的设计洞察
+
+### 1. 验证步骤是否值得？
+
+Claude Code 是唯一有独立验证步骤的工具。这增加了延迟和成本（每个问题额外一次 API 调用），但实现了 <1% 假阳性率。其他工具依赖"不确定就不报告"的 prompt 约束——更便宜但假阳性率更高。
+
+**开发者决策：** 如果你的用户对假阳性零容忍（如 CI/CD 自动阻止合并），验证步骤是必须的。如果用户能手动过滤，单代理模式更经济。
+
+### 2. 多代理 vs 单代理
+
+| 方案 | 优势 | 劣势 |
 |------|------|------|
-| **Aider** | `/ask` 模式 | 只读问答，手动要求审查 |
-| **Kimi CLI** | `explore` 子代理 | 只读代码调查，非专用审查 |
-| **Goose** | MCP + 提示词 | 通过 GitHub MCP 读取 diff，自由提示审查 |
-| **OpenCode** | `review` 代理 | 内置代理之一，但无斜杠命令 |
+| **多代理**（Claude Code, Qwen Code） | 维度覆盖全、可并行、专注度高 | 成本高、需要编排逻辑、结果合并复杂 |
+| **单代理**（Copilot CLI, Codex CLI） | 成本低、简单、上下文连贯 | 容易遗漏维度、无冗余 |
+
+**Qwen Code 的 Agent 4 "Undirected Audit" 是一个优雅的设计：** 既利用了多代理的覆盖优势，又通过无预设维度避免了维度盲区。这是最值得其他工具借鉴的设计。
+
+### 3. CLAUDE.md 合规检查的价值
+
+Claude Code 独有的 CLAUDE.md 合规检查意味着团队可以将编码规范写入 CLAUDE.md，然后代码审查自动执行。这把"规范文档"变成了"可执行策略"——规范不再是建议，而是审查条件。
+
+**对其他工具的启示：** 任何支持项目指令文件（AGENTS.md, GEMINI.md）的工具都可以做类似的合规检查，但目前只有 Claude Code 实现了。
+
+### 4. diff 传递策略
+
+Qwen Code 明确禁止将完整 diff 粘贴给每个代理（"Do NOT paste the full diff into each agent's prompt — this duplicates it 4x"），而是让代理自己执行 git 命令获取。这节省了大量 token 但增加了工具调用延迟。
+
+Claude Code 走了不同路线——通过 `gh pr diff` 获取 diff，但代理工具白名单中没有 `Read`，说明它也不直接传递文件内容。
+
+### 5. 环境恢复
+
+只有 Qwen Code 在审查 PR 后自动恢复原始分支和 stash。这是一个容易被忽视但非常实用的功能——如果审查过程中 checkout 了 PR 分支，用户的本地工作状态会被打乱。
 
 ---
 
-## 横向对比
+## 证据来源
 
-| 维度 | Claude Code | Copilot CLI | Codex CLI | Qwen Code | Gemini CLI |
-|------|------------|-------------|-----------|-----------|-----------|
-| **代理数** | 4-6 | 1 | 1 | 4 | 1 |
-| **使用模型** | Haiku+Sonnet+Opus | claude-sonnet-4.5 | gpt-5.2-codex | 模型继承 | Gemini |
-| **审查维度** | 4（含 CLAUDE.md 合规） | 8（最多） | 通用 | 4（含自由审计） | 通用 |
-| **验证步骤** | ✓（独立验证代理） | ✗ | ✗ | ✗ | ✗ |
-| **假阳性过滤** | 80/100 阈值 + 显式排除列表 | 显式排除列表 | ✗ | ✗ | ✗ |
-| **PR 评论** | ✓（内联 + 摘要） | ✓ | ✓（@codex review） | ✗ | ✓ |
-| **CI/CD 集成** | ✓（`--comment` flag） | ✓（`gh pr`） | ✓（`codex review` CLI） | ✗ | ✗ |
-| **规范合规检查** | ✓（CLAUDE.md） | ✗ | ✗ | ✗ | ✗ |
-| **自由审计维度** | ✗ | ✗ | ✗ | ✓（Agent 4 无预设） | ✗ |
-| **环境恢复** | ✗ | ✗ | ✗ | ✓（自动 stash/checkout） | ✗ |
-
-## 结论
-
-- **最强整体**：Claude Code — 唯一有验证步骤和假阳性过滤的工具（审查命中率 54%，假阳性 <1%）
-- **最多审查维度**：Copilot CLI — 8 个明确定义的审查维度
-- **最创新**：Qwen Code — Agent 4 "Undirected Audit" 无预设维度设计 + 自动环境恢复
-- **最适合 CI/CD**：Codex CLI — 非交互式 CLI 子命令，最易集成
-- **最开放**：Gemini CLI — 扩展形式，可自定义审查逻辑
+| 工具 | 源码获取方式 | 完整性 |
+|------|------------|--------|
+| Claude Code | `gh api repos/anthropics/claude-code/contents/plugins/code-review/commands/code-review.md` | **完整 109 行 prompt** |
+| Copilot CLI | `cat definitions/code-review.agent.yaml`（本地 npm 包） | **完整 94 行 YAML + prompt** |
+| Qwen Code | `gh api repos/QwenLM/qwen-code/contents/packages/core/src/skills/bundled/review/SKILL.md` | **完整 123 行 SKILL.md** |
+| Codex CLI | `codex review --help` + 二进制 strings | **CLI 接口完整，内部 prompt 不可见** |
