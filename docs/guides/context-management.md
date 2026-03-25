@@ -51,7 +51,7 @@ LLM 的上下文窗口是一种**不可再生的有限资源**。每一轮对话
 | **Qwen Code** | `settings.json` 或模型自动检测 | `contextWindowSize` | 可在模型配置中显式设置；若未设置，自动从模型 ID 推断（`tokenLimit(model.id, 'input')`） |
 | **Gemini CLI** | 源码内置 | `contextWindow` | 在 `client.ts` 和 `turn.ts` 中使用，与模型绑定 |
 | **Codex CLI** | `config.toml` | `model_context_window` + `model_auto_compact_token_limit` | 显式配置窗口大小和自动压缩阈值 |
-| **Claude Code** | 模型固定 | 不可配置 | 由 Anthropic API 决定（Opus/Sonnet 4.6 = 200K，[1m] = 1M） |
+| **Claude Code** | 模型固定（只读） | `context_window_size`（元数据，非配置） | 模型知道自身窗口大小（如 200000），但用户不可修改 |
 | **Copilot CLI** | 模型固定 | 不可配置 | 取决于所选模型 |
 | **Kimi CLI** | `max_context_size` | 配置文件 | 用于计算压缩触发阈值 |
 | **Aider** | 模型自动检测 | `litellm.model_cost` | 通过 LiteLLM 查询模型的最大 token 数 |
