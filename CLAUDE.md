@@ -7,16 +7,40 @@
 这是一个中文技术文档项目，对比分析 16+ 款 AI 编程 CLI 工具。所有分析基于源码验证，
 确保技术声明的准确性。项目目标是为开发者提供中立、客观、可验证的工具选型参考。
 
-## 项目结构
+## 项目结构（60+ 文件，28,000+ 行）
 
 ```
 docs/
-├── tools/          # 各工具详细文档（每个工具一个 .md 文件）
-├── comparison/     # 对比分析文档（功能对比、性能对比等）
-├── guides/         # 使用指南（入门、进阶、最佳实践）
-├── architecture/   # 架构分析（工具内部实现分析）
-├── benchmarks/     # 基准测试（性能数据、评测结果）
-└── resources.md    # 外部资源汇总
+├── tools/                      # 工具文档（16 工具）
+│   ├── claude-code/            # 9 文件 + EVIDENCE.md（反编译分析）
+│   ├── copilot-cli/            # 5 文件 + EVIDENCE.md（SEA 反编译）
+│   ├── codex-cli/              # 5 文件 + EVIDENCE.md（Rust 二进制分析）
+│   ├── gemini-cli/             # 7 文件 + EVIDENCE.md（源码分析）
+│   ├── kimi-cli/               # 5 文件 + EVIDENCE.md
+│   ├── aider/                  # 5 文件 + EVIDENCE.md
+│   ├── opencode/               # 5 文件 + EVIDENCE.md
+│   ├── qwen-code/              # EVIDENCE.md（Gemini CLI 分叉分析）
+│   ├── goose/                  # EVIDENCE.md（MCP 原生架构分析）
+│   └── *.md                    # 9 个单文件工具（Cursor/Warp/Cline 等）
+├── comparison/                 # 对比文档（12 篇）
+│   ├── features.md             # 功能矩阵
+│   ├── slash-commands-deep-dive.md  # 命令深度对比
+│   ├── privacy-telemetry.md    # 隐私/遥测/安全监控对比
+│   ├── functional-internals.md # API 参数/代理循环/编辑格式
+│   ├── evolution-community.md  # 版本迭代/贡献者/Stars
+│   ├── pricing.md              # 定价/成本
+│   ├── system-requirements.md  # 系统要求/运行时版本
+│   ├── architecture-deep-dive.md
+│   └── claude-code-vs-*.md / aider-vs-goose.md / qwen-vs-*.md
+├── guides/                     # 使用指南（5 篇）
+│   ├── getting-started.md
+│   ├── workflows.md
+│   ├── migration.md
+│   ├── troubleshooting.md
+│   └── config-examples.md      # 配置示例并排对比
+├── architecture/
+├── benchmarks/
+└── resources.md
 ```
 
 ## 写作规范
@@ -62,8 +86,14 @@ docs/
 
 - 更新工具文档时，同步检查以下文件中的相关引用：
   - `README.md` 中的工具表格和导航链接
-  - `docs/comparison/features.md` 中的功能对比数据
-  - `docs/guides/getting-started.md` 中的入门信息
+  - `docs/tools/README.md` 工具索引
+  - `docs/comparison/features.md` 功能对比数据（命令数、工具数等数字）
+  - `docs/comparison/privacy-telemetry.md` 隐私/遥测数据
+  - `docs/comparison/pricing.md` 定价信息
+  - `docs/comparison/system-requirements.md` 系统要求
+  - `docs/guides/getting-started.md` 入门信息
+- 闭源工具的声明必须有 EVIDENCE.md 证据支撑（二进制分析或官方文档 URL）
+- 开源工具的声明需标注源码文件路径（如 `源码: aider/commands.py`）
 - 不要编造基准测试数据，无法验证的数据标注 `~` 表示估算
 - 保持工具间文档深度均衡，避免某些工具过于详细而其他过于简略
 - 新增文档后务必更新 `README.md` 导航目录
