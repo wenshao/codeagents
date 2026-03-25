@@ -73,3 +73,36 @@ catppuccin, dracula, flexoki, gruvbox, monokai, onedark, qoder, tokyonight, tron
 
 ## 提取时间
 2026-03-25
+
+## /review 反编译分析
+
+### /review-code 和 /review-pr
+- 类型: Skill（非内置命令）
+- 系统提示: "When users reference '/review-pr', they are referring to a skill"
+- 调用方式: skill: "review-pr", args: "123"
+
+### isSpecReviewScenario
+- 位置: core/agent/provider.(*qoderClient).isSpecReviewScenario
+- review 被识别为 Quest 特殊场景
+- 独立的模型选择逻辑
+
+### 模板系统
+- 错误: "failed to load code review template"
+- review 使用服务端模板（非硬编码 prompt）
+- 可热更新（无需客户端升级）
+
+### GitHub Action
+```yaml
+- name: Run Qoder Code Review
+  uses: QoderAI/qoder-action@v0
+  with:
+    prompt: |
+      /review-pr
+      REPO:owner/repo PR_NUMBER:123
+      OUTPUT_LANGUAGE:English
+```
+
+### 独有能力
+- 双命令分离（/review-code + /review-pr）
+- OUTPUT_LANGUAGE 多语言输出
+- 服务端模板热更新

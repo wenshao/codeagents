@@ -10,11 +10,62 @@
 | **Copilot CLI** | `definitions/code-review.agent.yaml` | 94 | 本地 npm 包提取 |
 | **Qwen Code** | `packages/core/src/skills/bundled/review/SKILL.md` | 123 | GitHub API |
 | **Codex CLI** | `codex review --help` + 二进制分析 | 37 | 本地 --help |
-| **Qoder CLI** | 二进制 strings 提取 `/review-code` + `/review-pr` | — | Go 二进制分析 |
+| **Qoder CLI** | 二进制 strings 提取 `/review-code` + `/review-pr` | — | Go 二进制反编译 |
 
 ---
 
-> **注：** Qoder CLI 有两个独立的审查命令——`/review-code`（代码审查）和 `/review-pr`（PR 审查），区分了代码级和 PR 级审查。其他工具通常合并为一个 `/review` 命令。Qoder CLI 的审查实现细节未公开（闭源 Go 二进制），但从命令分离可推测其内部有不同的审查流水线。
+### Qoder CLI：双命令 + Quest 场景 + 模板系统
+
+> 从 v0.1.35 Go 二进制（43MB, stripped）反编译提取。
+
+```
+/review-code                    # 代码审查（当前文件/变更）
+/review-pr                       # PR 审查（指定仓库和 PR 号）
+  参数格式: REPO:<owner/repo> PR_NUMBER:<number> OUTPUT_LANGUAGE:<lang>
+```
+
+**关键发现（二进制反编译）：**
+
+1. **`/review-code` 和 `/review-pr` 是 Skill（非内置命令）**
+   - 系统提示原文："When users reference a slash command or '/<something>' (e.g., '/commit', '/review-pr'), they are referring to a skill."
+   - 作为 Skill 调用：`skill: "review-pr", args: "123"`
+
+2. **`isSpecReviewScenario` 函数**（`core/agent/provider.(*qoderClient).isSpecReviewScenario`）
+   - 表明 review 被视为一种特殊的 **Quest 场景**
+   - Quest 场景有独立的模型选择逻辑（`no models available for quest scene`）
+   - Review 场景可能使用比普通对话更强的模型
+
+3. **模板系统**
+   - `failed to load code review template` — review 使用**外部模板**而非硬编码 prompt
+   - 模板从服务端加载（`createWorkflowFiles`），加载失败有错误处理
+   - 这意味着 review 的审查维度和逻辑可以**服务端更新**而无需升级客户端
+
+4. **GitHub Action 集成**
+   ```yaml
+   - name: Run Qoder Code Review
+     uses: QoderAI/qoder-action@v0
+     with:
+       qoder_personal_access_token: ${{ secrets.QODER_PERSONAL_ACCESS_TOKEN }}
+       prompt: |
+         /review-pr
+         REPO:${{ github.repository }} PR_NUMBER:${{ github.event.pull_request.number }}
+         OUTPUT_LANGUAGE:English
+   ```
+   - CI/CD 直接通过 `/review-pr` Skill + 参数格式触发
+   - 支持 `OUTPUT_LANGUAGE` 指定审查输出语言
+
+5. **与其他工具的设计差异**
+
+| 设计 | Qoder CLI | Claude Code | Copilot CLI | Qwen Code |
+|------|-----------|-------------|-------------|-----------|
+| 命令数 | **2 个**（code + pr 分离） | 1 个（/code-review） | 1 个（/review） | 1 个（/review） |
+| 实现方式 | Skill + 服务端模板 | 插件 + 硬编码 prompt | YAML 代理定义 | Skill + 硬编码 prompt |
+| 模型选择 | Quest 场景特殊路由 | Haiku/Sonnet/Opus 分层 | 固定 sonnet-4.5 | 继承主模型 |
+| 模板更新 | 服务端推送（无需升级） | 需更新插件 | 需更新二进制 | 需更新仓库 |
+| CI/CD | `QoderAI/qoder-action` | `claude -p` | `gh pr` | 无 |
+| 多语言输出 | ✓（OUTPUT_LANGUAGE） | ✗ | ✗ | ✗ |
+
+> **独特优势：** Qoder CLI 是唯一支持**多语言审查输出**（OUTPUT_LANGUAGE 参数）和**服务端模板热更新**的工具。审查逻辑不固化在客户端二进制中，可由 Qoder 服务端随时更新——这意味着审查质量的改进不需要用户升级客户端。
 
 ## 一、架构设计对比
 
