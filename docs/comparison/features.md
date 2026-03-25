@@ -210,8 +210,8 @@
 - **Aider** 命令最多（~42），文件/上下文管理和模式切换最细粒度
 - **Gemini CLI / Qwen Code / Kimi CLI** 命令体系接近（Gemini CLI 分叉谱系）
 - **Claude Code** 独有 `/review`（代码审查）和 `/remote-control`（远程控制）
-- **Copilot CLI** 命令最少（5 个），侧重简洁
-- **Codex CLI** 无斜杠命令，完全通过 CLI 参数控制
+- **Copilot CLI** 32 命令 + 65 工具 + 3 内置代理，GitHub 生态深度集成
+- **Codex CLI** 20+ 交互命令 + CLI 子命令 + Rust 原生沙箱
 - **OpenCode** 使用 Ctrl+P 命令面板而非斜杠命令
 
 ## 使用场景推荐
