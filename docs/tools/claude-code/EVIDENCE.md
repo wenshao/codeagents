@@ -352,3 +352,49 @@ DISABLE_TERMINAL_TITLE, DISABLE_THINKING, DISABLE_VIRTUAL_SCROLL
 - MAX_MCP_OUTPUT_TOKENS: 25000 (env override available)
 - MCP output truncation multiplier: 0.5
 - Image token estimate: 1600 tokens per image
+
+########## DECOMPILATION: Machine ID / Hardware Fingerprinting ##########
+
+### Machine ID Collection (via OpenTelemetry getMachineId())
+Confirmed: Claude Code collects machine-specific identifiers for telemetry:
+
+**macOS:**
+- IOPlatformUUID via `ioreg -rd1 -c IOPlatformExpertDevice`
+- Extraction: split on `'" = "'`, take second part
+
+**Linux:**
+- Primary: `/etc/machine-id`
+- Fallback: `/var/lib/dbus/machine-id`
+
+**Windows:**
+- Registry: `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Cryptography\MachineGuid`
+- Handles 32-bit on 64-bit via sysnative redirect
+
+**FreeBSD:**
+- Primary: `/etc/hostid`
+- Fallback: `kenv -q smbios.system.uuid`
+
+### MAC Address Collection
+- getMacAddress: 0 references — **NOT collected**
+- networkInterfaces: referenced but as Node.js built-in, not for MAC harvesting
+
+### Telemetry Data Points Sent
+From binary analysis of telemetry event construction:
+- accountUuid: Anthropic account UUID
+- organizationUuid: organization UUID
+- userType: "external"
+- subscriptionType: subscription tier
+- rateLimitTier: rate limit tier
+- platform: OS/arch info via oOH()
+- firstTokenTime: time to first token
+- githubActionsMetadata (CI only): GITHUB_ACTOR, GITHUB_ACTOR_ID,
+  GITHUB_REPOSITORY, GITHUB_REPOSITORY_ID, GITHUB_REPOSITORY_OWNER,
+  GITHUB_REPOSITORY_OWNER_ID
+
+### Telemetry Event Count
+- 782 unique tengu_* event types found in binary (far more than previously documented 30+)
+
+### MDM (Mobile Device Management) Support
+- macOS: plist-based managed settings
+- Windows: Registry policies at HKLM/HKCU\SOFTWARE\Policies\ClaudeCode
+- Settings key: "Settings" under policy path
