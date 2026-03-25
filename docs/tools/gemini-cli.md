@@ -100,7 +100,7 @@ Scheduler (事件驱动调度器)
     │   └── DefaultStrategy（最终兜底）
     │
     └── AgentRegistry (5 内置代理 + 自定义代理)
-        ├── generalist（通用，全工具访问，20 轮）
+        ├── generalist（通用，全工具访问，继承主模型，20 轮）
         ├── codebase_investigator（代码分析，只读工具，Flash 模型）
         ├── memory_manager（记忆管理，读写 GEMINI.md，Flash 模型）
         ├── cli_help（CLI 帮助，查询内部文档，10 轮/3 分钟）
@@ -129,11 +129,11 @@ Scheduler (事件驱动调度器)
 
 | 代理 | 类型 | 工具权限 | 模型 | 用途 |
 |------|------|----------|------|------|
-| **generalist** | 子代理 | 完全访问 | 默认 Pro | 通用多步骤任务，20 轮/10 分钟 |
-| **codebase_investigator** | 子代理 | 只读（glob/grep/ls/read_file） | Preview Flash | 代码库分析和架构映射，10 轮/3 分钟 |
-| **memory_manager** | 子代理（条件） | 读写（ask_user/edit/glob/grep/ls/read/write） | Flash | 记忆增删改、去重、组织，10 轮/5 分钟 |
-| **cli_help** | 子代理 | get_internal_docs | Flash | 回答 CLI 功能问题，10 轮/3 分钟 |
-| **browser** | 子代理（条件） | 浏览器 MCP 工具 | Preview Flash | Web 自动化（导航、点击、截图分析），50 轮/10 分钟 |
+| **generalist** | 子代理 | 完全访问 | 继承主模型 | 通用多步骤任务，20 轮/10 分钟 |
+| **codebase_investigator** | 子代理 | 只读（glob/grep/ls/read_file） | gemini-3-flash-preview（回退 gemini-2.5-pro） | 代码库分析和架构映射，10 轮/3 分钟 |
+| **memory_manager** | 子代理（条件） | 读写（ask_user/edit/glob/grep/ls/read/write） | flash（gemini-3-flash-preview） | 记忆增删改、去重、组织，10 轮/5 分钟 |
+| **cli_help** | 子代理 | get_internal_docs | flash（gemini-3-flash-preview） | 回答 CLI 功能问题，10 轮/3 分钟 |
+| **browser** | 子代理（条件） | 浏览器 MCP 工具 | gemini-3-flash-preview（回退 gemini-2.5-flash） | Web 自动化（导航、点击、截图分析），50 轮/10 分钟 |
 
 - browser 和 memory_manager 为**条件注册**代理，需在设置中启用
 - 支持通过配置文件定义**自定义代理**（独立模型、提示、最大步数、工具过滤）
