@@ -75,7 +75,7 @@ Claude: [分析 diff] → [生成消息] → 已提交: "Add form validation for
 
 ## 理解命令体系
 
-Claude Code 有 **~60 个命令**，分四种类型：
+Claude Code 有 **~79 个命令**，分四种类型：
 
 ### prompt 类型（LLM 执行）
 
@@ -551,7 +551,7 @@ claude
 
 ## 延伸阅读
 
-- [60+ 命令完整参考](../tools/claude-code/02-commands.md)
+- [79 命令完整参考](../tools/claude-code/02-commands.md)
 - [技术架构（反编译分析）](../tools/claude-code/03-architecture.md)
 - [Skill 与插件系统](../tools/claude-code/05-skills.md)
 - [设置与安全（含 28 条 BLOCK 规则）](../tools/claude-code/06-settings.md)

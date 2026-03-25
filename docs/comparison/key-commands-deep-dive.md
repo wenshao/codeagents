@@ -162,7 +162,7 @@ message = "Write operations are limited to .md files in the plans directory"
 | **Gemini CLI** | `GEMINI.md` | 目录概览 + README + 最多 10 个文件深度读取 | `submit_prompt` 到 LLM |
 | **Kimi CLI** | `AGENTS.md` | 项目结构 + 技术栈 + 构建 + 规范 + 安全 | 临时 KimiSoul 隔离执行 |
 | **Copilot CLI** | `AGENTS.md` 或 `.github/copilot-instructions.md` | 未公开 | 闭源 |
-| **Qwen Code** | `GEMINI.md` | 继承 Gemini | 继承 |
+| **Qwen Code** | `QWEN.md` | 继承 Gemini | 继承（`/init` 生成 QWEN.md） |
 | **Codex CLI** | `CODEX.md` | 未公开 | TUI `/init` |
 
 ### Kimi CLI 的隔离执行（源码：`slash.py:init()`）

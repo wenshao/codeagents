@@ -16,6 +16,7 @@
 | 模型管理 | **Aider** | 三模型槽位（主/编辑/弱） |
 | MCP 集成 | **Goose** | 全工具 MCP 原生架构 |
 | 权限系统 | **Gemini CLI** | TOML 策略引擎 + 正则匹配 |
+| 旁问与回退 | **Claude Code** | `/btw` 上下文隔离 + Esc 检查点回退 |
 
 ---
 
@@ -26,7 +27,7 @@
 | 工具 | 命令 | 实现方式 | 多代理 | 自动 PR 评论 | 能力深度 |
 |------|------|----------|--------|-------------|----------|
 | **Claude Code** | code-review 插件 | 9 步编排流水线，4 并行代理，置信度过滤 | ✓（4-6 代理，Haiku/Sonnet/Opus） | ✓（`--comment`） | ★★★★★ |
-| **Copilot CLI** | `/review` | 内置命令，终端内直接审查代码变更 | 未公开 | ✓（`gh pr edit --add-reviewer @copilot`） | ★★★★☆ |
+| **Copilot CLI** | `/review` | 内置命令，code-review agent（Claude Sonnet 4.5），tools: `["*"]`，可编译运行测试验证 | ✓（code-review agent） | ✓（`gh pr edit --add-reviewer @copilot`） | ★★★★☆ |
 | **Codex CLI** | 内置 + `@codex review` | PR 评论 `@codex review` 或设置自动审查 | ✓（独立审查代理） | ✓（自动审查选项） | ★★★★☆ |
 | **Gemini CLI** | `/code-review`（扩展） | 官方扩展，分析分支变更或 PR | ✗ | ✓（通过 MCP） | ★★★☆☆ |
 | **Aider** | `/ask`（替代） | 提问模式下不编辑代码，可手动要求审查 | ✗ | ✗ | ★★☆☆☆ |
@@ -462,7 +463,7 @@ async def yolo(soul: KimiSoul, args: str):
 |------|------|----------|------|----------|---------|--------|
 | **Claude Code** | `/memory` | CLAUDE.md | 全局 + 项目 + 子目录 + 用户私有项目 | ✓ | ✗ | ✓ |
 | **Gemini CLI** | `/memory` | GEMINI.md | 全局 + 扩展 + 项目 + 子目录 | ✓ | **✓（memory_manager 子代理）** | ✓ |
-| **Qwen Code** | `/memory` | GEMINI.md | 继承 Gemini 层级 | ✓ | 继承 Gemini | ✓ |
+| **Qwen Code** | `/memory` | QWEN.md | 继承 Gemini 层级 | ✓ | 继承 Gemini | ✓ |
 | **Kimi CLI** | `/init` | AGENTS.md | 项目级 | 一次性生成 | ✗ | ✗ |
 | **Aider** | — | .aider.conf.yml | 全局 + 项目 | ✗ | ✗ | ✗ |
 
@@ -705,7 +706,7 @@ kimi mcp test <name>
 
 **Prompt Hook（独有理念）：**
 
-5 个生命周期事件（PreToolUse / PostToolUse / Notification / Stop / SubagentStop），3 种 Hook 类型（command / http / **prompt**）。
+22 种 Hook 事件（PreToolUse / PostToolUse / PostToolUseFailure / Notification / Stop / StopFailure / SubagentStart / SubagentStop / SessionStart / SessionEnd / UserPromptSubmit / PermissionRequest / PreCompact / PostCompact / TaskCompleted / TeammateIdle / InstructionsLoaded / ConfigChange / WorktreeCreate / WorktreeRemove / Elicitation / ElicitationResult），3 种 Hook 类型（command / http / **prompt**）。
 
 ```json
 {
@@ -816,18 +817,49 @@ Admin 目录强制严格所有权检查，防止权限提升。
 
 ---
 
+## 11. 旁问与回退（/btw 与 /rewind）
+
+> 详细分析见 [/btw 与 /rewind 功能对比](./btw-rewind.md)。
+
+### /btw（旁问/侧边问题）实现对比
+
+| 工具 | 支持 | 命令 | 实现方式 |
+|------|------|------|----------|
+| **Claude Code** | ✓ | `/btw` | 本地 JSX 实现，独立 prompt ID（`makeBtwPromptId` + timestamp） |
+| **Qwen Code** | ✓ | `/btw` | Qwen 自行添加（`btwCommand.ts`，非继承 Gemini CLI） |
+| **Gemini CLI** | ✗ | — | 仓库搜索 0 匹配，无此命令 |
+| **其他工具** | ✗ | — | — |
+
+**核心设计：** `/btw` 解决**上下文污染**问题——创建完全独立的临时 prompt，旁问的内容不进入主对话上下文，不触发压缩，不影响后续回答质量。
+
+**限制：** 无工具调用、无上下文访问、无历史持久化、单轮问答。
+
+### /rewind（会话回退）实现对比
+
+| 工具 | 支持 | 命令 | 回退代码 | 回退对话 | 影响分析 |
+|------|------|------|---------|---------|---------|
+| **Gemini CLI** | ✓ | `/rewind` | ✓ | ✓ | **✓（显示变更行数/文件数）** |
+| **Claude Code** | ✓ | Esc 键 | ✓ | ✓ | ✗ |
+| **Qwen Code** | ✓ | `/restore` | ✓ | ✓ | 部分 |
+| **Kimi CLI** | 实验 | D-Mail | — | — | — |
+| **其他工具** | ✗ | — | — | — | — |
+
+**核心洞察：** 只有 **Claude Code** 同时支持 /btw 和 /rewind，一个预防上下文污染，一个在出错时回退。
+
+---
+
 ## 横向总结：各工具的命令哲学
 
 | 工具 | 设计哲学 | 命令风格 |
 |------|----------|----------|
 | **Aider** | Git 原生，编辑优先 | 最多命令（42），细粒度控制每个操作 |
-| **Claude Code** | 对话式代理 | ~60 命令（含 Skill），对话 + 插件驱动 |
+| **Claude Code** | 对话式代理 | ~79 命令（含 Skill），对话 + 插件驱动 |
 | **Gemini CLI** | 全面可配置 | 中等命令量（41），策略引擎驱动 |
 | **Kimi CLI** | 双模式交互 | 28 命令（8 Soul + 20 Shell），双注册表 |
-| **Qwen Code** | 继承 Gemini + 中文优化 | 继承命令体系（23），保持兼容 |
+| **Qwen Code** | 继承 Gemini + 中文优化 | 40 命令（39 继承 + 1 Skill /review），保持兼容 |
 | **Copilot CLI** | GitHub 原生 | 34 命令 + 67 工具 + 3 内置代理 |
 | **Codex CLI** | 安全第一 | 28 交互命令（官方文档验证）+ 15 CLI 子命令 + Rust 沙箱 |
 | **Goose** | MCP 原生 | CLI 子命令，MCP 驱动一切 |
 | **Cursor** | IDE 原生 | GUI 交互，CLI 是辅助 |
 
-> **核心洞察：** 命令数量不等于能力强弱。Claude Code 用 ~60 个命令（含 Skill）+ 自然语言覆盖了最广泛的场景；Aider 用 42 个命令提供最细粒度的文件/Git 控制；Codex CLI 用 28 交互命令 + Rust 原生沙箱实现了最高安全性。选择取决于你偏好的交互范式。
+> **核心洞察：** 命令数量不等于能力强弱。Claude Code 用 ~79 个命令（含 Skill）+ 自然语言覆盖了最广泛的场景；Aider 用 42 个命令提供最细粒度的文件/Git 控制；Codex CLI 用 28 交互命令 + Rust 原生沙箱实现了最高安全性。选择取决于你偏好的交互范式。

@@ -13,7 +13,7 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 | **Codex CLI** | `CODEX.md` | 原生支持 | 最早引入 AGENTS.md 概念 |
 | **Kimi CLI** | `AGENTS.md` | 原生支持 | 作为主要项目指令文件 |
 | **Copilot CLI** | `.github/copilot-instructions.md` | 读取 | 同时读取 CLAUDE.md、GEMINI.md、AGENTS.md |
-| **Qwen Code** | `GEMINI.md` | 读取 | 作为 Gemini CLI 分叉，优先读取 GEMINI.md |
+| **Qwen Code** | `QWEN.md` | 读取 | `/init` 生成 QWEN.md，兼容读取 GEMINI.md |
 | **Claude Code** | `CLAUDE.md` | 不读取 | 仅读取 CLAUDE.md |
 | **Gemini CLI** | `GEMINI.md` | 不读取 | 仅读取 GEMINI.md |
 
