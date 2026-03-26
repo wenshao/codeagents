@@ -119,6 +119,27 @@ code-review、pr-review-toolkit、feature-dev、commit-commands、security-guida
 
 10+ 内置 Skill（/loop、/schedule、/security-review、/pr-comments、/simplify 等），通过 SKILL.md frontmatter 定义。
 
+### Copilot CLI 仓库 Hooks（v1.0.10 新增）
+
+v1.0.10 修复了 `.github/hooks/` 在 `-p`（prompt）模式下不触发的问题。现在仓库级 Hook 在交互模式和管道模式下均正确执行。
+
+```
+.github/hooks/
+  ├── pre-tool-use.sh    # 工具执行前触发
+  └── post-tool-use.sh   # 工具执行后触发
+```
+
+### Codex CLI 用户 Prompt Hook（新增）
+
+Codex CLI 新增 user prompt hook，允许在用户提交 prompt 时触发自定义逻辑。
+
+### Qwen Code Hooks 自动化系统（v0.12 新增）
+
+Qwen Code v0.12 引入**独立的 Hooks 自动化系统**（非仅继承 Gemini），支持在关键生命周期事件触发自定义命令：
+- 自动注入项目上下文
+- 自动生成工作摘要日志
+- 与 Gemini CLI 的 Hook 系统并行发展
+
 ---
 
 ## 二、OpenCode：17 种 Hook 类型（最细粒度）

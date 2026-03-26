@@ -124,6 +124,12 @@ agentCardUrl: https://reviewer.example.com/.well-known/agent.json
 | **explore** | Claude Haiku 4.5 | 仅 grep/glob/view/lsp | 只读代码探索，300 字符限制 |
 | **task** | Claude Haiku 4.5 | `["*"]`（全部工具） | 后台任务执行，最小输出 |
 
+### v1.0.10 新增：实验性多并发会话
+
+- SDK 客户端可注册自定义 slash 命令（启动或加入会话时）
+- SDK 支持 `session.ui.elicitation` 向用户展示交互式对话框
+- **实验性支持多并发会话**——同一终端运行多个独立代理
+
 ### code-review 代理审查标准
 
 Prompt 中的核心指令：
@@ -160,6 +166,15 @@ Prompt 中的核心指令：
 | iTerm2 | macOS | 原生分屏 |
 | Tmux | Linux/macOS | 通用 |
 | InProcess | 所有平台 | 无 UI，纯后台 |
+
+### v0.12 新增：`ask_user_question` 交互式提问
+
+AI 代理在任务执行中可主动向用户提问，实时收集偏好：
+
+```
+Agent 执行任务 → 遇到歧义 → ask_user_question("你希望用 REST 还是 GraphQL？")
+  → 用户回答 → Agent 继续执行
+```
 
 ### Arena vs Teammates
 

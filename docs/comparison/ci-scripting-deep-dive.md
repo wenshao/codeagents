@@ -149,11 +149,21 @@ codex cloud diff <TASK_ID>                 # 查看 diff
 
 Cloud 模式支持 best-of-N（1-4 次尝试），选择最佳结果。
 
+### App-Server TUI + ChatGPT 设备码登录（新增）
+
+- App-server TUI 支持 ChatGPT 设备码登录（onboarding 流程）
+- 可刷新现有 ChatGPT token
+- Plugin 安装提示 + 远程同步 install/uninstall 状态
+
 ---
 
 ## 四、Copilot CLI：Autopilot + GitHub Actions
 
 > 来源：02-commands.md、EVIDENCE.md
+
+### v1.0.10：仓库 Hooks 在 -p 模式下触发
+
+`.github/hooks/` 目录的 Hook 现在在 `-p` 管道模式下也正确触发——CI/CD 管道中的策略检查不再被绕过。
 
 ### Autopilot 模式
 

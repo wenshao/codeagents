@@ -171,6 +171,22 @@ kimi web --port 5494 --auth-token my-token --lan-only
 
 **快捷键**：Ctrl+K（命令面板）、Ctrl+T（主题切换）、侧边栏开关。
 
+### Qwen Code：继承 Gemini + Arena 多终端 + VS Code 侧边栏
+
+> 来源：qwen-code.md、[v0.12 周报](https://qwenlm.github.io/qwen-code-docs/en/blog/weekly-update-2026-03-13/)
+
+**v0.12 新增 VS Code 侧边栏**：Qwen Code 可驻留在 VS Code 侧边栏，编码时同步查看对话历史。
+
+**Arena 终端后端**：
+
+| 后端 | 适用 |
+|------|------|
+| iTerm2 | macOS 原生分屏 |
+| Tmux | Linux/macOS 通用 |
+| InProcess | 无 UI 纯后台 |
+
+**大目录自动折叠**：查看时自动折叠大目录，改善上下文聚焦。
+
 ### Warp：GPU 渲染终端（最高性能）
 
 > 来源：warp.md
