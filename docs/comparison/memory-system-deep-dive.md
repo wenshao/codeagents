@@ -8,7 +8,7 @@
 |------|---------|--------|---------|---------|--------|-----------|
 | **Claude Code** | CLAUDE.md | **4 层** | **✓** | ✗（用户编辑） | ✓ | ✗ |
 | **Gemini CLI** | GEMINI.md | **4 层** | **✓** | **✓（memory_manager）** | ✓ | ✗ |
-| **Copilot CLI** | copilot-instructions.md | 1 层 | ✗ | ✗ | ✗ | **✓（读 7 种来源）** |
+| **Copilot CLI** | copilot-instructions.md | 多层（全局+项目+.github） | ✗ | ✗ | ✓ | **✓（读 7 种来源）** |
 | **Qwen Code** | QWEN.md + AGENTS.md | 继承 Gemini | ✓ | ✓（继承） | ✓ | ✗ |
 | **Kimi CLI** | AGENTS.md | 1 层 | ✗（一次性） | ✗ | ✗ | ✗ |
 | **Codex CLI** | AGENTS.md | 多层递归 | ✗ | ✗ | ✓ | ✗ |
@@ -145,16 +145,19 @@ claude.ai/api/claude_code/team_memory
 
 ### 多格式读取
 
-Copilot CLI 是唯一读取多种指令文件格式的工具：
+Copilot CLI 读取 **7 种来源**的指令文件（与 OpenCode 并列最多跨格式读取）：
 
 | 优先级 | 文件 | 说明 |
 |--------|------|------|
-| 1 | `.github/copilot-instructions.md` | 原生格式 |
-| 2 | `CLAUDE.md` | 读取 Claude Code 指令 |
-| 3 | `GEMINI.md` | 读取 Gemini CLI 指令 |
-| 4 | `AGENTS.md` | 读取 Codex/Kimi 指令 |
+| 1 | `CLAUDE.md`（项目根+父目录） | Claude Code 兼容 |
+| 2 | `GEMINI.md` | Gemini CLI 兼容 |
+| 3 | `AGENTS.md` | Codex/Kimi/OpenCode 兼容 |
+| 4 | `.github/instructions/**/*.instructions.md` | GitHub 标准路径 |
+| 5 | `.github/copilot-instructions.md` | 原生格式 |
+| 6 | `~/.copilot/copilot-instructions.md` | 全局（所有项目） |
+| 7 | `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` 环境变量 | 自定义目录 |
 
-**设计理念**：团队中不同成员使用不同工具时，Copilot CLI 自动适配，无需维护额外指令文件。
+可通过 `--no-custom-instructions` 禁用所有指令加载。
 
 ---
 
@@ -263,19 +266,20 @@ files.push(path.join(Global.Path.config, "AGENTS.md"));
 
 ### 第一代：静态配置
 
-**代表**：Aider、Codex CLI、Cline
+**代表**：Aider、Cline、Goose
 
 - 用户手动编写配置文件
 - 不会自动学习或更新
 - 需要用户主动维护
 
-### 第二代：一次性生成 + 手动维护
+### 第二代：LLM 生成 + 手动维护
 
-**代表**：Kimi CLI、Qwen Code（/init）
+**代表**：Kimi CLI、Qwen Code（/init）、Codex CLI、OpenCode
 
-- `/init` 命令 LLM 分析项目，生成指令文件
-- 生成后不自动更新
-- 项目变化需手动重新生成
+- `/init` 命令 LLM 分析项目，生成指令文件（AGENTS.md）
+- Codex CLI 支持子目录递归和作用域覆盖
+- OpenCode 同时读取 3 种文件格式（AGENTS.md + CLAUDE.md + CONTEXT.md）
+- 生成后不自动更新，项目变化需手动重新生成
 
 ### 第三代：AI 自动学习 + 持续更新
 
@@ -310,6 +314,6 @@ files.push(path.join(Global.Path.config, "AGENTS.md"));
 | Copilot CLI | EVIDENCE.md + 03-architecture.md | SEA 反编译 |
 | Kimi CLI | 03-architecture.md（init 实现） | 开源 |
 | Qwen Code | qwen-code.md | 开源 |
-| Codex CLI | 01-overview.md + 02-commands.md | 二进制 + 官方文档 |
+| Codex CLI | Rust 二进制 strings（43 AGENTS.md refs） | 二进制分析 |
 | Aider | 01-overview.md | 开源 |
-| OpenCode | 03-architecture.md | 开源 |
+| OpenCode | Go ELF 二进制 strings（v1.2.15） | 二进制分析 |
