@@ -52,7 +52,7 @@ Claude Code 采用 5 层优先级设置体系，从高到低：
 
 Claude Code 的 Hook 系统是其最独特的能力之一。与传统脚本 Hook 不同，Claude Code 支持 **LLM 驱动的 Hook 决策**——让 LLM 分析工具调用的意图和参数，决定是否允许执行。
 
-### Hook 事件类型（22 种）
+### Hook 事件类型（24 种）
 
 | 事件 | 触发时机 | 来源 |
 |------|----------|------|
@@ -78,8 +78,10 @@ Claude Code 的 Hook 系统是其最独特的能力之一。与传统脚本 Hook
 | `WorktreeRemove` | 移除 Git worktree 时 | 官方 |
 | `Elicitation` | 向用户请求信息时 | 官方 |
 | `ElicitationResult` | 用户回复请求时 | 官方 |
+| `CwdChanged` | 工作目录变更时 | v2.1.83 二进制确认 |
+| `FileChanged` | 文件变更检测时 | v2.1.83 二进制确认 |
 
-> 来源：[官方 Hooks 文档](https://code.claude.com/docs/en/hooks)，全部 22 个事件在 v2.1.81 二进制中确认存在。
+> 来源：[官方 Hooks 文档](https://code.claude.com/docs/en/hooks)，全部 24 个事件在 v2.1.83 二进制中确认存在。
 
 ### Hook 配置示例
 

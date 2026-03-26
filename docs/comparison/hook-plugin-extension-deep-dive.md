@@ -1,6 +1,6 @@
 # 31. Hook/插件/扩展系统深度对比
 
-> Hook、插件和扩展系统决定了 AI 编程代理的可扩展性。从"无扩展能力"到"22 事件 + Prompt Hook + 13 插件 marketplace"，差异跨度极大。
+> Hook、插件和扩展系统决定了 AI 编程代理的可扩展性。从"无扩展能力"到"24 事件 + Prompt Hook + 13 插件 marketplace"，差异跨度极大。
 
 ## 总览
 
@@ -18,11 +18,11 @@
 
 ---
 
-## 一、Claude Code：22 事件 + Prompt Hook + 13 插件（最完整）
+## 一、Claude Code：24 事件 + Prompt Hook + 13 插件（最完整）
 
 > 来源：06-settings.md、05-skills.md、hooks-config.md
 
-### 22 种 Hook 事件
+### 24 种 Hook 事件
 
 | 类别 | 事件 |
 |------|------|
@@ -34,6 +34,7 @@
 | **配置** | ConfigChange |
 | **任务/团队** | TaskCompleted、TeammateIdle |
 | **Worktree** | WorktreeCreate、WorktreeRemove |
+| **环境变更**（v2.1.83 新增） | **CwdChanged**、**FileChanged** |
 | **通知** | Notification |
 
 ### 3 种 Hook 类型

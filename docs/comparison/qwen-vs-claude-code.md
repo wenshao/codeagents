@@ -211,7 +211,7 @@ Shell 分析：
 
 ## 4. Hook 系统
 
-### Claude Code Hook 事件（22 个）
+### Claude Code Hook 事件（24 个）
 
 | 事件 | 触发时机 |
 |------|---------|
@@ -237,6 +237,8 @@ Shell 分析：
 | **WorktreeRemove** | Worktree 移除 |
 | **Elicitation** | 向用户提问 |
 | **ElicitationResult** | 用户回答结果 |
+| **CwdChanged** | 工作目录变更（v2.1.83 新增） |
+| **FileChanged** | 文件变更检测（v2.1.83 新增） |
 
 ### Qwen Code Hook 事件
 
@@ -259,8 +261,8 @@ Shell 分析：
 
 | 维度 | Claude Code | Qwen Code |
 |------|------------|-----------|
-| **事件数** | **22** | 12 |
-| **Claude 独有事件（10 个）** | StopFailure, PostCompact, TaskCompleted, TeammateIdle, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, Elicitation, ElicitationResult | — |
+| **事件数** | **24** | 12 |
+| **Claude 独有事件（12 个）** | StopFailure, PostCompact, TaskCompleted, TeammateIdle, InstructionsLoaded, ConfigChange, WorktreeCreate, WorktreeRemove, Elicitation, ElicitationResult, **CwdChanged**, **FileChanged** | — |
 | **共有事件（12 个）** | PreToolUse, PostToolUse, PostToolUseFailure, UserPromptSubmit, Stop, SubagentStart, SubagentStop, SessionStart, SessionEnd, PreCompact, Notification, PermissionRequest | 全部 12 个 |
 | **Hook 类型** | Prompt（LLM 驱动）+ Command（脚本） | Command（脚本） |
 | **执行方式** | 子进程 JSON stdin/stdout | 子进程 JSON stdin/stdout |

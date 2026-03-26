@@ -10,7 +10,7 @@
 | Git Worktree | ✅ | ✅ `gitWorktreeService.ts` | 对等 |
 | 子代理/Task 工具 | ✅ | ✅ `subagent-manager.ts` | 对等 |
 | Plan 模式 | ✅ | ✅ | 对等 |
-| Hook 系统 | ✅ **22 个事件类型** | ✅ 12 个事件类型 | **Claude 更强**（多 10 个事件：TaskCompleted/TeammateIdle/ConfigChange 等） |
+| Hook 系统 | ✅ **24 个事件类型** | ✅ 12 个事件类型 | **Claude 更强**（多 12 个事件：CwdChanged/FileChanged/TaskCompleted/TeammateIdle/ConfigChange 等） |
 | MCP 集成 | ✅ | ✅ `mcp-client.ts` | 对等 |
 | 会话恢复 | ✅ `--resume` | ✅ `resumeHistoryUtils.ts` | 对等 |
 | 自动记忆 | ✅ | ✅ `memoryTool.ts` | 对等 |

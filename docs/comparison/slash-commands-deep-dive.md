@@ -706,7 +706,7 @@ kimi mcp test <name>
 
 **Prompt Hook（独有理念）：**
 
-22 种 Hook 事件（PreToolUse / PostToolUse / PostToolUseFailure / Notification / Stop / StopFailure / SubagentStart / SubagentStop / SessionStart / SessionEnd / UserPromptSubmit / PermissionRequest / PreCompact / PostCompact / TaskCompleted / TeammateIdle / InstructionsLoaded / ConfigChange / WorktreeCreate / WorktreeRemove / Elicitation / ElicitationResult），3 种 Hook 类型（command / http / **prompt**）。
+24 种 Hook 事件（PreToolUse / PostToolUse / PostToolUseFailure / Notification / Stop / StopFailure / SubagentStart / SubagentStop / SessionStart / SessionEnd / UserPromptSubmit / PermissionRequest / PreCompact / PostCompact / TaskCompleted / TeammateIdle / InstructionsLoaded / ConfigChange / WorktreeCreate / WorktreeRemove / Elicitation / ElicitationResult / **CwdChanged** / **FileChanged**），3 种 Hook 类型（command / http / **prompt**）。
 
 ```json
 {
