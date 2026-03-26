@@ -14,21 +14,21 @@
 
 | Agent | 开发者 | 许可证 | Stars | 语言 | LLM 提供商 | 特色 |
 |------|--------|--------|-------|------|-----------|------|
-| [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | 98k+ | TypeScript | 1 (Gemini) | Google 官方，Qwen Code 上游 |
-| [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | 69k+ | Python | 100+ | 浏览器操作，Docker 沙箱，多代理委托 |
-| [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | 66k+ | TypeScript | 1 (OpenAI) | OpenAI 官方，默认网络隔离沙箱 |
-| [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | 59k+ | TypeScript | 48+ | VS Code 原生，Git Checkpoint 回滚 |
-| [Aider](./docs/tools/aider/) | Paul Gauthier | GPL-3.0 | 42k+ | Python | 100+ | 14 种编辑格式，Git 原生自动提交 |
-| [Goose](./docs/tools/goose.md) | Block | Apache-2.0 | 33k+ | **Rust** | 58+ | MCP 原生，Recipe 任务模板 |
-| [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | 31k+ | TypeScript | 60+ | PR Checks CI 审查，语义索引 |
-| [Warp](./docs/tools/warp.md) | Warp | 专有 | 26k+ | Rust | 多种 | 终端替代品，GPU 渲染 |
-| [Qwen Code](./docs/tools/qwen-code.md) | 阿里云 | Apache-2.0 | 20k+ | TypeScript | 6+ | 免费 OAuth 1000 次/天，6 语言 UI |
-| [SWE-agent](./docs/tools/swe-agent.md) | Princeton NLP | MIT | 18k+ | Python | 100+ | SWE-bench 74%（增强版），Docker 沙箱 |
-| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | 130k+ | **Go + TS** | 100+ | 多客户端（TUI+Web+桌面），37 LSP，ACP IDE |
-| [Kimi CLI](./docs/tools/kimi-cli/) | 月之暗面 | Apache-2.0 | 7k+ | **Python** | 6 | 双模式 Agent↔Shell，Wire 协议，子代理系统 |
-| [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | - | Rust | 1 (Claude) | 13 官方插件，Prompt Hook，100 万上下文 |
+| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | **130k** | **Go + TS** | 100+ | 多客户端（TUI+Web+桌面），37 LSP，ACP IDE |
+| [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | **99k** | TypeScript | 1 (Gemini) | Google 官方，Qwen Code 上游 |
+| [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | **83k** | Rust | 1 (Claude) | 13 官方插件，Prompt Hook，100 万上下文 |
+| [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | **70k** | Python | 100+ | 浏览器操作，Docker 沙箱，多代理委托 |
+| [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | **68k** | TypeScript | 1 (OpenAI) | OpenAI 官方，默认网络隔离沙箱 |
+| [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | **59k** | TypeScript | 48+ | VS Code 原生，Git Checkpoint 回滚 |
+| [Aider](./docs/tools/aider/) | Paul Gauthier | GPL-3.0 | **42k** | Python | 100+ | 14 种编辑格式，Git 原生自动提交 |
+| [Goose](./docs/tools/goose.md) | Block | Apache-2.0 | **34k** | **Rust** | 58+ | MCP 原生，Recipe 任务模板 |
+| [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | **32k** | TypeScript | 60+ | PR Checks CI 审查，语义索引 |
+| [Warp](./docs/tools/warp.md) | Warp | 专有 | **26k** | Rust | 多种 | 终端替代品，GPU 渲染 |
+| [Qwen Code](./docs/tools/qwen-code.md) | 阿里云 | Apache-2.0 | **21k** | TypeScript | 6+ | 免费 OAuth 1000 次/天，6 语言 UI |
+| [SWE-agent](./docs/tools/swe-agent.md) | Princeton NLP | MIT | **19k** | Python | 100+ | SWE-bench 74%（增强版），Docker 沙箱 |
+| [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | **10k** | Shell | 多种 | 终端原生代理，GitHub 深度集成，MCP 扩展 |
+| [Kimi CLI](./docs/tools/kimi-cli/) | 月之暗面 | Apache-2.0 | **7k** | **Python** | 6 | 双模式 Agent↔Shell，Wire 协议，子代理系统 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | - | TypeScript | 多种 | AI 原生 IDE，Background Agent |
-| [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | 9k+ | Shell | 多种 | 终端原生代理，GitHub 深度集成，MCP 扩展 |
 | [Qoder CLI](./docs/tools/qoder-cli/) | QoderAI（阿里） | 专有 | - | **Go** | 多种 | Quest 模式，Claude Code 兼容，信用制定价 |
 
 ## 30 秒选型指南
@@ -96,7 +96,7 @@
 
 | 主题 | 文章 | 核心对比 |
 |------|------|---------|
-| Hook/插件 | [扩展系统](./docs/comparison/hook-plugin-extension-deep-dive.md) | 22 事件 + Prompt Hook vs 17 Hook 类型 |
+| Hook/插件 | [扩展系统](./docs/comparison/hook-plugin-extension-deep-dive.md) | 24 事件 + Prompt Hook vs 17 Hook 类型 |
 | Skill 技能 | [技能系统](./docs/comparison/skill-system-deep-dive.md) | SKILL.md frontmatter vs Flow Skill vs Recipe |
 | 长期记忆 | [项目指令](./docs/comparison/memory-system-deep-dive.md) | 4 层 CLAUDE.md vs AI memory_manager vs 跨格式读取 |
 
@@ -161,17 +161,43 @@
 | **Go + TS** | OpenCode | Go 后端 + TypeScript TUI，SolidJS 响应式 |
 | **Python** | Aider, SWE-agent, OpenHands, Kimi CLI | LiteLLM 100+ 模型，学术研究首选 |
 
-## 性能基准 (2026)
+## 性能基准（2026-03 实测 + SWE-bench）
 
-| Agent | SWE-bench Verified | 说明 |
-|-------|-------------------|------|
-| SWE-agent (增强版) | 74% | RetryAgent + 代码审查循环 |
-| Claude Code | ~60% | 复杂推理能力强 |
-| OpenHands | ~55% | 全栈任务，浏览器操作 |
-| Aider | ~45% | 14 种编辑格式适配 |
-| Continue | ~40% | 语义索引 + 重构 |
+### 启动性能（本机实测，2026-03-26）
 
-*数据来源：[SWE-bench 排行榜](https://www.swebench.com/)*
+| Agent | 版本 | 启动时间 | 安装大小 | 二进制类型 |
+|-------|------|---------|---------|-----------|
+| **Claude Code** | v2.1.84 | **50ms** | 225MB | Rust ELF x86-64 |
+| **Copilot CLI** | v1.0.10 | **72ms** | 268MB | Node.js SEA |
+| **Codex CLI** | — | **76ms** | 142MB | Node.js SEA |
+| **Gemini CLI** | v0.34.0 | **1.5s** | 509MB | Node.js (npm) |
+
+> 测量方式：`time <agent> --version`，3 次取中位数。Gemini CLI 首次冷启动 4s，后续热启动 1.5s。
+
+### 采用量（2026-03-26 实时数据）
+
+| Agent | npm 周下载 | PyPI 月下载 | GitHub Stars |
+|-------|-----------|-----------|-------------|
+| **Claude Code** | **1000 万** | — | **83k** |
+| **Codex CLI** | **366 万** | — | **68k** |
+| **OpenHands** | — | **125 万** | **70k** |
+| **Aider** | — | **78 万** | **42k** |
+| **Gemini CLI** | **66 万** | — | **99k** |
+| **Copilot CLI** | **64 万** | — | **10k** |
+| **Kimi CLI** | — | **45 万** | **7k** |
+| **OpenCode** | — | — | **130k** |
+
+### SWE-bench Verified（模型排行，2026-03）
+
+| 模型 | SWE-bench Verified | 说明 |
+|------|-------------------|------|
+| Claude Opus 4.5 | **80.9%** | 排行榜第 1 |
+| Gemini 3.1 Pro | **80.6%** | Google 最强 |
+| GPT-5.2 | **80.0%** | OpenAI 最强 |
+| Claude Sonnet 4.6 | **79.6%** | 中端模型接近旗舰 |
+| Claude Code（Agent 框架） | **58.0%** | 作为 Agent 框架独立评分 |
+
+*数据来源：[SWE-bench 排行榜](https://www.swebench.com/)、[npm](https://www.npmjs.com/)、[PyPI Stats](https://pypistats.org/)、`gh api` 实时查询*
 
 ---
 
