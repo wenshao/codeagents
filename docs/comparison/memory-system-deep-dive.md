@@ -63,6 +63,17 @@ type: user
 用户是高级后端工程师，专注 Go 和 PostgreSQL...
 ```
 
+### 自定义记忆目录（v2.1.83 新增）
+
+```json
+// settings.json
+{
+  "autoMemoryDirectory": "/path/to/custom/memory"
+}
+```
+
+默认存储在 `~/.claude/projects/<hash>/memory/`，通过 `autoMemoryDirectory` 可指定自定义路径。
+
 ### Team Memory API
 
 ```

@@ -84,6 +84,13 @@ Step 6-9: 过滤 → 输出 → PR 评论
 | **cli_help** | 内部文档查询 | Flash | 10 轮 / 3 分钟 | 始终注册 |
 | **browser** | Puppeteer Web 自动化 | Flash | 50 轮 / 10 分钟 | 需设置启用 |
 
+### v0.33 新增：Plan Mode 内置研究子代理
+
+v0.33.0（2026-03-11）Plan Mode 扩展为支持内置研究子代理：
+- Plan 阶段可调用 `codebase_investigator` 进行只读代码分析
+- 注解反馈（annotation）支持：用户可在计划项上添加反馈
+- `copy` 子命令：复制计划内容到剪贴板
+
 ### 子代理终止模式
 
 `GOAL`（完成目标）、`MAX_TURNS`（达到轮次上限）、`TIMEOUT`（超时）、`ERROR`（错误）、`ABORTED`（中止）、`ERROR_NO_COMPLETE_TASK_CALL`

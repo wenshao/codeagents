@@ -41,6 +41,15 @@
 | `prompt-completion` | **0.3** | 继承 | — | `thinkingBudget: 0, maxOutputTokens: 16000` |
 | `fast-ack-helper` | **0.2** | 继承 | — | `thinkingBudget: 0, maxOutputTokens: 120` |
 
+### Aider 推理控制命令（2026 新增）
+
+```bash
+/think-tokens 32k        # 设置思维 token 预算（支持人类可读格式）
+/reasoning-effort high    # 控制模型推理级别（low/medium/high）
+```
+
+运行时动态调整模型推理深度，无需重启会话。
+
 ### Aider 推理模型温度禁用
 
 ```python

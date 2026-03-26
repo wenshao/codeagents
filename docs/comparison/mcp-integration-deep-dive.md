@@ -10,7 +10,7 @@
 | **Claude Code** | 扩展 | Stdio/SSE/Streamable-HTTP | `mcp__server__tool`（双下划线） | deny→ask→allow 3 层 | ✓ |
 | **Gemini CLI** | 扩展 | Stdio/SSE | `mcp_{server}_{tool}`（单下划线） | **TOML 通配符 + 正则** | ✓ |
 | **Kimi CLI** | 扩展 | Stdio/HTTP | 动态注册 | Per-tool 审批 + 超时 | ✓ |
-| **Qwen Code** | 扩展 | Stdio/SSE/HTTP | `mcp_{server}_{tool}`（继承） | 继承 Gemini TOML | ✓ |
+| **Qwen Code** | 扩展 | Stdio/SSE/HTTP | `mcp_{server}_{tool}`（继承） | 继承 Gemini + **运行时启停** | ✓ |
 | **Copilot CLI** | 内置 GitHub MCP | 专有 | GitHub 默认子集 | CLI 参数 | ✓ |
 | **OpenCode** | 扩展 | StreamableHTTP/SSE/Stdio | — | 模式匹配 | ✓ |
 | **Cline** | 扩展 | — | McpHub 前缀 | WebView 审批 | ✓ |

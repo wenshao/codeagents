@@ -152,6 +152,12 @@ Hook 返回 JSON 决策：`approve`（跳过确认）、`deny`（拒绝）、`bl
 
 **Prompt Hook 优势**：LLM 能理解 `ssh prod-server` 和 `kubectl apply -f deployment.yaml` 都是"生产操作"，传统脚本需逐一枚举。
 
+### v2.1.83 新增安全特性
+
+- **`managed-settings.d/`** 目录：支持多团队独立部署策略分片（按字母序合并）
+- **`sandbox.failIfUnavailable`**：沙箱不可用时退出并报错（CI 强制安全）
+- **`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1`**：从子进程环境中清除 Anthropic 和云提供商凭证
+
 ---
 
 ## 三、Gemini CLI：TOML 策略引擎 + Conseca + seccomp
