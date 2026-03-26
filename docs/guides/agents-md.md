@@ -17,7 +17,7 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 | **Claude Code** | `CLAUDE.md` | 不作为指令加载（但 `/init` 会参考） | 仅加载 CLAUDE.md 到系统提示。`/init` 生成 CLAUDE.md 时会读取 AGENTS.md 内容作为参考 |
 | **Gemini CLI** | `GEMINI.md` | 不读取（二进制 0 引用） | 44 处 GEMINI.md 引用，0 处 AGENTS.md 引用 |
 | **Goose** | `config.yaml` | 不读取 | 配置文件驱动，非 Markdown 指令 |
-| **OpenCode** | `opencode.json` | 不读取 | JSON 配置，兼容读取 `.claude/`、`.gemini/` 路径下的 SKILL.md |
+| **OpenCode** | `AGENTS.md` | **✓ 原生支持**（21 处引用） | 二进制确认 `FILES = ["AGENTS.md", "CLAUDE.md", "CONTEXT.md"]`，同时读取三种文件。`/init` 生成 AGENTS.md |
 
 > **要点**：维护一份 AGENTS.md + 符号链接，可覆盖 **6 个 Agent**（Codex CLI、Kimi CLI、Copilot CLI + 通过符号链接的 Claude Code、Qwen Code、Gemini CLI）。
 
@@ -33,6 +33,7 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 | **Codex CLI** | `AGENTS.md`（+ `SKILL.md`） | 子目录递归搜索，深层覆盖浅层（二进制 43 处引用）。`CODEX.md` 在二进制中引用数 0 | 多层递归 |
 | **Kimi CLI** | `AGENTS.md` 或 `agents.md` | 项目根 `<work_dir>/AGENTS.md`（大小写不敏感），通过 `load_agents_md()` 注入系统提示。**不支持子目录** | 1 层 |
 | **Copilot CLI** | 多格式（7 种） | `CLAUDE.md`（项目根+父目录）→ `GEMINI.md` → `AGENTS.md` → `.github/instructions/**/*.instructions.md` → `.github/copilot-instructions.md` → `~/.copilot/copilot-instructions.md`（全局）→ `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` 环境变量 | 全部合并 |
+| **OpenCode** | `AGENTS.md` / `CLAUDE.md` / `CONTEXT.md` | `OPENCODE_CONFIG_DIR/AGENTS.md` → `Global.Path.config/AGENTS.md` → 项目根。同时读取 `~/.claude/CLAUDE.md`（可通过 `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` 禁用） | 3 文件合并 |
 
 ### Copilot CLI 的跨格式读取（最兼容）
 
@@ -139,6 +140,7 @@ git commit -m "Add project instructions with cross-agent symlinks"
 | Copilot CLI | AGENTS.md + CLAUDE.md | ✅ 两者都指向同一文件 |
 | Claude Code | CLAUDE.md → AGENTS.md | ✅ 通过符号链接 |
 | Qwen Code | AGENTS.md | ✅ **原生支持**（v0.13.0+ 默认搜索 AGENTS.md） |
+| OpenCode | AGENTS.md | ✅ **原生支持**（默认搜索 AGENTS.md + CLAUDE.md + CONTEXT.md） |
 | Gemini CLI | GEMINI.md | ❌ 需额外 `ln -s AGENTS.md GEMINI.md` |
 
 ### Qwen Code 原生支持 AGENTS.md（v0.13.0+）
