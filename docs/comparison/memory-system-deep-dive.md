@@ -9,7 +9,7 @@
 | **Claude Code** | CLAUDE.md | **4 层** | **✓** | ✗（用户编辑） | ✓ | ✗ |
 | **Gemini CLI** | GEMINI.md | **4 层** | **✓** | **✓（memory_manager）** | ✓ | ✗ |
 | **Copilot CLI** | copilot-instructions.md | 多层（全局+项目+.github） | ✗ | ✗ | ✓ | **✓（读 7 种来源）** |
-| **Qwen Code** | QWEN.md + AGENTS.md | 继承 Gemini | ✓ | ✓（继承） | ✓ | ✗ |
+| **Qwen Code** | QWEN.md + AGENTS.md | 继承 Gemini | ✓（save_memory 工具） | ✗（无 memory_manager 子代理） | ✓（`~/.qwen/QWEN.md`） | ✗ |
 | **Kimi CLI** | AGENTS.md | 1 层 | ✗（一次性） | ✗ | ✗ | ✗ |
 | **Codex CLI** | AGENTS.md | 多层递归 | ✗ | ✗ | ✓ | ✗ |
 | **Aider** | .aider.conf.yml | 2 层 | ✗ | ✗ | ✓ | ✗ |
@@ -250,7 +250,7 @@ files.push(path.join(Global.Path.config, "AGENTS.md"));
 │  └────┬─────┘ └────┬─────┘ └───┬────┘ └───────────┘ │
 │       │             │           │                     │
 │  Claude Code   Gemini CLI   Codex CLI（43 refs）      │
-│                Qwen Code    Kimi CLI                  │
+│                             Kimi CLI                  │
 │                             OpenCode（21 refs）        │
 │                             Qwen Code v0.13+          │
 └──────────────────────────────────────────────────────┘
@@ -313,7 +313,7 @@ files.push(path.join(Global.Path.config, "AGENTS.md"));
 | Gemini CLI | 04-tools.md + 05-policies.md + 03-architecture.md | 开源 |
 | Copilot CLI | EVIDENCE.md + 03-architecture.md | SEA 反编译 |
 | Kimi CLI | 03-architecture.md（init 实现） | 开源 |
-| Qwen Code | qwen-code.md | 开源 |
+| Qwen Code | cli.js 二进制 strings（v0.13.0）：save_memory 11 refs, memory_manager 0 refs, GEMINI.md 0 refs | 二进制分析 |
 | Codex CLI | Rust 二进制 strings（43 AGENTS.md refs） | 二进制分析 |
 | Aider | 01-overview.md | 开源 |
 | OpenCode | Go ELF 二进制 strings（v1.2.15） | 二进制分析 |
