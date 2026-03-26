@@ -27,25 +27,28 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 
 | Agent | 读取的文件 | 搜索路径 | 层级合并 |
 |-------|-----------|---------|---------|
-| **Claude Code** | `CLAUDE.md` | `~/.claude/CLAUDE.md`（全局）→ `<project>/CLAUDE.md`（项目）→ 子目录递归 → `~/.claude/projects/<hash>/CLAUDE.md`（私有） | 4 层追加 |
-| **Gemini CLI** | `GEMINI.md` | `~/.gemini/GEMINI.md`（全局）→ `.gemini/GEMINI.md`（项目）→ 子目录 BFS → 扩展级 | 4 层追加，支持 `@import` |
+| **Claude Code** | `CLAUDE.md` | `~/.claude/CLAUDE.md`（全局）→ `<project>/CLAUDE.md`（项目）→ `<project>/.claude/CLAUDE.md` → 子目录递归 → `~/.claude/projects/<hash>/CLAUDE.md`（私有） | 4 层追加 |
+| **Gemini CLI** | `GEMINI.md` | `~/.gemini/GEMINI.md`（全局）→ 项目根 → 子目录 BFS（按 inode 去重）→ 扩展级 | 4 层，支持 `@import` |
 | **Qwen Code** | `QWEN.md` / `GEMINI.md` / `AGENTS.md`（需配置） | 继承 Gemini 路径，`/init` 生成 QWEN.md。可通过 `settings.json` 的 `contextFileName` 配置读取 AGENTS.md | 继承 Gemini |
-| **Codex CLI** | `AGENTS.md` / `CODEX.md` | `~/.codex/instructions.md`（全局）→ 项目根 `CODEX.md` 或 `AGENTS.md` | 2 层 |
-| **Kimi CLI** | `AGENTS.md` | 项目根 `AGENTS.md` 或 `agents.md`，通过 `load_agents_md()` 注入系统提示 | 1 层 |
-| **Copilot CLI** | 多格式 | `.github/copilot-instructions.md` → `CLAUDE.md` → `GEMINI.md` → `AGENTS.md`（全部读取） | 全部合并 |
+| **Codex CLI** | `CODEX.md` / `AGENTS.md` / `SKILL.md` | `~/.codex/instructions.md`（全局，最低）→ `CODEX.md`（项目）→ `AGENTS.md`（项目）→ `SKILL.md`（最高） | 4 层优先级 |
+| **Kimi CLI** | `AGENTS.md` 或 `agents.md` | 项目根 `<work_dir>/AGENTS.md`（大小写不敏感），通过 `load_agents_md()` 注入系统提示。**不支持子目录** | 1 层 |
+| **Copilot CLI** | 多格式（7 种） | `CLAUDE.md`（项目根+父目录）→ `GEMINI.md` → `AGENTS.md` → `.github/instructions/**/*.instructions.md` → `.github/copilot-instructions.md` → `~/.copilot/copilot-instructions.md`（全局）→ `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` 环境变量 | 全部合并 |
 
 ### Copilot CLI 的跨格式读取（最兼容）
 
-Copilot CLI 是唯一同时读取 4 种指令文件的 Agent：
+Copilot CLI 是唯一同时读取 **7 种指令来源**的 Agent（源码：`02-commands.md`）：
 
 ```
-.github/copilot-instructions.md  ← 原生格式（最高优先）
-CLAUDE.md                         ← 读取 Claude Code 指令
-GEMINI.md                         ← 读取 Gemini CLI 指令
-AGENTS.md                         ← 读取 Codex/Kimi 指令
+1. CLAUDE.md（项目根 + 父目录遍历）    ← Claude Code 兼容
+2. GEMINI.md（项目根）                  ← Gemini CLI 兼容
+3. AGENTS.md（项目根）                  ← Codex/Kimi 兼容
+4. .github/instructions/**/*.instructions.md  ← GitHub 标准
+5. .github/copilot-instructions.md      ← Copilot 原生
+6. ~/.copilot/copilot-instructions.md   ← 全局（所有项目）
+7. COPILOT_CUSTOM_INSTRUCTIONS_DIRS 环境变量  ← 自定义目录
 ```
 
-如果 4 个文件都存在，Copilot CLI 会**全部合并**到系统提示中。使用符号链接时，相同内容会被加载多次，但不影响功能。
+所有来源**全部合并**到系统提示中。可通过 `--no-custom-instructions` 禁用加载。使用符号链接时相同内容会被加载多次，但不影响功能。
 
 ### Claude Code 的 4 层记忆体系
 
