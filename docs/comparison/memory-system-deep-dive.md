@@ -11,7 +11,7 @@
 | **Copilot CLI** | copilot-instructions.md | 多层（全局+项目+.github） | ✗ | ✗ | ✓ | **✓（读 7 种来源）** |
 | **Qwen Code** | QWEN.md + AGENTS.md | 继承 Gemini | ✓（save_memory 工具） | ✗（无 memory_manager 子代理） | ✓（`~/.qwen/QWEN.md`） | ✗ |
 | **Kimi CLI** | AGENTS.md | 1 层 | ✗（一次性） | ✗ | ✗ | ✗ |
-| **Codex CLI** | AGENTS.md | 多层递归 | ✗ | ✗ | ✓ | ✗ |
+| **Codex CLI** | AGENTS.md | 多层递归 | **✓**（generate_memories） | **✓**（extract_model + consolidation_model） | ✓ | ✗ |
 | **Aider** | .aider.conf.yml | 2 层 | ✗ | ✗ | ✓ | ✗ |
 | **Goose** | config.yaml | 1 层 | ✗ | ✗ | ✓ | ✗ |
 | **OpenCode** | AGENTS.md + CLAUDE.md + CONTEXT.md | 3 文件 | ✗ | ✗ | ✓ | **✓（读 3 种文件）** |
@@ -274,16 +274,15 @@ files.push(path.join(Global.Path.config, "AGENTS.md"));
 
 ### 第二代：LLM 生成 + 手动维护
 
-**代表**：Kimi CLI、Qwen Code（/init）、Codex CLI、OpenCode
+**代表**：Kimi CLI、Qwen Code（/init）、OpenCode
 
 - `/init` 命令 LLM 分析项目，生成指令文件（AGENTS.md）
-- Codex CLI 支持子目录递归和作用域覆盖
 - OpenCode 同时读取 3 种文件格式（AGENTS.md + CLAUDE.md + CONTEXT.md）
 - 生成后不自动更新，项目变化需手动重新生成
 
 ### 第三代：AI 自动学习 + 持续更新
 
-**代表**：Claude Code（auto-memory）、Gemini CLI（memory_manager）
+**代表**：Claude Code（auto-memory）、Gemini CLI（memory_manager）、**Codex CLI（generate_memories + consolidation_model）**
 
 - 对话中自动识别有价值的信息
 - AI 管理去重、分类、存储
@@ -314,6 +313,6 @@ files.push(path.join(Global.Path.config, "AGENTS.md"));
 | Copilot CLI | EVIDENCE.md + 03-architecture.md | SEA 反编译 |
 | Kimi CLI | 03-architecture.md（init 实现） | 开源 |
 | Qwen Code | cli.js 二进制 strings（v0.13.0）：save_memory 11 refs, memory_manager 0 refs, GEMINI.md 0 refs | 二进制分析 |
-| Codex CLI | Rust 二进制 strings（43 AGENTS.md refs） | 二进制分析 |
+| Codex CLI | Rust 二进制 strings（43 AGENTS.md refs, memories/control.rs, generate_memories/consolidation_model） | 二进制分析 |
 | Aider | 01-overview.md | 开源 |
 | OpenCode | Go ELF 二进制 strings（v1.2.15） | 二进制分析 |
