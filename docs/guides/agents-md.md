@@ -10,12 +10,12 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 
 | Agent | 原生指令文件 | 是否读取 AGENTS.md | 说明 |
 |------|------------|-------------------|------|
-| **Codex CLI** | `CODEX.md` | 原生支持 | 最早引入 AGENTS.md 概念 |
+| **Codex CLI** | `AGENTS.md` | **原生支持**（43 处引用） | 二进制确认：支持子目录递归、深层覆盖浅层。`CODEX.md` 引用数 0（已废弃？） |
 | **Kimi CLI** | `AGENTS.md` | 原生支持 | 作为主要项目指令文件 |
 | **Copilot CLI** | `.github/copilot-instructions.md` | 读取 | 同时读取 CLAUDE.md、GEMINI.md、AGENTS.md |
 | **Qwen Code** | `QWEN.md` | **✓ 原生支持**（v0.13.0+） | 二进制确认 `AGENT_CONTEXT_FILENAME = "AGENTS.md"`，默认同时搜索 QWEN.md 和 AGENTS.md |
 | **Claude Code** | `CLAUDE.md` | 不作为指令加载（但 `/init` 会参考） | 仅加载 CLAUDE.md 到系统提示。`/init` 生成 CLAUDE.md 时会读取 AGENTS.md 内容作为参考 |
-| **Gemini CLI** | `GEMINI.md` | 不读取 | 仅读取 GEMINI.md |
+| **Gemini CLI** | `GEMINI.md` | 不读取（二进制 0 引用） | 44 处 GEMINI.md 引用，0 处 AGENTS.md 引用 |
 | **Goose** | `config.yaml` | 不读取 | 配置文件驱动，非 Markdown 指令 |
 | **OpenCode** | `opencode.json` | 不读取 | JSON 配置，兼容读取 `.claude/`、`.gemini/` 路径下的 SKILL.md |
 
@@ -30,7 +30,7 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 | **Claude Code** | `CLAUDE.md` | `~/.claude/CLAUDE.md`（全局）→ `<project>/CLAUDE.md`（项目）→ `<project>/.claude/CLAUDE.md` → 子目录递归 → `~/.claude/projects/<hash>/CLAUDE.md`（私有） | 4 层追加 |
 | **Gemini CLI** | `GEMINI.md` | `~/.gemini/GEMINI.md`（全局）→ 项目根 → 子目录 BFS（按 inode 去重）→ 扩展级 | 4 层，支持 `@import` |
 | **Qwen Code** | `QWEN.md` / `AGENTS.md` / `GEMINI.md` | 继承 Gemini 路径 + v0.13.0 新增 `AGENT_CONTEXT_FILENAME = "AGENTS.md"` 默认搜索。`/init` 生成 QWEN.md | 继承 Gemini + AGENTS.md |
-| **Codex CLI** | `CODEX.md` / `AGENTS.md` / `SKILL.md` | `~/.codex/instructions.md`（全局，最低）→ `CODEX.md`（项目）→ `AGENTS.md`（项目）→ `SKILL.md`（最高） | 4 层优先级 |
+| **Codex CLI** | `AGENTS.md`（+ `SKILL.md`） | 子目录递归搜索，深层覆盖浅层（二进制 43 处引用）。`CODEX.md` 在二进制中引用数 0 | 多层递归 |
 | **Kimi CLI** | `AGENTS.md` 或 `agents.md` | 项目根 `<work_dir>/AGENTS.md`（大小写不敏感），通过 `load_agents_md()` 注入系统提示。**不支持子目录** | 1 层 |
 | **Copilot CLI** | 多格式（7 种） | `CLAUDE.md`（项目根+父目录）→ `GEMINI.md` → `AGENTS.md` → `.github/instructions/**/*.instructions.md` → `.github/copilot-instructions.md` → `~/.copilot/copilot-instructions.md`（全局）→ `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` 环境变量 | 全部合并 |
 
