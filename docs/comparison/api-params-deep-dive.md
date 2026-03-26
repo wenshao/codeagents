@@ -155,6 +155,9 @@ async def _step(self):
 | **Aider** | 3 次反射 | `base_coder.py:101` | lint/test 专用 |
 | **Claude Code** | 可配置 | maxTurns（74 refs） | 动态 |
 | **Goose** | 无固定上限 | — | 直到模型停止 |
+| **Copilot CLI** | 可配置 | `--max-autopilot-continues` | Autopilot 模式限制 |
+| **Codex CLI** | 可配置 | config.toml | 审批模式影响循环 |
+| **OpenCode** | 可配置 | — | Doom Loop 保护（3 次拒绝中断） |
 
 ### 停止条件
 
@@ -162,9 +165,13 @@ async def _step(self):
 |------|---------|
 | Claude Code | `end_turn` / `stop_sequence` / 用户中断 |
 | Gemini CLI | 轮次耗尽 / 模型停止 / 用户中断 |
+| Qwen Code | 继承 Gemini |
 | Aider | 模型不再调用工具 / 3 次反射失败 |
 | Kimi CLI | 步数耗尽 / `stop_reason` / 用户中断 |
 | Goose | 模型决定 / 用户中断 |
+| Copilot CLI | 任务完成 / `--max-autopilot-continues` 耗尽 / 用户中断 |
+| Codex CLI | 模型决定 / 审批拒绝 / 用户中断 |
+| OpenCode | 模型决定 / Doom Loop 触发 / 用户中断 |
 
 ---
 
@@ -178,6 +185,9 @@ async def _step(self):
 | **Goose** | 模型依赖 | **80%** | — |
 | **Aider** | 模型依赖 | `done_messages > 1024 tokens` | — |
 | **Qwen Code** | ~100 万 | 50%（继承） | — |
+| **Copilot CLI** | 模型依赖 | `backgroundCompactionThreshold` | — |
+| **Codex CLI** | 模型依赖 | `auto_compact_token_limit` | — |
+| **OpenCode** | 模型依赖 | 可配置 | — |
 
 ---
 
@@ -203,21 +213,11 @@ async def _step(self):
 | **Aider** | ✗（串行） | 编辑格式决定 | 14 种格式按模型选择 |
 | **Kimi CLI** | ✗（串行+后台任务） | 模型自选 | max_steps_per_turn=100 |
 | **Goose** | ✓ | 模型自选 | toolshim 兼容层 |
+| **Qwen Code** | ✓（继承 Gemini） | 模型自选 | 继承 TailToolCall |
+| **Codex CLI** | ✓（`supports_parallel_tool_calls`） | 模型自选 | apply_patch 专用格式 |
+| **OpenCode** | ✓ | 模型自选 | 按模型切换 edit/apply_patch |
 
 ### Goose toolshim（独有）
-
-```rust
-pub struct ModelConfig {
-    pub toolshim: bool,           // 为不支持工具调用的模型启用 shim
-    pub toolshim_model: Option<String>,  // 代理工具调用的模型
-}
-```
-
-对不支持原生工具调用的模型（如部分本地模型），Goose 通过 toolshim 用另一个模型代理工具调用决策。
-
----
-
-## 七、Goose toolshim：无原生工具调用的模型兼容层
 
 > 源码：`model.rs:48`
 
