@@ -8,13 +8,13 @@
 |------|---------|--------|---------|---------|--------|-----------|
 | **Claude Code** | CLAUDE.md | **4 层** | **✓** | ✗（用户编辑） | ✓ | ✗ |
 | **Gemini CLI** | GEMINI.md | **4 层** | **✓** | **✓（memory_manager）** | ✓ | ✗ |
-| **Copilot CLI** | copilot-instructions.md | 1 层 | ✗ | ✗ | ✗ | **✓（读 3 种格式）** |
-| **Qwen Code** | QWEN.md | 继承 Gemini | ✓ | ✓（继承） | ✓ | ✗ |
+| **Copilot CLI** | copilot-instructions.md | 1 层 | ✗ | ✗ | ✗ | **✓（读 7 种来源）** |
+| **Qwen Code** | QWEN.md + AGENTS.md | 继承 Gemini | ✓ | ✓（继承） | ✓ | ✗ |
 | **Kimi CLI** | AGENTS.md | 1 层 | ✗（一次性） | ✗ | ✗ | ✗ |
-| **Codex CLI** | CODEX.md | 2 层 | ✗ | ✗ | ✓ | ✗ |
+| **Codex CLI** | AGENTS.md | 多层递归 | ✗ | ✗ | ✓ | ✗ |
 | **Aider** | .aider.conf.yml | 2 层 | ✗ | ✗ | ✓ | ✗ |
 | **Goose** | config.yaml | 1 层 | ✗ | ✗ | ✓ | ✗ |
-| **OpenCode** | opencode.json | 3 层 | ✗ | ✗ | ✓ | ✗ |
+| **OpenCode** | AGENTS.md + CLAUDE.md + CONTEXT.md | 3 文件 | ✗ | ✗ | ✓ | **✓（读 3 种文件）** |
 | **Cline** | .cline/instructions | 1 层 | ✗ | ✗ | ✗ | ✗ |
 
 ---
@@ -186,16 +186,18 @@ async def init(soul, args):
 
 ---
 
-## 五、Codex CLI：双层指令
+## 五、Codex CLI：AGENTS.md 子目录递归
 
-> 来源：01-overview.md、02-commands.md
+> 来源：Rust 二进制 strings 分析（43 处 AGENTS.md 引用，0 处 CODEX.md 引用）
 
 ```
-~/.codex/instructions.md    ← 全局用户级（最低优先级）
-CODEX.md 或 AGENTS.md       ← 项目级（同等优先级）
+AGENTS.md（项目根）          ← 主指令文件（子目录递归）
+SKILL.md                    ← 技能级指令（最高优先级）
 ```
 
-支持 `/init` 生成 CODEX.md。
+二进制中的作用域逻辑：*"Each AGENTS.md governs the entire directory that contains it and every child directory. Deeper overrides higher-level."*
+
+> **注意**：`CODEX.md` 在最新版二进制中引用数为 0，AGENTS.md 已成为 Codex CLI 的主要指令文件。
 
 ---
 
@@ -213,36 +215,44 @@ CODEX.md 或 AGENTS.md       ← 项目级（同等优先级）
 
 ---
 
-## 七、OpenCode：SQLite + 3 层配置
+## 七、OpenCode：AGENTS.md + CLAUDE.md + CONTEXT.md
 
-> 来源：03-architecture.md
+> 来源：Go ELF 二进制 strings 分析（v1.2.15，152MB）
 
+```javascript
+// 从二进制提取的默认指令文件列表
+FILES = ["AGENTS.md", "CLAUDE.md", "CONTEXT.md"]
+
+// 加载路径
+files.push(path.join(OPENCODE_CONFIG_DIR, "AGENTS.md"));
+files.push(path.join(Global.Path.config, "AGENTS.md"));
+
+// 还读取 Claude Code 全局记忆（可禁用）
+// ~/.claude/CLAUDE.md（除非 OPENCODE_DISABLE_CLAUDE_CODE_PROMPT）
 ```
-~/.config/opencode/opencode.json    ← 全局
-.opencode/opencode.json             ← 项目级
-远程 .well-known/opencode           ← 企业级
-```
 
-**唯一使用 SQLite 的工具**：3 张表（sessions/messages/files），但用于会话持久化，非 AI 记忆。
+**三文件同时读取**：OpenCode 是除 Copilot CLI 外另一个跨格式读取的 Agent——同时读取 AGENTS.md、CLAUDE.md 和 CONTEXT.md。
+
+**SQLite 存储**：3 张表（sessions/messages/files）用于会话持久化，非 AI 记忆。
 
 ---
 
 ## 项目指令文件生态图
 
 ```
-┌─────────────────────────────────────────────────┐
-│               Copilot CLI（读取 4 种格式）          │
-│  ┌──────────┐ ┌──────────┐ ┌────────┐ ┌───────┐ │
-│  │CLAUDE.md │ │GEMINI.md │ │AGENTS.md│ │copilot│ │
-│  └────┬─────┘ └────┬─────┘ └───┬────┘ └───────┘ │
-│       │             │           │                 │
-│  Claude Code   Gemini CLI   Codex CLI             │
-│                Qwen Code    Kimi CLI              │
-│                             Goose                 │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│           Copilot CLI（读取 7 种来源）                   │
+│  ┌──────────┐ ┌──────────┐ ┌────────┐ ┌───────────┐ │
+│  │CLAUDE.md │ │GEMINI.md │ │AGENTS.md│ │copilot-*  │ │
+│  └────┬─────┘ └────┬─────┘ └───┬────┘ └───────────┘ │
+│       │             │           │                     │
+│  Claude Code   Gemini CLI   Codex CLI（43 refs）      │
+│                Qwen Code    Kimi CLI                  │
+│                             OpenCode（21 refs）        │
+│                             Qwen Code v0.13+          │
+└──────────────────────────────────────────────────────┘
 
 独立文件：
-  OpenCode → opencode.json
   Aider    → .aider.conf.yml
   Cline    → .cline/instructions
 ```
