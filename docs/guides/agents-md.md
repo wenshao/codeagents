@@ -16,8 +16,144 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 | **Qwen Code** | `QWEN.md` | 读取 | `/init` 生成 QWEN.md，兼容读取 GEMINI.md |
 | **Claude Code** | `CLAUDE.md` | 不读取 | 仅读取 CLAUDE.md |
 | **Gemini CLI** | `GEMINI.md` | 不读取 | 仅读取 GEMINI.md |
+| **Goose** | `config.yaml` | 不读取 | 配置文件驱动，非 Markdown 指令 |
+| **OpenCode** | `opencode.json` | 不读取 | JSON 配置，兼容读取 `.claude/`、`.gemini/` 路径下的 SKILL.md |
 
-> **要点**：如果你的团队同时使用多个 AI 编程工具，维护一份 AGENTS.md 能覆盖 Codex CLI、Kimi CLI 和 Copilot CLI 三个工具。
+> **要点**：维护一份 AGENTS.md + 符号链接，可覆盖 **6 个 Agent**（Codex CLI、Kimi CLI、Copilot CLI + 通过符号链接的 Claude Code、Qwen Code、Gemini CLI）。
+
+## 各 Agent 的读取行为差异
+
+### 读取路径与优先级
+
+| Agent | 读取的文件 | 搜索路径 | 层级合并 |
+|-------|-----------|---------|---------|
+| **Claude Code** | `CLAUDE.md` | `~/.claude/CLAUDE.md`（全局）→ `<project>/CLAUDE.md`（项目）→ 子目录递归 → `~/.claude/projects/<hash>/CLAUDE.md`（私有） | 4 层追加 |
+| **Gemini CLI** | `GEMINI.md` | `~/.gemini/GEMINI.md`（全局）→ `.gemini/GEMINI.md`（项目）→ 子目录 BFS → 扩展级 | 4 层追加，支持 `@import` |
+| **Qwen Code** | `QWEN.md` / `GEMINI.md` | 继承 Gemini 路径体系，`/init` 生成 QWEN.md | 继承 Gemini |
+| **Codex CLI** | `AGENTS.md` / `CODEX.md` | `~/.codex/instructions.md`（全局）→ 项目根 `CODEX.md` 或 `AGENTS.md` | 2 层 |
+| **Kimi CLI** | `AGENTS.md` | 项目根 `AGENTS.md` 或 `agents.md`，通过 `load_agents_md()` 注入系统提示 | 1 层 |
+| **Copilot CLI** | 多格式 | `.github/copilot-instructions.md` → `CLAUDE.md` → `GEMINI.md` → `AGENTS.md`（全部读取） | 全部合并 |
+
+### Copilot CLI 的跨格式读取（最兼容）
+
+Copilot CLI 是唯一同时读取 4 种指令文件的 Agent：
+
+```
+.github/copilot-instructions.md  ← 原生格式（最高优先）
+CLAUDE.md                         ← 读取 Claude Code 指令
+GEMINI.md                         ← 读取 Gemini CLI 指令
+AGENTS.md                         ← 读取 Codex/Kimi 指令
+```
+
+如果 4 个文件都存在，Copilot CLI 会**全部合并**到系统提示中。使用符号链接时，相同内容会被加载多次，但不影响功能。
+
+### Claude Code 的 4 层记忆体系
+
+```
+~/.claude/CLAUDE.md                    ← 全局（所有项目通用偏好）
+<project-root>/CLAUDE.md               ← 项目级（Git 提交，团队共享）
+<subdirectory>/CLAUDE.md               ← 模块级（子目录特定规则）
+~/.claude/projects/<hash>/CLAUDE.md    ← 用户私有（不提交 Git）
+```
+
+Claude Code 还有 auto-memory 系统（4 种记忆类型：user/feedback/project/reference），自动从对话中学习并存储到 `~/.claude/projects/<hash>/memory/`。
+
+### Gemini CLI 的 @import 语法（独有）
+
+```markdown
+<!-- GEMINI.md -->
+# 项目指令
+
+@import ./docs/coding-standards.md
+@import ./docs/api-conventions.md
+
+## 额外规则
+...
+```
+
+其他 Agent 不支持 `@import`，会将其作为普通文本处理。
+
+---
+
+## 跨 Agent 兼容写法
+
+### 一份文件覆盖所有 Agent 的最佳实践
+
+```markdown
+# Project: my-app
+
+## Overview
+<!-- 简洁描述，50-100 行内 -->
+TypeScript + React + PostgreSQL 全栈应用。
+
+## Development
+- Install: `pnpm install`
+- Dev: `pnpm dev`
+- Test: `pnpm test`
+- Lint: `pnpm lint`
+- Build: `pnpm build`
+
+## Conventions
+- 函数式组件 + hooks，禁止 class 组件
+- API 路由放在 app/api/
+- 提交消息使用 Conventional Commits
+
+## Restrictions
+- 不要修改 prisma/migrations/ 中的已有迁移
+- 不要提交 .env 或包含密钥的文件
+- 不要删除 .github/workflows/ 配置
+```
+
+**关键原则**：
+- 使用标准 Markdown 二级标题（`##`），所有 Agent 都能解析
+- 避免 `@import` 语法（仅 Gemini CLI 支持）
+- 避免 YAML frontmatter（仅 SKILL.md 使用，指令文件不需要）
+- 保持 50-100 行（上下文窗口有限）
+- `## Development` 和 `## Restrictions` 是最关键的两节
+
+### 符号链接策略（推荐）
+
+```bash
+# 1. 创建主文件
+vim AGENTS.md
+
+# 2. 创建符号链接
+ln -s AGENTS.md CLAUDE.md    # → Claude Code
+ln -s AGENTS.md QWEN.md     # → Qwen Code
+# 可选：ln -s AGENTS.md GEMINI.md  # → Gemini CLI
+
+# 3. 提交到 Git（Git 会保存符号链接）
+git add AGENTS.md CLAUDE.md QWEN.md
+git commit -m "Add project instructions with cross-agent symlinks"
+```
+
+**覆盖效果**：
+
+| Agent | 读取文件 | 是否覆盖 |
+|-------|---------|---------|
+| Codex CLI | AGENTS.md | ✅ 直接读取 |
+| Kimi CLI | AGENTS.md | ✅ 直接读取 |
+| Copilot CLI | AGENTS.md + CLAUDE.md | ✅ 两者都指向同一文件 |
+| Claude Code | CLAUDE.md → AGENTS.md | ✅ 通过符号链接 |
+| Qwen Code | QWEN.md → AGENTS.md | ✅ 通过符号链接 |
+| Gemini CLI | GEMINI.md | ❌ 需额外 `ln -s AGENTS.md GEMINI.md` |
+
+### Windows 注意事项
+
+Windows 的符号链接需要管理员权限或开发者模式。替代方案：
+
+```powershell
+# Windows（需管理员权限）
+mklink CLAUDE.md AGENTS.md
+mklink QWEN.md AGENTS.md
+
+# 或使用 Git 配置（所有平台）
+# .gitattributes
+CLAUDE.md merge=ours
+QWEN.md merge=ours
+```
+
+---
 
 ## 文件格式和结构
 
