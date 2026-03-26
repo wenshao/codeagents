@@ -12,6 +12,9 @@
 | **Kimi CLI** | Jinja2 模板 | 压缩 prompt 安全注入 | ✓（AGENTS.md） | **Jinja2** |
 | **Aider** | **14 种编辑格式 prompt** | 无 | ✓（repo map + 文件内容） | 字符串模板 |
 | **Goose** | MCP 资源驱动 | adversary.md + 模式检测 | ✓（扩展 prompt） | — |
+| **Qwen Code** | 继承 Gemini Jinja2 | 继承 Gemini（Levenshtein Loop 检测） | ✓（QWEN.md + AGENTS.md） | Jinja2 |
+| **OpenCode** | Hook 驱动 | Tree-sitter Bash AST + Doom Loop | ✓（AGENTS.md + CLAUDE.md + CONTEXT.md） | — |
+| **Codex CLI** | 内联 Rust 常量 | AGENTS.md 作用域隔离 | ✓（AGENTS.md 子目录递归） | — |
 
 ---
 
