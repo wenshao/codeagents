@@ -91,17 +91,31 @@
 
 ---
 
-## SWE-bench（2026-03 最新）
+## SWE-bench（2026-03）
 
-| 模型 | SWE-bench Verified | 说明 |
-|------|-------------------|------|
-| Claude Opus 4.5 | **80.9%** | 排行榜第 1 |
-| Gemini 3.1 Pro | **80.6%** | Google 最强 |
-| GPT-5.2 | **80.0%** | OpenAI 最强 |
-| Claude Sonnet 4.6 | **79.6%** | 中端接近旗舰 |
-| Claude Code（Agent） | **58.0%** | Agent 框架独立评分 |
+### 模型排行（SWE-bench Verified）
 
-*来源：[SWE-bench 排行榜](https://www.swebench.com/)*
+| 模型 | 得分 | 提供商 |
+|------|------|--------|
+| Claude Opus 4.5 | **80.9%** | Anthropic |
+| Claude Opus 4.6 | 80.8% | Anthropic |
+| Gemini 3.1 Pro | 80.6% | Google |
+| MiniMax M2.5 | 80.2% | MiniMax（开源权重） |
+| GPT-5.2 | 80.0% | OpenAI |
+| Claude Sonnet 4.6 | 79.6% | Anthropic |
+| Kimi K2.5 | 76.8% | Moonshot（开源） |
+
+### Agent 框架排行
+
+| Agent 框架 | 得分 | 说明 |
+|-----------|------|------|
+| **OpenHands** | ~60.6% | CodeAct + 推理时扩展 + 批评模型 |
+| **Claude Code** | 58.0% | 独立 Agent 框架评分（pass@5 最高） |
+| **SWE-agent** | ~58.6% | vals.ai 独立测试（Grok 4） |
+
+> **注意**：模型分数和 Agent 框架分数不可直接比较。模型分数衡量 LLM 本身能力；Agent 分数衡量整个框架（提示词+工具+循环+模型）的综合表现。同一模型在不同 Agent 框架中得分可能差异 20%+。
+
+*来源：[SWE-bench 排行榜](https://www.swebench.com/)、[Epoch AI](https://epoch.ai/benchmarks/swe-bench-verified)、[vals.ai](https://www.vals.ai/benchmarks/swebench)*
 
 ---
 
@@ -112,7 +126,7 @@
 | **编辑优先** | Aider | LLM 直接输出代码修改（14 种格式） |
 | **工具调用** | Claude Code, Codex CLI, OpenCode, Cline, Goose | 结构化 function calling |
 | **事件驱动** | OpenHands | EventStream 发布/订阅 |
-| **ReAct 循环** | Gemini CLI, Qwen Code, SWE-agent | 思考→行动→观察→重复 |
+| **ReAct 循环** | Gemini CLI, Qwen Code, SWE-agent | Reason→Act→Observe→Repeat（思考→行动→观察→重复） |
 
 ## 技术栈
 
