@@ -13,7 +13,7 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 | **Codex CLI** | `CODEX.md` | 原生支持 | 最早引入 AGENTS.md 概念 |
 | **Kimi CLI** | `AGENTS.md` | 原生支持 | 作为主要项目指令文件 |
 | **Copilot CLI** | `.github/copilot-instructions.md` | 读取 | 同时读取 CLAUDE.md、GEMINI.md、AGENTS.md |
-| **Qwen Code** | `QWEN.md` | 读取 | `/init` 生成 QWEN.md，兼容读取 GEMINI.md |
+| **Qwen Code** | `QWEN.md` | ✓（需配置 `contextFileName`） | `/init` 生成 QWEN.md，兼容 GEMINI.md，可通过 settings 配置读取 AGENTS.md |
 | **Claude Code** | `CLAUDE.md` | 不读取 | 仅读取 CLAUDE.md |
 | **Gemini CLI** | `GEMINI.md` | 不读取 | 仅读取 GEMINI.md |
 | **Goose** | `config.yaml` | 不读取 | 配置文件驱动，非 Markdown 指令 |
@@ -29,7 +29,7 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 |-------|-----------|---------|---------|
 | **Claude Code** | `CLAUDE.md` | `~/.claude/CLAUDE.md`（全局）→ `<project>/CLAUDE.md`（项目）→ 子目录递归 → `~/.claude/projects/<hash>/CLAUDE.md`（私有） | 4 层追加 |
 | **Gemini CLI** | `GEMINI.md` | `~/.gemini/GEMINI.md`（全局）→ `.gemini/GEMINI.md`（项目）→ 子目录 BFS → 扩展级 | 4 层追加，支持 `@import` |
-| **Qwen Code** | `QWEN.md` / `GEMINI.md` | 继承 Gemini 路径体系，`/init` 生成 QWEN.md | 继承 Gemini |
+| **Qwen Code** | `QWEN.md` / `GEMINI.md` / `AGENTS.md`（需配置） | 继承 Gemini 路径，`/init` 生成 QWEN.md。可通过 `settings.json` 的 `contextFileName` 配置读取 AGENTS.md | 继承 Gemini |
 | **Codex CLI** | `AGENTS.md` / `CODEX.md` | `~/.codex/instructions.md`（全局）→ 项目根 `CODEX.md` 或 `AGENTS.md` | 2 层 |
 | **Kimi CLI** | `AGENTS.md` | 项目根 `AGENTS.md` 或 `agents.md`，通过 `load_agents_md()` 注入系统提示 | 1 层 |
 | **Copilot CLI** | 多格式 | `.github/copilot-instructions.md` → `CLAUDE.md` → `GEMINI.md` → `AGENTS.md`（全部读取） | 全部合并 |
@@ -135,8 +135,23 @@ git commit -m "Add project instructions with cross-agent symlinks"
 | Kimi CLI | AGENTS.md | ✅ 直接读取 |
 | Copilot CLI | AGENTS.md + CLAUDE.md | ✅ 两者都指向同一文件 |
 | Claude Code | CLAUDE.md → AGENTS.md | ✅ 通过符号链接 |
-| Qwen Code | QWEN.md → AGENTS.md | ✅ 通过符号链接 |
+| Qwen Code | QWEN.md → AGENTS.md | ✅ 通过符号链接（或配置 `contextFileName: "AGENTS.md"`） |
 | Gemini CLI | GEMINI.md | ❌ 需额外 `ln -s AGENTS.md GEMINI.md` |
+
+### Qwen Code 直接读取 AGENTS.md（无需符号链接）
+
+Qwen Code 支持通过 `settings.json` 配置上下文文件名，无需创建符号链接：
+
+```json
+// ~/.qwen/settings.json 或 .qwen/settings.json
+{
+  "contextFileName": "AGENTS.md"
+}
+```
+
+配置后 Qwen Code 会直接读取项目根目录的 `AGENTS.md`，无需 `QWEN.md` 符号链接。
+
+> 参考：[GitHub Issue #2006](https://github.com/QwenLM/qwen-code/issues/2006) — 社区正在推动将 AGENTS.md 加入默认搜索列表。
 
 ### Windows 注意事项
 
