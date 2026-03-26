@@ -238,6 +238,23 @@ FOUND WITHIN CHAT HISTORY"
 
 ---
 
+## Next Steps 指令对比
+
+系统提示中如何引导 Agent 在回复末尾提供后续建议：
+
+| Agent | 系统提示中的 Next Steps 指令 |
+|------|--------------------------|
+| **Claude Code** | `# Doing tasks` 模块："Focus on what needs to be done" + `/suggestions` Skill 独立分析 |
+| **Codex CLI** | `"clearly stating assumptions, environment prerequisites, and next steps"` — 每次回复自然包含 |
+| **Copilot CLI** | `<autonomy_and_persistence>` 模块："Persist until the task is fully handled end-to-end" — 自驱而非建议 |
+| **Aider** | 无显式 next steps 指令，通过反射循环（lint→test→fix）隐式驱动 |
+| **Gemini CLI** | 无显式指令 |
+| **Kimi CLI** | 通过 Plan 模式的 `EnterPlanMode`/`ExitPlanMode` 工具间接引导 |
+
+> **洞察**：Codex CLI 是唯一在系统提示中**明确要求每次回复包含 next steps** 的 Agent。Claude Code 将此作为可选 Skill（`/suggestions`），Copilot CLI 通过 autonomy 指令让 Agent 自驱完成而非提供建议。
+
+---
+
 ## 证据来源
 
 | Agent | 来源 | 获取方式 |

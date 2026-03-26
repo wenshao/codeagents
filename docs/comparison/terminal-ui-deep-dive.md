@@ -227,6 +227,58 @@ cursor: "#f5e0dc"
 
 ---
 
+## Follow-up Suggestions（后续建议）
+
+Agent 在回复结束后引导用户下一步操作的能力差异：
+
+| Agent | 后续建议方式 | 实现机制 |
+|------|-----------|---------|
+| **Claude Code** | `/suggestions` Skill | 分析使用数据，生成个性化改进建议 |
+| **Codex CLI** | 系统提示内嵌 | "clearly stating assumptions, environment prerequisites, and next steps" |
+| **Copilot CLI** | 压缩保留 + 检查点标题 | 压缩时保留 "next steps"；检查点生成 2-6 词标题 |
+| **Aider** | 反射循环隐式 | lint/test 失败自动触发下一步修复（非用户选择） |
+| **Gemini CLI** | 无显式机制 | — |
+| **Kimi CLI** | 无显式机制 | — |
+| **Goose** | 无显式机制 | — |
+
+### Claude Code `/suggestions` 实现
+
+```bash
+/suggestions    # 分析使用数据，建议改进
+```
+
+- **类型**：Skill（prompt 驱动）
+- **功能**：分析当前会话的使用模式，生成个性化建议
+- **示例输出**：推荐启用的 Hook、常用命令快捷方式、配置优化建议
+
+### Codex CLI 的 Next Steps 指令
+
+系统提示中硬编码：
+
+```
+"You always prioritize actionable guidance, clearly stating
+assumptions, environment prerequisites, and next steps."
+```
+
+每次回复末尾自然包含下一步操作建议，但不是独立 UI 组件。
+
+### Copilot CLI 的检查点标题
+
+压缩会话时保留结构化上下文：
+
+```
+Compaction preserves:
+  - context（当前状态）
+  - changes made（已完成的修改）
+  - key references（关键引用）
+  - next steps（下一步操作）
+  - checkpoint title（2-6 词标题）
+```
+
+> **设计差异**：Claude Code 将后续建议作为独立 Skill 实现（用户主动调用）；Codex CLI 和 Copilot CLI 将其内嵌到系统提示和压缩逻辑中（自动包含在每次回复中）。前者给用户更多控制，后者更自然但不可定制。
+
+---
+
 ## 证据来源
 
 | Agent | 来源 | 获取方式 |
