@@ -208,43 +208,18 @@ AGENTS.md 是标准 Markdown，没有特殊的 Frontmatter 要求。推荐使用
 | **Conventions** | 编码风格和命名规范 | 高 |
 | **Restrictions** | 明确禁止的操作，防止破坏性变更 | **最高** |
 
-## 与 CLAUDE.md 和 GEMINI.md 的对比
+## 指令文件格式对比
 
-三者本质相同——都是 Markdown 格式的项目指令文件，差别在于目标工具和社区约定：
+四种指令文件本质相同——都是 Markdown 格式，差别在于目标 Agent 和附加能力：
 
-| 特性 | AGENTS.md | CLAUDE.md | GEMINI.md |
-|------|-----------|-----------|-----------|
-| **目标工具** | Codex CLI、Kimi CLI、Copilot CLI | Claude Code | Gemini CLI、Qwen Code |
-| **格式** | 纯 Markdown | 纯 Markdown | 纯 Markdown |
-| **层级发现** | 项目根目录 | 项目根目录 + 子目录递归 | 项目根目录 + 子目录 BFS |
-| **子目录规则** | Kimi CLI 支持子目录 | 支持，子目录 CLAUDE.md 追加到上下文 | 支持，按目录特定规则加载 |
-| **@import 语法** | 不支持 | 不支持 | Gemini CLI 支持 `@import` 导入其他 Markdown |
-| **记忆系统集成** | Kimi CLI 无独立记忆系统 | 跨会话学习存储到 `~/.claude/projects/` | `## Gemini Added Memories` 自动追加区段 |
-
-### 多工具兼容策略
-
-如果项目需要兼容多个 AI 编程工具，有两种策略：
-
-**策略一：维护多个文件**（内容相同）
-```
-项目根目录/
-├── CLAUDE.md          # Claude Code 读取
-├── GEMINI.md          # Gemini CLI / Qwen Code 读取
-├── AGENTS.md          # Codex CLI / Kimi CLI / Copilot CLI 读取
-└── .github/copilot-instructions.md  # Copilot CLI 备选
-```
-
-**策略二：维护一个 AGENTS.md + 符号链接**
-```bash
-# 主文件
-echo "# Project instructions..." > AGENTS.md
-
-# 符号链接
-ln -s AGENTS.md CLAUDE.md
-ln -s AGENTS.md GEMINI.md
-```
-
-> Copilot CLI 会同时读取 CLAUDE.md、GEMINI.md 和 AGENTS.md，所以使用策略二时 Copilot 会读取重复内容，但不影响功能。
+| 特性 | AGENTS.md | CLAUDE.md | GEMINI.md | QWEN.md |
+|------|-----------|-----------|-----------|---------|
+| **目标 Agent** | Codex CLI、Kimi CLI、Copilot CLI | Claude Code | Gemini CLI | Qwen Code |
+| **格式** | 纯 Markdown | 纯 Markdown | 纯 Markdown | 纯 Markdown |
+| **层级** | 项目根（1-2 层） | 全局+项目+子目录+私有（4 层） | 全局+扩展+项目+子目录（4 层） | 继承 Gemini 层级 |
+| **@import** | ✗ | ✗ | ✓（导入其他 Markdown） | ✗ |
+| **AI 记忆** | ✗ | auto-memory（4 类型） | memory_manager 子代理 | 继承 Gemini |
+| **符号链接兼容** | 主文件 | ✓ → AGENTS.md | ✓ → AGENTS.md | ✓ → AGENTS.md |
 
 ## 不同项目类型的示例
 
