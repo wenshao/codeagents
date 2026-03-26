@@ -1,17 +1,17 @@
-# CLAUDE.md — 项目配置文件
+# AGENTS.md — 项目指令文件
 
-> 本文件为 AI 助手（特别是 Claude Code）提供项目级上下文配置。
+> 本文件为所有 AI 编程代理提供项目级上下文。支持 Claude Code（通过符号链接）、Codex CLI、Kimi CLI、Copilot CLI、Qwen Code、OpenCode。
 
 ## 项目概述
 
 这是一个中文技术文档项目，对比分析 17 款 AI 编程 Code Agent。所有分析基于源码验证，
 确保技术声明的准确性。项目目标是为开发者提供中立、客观、可验证的 Agent 选型参考。
 
-## 项目结构（118 文件，34,600+ 行）
+## 项目结构（118 文件，35,000+ 行）
 
 ```
 docs/
-├── tools/                      # 工具文档（16 工具）
+├── tools/                      # Agent 文档（10 目录 + 9 单文件）
 │   ├── claude-code/            # 9 文件 + EVIDENCE.md（反编译分析）
 │   ├── copilot-cli/            # 5 文件 + EVIDENCE.md（SEA 反编译）
 │   ├── codex-cli/              # 5 文件 + EVIDENCE.md（Rust 二进制分析）
@@ -20,18 +20,21 @@ docs/
 │   ├── aider/                  # 5 文件 + EVIDENCE.md
 │   ├── opencode/               # 5 文件 + EVIDENCE.md
 │   ├── qwen-code/              # EVIDENCE.md（Gemini CLI 分叉分析）
+│   ├── qoder-cli/              # 4 文件 + EVIDENCE.md（Go 二进制分析）
 │   ├── goose/                  # EVIDENCE.md（MCP 原生架构分析）
 │   └── *.md                    # 9 个单文件 Agent（Cursor/Warp/Cline 等）
-├── comparison/                 # 对比文档（12 篇）
+├── comparison/                 # 对比文档（40 篇）
 │   ├── features.md             # 功能矩阵
+│   ├── architecture-deep-dive.md  # 架构深度对比
 │   ├── slash-commands-deep-dive.md  # 命令深度对比
+│   ├── model-routing.md        # 模型路由
+│   ├── *-deep-dive.md          # 15 篇系统能力 Deep-Dive
+│   ├── review-command.md       # /review 对比
 │   ├── privacy-telemetry.md    # 隐私/遥测/安全监控对比
-│   ├── functional-internals.md # API 参数/代理循环/编辑格式
-│   ├── evolution-community.md  # 版本迭代/贡献者/Stars
 │   ├── pricing.md              # 定价/成本
-│   ├── system-requirements.md  # 系统要求/运行时版本
-│   ├── architecture-deep-dive.md
-│   └── claude-code-vs-*.md / aider-vs-goose.md / qwen-vs-*.md
+│   ├── system-requirements.md  # 系统要求
+│   ├── claude-code-vs-*.md     # 1v1 对比
+│   └── qwen-code-*.md          # Qwen 功能补全系列
 ├── guides/                     # 使用指南（15 篇）
 │   ├── getting-started.md
 │   ├── workflows.md
@@ -58,7 +61,7 @@ docs/
 ### 语言
 - 正文使用中文
 - 技术术语保留英文原文（如 CLI、API、token、context window）
-- 工具名称保留英文（如 Claude Code、Cursor、Copilot）
+- Agent 名称保留英文（如 Claude Code、Cursor、Copilot）
 
 ### 风格
 - 技术文档风格，中立客观
@@ -83,20 +86,14 @@ docs/
 |------|--------|--------|
 | 上下文窗口 | 200k tokens | ~128k tokens |
 
-> **免责声明**: 以上数据基于 2025 年 Q4 源码分析，可能已过时。
+> **免责声明**: 以上数据基于 2026 年 Q1 源码分析，可能已过时。
 ```
-
-## 工具文档模板
-
-新增工具文档时，请参考 `CONTRIBUTING.md` 中定义的标准模板结构。
-确保每个工具文档覆盖以下核心部分：基本信息、核心功能、配置系统、
-上下文管理、安全模型、扩展机制等。
 
 ## 注意事项
 
-- 更新工具文档时，同步检查以下文件中的相关引用：
+- 更新文档时，同步检查以下文件中的相关引用：
   - `README.md` 中的 Agent 表格和导航链接
-  - `docs/tools/README.md` 工具索引
+  - `docs/tools/README.md` Agent 索引
   - `docs/comparison/features.md` 功能对比数据（命令数、内置工具数等数字）
   - `docs/comparison/privacy-telemetry.md` 隐私/遥测数据
   - `docs/comparison/pricing.md` 定价信息
