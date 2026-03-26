@@ -13,7 +13,7 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 | **Codex CLI** | `CODEX.md` | 原生支持 | 最早引入 AGENTS.md 概念 |
 | **Kimi CLI** | `AGENTS.md` | 原生支持 | 作为主要项目指令文件 |
 | **Copilot CLI** | `.github/copilot-instructions.md` | 读取 | 同时读取 CLAUDE.md、GEMINI.md、AGENTS.md |
-| **Qwen Code** | `QWEN.md` | ⚠️ 配置存在但有 Bug | `/init` 生成 QWEN.md，兼容 GEMINI.md。`contextFileName` 设为 AGENTS.md 时[可能不生效](https://github.com/QwenLM/qwen-code/issues/727)（P1 bug），**建议用符号链接** |
+| **Qwen Code** | `QWEN.md` | **✓ 原生支持**（v0.13.0+） | 二进制确认 `AGENT_CONTEXT_FILENAME = "AGENTS.md"`，默认同时搜索 QWEN.md 和 AGENTS.md |
 | **Claude Code** | `CLAUDE.md` | 不读取 | 仅读取 CLAUDE.md |
 | **Gemini CLI** | `GEMINI.md` | 不读取 | 仅读取 GEMINI.md |
 | **Goose** | `config.yaml` | 不读取 | 配置文件驱动，非 Markdown 指令 |
@@ -29,7 +29,7 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 |-------|-----------|---------|---------|
 | **Claude Code** | `CLAUDE.md` | `~/.claude/CLAUDE.md`（全局）→ `<project>/CLAUDE.md`（项目）→ `<project>/.claude/CLAUDE.md` → 子目录递归 → `~/.claude/projects/<hash>/CLAUDE.md`（私有） | 4 层追加 |
 | **Gemini CLI** | `GEMINI.md` | `~/.gemini/GEMINI.md`（全局）→ 项目根 → 子目录 BFS（按 inode 去重）→ 扩展级 | 4 层，支持 `@import` |
-| **Qwen Code** | `QWEN.md` / `GEMINI.md` | 继承 Gemini 路径，`/init` 生成 QWEN.md。`contextFileName` 配置读取 AGENTS.md [存在 Bug](https://github.com/QwenLM/qwen-code/issues/727)，建议用符号链接 | 继承 Gemini |
+| **Qwen Code** | `QWEN.md` / `AGENTS.md` / `GEMINI.md` | 继承 Gemini 路径 + v0.13.0 新增 `AGENT_CONTEXT_FILENAME = "AGENTS.md"` 默认搜索。`/init` 生成 QWEN.md | 继承 Gemini + AGENTS.md |
 | **Codex CLI** | `CODEX.md` / `AGENTS.md` / `SKILL.md` | `~/.codex/instructions.md`（全局，最低）→ `CODEX.md`（项目）→ `AGENTS.md`（项目）→ `SKILL.md`（最高） | 4 层优先级 |
 | **Kimi CLI** | `AGENTS.md` 或 `agents.md` | 项目根 `<work_dir>/AGENTS.md`（大小写不敏感），通过 `load_agents_md()` 注入系统提示。**不支持子目录** | 1 层 |
 | **Copilot CLI** | 多格式（7 种） | `CLAUDE.md`（项目根+父目录）→ `GEMINI.md` → `AGENTS.md` → `.github/instructions/**/*.instructions.md` → `.github/copilot-instructions.md` → `~/.copilot/copilot-instructions.md`（全局）→ `COPILOT_CUSTOM_INSTRUCTIONS_DIRS` 环境变量 | 全部合并 |
@@ -138,25 +138,22 @@ git commit -m "Add project instructions with cross-agent symlinks"
 | Kimi CLI | AGENTS.md | ✅ 直接读取 |
 | Copilot CLI | AGENTS.md + CLAUDE.md | ✅ 两者都指向同一文件 |
 | Claude Code | CLAUDE.md → AGENTS.md | ✅ 通过符号链接 |
-| Qwen Code | QWEN.md → AGENTS.md | ✅ 通过符号链接（或配置 `contextFileName: "AGENTS.md"`） |
+| Qwen Code | AGENTS.md | ✅ **原生支持**（v0.13.0+ 默认搜索 AGENTS.md） |
 | Gemini CLI | GEMINI.md | ❌ 需额外 `ln -s AGENTS.md GEMINI.md` |
 
-### Qwen Code 与 AGENTS.md（已知问题）
+### Qwen Code 原生支持 AGENTS.md（v0.13.0+）
 
-Qwen Code 的 `contextFileName` 设置**理论上**可配置为读取 AGENTS.md：
+Qwen Code v0.13.0 **默认同时搜索** QWEN.md 和 AGENTS.md，无需额外配置：
 
-```json
-// ~/.qwen/settings.json 或 .qwen/settings.json
-{
-  "contextFileName": "AGENTS.md"
-}
+```javascript
+// 从 v0.13.0 二进制提取（cli.js）
+DEFAULT_CONTEXT_FILENAME = "QWEN.md";      // 默认指令文件
+AGENT_CONTEXT_FILENAME = "AGENTS.md";      // 新增：AGENTS.md 支持
 ```
 
-**⚠️ 已知 Bug**：[Issue #727](https://github.com/QwenLM/qwen-code/issues/727)（P1）报告此配置不生效——设为 AGENTS.md 后仍读取 QWEN.md。
+之前的 [Issue #727](https://github.com/QwenLM/qwen-code/issues/727)（`contextFileName` 配置不生效）已**关闭**。v0.13.0 通过新增 `AGENT_CONTEXT_FILENAME` 常量从根本上解决了此问题——不再依赖 `contextFileName` 配置。
 
-**推荐替代方案**：使用符号链接 `ln -s AGENTS.md QWEN.md`，可靠且无 Bug。
-
-> 相关：[Issue #504](https://github.com/QwenLM/qwen-code/issues/504)（请求默认读取 AGENTS.md）、[Issue #2006](https://github.com/QwenLM/qwen-code/issues/2006)（请求加入默认搜索列表）。
+> 这意味着 Qwen Code v0.13.0+ 的项目中，放一个 `AGENTS.md` 就能直接被读取，无需符号链接或配置。
 
 ### Windows 注意事项
 
