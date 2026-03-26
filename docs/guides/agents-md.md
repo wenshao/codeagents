@@ -14,7 +14,7 @@ AGENTS.md 最初由 Codex CLI 引入，现已被多个工具支持：
 | **Kimi CLI** | `AGENTS.md` | 原生支持 | 作为主要项目指令文件 |
 | **Copilot CLI** | `.github/copilot-instructions.md` | 读取 | 同时读取 CLAUDE.md、GEMINI.md、AGENTS.md |
 | **Qwen Code** | `QWEN.md` | **✓ 原生支持**（v0.13.0+） | 二进制确认 `AGENT_CONTEXT_FILENAME = "AGENTS.md"`，默认同时搜索 QWEN.md 和 AGENTS.md |
-| **Claude Code** | `CLAUDE.md` | 不读取 | 仅读取 CLAUDE.md |
+| **Claude Code** | `CLAUDE.md` | 不作为指令加载（但 `/init` 会参考） | 仅加载 CLAUDE.md 到系统提示。`/init` 生成 CLAUDE.md 时会读取 AGENTS.md 内容作为参考 |
 | **Gemini CLI** | `GEMINI.md` | 不读取 | 仅读取 GEMINI.md |
 | **Goose** | `config.yaml` | 不读取 | 配置文件驱动，非 Markdown 指令 |
 | **OpenCode** | `opencode.json` | 不读取 | JSON 配置，兼容读取 `.claude/`、`.gemini/` 路径下的 SKILL.md |
