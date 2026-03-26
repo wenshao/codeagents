@@ -170,9 +170,10 @@
 | **Claude Code** | v2.1.84 | **50ms** | 225MB | Rust ELF x86-64 |
 | **Copilot CLI** | v1.0.10 | **72ms** | 268MB | Node.js SEA |
 | **Codex CLI** | — | **76ms** | 142MB | Node.js SEA |
+| **Qwen Code** | v0.13.0 | **608ms** | 48MB | Node.js (npm) |
 | **Gemini CLI** | v0.34.0 | **1.5s** | 509MB | Node.js (npm) |
 
-> 测量方式：`time <agent> --version`，3 次取中位数。Gemini CLI 首次冷启动 4s，后续热启动 1.5s。
+> 测量方式：`time <agent> --version`，3 次取中位数。Gemini CLI 首次冷启动 4s，后续热启动 1.5s。Qwen Code 作为 Gemini CLI 分叉，安装大小仅 48MB（vs 上游 509MB），启动快 2.5 倍。
 
 ### 采用量（2026-03-26 实时数据）
 
