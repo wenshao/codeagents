@@ -13,6 +13,8 @@
 | **Gemini CLI** | 0（base/分类器），1（chat），0.2-0.3（辅助） | 1,048,576（Gemini 模型上限） | 1（base），0.95（chat） | 10 次，5s→30s 指数退避 | — |
 | **Kimi CLI** | 可配置（`KIMI_MODEL_TEMPERATURE`） | 50,000（Anthropic 默认） | 可配置 | tenacity 指数抖动 0.3s→5s，3 次 | — |
 | **Goose** | None（默认），可配置（`GOOSE_TEMPERATURE`） | None（默认），可配置 | — | `RetryManager` 可配置 | 300s（recipe） |
+| **Qwen Code** | 继承 Gemini（0/1） | 继承 Gemini | 继承 | 继承 Gemini（10 次退避） | — |
+| **OpenCode** | 可配置 | 可配置 | — | — | — |
 
 > **关键发现：** Temperature=0 是 Claude Code、Copilot CLI、Aider、Gemini CLI 的默认值（确保确定性输出）。对话模式通常切换到 Temperature=1。
 
@@ -27,6 +29,8 @@
 | **Gemini CLI** | **100 轮**（`MAX_TURNS = 100` 硬编码） | 工具失败重试 | 轮次耗尽或模型停止 | `generateContent()→processTurn()→handleToolCalls()` |
 | **Kimi CLI** | **100 步/轮**（`max_steps_per_turn=100`） | **3 次/步**（tenacity 指数退避） | 步数耗尽或模型停止 | `KimiSoul.step()` 循环 |
 | **Goose** | **无固定上限** | `RetryManager` 可配置 | 模型决定 | Rust async 循环 |
+| **Qwen Code** | **100 轮**（继承 Gemini） | 继承 Gemini | 继承 Gemini | 继承 Gemini + Loop 检测（Levenshtein） |
+| **OpenCode** | 可配置 | SQLite 追踪 + Doom Loop 保护（3 次拒绝中断） | 模型决定 | Go async 循环 |
 
 > **关键发现：** Aider 独有的"反射循环"机制（`max_reflections=3`）——lint/test 失败后自动将错误反馈给模型重试，是其自动修复能力的核心。
 
@@ -61,6 +65,8 @@
 | **Gemini CLI** | `edit`（搜索/替换） + `write_file`（创建/覆写） | 2 种工具 |
 | **Kimi CLI** | `EditFile` + `WriteFile` | 2 种工具 |
 | **Goose** | 通过 MCP 工具（无内置编辑格式） | 完全依赖 MCP 服务器 |
+| **Qwen Code** | 继承 Gemini `edit` + `write_file` | 2 种工具（继承） |
+| **OpenCode** | `edit` + `apply_patch`（GPT 专用）+ `write` | 按模型切换编辑策略 |
 
 ## 4. 上下文管理
 
@@ -72,7 +78,9 @@
 | **Aider** | 模型依赖 | `done_messages > 1024 tokens` | 递归分割摘要（3 层深度，后台线程） | **Tree-sitter PageRank**（867 行算法） |
 | **Gemini CLI** | 1M（Gemini） | **50% 容量** | 四阶段（截断+分割+摘要+验证），专用压缩模型 | `codebase_investigator` 子代理 |
 | **Kimi CLI** | 模型依赖 | **85% 容量**或剩余 <50K | 结构化摘要（6 个 XML 章节），自定义焦点 | `/init` 生成 AGENTS.md |
-| **Goose** | 模型依赖 | **80%** (`DEFAULT_COMPACTION_THRESHOLD`) | 工具调用摘要（每 10 个批量） | 无 |
+| **Goose** | 模型依赖 | **80%**（`GOOSE_AUTO_COMPACT_THRESHOLD`，[官方文档](https://block.github.io/goose/docs/guides/sessions/smart-context-management/)） | 工具调用摘要（每 10 个批量） | 无 |
+| **Qwen Code** | ~1M（继承 Gemini） | **50%**（继承） | 四阶段（继承 Gemini）+ 简单断路器（布尔标志） | 继承 Gemini |
+| **OpenCode** | 模型依赖 | 可配置 | 会话压缩 | Tree-sitter（实验性 LSP） |
 
 > **关键发现：** Gemini CLI 的四阶段压缩最复杂（含独立验证步骤），但 Aider 的 Tree-sitter PageRank 仓库地图是理解代码结构最深的方案。
 
@@ -80,13 +88,15 @@
 
 | Agent | 缓存机制 | 证据 |
 |------|---------|------|
-| **Claude Code** | Anthropic `cache_control: ephemeral`（65 refs） | 二进制中 `cache_control` 65 处引用 |
+| **Claude Code** | Anthropic `cache_control: ephemeral` | 二进制中 `cache_control` 引用数因版本而异（v2.1.81=47，v2.1.83=83） |
 | **Copilot CLI** | 未确认 | — |
 | **Codex CLI** | OpenAI 服务端缓存 | `enable_request_compression` flag |
 | **Aider** | Anthropic prompt caching（通过 litellm） | 源码 `send_message` 中设置 cache headers |
 | **Gemini CLI** | Google `cachedContent` API | 源码中 `cacheControl` 配置 |
 | **Kimi CLI** | 未确认 | — |
 | **Goose** | 未确认 | — |
+| **Qwen Code** | DashScope 缓存（`enableCacheControl`） | 继承 Gemini |
+| **OpenCode** | 未确认 | — |
 
 ## 6. 工具调用策略
 
@@ -98,7 +108,9 @@
 | **Aider** | ✗（串行） | 无 | 模型选择编辑格式 |
 | **Gemini CLI** | ✓ | 无固定上限 | 模型选择 |
 | **Kimi CLI** | ✗（串行，但有后台任务） | `max_steps_per_turn=100` | 模型选择 |
-| **Goose** | ✓ | 无固定上限 | 模型选择 |
+| **Goose** | ✓ | 无固定上限 | 模型选择（toolshim 兼容层） |
+| **Qwen Code** | ✓（继承 Gemini） | 继承 | 继承 Gemini |
+| **OpenCode** | ✓ | — | 模型选择 |
 
 ## 证据来源
 
@@ -111,3 +123,5 @@
 | Gemini CLI | `gh api` GitHub 源码（client.ts, defaultModelConfigs.ts） |
 | Kimi CLI | `gh api` GitHub 源码（kimisoul.py, config.py） |
 | Goose | `gh api` GitHub 源码（agent.rs, model.rs） |
+| Qwen Code | cli.js 二进制 strings（v0.13.0） |
+| OpenCode | Go ELF 二进制 strings（v1.2.15） |
