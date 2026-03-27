@@ -10,7 +10,7 @@ Claude Code 在 2026 年已经不只是写代码的工具：
 Claude Code（Everything Code Agent）
   │
   ├── 编码能力（传统）
-  │   └── Read/Edit/MultiEdit/Bash/Grep/Glob + ~79 命令 + 20+ 工具
+  │   └── Read/Edit/MultiEdit/Bash/Grep/Glob + ~79 命令 + 20+ 内置工具
   │
   ├── 外部世界连接（MCP 驱动）
   │   ├── 数据库查询（@modelcontextprotocol/server-postgres）
@@ -45,9 +45,9 @@ Claude Code（Everything Code Agent）
 | **自主性** | **高**（长链多步自主操作） | 中（需用户确认每步） | 高 |
 | **外部集成** | **MCP 协议**（连接任何外部系统） | 有限（IDE 内扩展） | 部分 |
 | **CI/CD** | **原生支持** | 通常不支持 | 部分 |
-| **启动速度** | 亚秒级（原生二进制）~ 数秒（Node.js/Python） | 数秒（Electron） | 亚秒级~数秒 |
+| **启动速度** | ~50ms（原生 Rust）~ ~1.5s（Node.js/Python） | 3~10s（Electron） | 亚秒级~数秒 |
 
-> **免责声明**：启动速度为定性描述（"亚秒级"/"慢于原生"），非实测数据。原生编译语言（Rust/Go）通常优于解释型语言（Python）和运行时语言（Node.js/TypeScript）。具体数值取决于运行环境和硬件配置。
+> **免责声明**：启动速度为本机实测数据（2026-03-26，`time <agent> --version`，3 次取中位数，Linux x86-64）。Claude Code v2.1.84、Codex CLI v0.116.0、Gemini CLI v0.34.0、Qwen Code v0.13.0。
 
 ---
 
@@ -154,13 +154,13 @@ Cursor 的交互方式：
 
 | Agent | 语言 | 启动 | 自主链长度 | CI 支持 | 独特能力 |
 |-------|------|------|----------|---------|---------|
-| **Claude Code** | Rust | **亚秒级** | 长（--max-budget-usd） | **`--bare` + stream-json** | 24 Hook + Prompt Hook + Channels |
-| **Aider** | Python | 慢于原生 | 3 次反射 | `--message` | 14 编辑格式 + Git 自动提交 |
-| **Codex CLI** | Rust | 快（原生二进制） | 4~5 级审批模式 | Cloud 远程执行（实验性） | 三平台 OS 沙箱（Windows 实验性） |
-| **Gemini CLI** | TS | — | 100 轮 | TTY 自动检测 | 7 策略模型路由 |
-| **Qwen Code** | TS | — | — | `--non-interactive` | Arena 多模型竞争 |
-| **Copilot CLI** | TS (Node.js SEA) | — | 可配置 | `-p` + Autopilot | 48 GitHub 工具 + 3 内置代理 |
-| **Kimi CLI** | Python | 慢于原生 | 100 步 | — | Wire 协议 + D-Mail（实验性，okabe 代理） |
+| **Claude Code** | Rust | **~50ms** | 长（maxTurns + --max-budget-usd） | **`--bare` + stream-json** | 24 Hook + Prompt Hook + Channels |
+| **Aider** | Python | ~1s | 3 次反射 | `--message` | 14 编辑格式 + Git 自动提交 |
+| **Codex CLI** | Rust | ~76ms | 4~5 级审批模式 | Cloud 远程执行（实验性） | 三平台 OS 沙箱（Windows 实验性） |
+| **Gemini CLI** | TS | ~1.5s | 100 轮 | TTY 自动检测 | 7 策略模型路由 |
+| **Qwen Code** | TS | ~608ms | 100 轮（MAX_TURNS） | `--non-interactive` | Arena 多模型竞争 |
+| **Copilot CLI** | TS (Node.js SEA) | ~72ms | 可配置 | `-p` + Autopilot | 67 工具（12 核心 + 21 浏览器 + 48 平台） |
+| **Kimi CLI** | Python | ~1s | 100 步 | — | Wire 协议 + D-Mail（实验性，okabe 代理） |
 
 ### IDE Agent
 
