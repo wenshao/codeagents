@@ -2,11 +2,11 @@
 
 > 基于 17 款 Agent 的源码分析经验，帮你选择正确的构建路径——从零搭建 vs 基于成品扩展。
 
-## 两种路径
+## 三种路径
 
 ### 路径 A：基于 SDK 框架从零搭建
 
-**代表框架**：AgentScope、LangGraph、CrewAI、AutoGen
+**代表框架**：[AgentScope](https://github.com/agentscope-ai/agentscope)（阿里）、[LangGraph](https://github.com/langchain-ai/langgraph)（LangChain）、[CrewAI](https://github.com/crewAIInc/crewAI)、[AG2](https://github.com/ag2ai/ag2)（原 AutoGen 社区分叉）、[Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/)（AutoGen 官方继任者）
 
 ```
 你的代码
@@ -65,8 +65,14 @@
   │   └── → 选路径 A（SDK 框架）
   │       │
   │       ├── Python 生态？ → AgentScope / LangGraph
-  │       ├── 多 Agent 编排？ → CrewAI / AutoGen
+  │       ├── 多 Agent 编排？ → CrewAI / AG2
+  │       ├── 微软生态/企业？ → Microsoft Agent Framework
   │       └── 自训练模型？ → AgentScope（灵活接入）
+  │
+  ├── 程序化嵌入 Agent 到自己的应用
+  │   └── → 选路径 C（Agent SDK）
+  │       ├── Claude 生态？ → @anthropic-ai/claude-agent-sdk
+  │       └── OpenAI 生态？ → @openai/codex
   │
   └── 编码 + 非编码混合
       └── → 路径 B 为主 + MCP 桥接非编码能力
