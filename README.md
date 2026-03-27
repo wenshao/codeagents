@@ -180,6 +180,9 @@
 **深度配置：**
 [CLAUDE.md 写作](./docs/guides/writing-claude-md.md) | [AGENTS.md](./docs/guides/agents-md.md) | [Skill 设计](./docs/guides/skill-design.md) | [Hooks](./docs/guides/hooks-config.md) | [上下文管理](./docs/guides/context-management.md) | [安全加固](./docs/guides/security-hardening.md)
 
+**架构选型：**
+[构建自己的 Agent](./docs/guides/build-your-own-agent.md) — SDK 框架 vs 成品 Agent 扩展，4 层扩展路径（SKILL → Hooks → MCP → 插件）
+
 </details>
 
 **参考文档：**
