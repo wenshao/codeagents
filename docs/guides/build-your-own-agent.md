@@ -78,13 +78,12 @@
 
 ### 第 1 层：SKILL.md（最简单，5 分钟上手）
 
+**跨 Agent 兼容版**（所有 Agent 都能用）：
+
 ```markdown
 ---
 name: security-scan
 description: 扫描项目中的安全漏洞
-allowed-tools: ["Read", "Grep", "Glob"]
-context: fork
-paths: ["*.py", "*.js", "*.ts"]
 ---
 
 分析当前项目的安全风险：
@@ -98,9 +97,26 @@ paths: ["*.py", "*.js", "*.ts"]
 不要修改任何文件。
 ```
 
-放到 `.claude/skills/security-scan/SKILL.md` 或 `.qwen/skills/security-scan/SKILL.md`，即可通过 `/security-scan` 调用。
+**Claude Code 增强版**（仅 Claude Code 支持的高级字段）：
 
-> **注意**：Claude Code 的 SKILL.md 不要求 YAML frontmatter（模型自行推断）。Qwen Code、Gemini CLI、Codex CLI、OpenCode 都**要求 YAML frontmatter 必须存在**且 `name` + `description` 必填。跨 Agent 兼容时务必加 frontmatter。
+```yaml
+---
+name: security-scan
+description: 扫描项目中的安全漏洞
+allowed-tools: ["Read", "Grep", "Glob"]   # ← Claude Code 独有
+context: fork                              # ← Claude Code 独有：独立上下文
+paths: ["*.py", "*.js", "*.ts"]            # ← Claude Code 独有：条件激活
+model: haiku                               # ← Claude Code 独有：模型覆盖
+---
+```
+
+放到 `.claude/skills/security-scan/SKILL.md` 或 `.qwen/skills/security-scan/SKILL.md`，通过 `/security-scan` 调用。
+
+> **跨 Agent 兼容要点**：
+> - **YAML frontmatter**：Claude Code 可选，其他所有 Agent **必须**
+> - **`name` + `description`**：Claude Code 可选，其他 Agent **必须**
+> - **`allowed-tools` / `context` / `paths` / `model`**：**仅 Claude Code 支持**，其他 Agent 会忽略或报错
+> - 安全做法：始终加 YAML frontmatter + name + description，仅在 Claude Code 环境下加高级字段
 
 ### 第 2 层：Hooks（拦截和增强行为）
 
@@ -184,9 +200,9 @@ my-plugin/
 | 能力 | Claude Code | Qwen Code | Gemini CLI | OpenCode | Codex CLI |
 |------|------------|-----------|-----------|----------|-----------|
 | **SKILL.md** | ✓（YAML 可选） | ✓（YAML 必须） | ✓（YAML 必须） | ✓（YAML 必须） | ✓（YAML 必须） |
-| **Hooks** | **24 事件** + Prompt Hook | 12 事件 | 11 事件 | 17 种 Hook | — |
-| **MCP** | Stdio/SSE/Streamable-HTTP | Stdio/SSE/HTTP | Stdio/SSE | StreamableHTTP/SSE/Stdio | — |
-| **插件系统** | 13 官方 + Marketplace | `/extensions` + 格式转换 | 扩展系统 | Hook-based | — |
+| **Hooks** | **24 事件** + Prompt Hook | 12 事件 | 11 事件 | 17 种 Hook | user prompt hook |
+| **MCP** | Stdio/SSE/Streamable-HTTP | Stdio/SSE/HTTP | Stdio/SSE | StreamableHTTP/SSE/Stdio | ✓（config.toml，20 处引用） |
+| **插件系统** | 13 官方 + Marketplace | `/extensions` + 格式转换 | 扩展系统 | Hook-based | plugins 配置 |
 | **记忆系统** | auto-memory（4 类型） | save_memory 工具 | memory_manager 子代理 | ✗ | generate_memories |
 | **多代理** | Teammates（协作） | Arena（竞争） | 5 子代理 + A2A | — | — |
 | **CI/脚本** | `--bare` + stream-json | `--non-interactive` | TTY 自动检测 | — | 5 级审批 |
