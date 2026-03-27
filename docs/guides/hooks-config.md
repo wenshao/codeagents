@@ -365,3 +365,12 @@ Hook 脚本异常退出时，代理的默认行为是继续正常流程。如果
 - Gemini CLI 策略与 Hooks：`docs/tools/gemini-cli/05-policies.md`
 - Claude Code 插件系统：`docs/tools/claude-code/05-skills.md`（hookify 插件）
 - 配置示例对比：`docs/guides/config-examples.md`
+
+## 相关资源
+
+- [Hook/插件/扩展系统深度对比](../comparison/hook-plugin-extension-deep-dive.md) — 24 事件 + Prompt Hook vs 17 Hook 类型
+- [沙箱与安全隔离深度对比](../comparison/sandbox-security-deep-dive.md) — 28 BLOCK 规则 + 三平台沙箱
+- [Claude Code 设置详解](../tools/claude-code/06-settings.md) — 24 种 Hook 事件完整列表
+- [Gemini CLI 策略引擎](../tools/gemini-cli/05-policies.md) — 11 Hook 事件 + TOML 策略
+- [Skill 设计指南](./skill-design.md) — Skill + Hook 协作模式
+- [安全加固指南](./security-hardening.md) — Hook 在安全场景的应用

@@ -533,3 +533,13 @@ efficiently. It was founded in 2023 and has over 10,000 users...
 | 分层 | 核心指令在 CLAUDE.md，详细指导在 Skills |
 | 维护 | 像代码一样审查和修剪，删除过时内容 |
 | 互补 | 建议性规则用 CLAUDE.md，强制性规则用 Hooks |
+
+## 相关资源
+
+- [AGENTS.md 配置指南](./agents-md.md) — 跨 Agent 指令文件 + 符号链接（CLAUDE.md → AGENTS.md）
+- [长期记忆与项目指令对比](../comparison/memory-system-deep-dive.md) — 4 层 CLAUDE.md + auto-memory
+- [系统提示与 Prompt 工程](../comparison/system-prompt-deep-dive.md) — 8 模块系统提示架构
+- [Claude Code 概述](../tools/claude-code/01-overview.md) — 79 命令 + 24 Hook 事件
+- [Claude Code 用户指南](./claude-code-user-guide.md) — 15 个实用技巧
+- [Skill 设计指南](./skill-design.md) — SKILL.md 编写 + allowed-tools 白名单
+- [配置示例](./config-examples.md) — settings.json 格式与示例

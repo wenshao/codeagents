@@ -247,3 +247,12 @@ DATABASE_URL = "postgresql://localhost:5432/mydb"
 | **MCP 配置** | `.mcp.json` | `~/.copilot/mcp-config.json` | config.toml 内 | `~/.gemini/mcp.json` | `~/.kimi/mcp.json` |
 | **忽略文件** | `.claudeignore` | — | — | `.geminiignore` | — |
 | **记忆/知识** | `~/.claude/projects/` | `~/.copilot/` | `~/.codex/` | `~/.gemini/GEMINI.md` | `AGENTS.md` |
+
+## 相关资源
+
+- [AGENTS.md 配置指南](./agents-md.md) — 跨 Agent 指令文件 + 符号链接策略
+- [Skill 设计指南](./skill-design.md) — SKILL.md 编写 + Frontmatter 差异
+- [Hooks 配置指南](./hooks-config.md) — Claude Code 24 事件 + Prompt Hook
+- [安全加固指南](./security-hardening.md) — 权限规则 + 沙箱配置
+- [Claude Code 设置详解](../tools/claude-code/06-settings.md) — 5 层设置 + 28 BLOCK 规则
+- [Gemini CLI 策略引擎](../tools/gemini-cli/05-policies.md) — TOML 策略 + 9 预定义文件

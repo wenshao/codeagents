@@ -1008,3 +1008,11 @@ aider src/*.py
 - 工具版本
 - 完整的错误日志
 - 复现步骤
+
+## 相关资源
+
+- [入门指南](./getting-started.md) — 安装、认证、首次使用
+- [配置示例](./config-examples.md) — 各 Agent 配置格式对比
+- [系统要求对比](../comparison/system-requirements.md) — 运行时版本 + 二进制大小
+- [迁移指南](./migration.md) — Agent 间迁移步骤
+- [上下文管理](./context-management.md) — 压缩阈值 + Token 管理

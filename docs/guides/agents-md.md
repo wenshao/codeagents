@@ -346,7 +346,17 @@ AGENTS.md 应该提交到 Git。如果有不想共享的个人偏好，可以在
 
 ## 相关资源
 
-- 配置示例对比：`docs/guides/config-examples.md`
-- Codex CLI 概述：`docs/tools/codex-cli/01-overview.md`
-- Kimi CLI 概述：`docs/tools/kimi-cli/01-overview.md`
-- Copilot CLI 概述：`docs/tools/copilot-cli/01-overview.md`
+### Agent 指令文件详情
+- [Codex CLI 概述](../tools/codex-cli/01-overview.md) — AGENTS.md 43 处引用（子目录递归）
+- [Kimi CLI 概述](../tools/kimi-cli/01-overview.md) — AGENTS.md 原生（大小写不敏感）
+- [Copilot CLI 概述](../tools/copilot-cli/01-overview.md) — 7 种来源跨格式读取
+- [Claude Code 概述](../tools/claude-code/01-overview.md) — CLAUDE.md 4 层体系
+- [Gemini CLI 概述](../tools/gemini-cli/01-overview.md) — GEMINI.md + @import 语法
+- [Qwen Code 概述](../tools/qwen-code.md) — QWEN.md + AGENTS.md（v0.13.0+）
+- [OpenCode 概述](../tools/opencode/01-overview.md) — AGENTS.md + CLAUDE.md + CONTEXT.md
+
+### 对比与配置
+- [长期记忆与项目指令对比](../comparison/memory-system-deep-dive.md) — 指令文件生态图 + 三代演进
+- [配置示例对比](./config-examples.md) — 各 Agent 配置格式
+- [Skill 设计指南](./skill-design.md) — SKILL.md 编写 + 跨 Agent 迁移
+- [CLAUDE.md 写作指南](./writing-claude-md.md) — Claude Code 专用最佳实践
