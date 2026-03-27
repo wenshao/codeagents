@@ -75,7 +75,17 @@ pdA() 扫描所有目录
 
 ### Frontmatter 加载策略差异（二进制验证）
 
-这是一个重要的设计哲学差异——Claude Code 和 Qwen Code 对 SKILL.md 的 YAML frontmatter 要求完全不同：
+这是一个重要的设计哲学差异——**Claude Code 是唯一允许无 frontmatter 的 Agent**，所有其他 Agent 都要求严格校验：
+
+| Agent | frontmatter | name 必须 | description 必须 | 无 frontmatter 行为 |
+|-------|------------|----------|-----------------|-------------------|
+| **Claude Code** | **可选** | ✗ | ✗ | 空元数据 + 全文作为 prompt |
+| **Qwen Code** | 必须 | **✓** | **✓** | 抛异常，不加载 |
+| **Gemini CLI** | 必须 | **✓** | **✓** | `'No YAML frontmatter found'` → 无效 |
+| **Codex CLI** | 必须 | — | — | `invalid SKILL.md files` 警告 |
+| **OpenCode** | 必须 | — | — | `FrontmatterError` 异常 |
+
+以下是 Claude Code 和 Qwen Code 的源码级对比：
 
 **Claude Code（宽松：YAML 可选）**
 
