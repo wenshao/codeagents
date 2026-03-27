@@ -283,7 +283,25 @@ paths: ["**/routes/**", "**/api/**"]
 
 ## 相关资源
 
-- Claude Code Skills 文档：`docs/tools/claude-code/05-skills.md`
-- Gemini CLI 技能系统：`docs/tools/gemini-cli/05-policies.md`
-- Kimi CLI Skill 系统：`docs/tools/kimi-cli/01-overview.md`
-- 配置示例对比：`docs/guides/config-examples.md`
+### Agent Skill 系统详情
+- [Claude Code Skill 与插件系统](../tools/claude-code/05-skills.md) — 79 命令 + 10+ 内置 Skill + 13 官方插件 + Marketplace
+- [Gemini CLI 工具与代理](../tools/gemini-cli/04-tools.md) — 23 内置工具 + 5 子代理 + Skill 系统
+- [Gemini CLI 策略引擎](../tools/gemini-cli/05-policies.md) — TOML 策略 + Hook 事件 + 记忆管理
+- [Kimi CLI 架构](../tools/kimi-cli/03-architecture.md) — 标准 Skill + Flow Skill（Mermaid/D2 编排）
+- [Qwen Code 概述](../tools/qwen-code.md) — 40 命令 + /review 四代理 Skill
+- [Copilot CLI 命令与代理](../tools/copilot-cli/02-commands.md) — 3 内置 YAML 代理定义
+- [Codex CLI 命令](../tools/codex-cli/02-commands.md) — AGENTS.md + SKILL.md 指令体系
+- [OpenCode 命令与工具](../tools/opencode/02-commands.md) — Hook 驱动 Skill + per-agent 过滤
+- [Goose 概述](../tools/goose.md) — Recipe 系统（YAML 模板 + Cron 调度）
+
+### 对比文档
+- [Skill/技能系统深度对比](../comparison/skill-system-deep-dive.md) — Frontmatter 加载策略差异、跨 Agent Skill 兼容性
+- [Hook/插件/扩展系统对比](../comparison/hook-plugin-extension-deep-dive.md) — 24 事件 + Prompt Hook vs 17 Hook 类型
+- [长期记忆与项目指令对比](../comparison/memory-system-deep-dive.md) — AGENTS.md / CLAUDE.md / QWEN.md 跨 Agent 读取
+- [内置命令能力对比](../comparison/slash-commands-deep-dive.md) — 全命令逐项对比
+
+### 配置指南
+- [配置示例对比](./config-examples.md) — 各 Agent 配置文件格式与示例
+- [AGENTS.md 配置指南](./agents-md.md) — 项目指令文件编写 + 符号链接策略 + 跨 Agent 兼容
+- [Hooks 配置指南](./hooks-config.md) — Claude Code 24 事件 + Prompt Hook
+- [CLAUDE.md 写作指南](./writing-claude-md.md) — Claude Code 项目指令最佳实践
