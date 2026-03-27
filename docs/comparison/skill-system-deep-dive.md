@@ -6,11 +6,11 @@
 
 | Agent | Skill 格式 | 内置数 | 条件激活 | 工具白名单 | 模型覆盖 | 上下文隔离 | 工作流编排 |
 |------|-----------|--------|---------|-----------|---------|-----------|-----------|
-| **Claude Code** | SKILL.md（YAML frontmatter） | **10+** | ✓（paths glob） | **✓** | **✓** | **✓（fork）** | ✗ |
+| **Claude Code** | SKILL.md（YAML 可选） | **10+** | ✓（paths glob） | **✓** | **✓** | **✓（fork）** | ✗ |
 | **Kimi CLI** | SKILL.md + **Flow Skill** | 标准+Flow | ✓（三层发现） | ✗ | ✗ | ✓（子代理） | **✓（Mermaid/D2）** |
 | **OpenCode** | SKILL.md（Hook 驱动） | 0+ | ✓（per-agent） | ✗（Hook 控制） | ✗ | ✗ | ✗ |
 | **Gemini CLI** | SKILL.md（TS 接口） | — | ✓（activate_skill） | ✗ | ✗ | ✗ | ✗ |
-| **Qwen Code** | SKILL.md（继承） | 1+（/review） | ✓（继承） | ✗ | ✗ | ✗ | ✗ |
+| **Qwen Code** | SKILL.md（**YAML 必须**） | 1+（/review） | ✓（继承） | ✗ | ✗ | ✗ | ✗ |
 | **Codex CLI** | SKILL.md（Markdown） | 0 | ✗ | ✗ | ✗ | ✗ | ✗ |
 | **Copilot CLI** | `.agent.yaml` | 3 内置 | ✗ | ✓（per-agent） | ✓ | ✗ | ✗ |
 | **Goose** | `recipe.yaml` | 0 | ✗ | ✗ | ✗ | ✗ | **✓（YAML 模板）** |
@@ -72,6 +72,63 @@ pdA() 扫描所有目录
   → 条件 Skill → TTH Map（paths 匹配时激活）
   → 无条件 Skill → Vn Map（始终可用）
 ```
+
+### Frontmatter 加载策略差异（二进制验证）
+
+这是一个重要的设计哲学差异——Claude Code 和 Qwen Code 对 SKILL.md 的 YAML frontmatter 要求完全不同：
+
+**Claude Code（宽松：YAML 可选）**
+
+```javascript
+// 从 v2.1.84 二进制提取（函数 vw）
+function vw(H, $) {
+  let q = H.match(YV8);       // 尝试匹配 YAML frontmatter
+  if (!q) return {
+    frontmatter: {},           // 无 frontmatter → 空对象
+    content: H                 // 全文内容作为 prompt
+  };
+  // 有 frontmatter → 正常解析
+}
+```
+
+- 没有 YAML frontmatter 的 SKILL.md **照常加载**
+- 整个文件内容作为 Skill prompt
+- `name` / `description` 缺失时，模型自行推断用途
+- 设计理念：**信任模型理解能力**，不强制元数据
+
+**Qwen Code（严格：YAML 必须 + name + description 必须）**
+
+```javascript
+// 从 v0.13.0 cli.js 提取
+const match = normalizedContent.match(frontmatterRegex);
+if (!match) {
+  throw new Error("Invalid format: missing YAML frontmatter");  // ← 直接报错！
+}
+const frontmatter = parse(frontmatterYaml);
+if (!frontmatter.name) {
+  throw new Error('Missing "name" in frontmatter');              // ← name 必须
+}
+if (!frontmatter.description) {
+  throw new Error('Missing "description" in frontmatter');       // ← description 必须
+}
+```
+
+- 没有 YAML frontmatter → **抛出异常，Skill 不加载**
+- 有 frontmatter 但缺 `name` → 异常
+- 有 frontmatter 但缺 `description` → 异常
+- 设计理念：**严格校验**，确保 harness 层面的元数据完整性
+
+**对比总结**：
+
+| 维度 | Claude Code | Qwen Code |
+|------|------------|-----------|
+| YAML frontmatter | **可选** | **必须** |
+| `name` 字段 | 可选 | **必须** |
+| `description` 字段 | 可选 | **必须** |
+| 无 frontmatter 行为 | 空元数据 + 全文作为 prompt | **抛出异常，不加载** |
+| 设计理念 | 信任模型推断能力 | 依赖 harness 结构化校验 |
+
+> **实际影响**：将 Claude Code 的 Skill 文件直接复制到 Qwen Code 的 `.qwen/skills/` 目录时，如果该 Skill 没有 YAML frontmatter，Claude Code 能正常加载但 Qwen Code 会静默忽略。迁移时需要补充 frontmatter。
 
 ### 条件激活（Conditional Skills）
 
