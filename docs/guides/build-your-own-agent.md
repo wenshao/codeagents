@@ -72,7 +72,7 @@
   ├── 程序化嵌入 Agent 到自己的应用
   │   └── → 选路径 C（Agent SDK）
   │       ├── Claude 生态？ → @anthropic-ai/claude-agent-sdk
-  │       └── OpenAI 生态？ → @openai/codex
+  │       └── OpenAI 生态？ → @openai/codex-sdk
   │
   └── 编码 + 非编码混合
       └── → 路径 B 为主 + MCP 桥接非编码能力
@@ -330,14 +330,33 @@ for await (const message of query({ prompt: "检查所有服务是否健康", op
 
 ### Codex Agent SDK
 
+> 包名：`@openai/codex-sdk`（[npm](https://www.npmjs.com/package/@openai/codex-sdk)、[官方文档](https://developers.openai.com/codex/sdk)）
+
 ```bash
-npm install @openai/codex
+npm install @openai/codex-sdk
 ```
 
 ```typescript
-import Codex from "@openai/codex";
-const client = new Codex();
-// 通过 Responses API 驱动
+import { Codex } from "@openai/codex-sdk";
+
+const codex = new Codex({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// 创建会话线程
+const thread = codex.startThread();
+
+// run() 返回单轮结果
+const turn = await thread.run("诊断测试失败并提出修复方案");
+console.log(turn.finalResponse);
+
+// 同一 Thread 可多轮对话
+const nextTurn = await thread.run("实施修复");
+
+// runStreamed() 返回流式事件（工具调用、文件变更等）
+for await (const event of thread.runStreamed("运行测试验证")) {
+  console.log(event.type, event.data);
+}
 ```
 
 ### 适用场景
@@ -354,7 +373,7 @@ const client = new Codex();
 | 运行环境 | 终端内 | 任何 Node.js/Python 环境 | 任何环境 |
 | 模型限制 | 宿主 Agent 支持的模型 | 对应厂商模型 | 任何模型 |
 | 基础设施 | 继承宿主全部 | 继承 Agent 工具集 | 需自建 |
-| 代表 SDK | — | `@anthropic-ai/claude-agent-sdk`、`@openai/codex` | AgentScope、LangGraph |
+| 代表 SDK | — | `@anthropic-ai/claude-agent-sdk`、`@openai/codex-sdk` | AgentScope、LangGraph |
 
 ---
 
