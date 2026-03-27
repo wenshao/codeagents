@@ -267,8 +267,8 @@ qwen
 | **客服/销售 Agent** | 成品 Agent 专为编码设计 | 需要对话管理、知识库、多轮意图 |
 | **数据分析 Agent** | 编码 Agent 的工具不适合 | 需要 pandas/SQL/可视化工具 |
 | **自定义多 Agent 拓扑** | Teammates/Arena 是固定模式 | 需要星形/链式/层级拓扑 |
-| **自训练模型** | 成品 Agent 通常锁定主流模型 | AgentScope 灵活接入任何模型 |
-| **非终端环境** | 成品 Agent 是终端 CLI | 需要 Web/移动/嵌入式环境 |
+| **自训练小模型** | 成品 Agent 对小模型支持有限 | AgentScope 灵活接入任何模型（含本地推理） |
+| **纯 Web/移动环境** | 多数成品 Agent 以终端为主（OpenCode/Kimi 有 Web UI） | 需要完全自定义的 Web/移动界面 |
 
 ---
 
@@ -290,6 +290,40 @@ QwenCode / Claude Code（编码 Agent 基座）
 ```
 
 MCP 协议让编码 Agent 可以调用**任何外部工具**，无需修改 Agent 核心代码。
+
+---
+
+## 路径 C：Claude Code Agent SDK（程序化集成）
+
+除了 SKILL.md 扩展和 SDK 框架，还有一种介于两者之间的方式——**Claude Code Agent SDK**：
+
+```typescript
+import { ClaudeCode } from '@anthropic-ai/claude-code-sdk';
+
+const agent = new ClaudeCode({
+  model: 'sonnet',
+  systemPrompt: '你是部署助手',
+  allowedTools: ['Bash', 'Read', 'Glob'],
+});
+
+const result = await agent.run('检查所有服务是否健康');
+```
+
+**适用场景**：
+- 在自己的 Node.js/Python 应用中嵌入 Claude Code 能力
+- 需要程序化控制（不通过终端交互）
+- 构建 Web 应用、API 服务、CI 管道中的 Agent 节点
+
+**与其他路径的区别**：
+
+| 维度 | SKILL.md 扩展 | Agent SDK | SDK 框架 |
+|------|-------------|-----------|---------|
+| 代码量 | 几十行 Markdown | 几百行 TS/Python | 几千行 |
+| 运行环境 | 终端内 | 任何 Node.js/Python 环境 | 任何环境 |
+| 模型限制 | 宿主 Agent 支持的模型 | Claude 系列 | 任何模型 |
+| 基础设施 | 继承宿主全部 | 继承 Claude Code 工具集 | 需自建 |
+
+> Codex CLI 也有类似的 Agent SDK（`@openai/codex`），Copilot CLI 有 SDK 客户端。
 
 ---
 
