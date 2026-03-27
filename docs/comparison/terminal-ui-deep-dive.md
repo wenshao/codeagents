@@ -12,7 +12,7 @@
 | **Copilot CLI** | Ink（React for CLI） | TypeScript(SEA) | ✗ | ✗ | 终端 | ~1-2 秒 |
 | **Aider** | prompt_toolkit + Rich | Python | ✗ | ✗ | 终端 | ~1 秒 |
 | **Kimi CLI** | prompt_toolkit + Rich | Python | ✓（配置） | ✗ | 终端 + Web UI | ~1 秒 |
-| **OpenCode** | **OpenTUI + Solid.js** | Go + TS | ✗ | **✓（37 种）** | TUI + Web + Tauri Desktop | ~1 秒 |
+| **OpenCode** | **OpenTUI + Solid.js** | TypeScript(Bun) | ✗ | **✓（37 种）** | TUI + Web + Tauri Desktop | ~1 秒 |
 | **Goose** | Rust CLI + Electron | Rust | ✗ | ✓ Light/Dark/Ansi | CLI + Desktop | 亚秒级 |
 | **Codex CLI** | Rust 原生 TUI | Rust | ✗ | ✗ | 终端 | 亚秒级 |
 | **SWE-agent** | Textual + Rich | Python | ✗ | ✗ | 终端 + Web Inspector | ~2 秒 |

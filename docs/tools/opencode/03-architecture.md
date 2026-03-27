@@ -40,7 +40,7 @@ Vercel AI SDK v5 → models.dev 动态模型注册 → 100+ LLM 提供商
     ↓
 工具注册表 (18 工具) → 文件系统 / Shell / LSP / MCP
     ↓
-SQLite (go-sqlite3, sqlc 代码生成, goose 迁移) — 3 表: sessions + messages + files
+SQLite（Drizzle ORM） — 3 表: sessions + messages + files
     ↓
 远程工作区（实验性）← Adaptor + SSE 事件同步
 ```
@@ -50,7 +50,7 @@ SQLite (go-sqlite3, sqlc 代码生成, goose 迁移) — 3 表: sessions + messa
 - **运行时**：Bun 1.3.11（主要）/ Node.js 22（兼容，已有入口和构建脚本）
 - **TUI 框架**：OpenTUI + Solid.js（响应式信号驱动）
 - **HTTP 框架**：Hono（轻量级）
-- **数据库**：SQLite（`ncruces/go-sqlite3`）+ sqlc 类型安全查询 + goose 迁移
+- **数据库**：SQLite（Drizzle ORM，TypeScript ORM）
 - **AI SDK**：Vercel AI SDK v5（统一 LLM 接口）+ models.dev 动态模型数据
 - **MCP SDK**：@modelcontextprotocol/sdk（StreamableHTTP / SSE / Stdio）
 - **桌面**：Tauri v2（主要）+ Electron（备选）
@@ -146,7 +146,7 @@ GlobalBus ←── 文件变更/状态事件（10 秒心跳 + 自动重连）
 
 > OpenCode 是唯一使用**结构化数据库**（而非 JSON 文件）管理会话数据的 Code Agent。
 
-**技术栈：** `ncruces/go-sqlite3` + `sqlc`（编译时类型安全查询生成）+ `goose`（数据库迁移）
+**技术栈：** Drizzle ORM（TypeScript ORM）+ better-sqlite3
 
 **3 张表：**
 

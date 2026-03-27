@@ -14,7 +14,7 @@
 | **Aider** | Python | **Python ≥ 3.10, < 3.15** | v3.10+ | `pip install aider-chat` / `brew` / `uv` |
 | **Kimi CLI** | Python | **Python ≥ 3.12** | v3.12+ | `uv tool install kimi-cli` / `pip` |
 | **Goose** | Rust | **Rust 1.92+**（编译时） | — | `brew install goose` / `cargo install` |
-| **OpenCode** | Go + TypeScript | **Go 1.21+**（编译时） | — | `brew install opencode` / `go install` |
+| **OpenCode** | TypeScript（Bun） | Bun 1.3+ | — | `brew install opencode` / `go install` |
 
 > **注意：**
 > - Claude Code 不依赖 Node.js——它是 Bun 编译的独立二进制
