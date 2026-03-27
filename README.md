@@ -149,6 +149,9 @@
 
 <details><summary><b>系统能力 Deep-Dive（15 篇）</b></summary>
 
+**范式对比：**
+[CLI Agent vs IDE Agent](./docs/comparison/cli-vs-ide-agents.md) — 终端原生 vs 编辑器内嵌的根本差异
+
 **核心架构：**
 [模型路由](./docs/comparison/model-routing.md) | [上下文压缩](./docs/comparison/context-compression-deep-dive.md) | [MCP 集成](./docs/comparison/mcp-integration-deep-dive.md) | [沙箱安全](./docs/comparison/sandbox-security-deep-dive.md) | [多代理](./docs/comparison/multi-agent-deep-dive.md)
 
