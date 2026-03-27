@@ -30,6 +30,7 @@
 | **Remote Control** | ✅ `/remote-control` | ❌ | **需补全** |
 | **Teammates 团队** | ✅ 分工协作（tmux 分屏） | 部分（Arena 竞争模式，非协作） | **需增强**（竞争→协作） |
 | **Channels** | ✅ MCP 消息推送 | ❌ | **需补全** |
+| Skill 加载策略 | ✅ YAML frontmatter 可选（模型推断） | YAML frontmatter + name + description **必须**（否则不加载） | **差异**（Claude Skill 迁移需补 frontmatter） |
 | 插件市场 | ✅ 13 官方插件 | ✅ `marketplace.ts`（280 行）+ extensionManager | 对等（Qwen 官方插件较少） |
 | 结构化输出 | ✅ | ✅ `baseLlmClient.ts` `generateJson()` | 对等 |
 | **细粒度工具流** | ✅ | 部分（`updateOutput` 回调已有） | **需增强** |

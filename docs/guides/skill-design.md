@@ -176,7 +176,21 @@ Claude Code 插件结构          Qwen Code 兼容结构
   hooks/             →        settings.json hooks 配置
 ```
 
-> 注意：转换不是 100% 等价——Claude Code 的 `context: fork`、`allowed-tools` 白名单等高级特性在 Qwen/Gemini 中可能没有直接对应。
+> **⚠️ 关键差异：Frontmatter 要求不同**
+>
+> Claude Code 允许 SKILL.md **没有 YAML frontmatter**（整个文件内容作为 prompt，模型自行推断用途）。但 Qwen Code **强制要求** YAML frontmatter 且 `name` 和 `description` 字段必须存在——否则 Skill 不会被加载（静默失败）。
+>
+> 迁移 Claude Code Skill 到 Qwen Code 时，必须为每个 SKILL.md 补充 frontmatter：
+>
+> ```yaml
+> ---
+> name: skill-name        # 必须
+> description: 做什么用    # 必须
+> ---
+> （原 Skill 内容）
+> ```
+>
+> 此外，Claude Code 的 `context: fork`、`allowed-tools` 白名单等高级特性在 Qwen/Gemini 中没有对应。
 
 ## 最佳实践
 
