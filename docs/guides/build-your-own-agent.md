@@ -293,37 +293,62 @@ MCP 协议让编码 Agent 可以调用**任何外部工具**，无需修改 Agen
 
 ---
 
-## 路径 C：Claude Code Agent SDK（程序化集成）
+## 路径 C：Agent SDK（程序化集成）
 
-除了 SKILL.md 扩展和 SDK 框架，还有一种介于两者之间的方式——**Claude Code Agent SDK**：
+除了 SKILL.md 扩展和 SDK 框架，还有一种介于两者之间的方式——**Agent SDK**，在自己的应用中程序化嵌入 Agent 能力。
 
-```typescript
-import { ClaudeCode } from '@anthropic-ai/claude-code-sdk';
+### Claude Agent SDK
 
-const agent = new ClaudeCode({
-  model: 'sonnet',
-  systemPrompt: '你是部署助手',
-  allowedTools: ['Bash', 'Read', 'Glob'],
-});
+> 包名：`@anthropic-ai/claude-agent-sdk`（[npm](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)、[官方文档](https://platform.claude.com/docs/en/agent-sdk/overview)）
 
-const result = await agent.run('检查所有服务是否健康');
+```bash
+npm install @anthropic-ai/claude-agent-sdk
 ```
 
-**适用场景**：
-- 在自己的 Node.js/Python 应用中嵌入 Claude Code 能力
-- 需要程序化控制（不通过终端交互）
-- 构建 Web 应用、API 服务、CI 管道中的 Agent 节点
+```typescript
+import { query, ClaudeAgentOptions } from '@anthropic-ai/claude-agent-sdk';
 
-**与其他路径的区别**：
+const options = ClaudeAgentOptions({
+  allowed_tools: ["Read", "Edit", "Glob", "Bash"],
+  permission_mode: "acceptEdits",
+  system_prompt: "你是部署检查助手"
+});
+
+// query() 返回 AsyncGenerator，逐步输出结果
+for await (const message of query({ prompt: "检查所有服务是否健康", options })) {
+  if (message.type === "text") {
+    console.log(message.content);
+  }
+}
+```
+
+### Codex Agent SDK
+
+```bash
+npm install @openai/codex
+```
+
+```typescript
+import Codex from "@openai/codex";
+const client = new Codex();
+// 通过 Responses API 驱动
+```
+
+### 适用场景
+
+- 在 Node.js/Python 应用中嵌入 Agent 能力（非终端交互）
+- 构建 Web 应用、API 服务、CI 管道中的 Agent 节点
+- 需要程序化控制工具权限和输出流
+
+### 与其他路径的区别
 
 | 维度 | SKILL.md 扩展 | Agent SDK | SDK 框架 |
 |------|-------------|-----------|---------|
 | 代码量 | 几十行 Markdown | 几百行 TS/Python | 几千行 |
 | 运行环境 | 终端内 | 任何 Node.js/Python 环境 | 任何环境 |
-| 模型限制 | 宿主 Agent 支持的模型 | Claude 系列 | 任何模型 |
-| 基础设施 | 继承宿主全部 | 继承 Claude Code 工具集 | 需自建 |
-
-> Codex CLI 也有类似的 Agent SDK（`@openai/codex`），Copilot CLI 有 SDK 客户端。
+| 模型限制 | 宿主 Agent 支持的模型 | 对应厂商模型 | 任何模型 |
+| 基础设施 | 继承宿主全部 | 继承 Agent 工具集 | 需自建 |
+| 代表 SDK | — | `@anthropic-ai/claude-agent-sdk`、`@openai/codex` | AgentScope、LangGraph |
 
 ---
 
