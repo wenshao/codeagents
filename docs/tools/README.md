@@ -49,3 +49,9 @@
 | Agent | 文件 | 行数 | 特色 |
 |------|------|------|------|
 | [Qoder CLI](./qoder-cli/) | 单文件 | 179 | Go 原生，Quest 模式，Claude Code 兼容，信用制 |
+
+## 增强系统
+
+| 项目 | 文件 | 特色 |
+|------|------|------|
+| [Everything Claude Code](./everything-claude-code.md) | 单文件 | 28 Agent + 125 Skill + 60 命令，跨 Claude Code/Cursor/Codex/OpenCode |
