@@ -11,8 +11,8 @@
 | [Kimi CLI](./kimi-cli/) | 5 文件 | 概述/28 命令(双注册表)/架构+Wire 协议+18 工具 |
 | [Aider](./aider/) | 5 文件 | 概述/42 命令/架构+PageRank RepoMap+14 编辑格式 |
 | [OpenCode](./opencode/) | 5 文件 | 概述/18 工具+7 代理/多客户端架构+LSP |
-| [Qwen Code](./qwen-code/) | 1 文件 | 证据文件（Gemini CLI 分叉 + 阿里云 RUM + Arena 模式） |
-| [Goose](./goose/) | 1 文件 | 证据文件（MCP 原生 + PostHog + SecurityManager） |
+| [Qwen Code](./qwen-code/) | 6 文件 | 概述/41 命令/架构(Gemini CLI 分叉)+16 工具/Arena+扩展系统 |
+| [Goose](./goose/) | 5 文件 | 概述/16 斜杠命令+15 CLI 命令/MCP 原生架构/11 Platform Extension |
 
 ## 单文件 Agent（基础分析）
 

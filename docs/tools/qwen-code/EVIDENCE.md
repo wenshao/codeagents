@@ -37,8 +37,8 @@
 - DeepSeek 端点: https://api.deepseek.com/v1
 - OpenRouter 端点: https://openrouter.ai/api/v1
 
-## 命令系统（40+ 命令）
-继承 Gemini CLI + 新增: /arena, /language, /insight, /extensions
+## 命令系统（41 命令，v0.13.0）
+继承 Gemini CLI + 新增: /arena, /language, /insight, /extensions, /loop
 
 ## Arena 模式（全新，Qwen 添加）
 - 多模型竞争执行，每个模型在隔离 git worktree 中运行
@@ -54,7 +54,7 @@
 ## 安全系统（继承 Gemini CLI）
 - 权限: allow/ask/deny + glob 模式 + shell 语义分析
 - 审批模式: plan/default/auto-edit/yolo
-- Hook 系统: 11 事件 (PreToolUse, PostToolUse, etc.)
+- Hook 系统: 14 事件 (PreToolUse, PostToolUse, PostToolUseFailure, Notification, UserPromptSubmit, SessionStart, SessionEnd, Stop, SubagentStart, SubagentStop, PreCompact, PermissionRequest 等)
 - 沙箱: 继承 Gemini 实现
 
 ## 与 Gemini CLI 的差异
@@ -73,4 +73,4 @@
 2. Google 品牌标识
 
 ### 保留
-OpenTelemetry, Gemini/Vertex AI, MCP, 权限系统, Hook 系统, Skill 系统, 工具系统(18个), IDE 集成, LSP
+OpenTelemetry, Gemini/Vertex AI, MCP, 权限系统, Hook 系统(14事件), Skill 系统, 工具系统(16核心), IDE 集成, LSP

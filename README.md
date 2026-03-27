@@ -13,7 +13,7 @@
 | Agent | 官方/常见说法 | 源码实际情况 |
 |------|-------------|-------------|
 | **Goose** | TypeScript | **Rust**（55k 行） |
-| **OpenCode** | Go | **Go + TypeScript**（混合 Monorepo） |
+| **OpenCode** | Go | **TypeScript**（Bun monorepo，v1.0+ 全面重写，Go→TS 渐进迁移完成） |
 | **Kimi CLI** | TypeScript | **Python**（68.8%） |
 | **Qwen Code** | 原创 | **Gemini CLI 分叉**（大幅增强） |
 
@@ -79,10 +79,10 @@
 | [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | **68k** | TypeScript | 1 | 三平台 OS 沙箱，Cloud 远程执行 |
 | [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | **59k** | TypeScript | 48+ | VS Code 原生，Git Checkpoint |
 | [Aider](./docs/tools/aider/) | Paul Gauthier | GPL-3.0 | **42k** | Python | 100+ | 14 编辑格式，三槽位模型，/undo |
-| [Goose](./docs/tools/goose.md) | Block | Apache-2.0 | **34k** | Rust | 58+ | MCP 原生，Recipe + Cron 调度 |
+| [Goose](./docs/tools/goose/) | Block | Apache-2.0 | **34k** | Rust | 58+ | MCP 原生，11 Platform Extension，Recipe + Cron 调度 |
 | [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | **32k** | TypeScript | 60+ | PR Checks CI 审查，语义索引 |
 | [Warp](./docs/tools/warp.md) | Warp | 专有 | **26k** | Rust | 多种 | GPU 渲染终端，块结构输出 |
-| [Qwen Code](./docs/tools/qwen-code.md) | 阿里云 | Apache-2.0 | **21k** | TypeScript | 6+ | 免费 1000 次/天，Arena 多模型竞争 |
+| [Qwen Code](./docs/tools/qwen-code/) | 阿里云 | Apache-2.0 | **21k** | TypeScript | 6+ | 免费 1000 次/天，Arena 多模型竞争，41 命令 |
 | [SWE-agent](./docs/tools/swe-agent.md) | Princeton | MIT | **19k** | Python | 100+ | SWE-bench 评估，Docker 沙箱 |
 | [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | **10k** | Shell | 多种 | 67 GitHub 工具，增长 ↑240%/月 |
 | [Kimi CLI](./docs/tools/kimi-cli/) | 月之暗面 | Apache-2.0 | **7k** | Python | 6 | Wire 协议，D-Mail 时间回溯 |
@@ -110,7 +110,7 @@
 |------|-------|------|
 | **Rust** | Claude Code, Goose, Warp | 50ms 启动，内存最低 |
 | **TypeScript** | Gemini CLI, Qwen Code, Codex CLI, Cline, Continue | Ink/React TUI 成熟 |
-| **Go + TS** | OpenCode | Go 后端 + SolidJS TUI |
+| **Go + TS** | OpenCode | TypeScript（Bun）后端 + SolidJS TUI（v1.0 前 Go，已全面重写） |
 | **Python** | Aider, SWE-agent, OpenHands, Kimi CLI | LiteLLM 100+ 模型 |
 
 ---
@@ -127,6 +127,8 @@
 - **[Kimi CLI](./docs/tools/kimi-cli/)** — 3 篇（28 命令/Wire 协议）
 - **[Aider](./docs/tools/aider/)** — 3 篇（42 命令/PageRank RepoMap）
 - **[OpenCode](./docs/tools/opencode/)** — 3 篇（18 工具+7 代理/多客户端）
+- **[Qwen Code](./docs/tools/qwen-code/)** — 4 篇（41 命令/16 工具/Arena+扩展系统）
+- **[Goose](./docs/tools/goose/)** — 4 篇（MCP 原生架构/11 Platform Extension/Recipe）
 
 </details>
 

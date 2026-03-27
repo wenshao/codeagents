@@ -186,8 +186,8 @@
 
 | 能力 | Claude Code | Aider | Gemini CLI | Kimi CLI | Qwen Code | Copilot CLI | Codex CLI | Goose | OpenCode |
 |------|-------------|-------|-----------|----------|-----------|-------------|-----------|-------|---------|
-| **命令总数** | ~79（含 Skill） | ~42 | ~39 | ~28 | 40 | 34 | 28 | 16 | Ctrl+K 面板 |
-| **代码审查** | `/review` 插件 | — | `/code-review`（扩展） | — | — | `/review` | `@codex review` | — | — |
+| **命令总数** | ~79（含 Skill） | ~42 | ~39 | ~28 | 41 | 34 | 28 | 16（斜杠）+ 15（CLI） | 23（TUI） |
+| **代码审查** | `/review` 插件 | — | `/code-review`（扩展） | — | `/review`（Skill，4 代理并行） | `/review` | `@codex review` | — | — |
 | **模式切换** | — | `/code` `/architect` `/ask` | `/plan` | `/plan` `/yolo` | `/plan` | — | `--ask-for-approval` | — | `--agent` |
 | **模型切换** | `/model` | `/model` `/editor-model` `/weak-model` | `/model` | `/model` | `/model` | `/model` | `--model` | `--model` | — |
 | **上下文压缩** | `/compact` | `/clear` `/reset` | `/compress` | `/compact` | `/compact` | `/compact` | `/compact` | `/compact` | — |
@@ -204,15 +204,16 @@
 | **LSP 集成** | — | — | — | — | — | `/lsp` | — | — | — |
 | **费用查看** | `/cost` | `/tokens` | `/stats` | — | `/stats` | — | — | — | `stats` |
 | **反馈报告** | `/bug` | `/report` | `/bug` | `/feedback` | `/bug` | `/feedback` | — | — | — |
-| **Vim 模式** | `/vim` | — | `/vim` | — | — | — | — | — | — |
+| **Vim 模式** | `/vim` | — | `/vim` | — | `/vim` | — | — | — | — |
 
 **关键发现：**
 - **Aider** 命令最多（~42），文件/上下文管理和模式切换最细粒度
-- **Gemini CLI / Qwen Code / Kimi CLI** 命令体系接近（Gemini CLI 分叉谱系）
+- **Gemini CLI / Qwen Code / Kimi CLI** 命令体系接近（Gemini CLI 分叉谱系），Qwen Code 新增 Arena/语言/洞察/扩展 4 个独有命令
 - **Claude Code** 独有 `/review`（代码审查）和 `/remote-control`（远程控制）
 - **Copilot CLI** 34 命令 + 67 工具 + 3 内置代理，GitHub 生态深度集成
 - **Codex CLI** 28 交互命令（官方文档验证）+ 15 CLI 子命令 + Rust 原生沙箱
-- **OpenCode** 使用 Ctrl+K 命令面板而非斜杠命令
+- **OpenCode** 使用 Ctrl+K 命令面板 + 23 个 TUI 斜杠命令
+- **Goose** 16 个交互式斜杠命令 + 15 个 CLI 命令（clap derive），MCP 原生架构
 - **Qoder CLI** 19+ 交互命令 + 7 CLI 子命令 + Go 原生 43MB + Quest 模式 + Claude Code 兼容（`--with-claude-config`）
 
 ## 使用场景推荐
