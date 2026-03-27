@@ -1,18 +1,51 @@
-# 41. CLI Agent vs IDE Agent：两种范式的深度对比
+# 41. Everything Code Agent vs IDE Agent：万能终端 Agent 与编辑器 Agent 的范式之争
 
-> 终端原生 Agent 和 IDE 内嵌 Agent 是 AI 编程代理的两大范式。它们不是"谁取代谁"，而是各有不可替代的优势场景。
+> 2026 年的 AI 编程 Agent 已不再是"编码助手"——Claude Code 通过 MCP/Channels/Teammates/Schedule 演变为**万能终端 Agent**（Everything Code Agent），而 Cursor 通过 Background Agent 也在向通用化发展。真正的竞争是**"万能 Agent 入口"之争**。
+
+## "Everything Code Agent" 是什么？
+
+Claude Code 在 2026 年已经不只是写代码的工具：
+
+```
+Claude Code（Everything Code Agent）
+  │
+  ├── 编码能力（传统）
+  │   └── Read/Edit/Bash/Grep/Glob + 79 命令 + 14 编辑格式
+  │
+  ├── 外部世界连接（MCP 驱动）
+  │   ├── 数据库查询（@modelcontextprotocol/server-postgres）
+  │   ├── 项目管理（Jira/Linear MCP 服务器）
+  │   ├── 团队通知（Slack/Teams MCP 服务器）
+  │   ├── 监控/告警（Grafana/Datadog MCP）
+  │   └── 任何 API（自定义 MCP 服务器）
+  │
+  ├── 自动化（内置）
+  │   ├── /loop — 定时轮询（每 5 分钟检查部署状态）
+  │   ├── /schedule — Cron 定时（每天 9 点审查 PR）
+  │   └── Channels — 外部消息推送（Telegram/Discord）
+  │
+  └── 团队协作
+      ├── Teammates — AI-AI 多代理分工协作
+      └── Team Memory API — 仓库级共享知识
+```
+
+**这不再是一个"编码 Agent"，而是一个以编码为核心、通过 MCP 连接万物的通用终端 Agent。**
+
+同理，Codex CLI（Cloud 远程执行）、Gemini CLI（A2A 远程代理）、Qwen Code（Arena 多模型竞争）也在各自方向扩展。
 
 ## 范式总览
 
-| 维度 | CLI Agent（终端原生） | IDE Agent（编辑器内嵌） | 混合型 |
-|------|---------------------|----------------------|--------|
-| **代表** | Claude Code、Aider、Codex CLI、Gemini CLI、Qwen Code、Kimi CLI、Copilot CLI | Cursor、Cline、Continue | Warp（终端替代）、Qoder CLI（ACP 协议） |
-| **运行环境** | 终端进程 | IDE 扩展/内嵌 | 终端 + IDE 桥接 |
-| **交互模式** | 对话式（prompt → response） | 内联式（补全 + diff 预览 + 侧边栏） | 混合 |
+| 维度 | Everything Code Agent（终端原生） | IDE Agent（编辑器内嵌） | 混合型 |
+|------|-------------------------------|----------------------|--------|
+| **代表** | Claude Code、Codex CLI、Gemini CLI、Qwen Code、Aider、Copilot CLI、Kimi CLI | Cursor、Cline、Continue | Warp（终端替代）、Qoder CLI（ACP） |
+| **核心定位** | **万能终端 Agent**（编码 + MCP 万物连接） | **编辑器增强**（补全 + 内联 + diff） | 终端 + IDE 桥接 |
+| **运行环境** | 终端进程 | IDE 扩展/内嵌 | 终端 + IDE |
+| **交互模式** | 对话式（prompt → 自主完成） | 内联式（补全 + diff 预览 + 侧边栏） | 混合 |
 | **上下文来源** | 显式工具调用（Read/Grep/Glob） | IDE 自动提供（打开文件、光标、诊断） | 两者兼有 |
-| **自主性** | **高**（长链自主操作） | 中（需用户确认每步） | 高 |
-| **启动速度** | 50ms~1.5s | 3~10s（Electron） | 亚秒级（Rust） |
-| **CI/CD** | **原生支持** | 通常不支持 | 部分支持 |
+| **自主性** | **高**（长链多步自主操作） | 中（需用户确认每步） | 高 |
+| **外部集成** | **MCP 协议**（连接任何外部系统） | 有限（IDE 内扩展） | 部分 |
+| **CI/CD** | **原生支持** | 通常不支持 | 部分 |
+| **启动速度** | 50ms~1.5s | 3~10s（Electron） | 亚秒级 |
 
 ---
 
@@ -49,14 +82,31 @@
 **优势**：零工具调用开销，上下文精准
 **劣势**：Agent 只看到 IDE 提供的内容，无法自主探索
 
+### Everything Agent 的"第三种上下文"：MCP 外部数据
+
+```
+用户："修复那个导致 Grafana 告警的 Bug"
+  → Agent 调用 MCP: grafana_get_alerts()        # 获取告警详情
+  → Agent 调用 MCP: jira_get_issue("BUG-1234")  # 获取 Bug 描述
+  → Agent 调用 Grep("error_handler")             # 搜索代码
+  → Agent 调用 Read + Edit                        # 修复代码
+  → Agent 调用 Bash("npm test")                   # 运行测试
+  → Agent 调用 MCP: slack_post("#dev", "已修复")  # 通知团队
+```
+
+**这是 IDE Agent 做不到的**——整个链条从外部系统（Grafana → Jira）到代码修复到团队通知，全部在一次对话中完成。
+
 ### 实际影响
 
-| 场景 | CLI Agent 效率 | IDE Agent 效率 |
-|------|-------------|--------------|
-| 修复**当前文件**的 Bug | 低（需 Read 整个文件） | **高**（IDE 已加载） |
+| 场景 | Everything Agent | IDE Agent |
+|------|-----------------|-----------|
+| 修复**当前文件**的 Bug | 中（需 Read） | **高**（IDE 已加载） |
 | 跨 10 个文件的重构 | **高**（自主导航） | 低（需手动打开文件） |
-| 理解**未知代码库** | **高**（Grep/Glob 搜索） | 低（依赖用户导航） |
+| 理解**未知代码库** | **高**（Grep/Glob） | 低（依赖用户导航） |
 | 根据**光标位置**补全 | 不支持 | **极高**（Tab 补全） |
+| **查 Grafana 告警→修 Bug→通知** | **✓（MCP 全链路）** | ✗（无外部系统集成） |
+| **每天 9 点自动审查 PR** | **✓（/schedule cron）** | ✗（无定时任务） |
+| **Telegram 远程触发任务** | **✓（Channels）** | ✗ |
 
 ---
 
@@ -169,47 +219,52 @@ Cursor 的交互方式：
 
 ## 七、选型决策
 
-### 选 CLI Agent 的场景
+### 选 Everything Code Agent 的场景
 
 - **大规模代码库探索**——Agent 自主搜索，无需手动打开文件
-- **CI/CD 自动化**——管道中无头运行
+- **CI/CD 自动化**——管道中无头运行（`--bare` + stream-json）
 - **远程服务器开发**——SSH 直接使用
 - **多文件批量重构**——一次 prompt 修改数十个文件
-- **安全敏感场景**——需要沙箱隔离、策略引擎
-- **团队工作流**——Teammates 多代理协作、Hook 自动化
+- **安全敏感场景**——沙箱隔离、28 BLOCK 规则、TOML 策略引擎
+- **跨系统工作流**——查 Grafana → 修 Bug → 跑测试 → 通知 Slack（MCP 全链路）
+- **团队协作**——Teammates 多代理分工、Channels 外部消息推送
+- **定时自动化**——/schedule cron 定时审查 PR、/loop 持续监控
 
 ### 选 IDE Agent 的场景
 
 - **日常编码补全**——Tab 逐行补全是最高频需求
-- **当前文件快速修复**——Cmd+K 内联编辑，即时 diff
+- **当前文件快速修复**——Cmd+K 内联编辑，即时 diff 预览
 - **可视化 diff 审查**——IDE 原生彩色 diff 体验
 - **初学者友好**——图形界面门槛低
-- **单文件精细编辑**——光标精确定位
+- **单文件精细编辑**——光标精确定位 + LSP 诊断
 
-### 两者结合（推荐）
+### 两者结合（推荐：大多数专业开发者的做法）
 
 ```
 日常编码（IDE Agent）
   └── Cursor Tab 补全 + Cmd+K 内联编辑
 
-复杂任务（CLI Agent）
-  └── Claude Code / Qwen Code 大规模重构 + 自动化
+复杂任务（Everything Agent）
+  └── Claude Code / Qwen Code 大规模重构 + 跨系统工作流
 
-CI/CD（CLI Agent 独占）
-  └── claude --bare -p "..." / codex --full-auto "..."
+自动化（Everything Agent 独占）
+  ├── CI/CD: claude --bare -p "..." / codex --full-auto "..."
+  ├── 定时: /schedule cron "0 9 * * 1-5" 每工作日审查 PR
+  └── 远程: Channels + Telegram 远程触发
 ```
 
-> 多数专业开发者会同时使用两者——IDE Agent 用于高频小操作（补全、单文件修复），CLI Agent 用于低频大操作（重构、审查、自动化）。
+> **"Everything" 不是取代 IDE，而是覆盖 IDE 无法触达的场景**——CI/CD、远程服务器、跨系统工作流、定时自动化、多代理协作。IDE Agent 在编辑体验（Tab 补全、内联 diff）上仍不可替代。
 
 ---
 
 ## 八、未来趋势
 
-1. **融合加速**：Cursor 的 Background Agent（云端 CLI 能力）和 Cline（VS Code + CLI 双模式）正在模糊边界
-2. **ACP 协议**：Qoder CLI 的 Agent Communication Protocol 试图标准化 CLI↔IDE 通信
-3. **MCP 桥接**：CLI Agent 通过 MCP 服务器接入 IDE 能力（LSP 诊断、符号索引）
-4. **Terminal in IDE**：VS Code 集成终端让 CLI Agent 在 IDE 内运行，获得两者优势
-5. **远程 Agent**：Cursor Background Agent 和 Claude Code Channels 都朝"Agent 不在本机运行"方向发展
+1. **Everything Agent 扩展边界**：Claude Code 从编码→MCP 万物连接→Channels 消息推送→Schedule 定时→Teammates 多代理——终端成为**通用 AI 操作中心**
+2. **IDE Agent 追赶自主性**：Cursor Background Agent（云端异步）和 Cline subagent（并行子代理）试图弥补自主性差距
+3. **ACP/MCP 协议融合**：Qoder CLI 的 ACP 试图标准化 CLI↔IDE 通信，MCP 已成为外部工具集成的事实标准
+4. **Agent 脱离本机**：Cursor Background Agent（云端 PR）、Claude Code Channels（Telegram 远程触发）、Codex Cloud（远程执行）——Agent 越来越不需要在本机运行
+5. **一个终端 = 一个 AI 团队**：Claude Code Teammates 让一个终端窗口同时运行多个 AI 代理协作，这是 IDE 范式难以复制的
+6. **Terminal in IDE 是最佳妥协**：VS Code 集成终端运行 Claude Code / Qwen Code，同时享受 IDE 补全和 Agent 自主性
 
 ---
 
