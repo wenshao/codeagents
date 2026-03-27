@@ -157,7 +157,7 @@ Cursor 的交互方式：
 | **Claude Code** | Rust | **~50ms** | 长（maxTurns + --max-budget-usd） | **`--bare` + stream-json** | 24 Hook + Prompt Hook + Channels |
 | **Aider** | Python | ~1s | 3 次反射 | `--message` | 14 编辑格式 + Git 自动提交 |
 | **Codex CLI** | Rust | ~76ms | 4~5 级审批模式 | Cloud 远程执行（实验性） | 三平台 OS 沙箱（Windows 实验性） |
-| **Gemini CLI** | TS | ~1.5s | 100 轮 | TTY 自动检测 | 7 策略模型路由 |
+| **Gemini CLI** | TS | ~1.5s | 100 轮 | TTY 自动检测 | 8 策略类（7 用户可见）模型路由 |
 | **Qwen Code** | TS | ~608ms | 100 轮（MAX_TURNS） | `--non-interactive` | Arena 多模型竞争 |
 | **Copilot CLI** | TS (Node.js SEA) | ~72ms | 可配置 | `-p` + Autopilot | 67 工具（12 核心 + 21 浏览器 + 48 平台） |
 | **Kimi CLI** | Python | ~1s | 100 步 | — | Wire 协议 + D-Mail（实验性，okabe 代理） |
