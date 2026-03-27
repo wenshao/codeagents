@@ -53,7 +53,7 @@ Claude Code（Everything Code Agent）
 
 这是两种范式最根本的差异。
 
-### CLI Agent：通过工具调用主动获取
+### Everything Agent：通过工具调用主动获取
 
 ```
 用户："修复 auth 模块的 Bug"
@@ -112,7 +112,7 @@ Claude Code（Everything Code Agent）
 
 ## 二、交互模式：对话 vs 内联
 
-### CLI Agent：对话驱动
+### Everything Agent：对话驱动
 
 ```bash
 > 把所有 console.log 替换为 structured logger
@@ -148,7 +148,7 @@ Cursor 的交互方式：
 
 ## 三、各工具详细对比
 
-### CLI Agent
+### Everything Code Agent
 
 | Agent | 语言 | 启动 | 自主链长度 | CI 支持 | 独特能力 |
 |-------|------|------|----------|---------|---------|
@@ -179,21 +179,21 @@ Cursor 的交互方式：
 
 ## 四、安全模型差异
 
-| 维度 | CLI Agent | IDE Agent |
+| 维度 | Everything Agent | IDE Agent |
 |------|-----------|-----------|
 | **文件访问** | 工具权限控制（deny/ask/allow） | IDE workspace 范围 |
 | **命令执行** | 沙箱隔离（Codex CLI 三平台 OS 沙箱） | 通常无沙箱 |
 | **网络访问** | 可禁止（`--bare`、沙箱） | IDE 环境不限制 |
-| **审批流程** | 24 Hook 事件 + TOML 策略 | 弹窗确认（简单） |
+| **审批流程** | Claude 24 Hook + Gemini TOML + Codex 沙箱 | 弹窗确认 |
 | **企业管控** | managed-settings 远程下发 | Cursor Business 管理面板 |
 
-> CLI Agent 的安全模型显著更成熟——沙箱隔离、28 BLOCK 规则、策略引擎是 IDE Agent 没有的。
+> Everything Agent 的安全模型显著更成熟——沙箱隔离、28 BLOCK 规则、策略引擎是 IDE Agent 没有的。
 
 ---
 
 ## 五、Git 集成差异
 
-| 能力 | CLI Agent | IDE Agent |
+| 能力 | Everything Agent | IDE Agent |
 |------|-----------|-----------|
 | **自动提交** | Aider（每次编辑自动 commit） | ✗（需手动） |
 | **检查点回退** | Claude Code（Esc）、Gemini CLI（/rewind 三选项） | Cline（Git Checkpoint 每步快照） |
@@ -205,7 +205,7 @@ Cursor 的交互方式：
 
 ## 六、远程开发
 
-| 场景 | CLI Agent | IDE Agent |
+| 场景 | Everything Agent | IDE Agent |
 |------|-----------|-----------|
 | **SSH 到服务器** | 原生（直接 `ssh server && claude`） | 需 Remote SSH 扩展 |
 | **Docker 容器** | 原生（`docker exec -it container claude`） | 需 Dev Containers 扩展 |
@@ -213,7 +213,7 @@ Cursor 的交互方式：
 | **GitHub Actions** | ✓（Codex Cloud、SWE-agent） | ✗ |
 | **无头服务器** | ✓ | ✗（需要显示服务器） |
 
-> **关键差异**：CLI Agent 在无 GUI 环境中完全可用，IDE Agent 本质上依赖图形界面。
+> **关键差异**：Everything Agent 在无 GUI 环境中完全可用，IDE Agent 本质上依赖图形界面。
 
 ---
 
