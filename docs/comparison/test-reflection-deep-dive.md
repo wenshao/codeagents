@@ -273,7 +273,9 @@ Anthropic 总结的 Agent 评估最佳实践，直接影响测试反射循环的
 
 > "Opus 4.5 initially scored 42% on CORE-Bench, until an Anthropic researcher found multiple issues: rigid grading that penalized '96.12' when expecting '96.124991...', ambiguous task specs, and stochastic tasks that were impossible to reproduce exactly. After fixing bugs...Opus 4.5's score jumped to 95%."
 
-## 基础设施噪声：基准分数波动 6 个百分点（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/infrastructure-noise)，2026）
+---
+
+## 基础设施噪声：基准分数波动 6 个百分点（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/infrastructure-noise)，2026-02-03）
 
 > "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models."
 
@@ -284,6 +286,8 @@ Anthropic 总结的 Agent 评估最佳实践，直接影响测试反射循环的
 > "Until resource methodology is standardized, our data suggests that leaderboard differences below 3 percentage points deserve skepticism until the eval configuration is documented and matched."
 
 > "A few-point lead might signal a real capability gap—or it might just be a bigger VM."
+
+---
 
 ## Think Tool：复杂推理中的暂停思考（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/claude-think-tool)，2025-03-20）
 

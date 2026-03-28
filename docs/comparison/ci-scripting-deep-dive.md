@@ -209,7 +209,7 @@ sweagent run-batch \
 
 ---
 
-## 四、Goose：Recipe 驱动自动化
+## 六、Goose：Recipe 驱动自动化
 
 ```bash
 # 执行 YAML 任务模板
@@ -223,7 +223,7 @@ Recipe 是 Goose 的 CI 等价物——参数化 YAML 模板 + Cron 调度。
 
 ---
 
-## 五、跨 Agent CI 集成模式
+## 七、跨 Agent CI 集成模式
 
 | 模式 | 代表 | 适用场景 |
 |------|------|---------|

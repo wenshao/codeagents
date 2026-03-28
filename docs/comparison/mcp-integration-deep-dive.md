@@ -250,7 +250,7 @@ Copilot CLI 内置 `github-mcp-server`，但**默认不启用所有工具**：
 
 ---
 
-## MCP 工具设计原则（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/writing-tools-for-agents)）
+## MCP 工具设计原则（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/writing-tools-for-agents)，2025-09-11）
 
 Anthropic 指出 MCP 赋予 Agent 数百个工具的能力，但工具数量多不等于质量高。关于通用的工具设计原则（合并优于增殖、命名空间策略、描述即 Prompt 工程），详见[构建自己的 AI 编程 Agent](../guides/build-your-own-agent.md)中的「工具设计原则」章节。
 
@@ -296,7 +296,7 @@ Block 基于 60+ MCP 服务器的开发经验，总结了与 Anthropic 互补的
 
 Anthropic 发现当 MCP 工具数量增长时，Agent 可以**通过代码调用工具**而非逐个 tool call，大幅减少 token 消耗：
 
-> "The agent discovers tools by exploring the filesystem...This lets the agent load only the definitions it needs for the current task. This reduces the token usage from 150,000 tokens to 2,000 tokens--a time and cost saving of 98.7%."
+> "The agent discovers tools by exploring the filesystem [...] This lets the agent load only the definitions it needs for the current task. This reduces the token usage from 150,000 tokens to 2,000 tokens—a time and cost saving of 98.7%."
 
 ### 两种模式对比
 
@@ -307,7 +307,7 @@ Anthropic 发现当 MCP 工具数量增长时，Agent 可以**通过代码调用
 | 链式调用 | 每步一次 API 往返 | 一段代码完成多步 |
 | Token 节省 | — | **98.7%** |
 
-> "When agents use code execution with MCP, intermediate results stay in the execution environment by default. This way, the agent only sees what you explicitly log or return."
+> "When agents use code execution with MCP, intermediate results stay in the execution environment by default. This way, the agent only sees what you explicitly log or return, meaning data you don't wish to share with the model can flow through your workflow without ever entering the model's context."
 
 **与 Skill 的关联**：代码执行模式可与 SKILL.md 结合——"Adding a SKILL.md file to these saved functions creates a structured skill that models can reference and use."
 
@@ -337,7 +337,7 @@ Block 安全团队（13 位作者）提出的 MCP 安全框架：
 
 **敏感数据风险**：
 
-> "If you expose an MCP interface that returns confidential data like Social Security Numbers...then you run the risk of that data being exposed to the underlying LLM provider."
+> "If you expose an MCP interface that returns confidential data like Social Security Numbers [...] then you run the risk of that data being exposed to the underlying LLM provider."
 
 **供应链缓解**：只安装来自可信源且维护良好的 MCP 服务器，实施完整性检查/签名，企业环境使用预验证白名单。
 
@@ -345,7 +345,7 @@ Block 安全团队（13 位作者）提出的 MCP 安全框架：
 
 > "Tool descriptions influence how a tool is used. Sampling changes how a tool participates in reasoning."
 
-没有 Sampling 时，工具是消息传递者——获取数据后由 LLM 处理。有 Sampling 时，"the tool gathers its data, then uses the same LLM...to ask a targeted question from its own context before returning anything."
+没有 Sampling 时，工具是消息传递者——获取数据后由 LLM 处理。有 Sampling 时，"the tool gathers its data, then uses the same LLM [...] to ask a targeted question from its own context before returning anything."
 
 ## 2026 MCP 路线图（来源：[MCP 官方博客](https://blog.modelcontextprotocol.io/posts/2026-mcp-roadmap/)，2026-03-09）
 

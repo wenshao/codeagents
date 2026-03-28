@@ -424,7 +424,7 @@ for await (const event of thread.runStreamed("运行测试验证")) {
 
 ---
 
-## 工具设计原则（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/writing-tools-for-agents)）
+## 工具设计原则（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/writing-tools-for-agents)，2025-09-11）
 
 无论选择哪条路径，工具设计都是 Agent 质量的关键。Anthropic 总结了以下经验：
 

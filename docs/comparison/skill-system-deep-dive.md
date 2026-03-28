@@ -322,7 +322,7 @@ Claude Code 插件               Qwen Code / Gemini CLI
 
 ---
 
-## 渐进式披露与上下文工程（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)）
+## 渐进式披露与上下文工程（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)，2025-09-29）
 
 Anthropic 在上下文工程实践中发现：**Skill 文档的加载不应一次性灌入全部内容**，而应采用渐进式披露（Progressive Disclosure）——Agent 通过探索逐步发现相关上下文，每次交互产生的上下文为后续决策提供信息。
 
