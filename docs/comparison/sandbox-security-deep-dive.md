@@ -232,7 +232,7 @@ priority = 70
 - **严格 macOS Seatbelt**：基于白名单的 Seatbelt 策略（~200+ 条 syscall 规则）（v0.34）
 - **safeFetch + IP 验证**：防止 SSRF 和内部网络访问（v0.34）
 - **子代理特定 TOML 策略**：每个子代理可有独立安全策略（v0.34）
-- **统一 SandboxManager**：v0.35 引入统一沙箱管理器，集成 Linux 原生 bubblewrap + seccomp 隔离工具执行（150 变更含 2 安全修复）
+- **统一 SandboxManager**：v0.35 引入统一沙箱管理器，集成 Linux 原生 bubblewrap + seccomp 隔离工具执行（150 变更含 2 安全修复）（来源：[v0.35 Release Notes](https://geminicli.com/docs/changelogs/latest/)）
 
 ### macOS Seatbelt
 

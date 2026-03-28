@@ -13,7 +13,7 @@
 | **Kimi CLI** | 5 代理类型 | **5** | ✓（前台/后台） | Wire 协议 | **D-Mail 时间回溯** |
 | **OpenHands** | 4 复合代理 | **4** | ✓ | AgentDelegate | **EventStream 解耦** |
 | **Aider** | 双模型流水线 | 1（双阶段） | — | 内部委托 | **架构师→编辑器** |
-| **Codex CLI** | **Multi-agent v2**（v0.117） | 实验性 | — | 路径地址 `/root/agent_a` | **结构化代理间消息 + Plugins 一等公民** |
+| **Codex CLI** | **Multi-agent v2**（v0.117） | 实验性 | — | 逻辑路径地址（如 `/root/agent_a`） | **结构化代理间消息 + Plugins 一等公民** |
 | **Goose** | MCP 工具委托 | — | — | Recipe | **纯 MCP 工作流** |
 
 ---
