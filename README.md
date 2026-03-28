@@ -44,7 +44,7 @@
 | **OpenHands** | **125 万** | 70k |
 | **Aider** | 78 万 | 42k |
 | **Kimi CLI** | 45 万 | 7k |
-| **OpenCode** | — | **~12k**（已归档） |
+| **OpenCode** | — | **130k** |
 
 > **Stars ≠ 采用**：Gemini CLI Stars（99k）是 Claude Code（83k）的 1.2 倍，但 npm 下载仅其 **7%**。Copilot CLI 增长最猛（4 周 ↑240%）。
 
@@ -72,7 +72,7 @@
 
 | Agent | 开发者 | 许可证 | Stars | 语言 | 提供商 | 特色 |
 |------|--------|--------|-------|------|-------|------|
-| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | **~12k**（已归档） | TypeScript（Bun） | 100+ | 多客户端（TUI+Web+桌面），37 LSP |
+| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | **~132k** | TypeScript（Bun） | 100+ | 多客户端（TUI+Web+桌面），37 LSP |
 | [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | **99k** | TypeScript | 1 | 8 策略模型路由，TOML 策略引擎 |
 | [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | **83k** | Rust | 1 | 50ms 启动，24 Hook 事件，Channels |
 | [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | **70k** | Python | 100+ | Docker 沙箱，三层安全，多代理 |
@@ -111,7 +111,7 @@
 |------|-------|------|
 | **Rust** | Claude Code, Goose, Warp | 50ms 启动，内存最低 |
 | **TypeScript** | Gemini CLI, Qwen Code, Codex CLI, Cline, Continue | Ink/React TUI 成熟 |
-| **TypeScript（Bun）** | OpenCode | TypeScript（Bun）后端 + SolidJS TUI（v1.0 前 Go，已全面重写） |
+| **Go → TS** | OpenCode | TypeScript（Bun）后端 + SolidJS TUI（v1.0 前 Go，已全面重写） |
 | **Python** | Aider, SWE-agent, OpenHands, Kimi CLI | LiteLLM 100+ 模型 |
 
 ---

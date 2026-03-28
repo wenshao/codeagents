@@ -76,7 +76,7 @@ Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harn
 | **多代理** | 7~10 Discipline Agent | Teammates | 实验性 | 无 |
 | **模型路由** | 按任务类别自动路由 | 手动选择 | 无 | 手动选择 |
 | **编辑精度** | Hash-Anchored（LINE#ID） | Edit/MultiEdit | apply_patch | 继承 |
-| **Stars** | ~44K | N/A（闭源） | ~68K | ~12K（已归档） |
+| **Stars** | ~44K | N/A（闭源） | ~68K | ~132K |
 | **许可证** | SUL-1.0 | 专有 | Apache-2.0 | MIT |
 
 ## Harness Engineering 视角
