@@ -393,7 +393,7 @@ Coding Agent（后续每次会话）
 
 **工具测试代理**——Agent 自动改进其他 Agent 的工具描述：
 
-> "When given a flawed MCP tool, it attempts to use the tool and then rewrites the tool description to avoid failures...This process for improving tool ergonomics resulted in a 40% decrease in task completion time for future agents."
+Anthropic 还创建了一个**工具测试代理**——当给定一个有缺陷的 MCP 工具时，它反复尝试使用并重写工具描述来避免失败。这一改进工具描述的过程使后续代理的任务完成时间减少了 40%。
 
 ### 构建 10 万行编译器：16 个并行 Claude 实例（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/building-c-compiler)，2026-02-05）
 
@@ -411,7 +411,7 @@ Coding Agent（后续每次会话）
 
 > "Multi-agent systems typically use 3-10x more tokens than single-agent approaches for equivalent tasks."
 
-> "Many teams found that improved prompting on a single agent achieved equivalent results."
+Anthropic 在实践中发现，很多团队投入数月构建复杂的多代理架构，最终发现改进单代理的 prompt 就能达到同等效果。
 
 **三个适用场景**：
 
