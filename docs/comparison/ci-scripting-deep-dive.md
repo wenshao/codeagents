@@ -236,7 +236,7 @@ Recipe 是 Goose 的 CI 等价物——参数化 YAML 模板 + Cron 调度。
 
 ---
 
-## 企业级部署数据（来源：多渠道综合）
+## 八、企业级部署数据（来源：多渠道综合）
 
 ### 行业采用率
 
@@ -260,7 +260,7 @@ Recipe 是 Goose 的 CI 等价物——参数化 YAML 模板 + Cron 调度。
 
 ---
 
-## Agent 基础设施事故：Anthropic 事后分析（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/a-postmortem-of-three-recent-issues)，2025-09-17）
+## 九、Agent 基础设施事故：Anthropic 事后分析（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/a-postmortem-of-three-recent-issues)，2025-09-17）
 
 Anthropic 公开了三次影响 Claude 质量的基础设施事故，对 Agent 可靠性有重要启示：
 

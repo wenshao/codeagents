@@ -605,4 +605,4 @@ Harness（环境设计）
             └── 上下文压缩
 ```
 
-**关键实证**：LangChain Deep Agents 仅修改 Harness（不改模型），Terminal Bench 2.0 分数从 52.8% 提升到 66.5%——表明 Harness 优化可以在不更换模型的情况下带来显著性能提升。详见[构建自己的 AI 编程 Agent](../guides/build-your-own-agent.md)中的「Harness Engineering」章节。
+**关键实证**：LangChain coding agent 仅修改 Harness（不改模型），Terminal Bench 2.0 分数从 52.8% 提升到 66.5%——表明 Harness 优化可以在不更换模型的情况下带来显著性能提升。详见[构建自己的 AI 编程 Agent](../guides/build-your-own-agent.md)中的「Harness Engineering」章节。

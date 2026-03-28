@@ -78,7 +78,7 @@ OpenAI 内部团队用 Codex CLI 构建了一个完整产品——**零行手写
 | 来源 | 发现 |
 |------|------|
 | [Martin Fowler / Thoughtworks](https://martinfowler.com/articles/exploring-gen-ai/harness-engineering.html)（2026-02-17） | Harness 三要素：上下文工程、架构约束、熵管理 |
-| [NxCode](https://www.nxcode.io/resources/news/harness-engineering-complete-guide-ai-agent-codex-2026) | LangChain Deep Agents 仅修改 Harness（不改模型），Terminal Bench 2.0 从 **52.8% → 66.5%** |
+| [NxCode](https://www.nxcode.io/resources/news/harness-engineering-complete-guide-ai-agent-codex-2026) | LangChain coding agent 仅修改 Harness（不改模型），Terminal Bench 2.0 从 **52.8% → 66.5%** |
 | [Pragmatic Engineer](https://newsletter.pragmaticengineer.com/p/how-codex-is-built)（2026-02-17） | Codex 自身 90%+ 代码由 Codex 生成；工程师角色="Agent 管理者"，同时运行 4-8 个并行 Agent |
 
 > **核心洞察**：Harness 优化可以在不更换模型的情况下带来显著性能提升（52.8% → 66.5%）。这意味着无论选择哪条路径（SDK 框架 / 成品扩展 / Agent SDK），Harness 设计都是重要的技术投入方向。
