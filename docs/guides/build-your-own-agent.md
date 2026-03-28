@@ -406,7 +406,7 @@ for await (const event of thread.runStreamed("运行测试验证")) {
 
 ### 命名空间策略
 
-> "Namespacing tools by service (e.g., `asana_search`, `jira_search`) and by resource (e.g., `asana_projects_search`, `asana_users_search`), can help agents select the right tools at the right time."
+> "For example, namespacing tools by service (e.g., `asana_search`, `jira_search`) and by resource (e.g., `asana_projects_search`, `asana_users_search`), can help agents select the right tools at the right time."
 
 **命名前缀 vs 后缀的选择会影响模型性能**：
 
@@ -434,7 +434,7 @@ for await (const event of thread.runStreamed("运行测试验证")) {
 | SKILL.md 设计 | 每个子任务一个 Skill | 一个 Skill 编排完整工作流 |
 | Hook 设计 | 每个检查一个 Hook | 一个 Hook 脚本执行多项检查 |
 
-> **与 MCP 的关系**：Anthropic 指出 "MCP can empower LLM agents with potentially hundreds of tools"——但工具数量多不等于质量高。合并和命名空间策略对 MCP 工具同样适用。关于 MCP 命名约定（双下划线 vs 单下划线）对各 Agent 工具选择的具体影响，参见 [MCP 集成深度对比](../comparison/mcp-integration-deep-dive.md)中的「MCP 命名约定与模型工具选择」章节。
+> **与 MCP 的关系**：Anthropic 指出 "The Model Context Protocol (MCP) can empower LLM agents with potentially hundreds of tools to solve real-world tasks."——但工具数量多不等于质量高。合并和命名空间策略对 MCP 工具同样适用。关于 MCP 命名约定（双下划线 vs 单下划线）对各 Agent 工具选择的具体影响，参见 [MCP 集成深度对比](../comparison/mcp-integration-deep-dive.md)中的「MCP 命名约定与模型工具选择」章节。
 
 ---
 
