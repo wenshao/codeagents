@@ -304,12 +304,12 @@ Planner（规划）
 
 Generator（生成）
   → 增量式实现，React/Vite/FastAPI/SQLite + Git
-  → 早期版本使用 Sprint 分解（Sonnet 4.5 需要），Opus 4.6 已移除 Sprint 机制
+  → Sprint 分解：v0/v1 harness 使用（含 Opus 4.5），v2（Opus 4.6）已移除
 
 Evaluator（评估）
   → 通过 Playwright 测试运行中的应用
   → 前端设计评估 4 维度：设计质量、原创性、技术工艺（craft）、功能
-    （设计+原创性权重更高——推动模型承担更多审美风险）
+    （设计+原创性权重更高——因为 Claude 在工艺和功能性上已默认表现良好）
   → 全栈应用评估 4 维度：产品深度、功能完整性、视觉设计、代码质量
   → Few-shot 校准 + 显式怀疑指令
 ```
@@ -318,7 +318,7 @@ Evaluator（评估）
 - Generator 自评时倾向"自信地夸赞平庸作品"——与人类 code review 中的"自审盲区"一致
 - Evaluator 天然倾向宽松，需要显式"怀疑指令" + few-shot 校准
 - 评估标准的措辞会**隐式引导 Generator**（如"museum quality"导致视觉趋同）
-- **Sprint 分解不是永恒的**——Sonnet 4.5 需要 Sprint 才能保持连贯，Opus 4.6 直接移除了 Sprint 机制（原文："I removed the sprint construct entirely"）
+- **Sprint 分解不是永恒的**——Sprint 最初用于所有模型（含 Opus 4.5），Opus 4.6 的长任务能力提升使得 Sprint 机制可以被完全移除（原文："I removed the sprint construct entirely"）
 
 ### 隔离策略
 
