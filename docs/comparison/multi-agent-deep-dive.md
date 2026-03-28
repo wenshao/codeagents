@@ -407,6 +407,30 @@ Coding Agent（后续每次会话）
 | **上下文窗口污染** | "The test harness should not print thousands of useless bytes. At most, it should print a few lines of output and log all important information to a file." |
 | **时间盲** | "Claude can't tell time and, left alone, will happily spend hours running tests instead of making progress." 解决方案：`--fast` 选项运行 1%-10% 随机采样 |
 
+### 何时该用多代理、何时不该用（来源：[claude.com/blog](https://claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them)，2026-01-23）
+
+> "Multi-agent systems typically use 3-10x more tokens than single-agent approaches for equivalent tasks."
+
+> "Many teams found that improved prompting on a single agent achieved equivalent results."
+
+**三个适用场景**：
+
+| 场景 | 说明 | 阈值 |
+|------|------|------|
+| **上下文污染** | 不同任务的上下文互相干扰降低推理质量 | 上下文接近容量限制 |
+| **并行化** | 多代理同时探索更大的搜索空间 | 任务可自然分解为独立子任务 |
+| **专业化** | 工具数超过 15-20 导致选择混乱 | 先尝试 Tool Search Tool（可减少 85% token） |
+
+> "Start with the simplest approach that works, and add complexity only when evidence supports it."
+
+### GitHub Squad：共享决策文件的协作模式（来源：[GitHub Blog](https://github.blog/ai-and-ml/github-copilot/how-squad-runs-coordinated-ai-agents-inside-your-repository/)，2026-03-19）
+
+> "You aren't splitting one context among four agents, you're replicating repository context across them."
+
+**Drop-box 模式**：架构决策追加到版本化的 `decisions.md` 文件，提供持久性、可读性和完整的审计跟踪。
+
+**强制独立审查**：编排层阻止原始 Agent 修改自己的产出——测试失败时由不同 Agent 提供全新视角。
+
 ### 隔离策略
 
 | Agent | 隔离方式 | 上下文共享 |

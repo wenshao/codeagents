@@ -329,6 +329,37 @@ Anthropic 发现当 MCP 工具数量增长时，Agent 可以**通过代码调用
 
 ---
 
+## MCP 安全框架（来源：[Block/Goose Blog](https://block.github.io/goose/blog/2025/03/31/securing-mcp/)，2025-03-31）
+
+Block 安全团队（13 位作者）提出的 MCP 安全框架：
+
+**两层通信安全**：Agent ↔ MCP 服务器的通信，以及 MCP 服务器 ↔ 后端系统的通信需要**分别保护**。
+
+**敏感数据风险**：
+
+> "If you expose an MCP interface that returns confidential data like Social Security Numbers...then you run the risk of that data being exposed to the underlying LLM provider."
+
+**供应链缓解**：只安装来自可信源且维护良好的 MCP 服务器，实施完整性检查/签名，企业环境使用预验证白名单。
+
+## MCP Sampling：工具描述不够用（来源：[Block/Goose Blog](https://block.github.io/goose/blog/2026/01/15/why-tool-descriptions-arent-enough/)，2026-01-15）
+
+> "Tool descriptions influence how a tool is used. Sampling changes how a tool participates in reasoning."
+
+没有 Sampling 时，工具是消息传递者——获取数据后由 LLM 处理。有 Sampling 时，"the tool gathers its data, then uses the same LLM...to ask a targeted question from its own context before returning anything."
+
+## 2026 MCP 路线图（来源：[MCP 官方博客](https://blog.modelcontextprotocol.io/posts/2026-mcp-roadmap/)，2026-03-09）
+
+四大优先领域：
+
+| 优先级 | 方向 | 关键决策 |
+|--------|------|---------|
+| 传输演进 | **不增加新传输协议**，演进现有协议 | 有状态会话与负载均衡冲突，需解决 |
+| Tasks 原语 | 重试语义 + 过期策略 | 支持长时间运行的任务 |
+| 治理 | 建立贡献者阶梯，Working Groups 获更大自治权 | 当前每个 SEP 都需核心维护者审查 |
+| 企业需求 | 审计、SSO、网关——**作为扩展而非核心规范** | 与优先领域对齐的 SEP 推进最快 |
+
+---
+
 ## 证据来源
 
 | Agent | 来源 | 获取方式 |

@@ -527,3 +527,56 @@ pub struct ModelConfig {
 | **预留空间** | 无 | 无 | 50K tokens | 无 |
 | **LLM 调用** | LiteLLM | @google/genai SDK | kosong (自研) + tenacity | Provider trait |
 | **流式输出** | 默认开启 | 默认流式 | 流式 | Provider 决定 |
+
+---
+
+## 代理循环工程洞察
+
+### Codex CLI 代理循环内部（来源：[OpenAI Engineering Blog](https://openai.com/index/unrolling-the-codex-agent-loop/)，2026-01-24）
+
+> "The agent loop is the core logic in Codex CLI that is responsible for orchestrating the interaction between the user, the model, and the tools the model invokes."
+
+**二次方成本问题**：每次工具调用迭代都追加到 prompt，导致"A single turn can involve many iterations between model inference and tool execution"，发送到 Responses API 的 JSON 量呈二次方增长。
+
+**解决方案——Prompt 缓存使采样变为线性**：通过保持请求间的精确前缀匹配实现缓存命中，"With cache hits, sampling becomes linear rather than quadratic."
+
+**无状态架构（隐私优先）**：Codex CLI 故意不使用 `previous_response_id`，"every request is stateless, which is essential for ZDR customers who have opted out of data storage."
+
+**三类工具的信任边界**：
+
+| 工具来源 | 沙箱 | 信任级别 |
+|---------|------|---------|
+| Codex 内置工具 | OS 级沙箱 | 最高 |
+| API 提供的工具 | 无沙箱 | 中等 |
+| MCP 服务器工具 | **无沙箱**，需自行保障 | 最低 |
+
+> "Other tools from MCP servers are not sandboxed by Codex and must enforce their own guardrails."
+
+### Agent 反馈循环设计原则（来源：[Claude Agent SDK](https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk)，2025-09-29）
+
+> "The key design principle behind Claude Code is that Claude needs the same tools that programmers use every day."
+
+> "Agents often operate in a specific feedback loop: gather context -> take action -> verify work -> repeat."
+
+**三层验证模式**：
+
+| 层 | 类型 | 示例 |
+|---|------|------|
+| 规则反馈 | 确定性 | 代码 lint、类型检查、测试 |
+| 视觉反馈 | 半确定性 | 截图/渲染比较 |
+| LLM-as-Judge | 概率性 | 另一个模型评估输出质量 |
+
+### Agent 协议全景（来源：[Google Developers Blog](https://developers.googleblog.com/developers-guide-to-ai-agent-protocols/)，2026-03-18）
+
+6 大标准化协议构成分层架构：
+
+| 协议 | 层 | 解决的问题 |
+|------|---|-----------|
+| **MCP** | 数据层 | Agent ↔ 系统/数据库 |
+| **A2A** | Agent 层 | Agent ↔ Agent 互操作 |
+| **UCP** | 商业层 | 标准化交易 |
+| **AP2** | 授权层 | 支付护栏 |
+| **A2UI** | UI 层 | 18 个组件原语的声明式 JSON |
+| **AG-UI** | 流式层 | Agent → 前端的标准化 SSE 事件流 |
+
+> A2A 是 MCP 的补充而非替代——"MCP provides helpful tools and context to agents; A2A lets agents talk to each other as opaque peers."
