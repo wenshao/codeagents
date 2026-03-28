@@ -77,7 +77,7 @@ Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harn
 | **模型路由** | 按任务类别自动路由 | 手动选择 | 无 | 手动选择 |
 | **编辑精度** | Hash-Anchored（LINE#ID） | Edit/MultiEdit | apply_patch | 继承 |
 | **Stars** | ~44K | N/A（闭源） | ~68K | ~12K（已归档） |
-| **许可证** | SUL-1.0（自定义） | 专有 | Apache-2.0 | MIT |
+| **许可证** | SUL-1.0 | 专有 | Apache-2.0 | MIT |
 
 ## Harness Engineering 视角
 
@@ -113,8 +113,8 @@ bunx oh-my-opencode install
 
 1. **基座已归档**——OpenCode（opencode-ai/opencode）于 2025 年 9 月归档，长期可持续性存在风险
 2. **非标准许可证**——SUL-1.0（Sustainable Use License），使用前需审查条款
-4. **宣传语气较强**——技术声明（如"零过期行错误"）为项目自述，未经独立验证
-5. **AI 参与开发**——项目有 AI 贡献者账号（sisyphus-dev-ai），代码质量需额外关注
+3. **宣传语气较强**——技术声明（如"零过期行错误"）为项目自述，未经独立验证
+4. **AI 参与开发**——项目有 AI 贡献者账号（sisyphus-dev-ai），代码质量需额外关注
 
 ## 使用场景
 
