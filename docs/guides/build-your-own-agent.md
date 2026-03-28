@@ -309,6 +309,8 @@ MCP 协议让编码 Agent 可以调用**任何外部工具**，无需修改 Agen
 
 > 包名：`@anthropic-ai/claude-agent-sdk`（[npm](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)、[官方文档](https://platform.claude.com/docs/en/agent-sdk/overview)）
 
+> **注**：以下 TypeScript 示例基于 npm 包导出推断（官方文档目前仅提供 Python 示例），实际 API 可能有差异，使用前请查阅最新官方文档。
+
 ```bash
 npm install @anthropic-ai/claude-agent-sdk
 ```
@@ -376,6 +378,65 @@ for await (const event of thread.runStreamed("运行测试验证")) {
 | 模型限制 | 宿主 Agent 支持的模型 | 对应厂商模型 | 任何模型 |
 | 基础设施 | 继承宿主全部 | 继承 Agent 工具集 | 需自建 |
 | 代表 SDK | — | `@anthropic-ai/claude-agent-sdk`、`@openai/codex-sdk` | AgentScope、LangGraph |
+
+---
+
+## 工具设计原则（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/writing-tools-for-agents)）
+
+无论选择哪条路径，工具设计都是 Agent 质量的关键。Anthropic 总结了以下经验：
+
+### 合并优于增殖
+
+> "More tools don't always lead to better outcomes."
+
+> "Too many tools or overlapping tools can also distract agents from pursuing efficient strategies."
+
+**反面案例**：为每个 API 端点创建独立工具（`list_users`、`list_events`、`create_event`）。
+
+**推荐做法**：合并为任务导向的高阶工具（`schedule_event` 一个工具封装多个 API 调用）。
+
+```
+✗ 工具增殖（7 个低阶工具）          ✓ 工具合并（2 个高阶工具）
+├── get_customer_by_id              ├── get_customer_context
+├── list_transactions               │   └── 内部调用 3 个 API
+├── list_notes                      └── search_logs
+├── read_logs                           └── 内部过滤+分页
+├── filter_logs
+├── get_customer_details
+└── get_customer_history
+```
+
+### 命名空间策略
+
+> "For example, namespacing tools by service (e.g., `asana_search`, `jira_search`) and by resource (e.g., `asana_projects_search`, `asana_users_search`), can help agents select the right tools at the right time."
+
+**命名前缀 vs 后缀的选择会影响模型性能**：
+
+> "We have found selecting between prefix- and suffix-based namespacing to have non-trivial effects on our tool-use evaluations."
+
+| 命名方式 | 示例 | 适用场景 |
+|---------|------|---------|
+| 服务前缀 | `github_create_issue` | 同一服务多操作 |
+| 资源前缀 | `issues_create`、`issues_list` | 围绕资源 CRUD |
+| 动作前缀 | `search_github`、`search_jira` | 跨服务同类操作 |
+
+### 描述即 Prompt 工程
+
+工具描述的微小改动会导致 Agent 行为的显著变化：
+
+- 返回**高信号语义信息**（项目名称），而非低信号技术标识（UUID）
+- 实现分页、过滤和截断，附带有意义的错误消息
+- 用 2-3 个代表性示例替代穷举所有边界情况
+
+### 对 SKILL.md / MCP 设计的实际指导
+
+| 场景 | 工具增殖 | 工具合并 |
+|------|---------|---------|
+| MCP 服务器设计 | 每个 API 端点一个 MCP 工具 | 按任务合并，一个工具封装多步 |
+| SKILL.md 设计 | 每个子任务一个 Skill | 一个 Skill 编排完整工作流 |
+| Hook 设计 | 每个检查一个 Hook | 一个 Hook 脚本执行多项检查 |
+
+> **与 MCP 的关系**：Anthropic 指出 "The Model Context Protocol (MCP) can empower LLM agents with potentially hundreds of tools to solve real-world tasks."——但工具数量多不等于质量高。合并和命名空间策略对 MCP 工具同样适用。关于 MCP 命名约定（双下划线 vs 单下划线）对各 Agent 工具选择的具体影响，参见 [MCP 集成深度对比](../comparison/mcp-integration-deep-dive.md)中的「MCP 命名约定与模型工具选择」章节。
 
 ---
 

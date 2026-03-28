@@ -10,7 +10,7 @@
 | **Claude Code** | 扩展 | Stdio/SSE/Streamable-HTTP | `mcp__server__tool`（双下划线） | deny→ask→allow 3 层 | ✓ |
 | **Gemini CLI** | 扩展 | Stdio/SSE | `mcp_{server}_{tool}`（单下划线） | **TOML 通配符 + 正则** | ✓ |
 | **Kimi CLI** | 扩展 | Stdio/HTTP | 动态注册 | Per-tool 审批 + 超时 | ✓ |
-| **Qwen Code** | 扩展 | Stdio/SSE/HTTP | `mcp_{server}_{tool}`（继承） | 继承 Gemini + **运行时启停** | ✓ |
+| **Qwen Code** | 扩展 | Stdio/SSE/HTTP | `mcp__serverName__toolName`（双下划线） | 继承 Gemini + **运行时启停** | ✓ |
 | **Copilot CLI** | 内置 GitHub MCP | 专有 | GitHub 默认子集 | CLI 参数 | ✓ |
 | **OpenCode** | 扩展 | StreamableHTTP/SSE/Stdio | — | 模式匹配 | ✓ |
 | **Cline** | 扩展 | — | McpHub 前缀 | WebView 审批 | ✓ |
@@ -230,11 +230,11 @@ Copilot CLI 内置 `github-mcp-server`，但**默认不启用所有工具**：
 |------|---------|------|
 | **Claude Code** | `mcp__server__tool`（双下划线） | `mcp__github__create_issue` |
 | **Gemini CLI** | `mcp_{server}_{tool}`（单下划线） | `mcp_github_create_issue` |
-| **Qwen Code** | 继承 Gemini（单下划线） | `mcp_github_create_issue` |
+| **Qwen Code** | `mcp__serverName__toolName`（双下划线，**未继承 Gemini**） | `mcp__github__create_issue` |
 | **Goose** | 标准 MCP 发现 | 由 MCP 协议决定 |
 | **其他** | 未标准化 | — |
 
-> **互操作性问题**：Claude Code 和 Gemini CLI 的命名约定不同（双下划线 vs 单下划线），同一个 MCP 服务器在两个工具中的工具名称不一致。
+> **互操作性问题**：Claude Code/Qwen Code（双下划线）和 Gemini CLI（单下划线）的命名约定不同，同一个 MCP 服务器在不同工具中的工具名称不一致。Qwen Code 虽为 Gemini CLI 分叉，但选择了 Claude Code 的双下划线方案。
 
 ---
 
@@ -247,6 +247,31 @@ Copilot CLI 内置 `github-mcp-server`，但**默认不启用所有工具**：
 | 管理命令 | ★★★☆☆ | ★★★☆☆ | ★★★☆☆ | **★★★★★** | ★★☆☆☆ |
 | OAuth | ✗ | ✓ | **✓✓** | ✓ | 部分 |
 | 原生程度 | **全原生** | 扩展 | 扩展 | 扩展 | 扩展 |
+
+---
+
+## MCP 工具设计原则（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/writing-tools-for-agents)）
+
+Anthropic 指出 MCP 赋予 Agent 数百个工具的能力，但工具数量多不等于质量高。关于通用的工具设计原则（合并优于增殖、命名空间策略、描述即 Prompt 工程），详见[构建自己的 AI 编程 Agent](../guides/build-your-own-agent.md)中的「工具设计原则」章节。
+
+以下聚焦于**MCP 特有的命名约定影响**：
+
+### MCP 命名约定与模型工具选择
+
+> "We have found selecting between prefix- and suffix-based namespacing to have non-trivial effects on our tool-use evaluations."
+
+各 Agent 的 MCP 命名约定差异**可能直接影响模型的工具选择准确率**：
+
+| Agent | 命名约定 | 分隔符 | 命名空间效果 |
+|------|---------|--------|------------|
+| **Claude Code** | `mcp__server__tool` | 双下划线 | 服务级命名空间清晰，无歧义 |
+| **Qwen Code** | `mcp__serverName__toolName` | 双下划线 | 与 Claude Code 一致（**未继承 Gemini CLI 的单下划线**） |
+| **Gemini CLI** | `mcp_{server}_{tool}` | 单下划线 | 与工具名内下划线冲突风险（如 `mcp_github_create_issue` 的边界在哪？） |
+| **Goose** | 标准 MCP 发现 | — | 无额外命名空间 |
+
+值得注意的是，Qwen Code 虽然是 Gemini CLI 的分叉，但在 MCP 命名约定上选择了 Claude Code 的双下划线方案而非 Gemini CLI 的单下划线——这说明 Qwen Code 团队也认识到了单下划线的边界歧义问题。
+
+> **实践建议**：设计 MCP 服务器时，先问"工程师能否一眼判断该用哪个工具？"——如果人类分不清，模型更分不清。
 
 ---
 

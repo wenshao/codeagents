@@ -320,6 +320,65 @@ Evaluator（评估）
 - 评估标准的措辞会**隐式引导 Generator**（如"museum quality"导致视觉趋同）
 - **Sprint 分解不是永恒的**——Sprint 最初用于所有模型（含 Opus 4.5），Opus 4.6 的长任务能力提升使得 Sprint 机制可以被完全移除（原文："I removed the sprint construct entirely"）
 
+### Progress File 模式：跨会话状态传递（来源：[Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)，Justin Young，2025-11-26）
+
+> **注**：本节来源与上方 GAN 式评估章节（[Harness Design for Long-Running Application Development](https://www.anthropic.com/engineering/harness-design-long-running-apps)，Prithvi Rajasekaran，2026-03-24）是**两篇独立文章**。前者聚焦长任务 Agent 的运维实践（Progress File、Feature List、Incremental Commit），后者聚焦多代理评估架构（Planner→Generator→Evaluator）。两者互为补充但方案不同。
+
+Anthropic 在长任务 harness 开发中发现：多代理系统的关键挑战是**跨会话状态传递**——当上下文重置后，新 Agent 如何快速了解之前的工作进展？
+
+**解决方案：`claude-progress.txt` + Git 历史**
+
+```
+Initializer Agent（首次会话）
+  → 创建 init.sh
+  → 创建 claude-progress.txt（空进展日志）
+  → 写入 feature-list.json（200+ 功能点，全部标记 "passes": false）
+  → 初始 Git commit
+
+Coding Agent（后续每次会话）
+  → 读取 claude-progress.txt + git log → 了解当前状态
+  → 选择一个 failing 功能点开始工作
+  → 完成后更新 claude-progress.txt + git commit
+  → 修改 feature-list.json 中对应功能的 "passes": true
+```
+
+> "The key insight here was finding a way for agents to quickly understand the state of work when starting with a fresh context window, which is accomplished with the claude-progress.txt file alongside the git history. Inspiration for these practices came from knowing what effective software engineers do every day."
+
+**为什么用 JSON 而非 Markdown**：
+
+> "After some experimentation, we landed on using JSON for this, as the model is less likely to inappropriately change or overwrite JSON files compared to Markdown files."
+
+**Feature List 防止提前宣告胜利**：
+
+```json
+{
+  "category": "functional",
+  "description": "New chat button creates a fresh conversation",
+  "steps": [
+    "Navigate to main interface",
+    "Click the 'New Chat' button",
+    "Verify a new conversation is created"
+  ],
+  "passes": false
+}
+```
+
+此外，Anthropic 还强调了功能测试列表的不可篡改性——防止 Agent 通过删除或修改测试来"伪造"进度：
+
+> "We use strongly-worded instructions like 'It is unacceptable to remove or edit tests because this could lead to missing or buggy functionality.'"
+
+**各 Agent 的跨会话状态传递实现**：
+
+| Agent | 状态传递机制 | 等价于 progress file |
+|------|------------|-------------------|
+| **Claude Code** | auto-memory + `/compact` 摘要 | 部分等价（记忆系统） |
+| **Gemini CLI** | memory_manager → GEMINI.md | 部分等价（记忆文件） |
+| **Aider** | 递归摘要 `done_messages` | 仅上下文内（非文件） |
+| **Goose** | Recipe 配置 | ✗ |
+| **OpenHands** | EventStream 持久化 | 部分等价（事件日志） |
+
+> **自建 Harness 的完整实现**：如果你从零构建长任务多代理系统（如 Anthropic 的 Harness 方案），可以实现 `claude-progress.txt` + JSON feature list 的完整模式——这是目前最完备的跨会话状态传递方案，但需要自建 Harness 基础设施。现有成品 Agent 的记忆系统（auto-memory、GEMINI.md）是轻量级替代，但缺少 JSON feature list 的"防提前完成"能力。
+
 ### 隔离策略
 
 | Agent | 隔离方式 | 上下文共享 |
