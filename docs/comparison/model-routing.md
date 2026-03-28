@@ -350,6 +350,8 @@ goose --model claude-opus-4     # 启动时指定
 3. **Fallback 将成为标配** — 随着 AI 编程代理用于生产环境，API 容错能力不再是可选项
 4. **路由决策可解释性** — Gemini CLI 的 `reasoning` 字段是正确方向，用户需要理解为什么选了某个模型
 
+5. **Harness 层路由** — Oh My OpenAgent 在 OpenCode 之上实现了按任务类别（visual-engineering/deep/quick/ultrabrain）自动路由到不同模型的 Discipline Agent 系统，证明模型路由可以在 Harness 层而非 Agent 内核实现。详见 [Oh My OpenAgent](../tools/oh-my-openagent.md)。
+
 ---
 
 ## 证据来源
