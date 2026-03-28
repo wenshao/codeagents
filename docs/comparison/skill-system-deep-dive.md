@@ -138,7 +138,7 @@ if (!frontmatter.description) {
 | 无 frontmatter 行为 | 空元数据 + 全文作为 prompt | **抛出异常，不加载** |
 | 设计理念 | 信任模型推断能力 | 依赖 harness 结构化校验 |
 
-> **实际影响**：将 Claude Code 的 Skill 文件直接复制到 Qwen Code 的 `.qwen/skills/` 目录时，如果该 Skill 没有 YAML frontmatter，Claude Code 能正常加载但 Qwen Code 会静默忽略。迁移时需要补充 frontmatter。
+> **实际影响**：将 Claude Code 的 Skill 文件直接复制到 Qwen Code 的 `.qwen/skills/` 目录时，如果该 Skill 没有 YAML frontmatter，Claude Code 能正常加载但 Qwen Code 会**抛出异常，Skill 不加载**。迁移时需要补充 frontmatter。
 
 ### 条件激活（Conditional Skills）
 

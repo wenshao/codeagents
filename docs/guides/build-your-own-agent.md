@@ -309,6 +309,8 @@ MCP 协议让编码 Agent 可以调用**任何外部工具**，无需修改 Agen
 
 > 包名：`@anthropic-ai/claude-agent-sdk`（[npm](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)、[官方文档](https://platform.claude.com/docs/en/agent-sdk/overview)）
 
+> **注**：以下 TypeScript 示例基于 npm 包导出推断（官方文档目前仅提供 Python 示例），实际 API 可能有差异，使用前请查阅最新官方文档。
+
 ```bash
 npm install @anthropic-ai/claude-agent-sdk
 ```
