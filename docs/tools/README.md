@@ -26,7 +26,7 @@
 | [SWE-agent](./swe-agent.md) | 单文件 | 178 | SWE-bench 74%+，Docker 沙箱 |
 | [Cline](./cline.md) | 单文件 | 151 | VS Code 扩展，24+ 工具，子代理系统 |
 | [OpenHands](./openhands.md) | 单文件 | 144 | SWE-bench 77.6%，浏览器操作，Docker |
-| [Oh My OpenAgent](./oh-my-openagent.md) | 单文件 | 121 | OpenCode Harness 层，Discipline Agent 编排，~44K Stars |
+| [Oh My OpenAgent](./oh-my-openagent.md) | 单文件 | 110 | OpenCode Harness 层，7+ Discipline Agent 编排，~44K Stars |
 | [mini-swe-agent](./mini-swe-agent.md) | 单文件 | 93 | 教学用，SWE-bench 74%+ |
 
 ## 对比文档

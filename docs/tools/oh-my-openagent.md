@@ -22,17 +22,17 @@ Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harn
 ```
 用户输入 → IntentGate（意图分析）
   │
-  ├── Sisyphus（编排者）
-  │   └── 任务分解 + 路由到专用代理
-  │
-  ├── Hephaestus（深度工作者）
-  │   └── 复杂编码任务，使用最强模型
-  │
-  └── Prometheus（规划者）
-      └── 架构设计 + 长期规划
+  └── Sisyphus（编排者/CTO）
+      ├── 任务分解 + 路由到专用代理
+      ├── Hephaestus（深度工作者）
+      ├── Prometheus（规划者/Metis）
+      ├── Oracle（架构/调试专家）
+      ├── Librarian（文档搜索专家）
+      ├── Explore（代码搜索专家）
+      └── Multimodal Looker（视觉代理）
 ```
 
-三个代理以希腊神话命名，各自路由到不同的 LLM 提供商。
+7+ 个代理以希腊神话/职能命名，由 Sisyphus 作为 CTO 统一调度，各自路由到不同的 LLM 提供商。
 
 ### 分类模型路由
 
@@ -42,6 +42,8 @@ Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harn
 | deep | GPT-5.4 / Kimi K2.5 | 深度推理任务 |
 | quick | GLM-5 / Gemini | 轻量级快速任务 |
 | ultrabrain | 最强可用模型 | 极难推理任务 |
+
+> **注**：以上模型名称为 Oh My OpenAgent 项目自述的路由配置，部分模型名称（如 GPT-5.4、GLM-5）未经独立验证，实际可用模型可能有所不同。
 
 ### Hash-Anchored Edit Tool
 
@@ -69,10 +71,10 @@ Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harn
 |------|----------------|-------------|-----------|----------|
 | **本质** | Harness 层（扩展 OpenCode） | 独立 Agent | 独立 Agent | 独立 Agent |
 | **模型支持** | 多模型路由（6+ 提供商） | Claude 专属 | OpenAI 专属 | 多模型 |
-| **多代理** | 3 个 Discipline Agent | Teammates | 实验性 | 无 |
+| **多代理** | 7+ Discipline Agent | Teammates | 实验性 | 无 |
 | **模型路由** | 按任务类别自动路由 | 手动选择 | 无 | 手动选择 |
 | **编辑精度** | Hash-Anchored（LINE#ID） | Edit/MultiEdit | apply_patch | 继承 |
-| **Stars** | ~44K | N/A（闭源） | ~24K | ~21K |
+| **Stars** | ~44K | N/A（闭源） | ~68K | ~12K |
 | **许可证** | SUL-1.0（自定义） | 专有 | Apache-2.0 | MIT |
 
 ## Harness Engineering 视角
@@ -92,6 +94,7 @@ Oh My OpenAgent 是 [Harness Engineering](../guides/build-your-own-agent.md) 概
 ## 注意事项
 
 - **非 OSI 标准许可证**：SUL-1.0（Sisyphus Use License）是自定义许可证，使用前需仔细审查条款
+- **基座项目已归档**：OpenCode（opencode-ai/opencode）已于 2025 年 9 月归档，项目迁移至 Crush（原作者 + Charm 团队）。Oh My OpenAgent 依赖一个已停止更新的基座，长期可持续性存在风险
 - **依赖 OpenCode**：本身不是独立 Agent，需要 OpenCode 作为基座
 - **宣传语气较强**：README 和文档有较强的营销风格，技术声明需独立验证
 - **AI 参与开发**：项目有 AI 贡献者账号（sisyphus-dev-ai，249 commits），maintainer 使用自己的 Agent 开发功能
