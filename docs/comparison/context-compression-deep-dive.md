@@ -309,6 +309,8 @@ if (message.summarizeMetadata) {
 | **Qwen Code** | 否 | 继承 Gemini（内联压缩状态消息） | 源码：`compressCommand.ts`（分叉） |
 | **Aider** | 否 | 后台静默替换消息列表，无可见变化（verbose 模式下显示一行日志） | 源码：`base_coder.py` L1002-1034 |
 | **Codex CLI** | 否 | 显示警告："Long threads and multiple compactions can cause the model to be less accurate" | 源码：`compact.rs` → `WarningEvent` |
+| **Goose** | 未知 | 未找到压缩后 UI 行为的源码证据 | — |
+| **Copilot CLI** | 未知 | 未找到压缩后 UI 行为的源码证据 | — |
 
 ### 设计权衡分析
 
