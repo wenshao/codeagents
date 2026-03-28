@@ -65,7 +65,7 @@ Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harn
 | **LSP 集成** | 语言服务器协议集成（诊断/补全） |
 | **AST-Grep** | 基于 AST 的代码搜索（比正则更精确） |
 | **Tmux 集成** | 多窗格并行代理执行 |
-| **Claude Code 兼容** | 声称兼容 Claude Code hooks、commands、skills、MCPs、plugins |
+| **Claude Code 兼容** | 兼容 Claude Code hooks、commands、skills、MCPs、plugins |
 
 ## 与其他 Agent 的定位对比
 
@@ -107,12 +107,12 @@ bunx oh-my-opencode install
 2. **多模型路由**——按任务类别自动选择最优模型（visual/deep/quick/ultrabrain）
 3. **Hash-Anchored Edit**——内容哈希验证编辑精确性，防止行号偏移
 4. **快速迭代**——多次日更，社区活跃（~44K Stars，4 个月）
-5. **Claude Code 兼容**——声称兼容 Claude Code hooks/commands/skills/MCPs/plugins
+5. **Claude Code 兼容**——兼容 Claude Code hooks/commands/skills/MCPs/plugins
 
 ## 劣势
 
 1. **基座已归档**——OpenCode（opencode-ai/opencode）于 2025 年 9 月归档，长期可持续性存在风险
-2. **非标准许可证**——SUL-1.0（Sustainable Use License），使用前需审查条款
+2. **非标准许可证**——SUL-1.0（Sustainable Use License），禁止商业使用和分发（仅限内部业务/非商业用途）
 3. **宣传语气较强**——技术声明（如"零过期行错误"）为项目自述，未经独立验证
 4. **AI 参与开发**——项目有 AI 贡献者账号（sisyphus-dev-ai），代码质量需额外关注
 
