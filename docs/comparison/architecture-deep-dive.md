@@ -607,4 +607,4 @@ Harness（环境设计）
 
 **关键实证**：LangChain coding agent 仅修改 Harness（不改模型），Terminal Bench 2.0 分数从 52.8% 提升到 66.5%——表明 Harness 优化可以在不更换模型的情况下带来显著性能提升。详见[构建自己的 AI 编程 Agent](../guides/build-your-own-agent.md)中的「Harness Engineering」章节。
 
-**实践案例**：[Oh My OpenAgent](../tools/oh-my-openagent.md)（~44K Stars）在 OpenCode 之上构建了 Discipline Agent 编排（Sisyphus/Hephaestus/Prometheus）+ 分类模型路由 + Hash-Anchored Edit，是目前最成功的开源 Harness 层实践。
+**实践案例**：[Oh My OpenAgent](../tools/oh-my-openagent.md)（~44K Stars）在 OpenCode 之上构建了 7~10 个 Discipline Agent 编排 + 分类模型路由 + Hash-Anchored Edit，是目前最成功的开源 Harness 层实践。

@@ -32,7 +32,9 @@ Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harn
       └── Multimodal Looker（视觉代理）
 ```
 
-7+ 个代理以希腊神话/职能命名，由 Sisyphus 作为 CTO 统一调度，各自路由到不同的 LLM 提供商。
+7~10 个代理以希腊神话（Sisyphus/Prometheus/Hephaestus/Atlas/Metis/Momus）和英文职能（Oracle/Librarian/Explore/Multimodal Looker）混合命名，由 Sisyphus 作为 CTO 统一调度。
+
+> **注**：GitHub README 和官网列出的代理数量不一致（GitHub 列出 7 个，官网列出 10 个含 Atlas/Momus/Dynamic Agent）。以上为两处来源的合集。
 
 ### 分类模型路由
 
@@ -51,7 +53,7 @@ Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harn
 
 ### ultrawork 命令
 
-一个自迭代执行循环（"Ralph Loop"），激活所有代理持续工作直到任务 100% 完成。可同时启动 5+ 个后台专用代理并行执行。
+一个自迭代执行循环（GitHub README 称 "Ralph Loop"，官网称 "Self-Correction Loops"），激活所有代理持续工作直到任务 100% 完成。可同时启动 5+ 个后台专用代理并行执行。
 
 ## 独特功能
 
@@ -71,7 +73,7 @@ Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harn
 |------|----------------|-------------|-----------|----------|
 | **本质** | Harness 层（扩展 OpenCode） | 独立 Agent | 独立 Agent | 独立 Agent |
 | **模型支持** | 多模型路由（6+ 提供商） | Claude 专属 | OpenAI 专属 | 多模型 |
-| **多代理** | 7+ Discipline Agent | Teammates | 实验性 | 无 |
+| **多代理** | 7~10 Discipline Agent | Teammates | 实验性 | 无 |
 | **模型路由** | 按任务类别自动路由 | 手动选择 | 无 | 手动选择 |
 | **编辑精度** | Hash-Anchored（LINE#ID） | Edit/MultiEdit | apply_patch | 继承 |
 | **Stars** | ~44K | N/A（闭源） | ~68K | ~12K |
