@@ -46,6 +46,8 @@
 | **Git 集成** | 需自建 | 继承（checkpoint / rewind / worktree） |
 | **MCP 生态** | 需自接 | 内置支持 |
 
+> **Anthropic 的 Harness 洞察**（[来源](https://www.anthropic.com/engineering/harness-design-long-running-apps)）："The space of interesting harness combinations doesn't shrink as models improve. Instead, it moves."——**Harness 的价值不会随模型进步消失，只会迁移**。今天需要的 Sprint 分解，明天可能不再需要；但新的 Harness 组件（如 Evaluator 校准、Context Anxiety 管理）会出现。选择"路径 B 成品扩展"不意味着不需要 Harness 思维——而是用 SKILL.md + Hooks 实现轻量级 Harness。
+
 ---
 
 ## 选择决策树

@@ -212,6 +212,28 @@ _step()
 
 ---
 
+## "生成者不应评价自己"原则
+
+> 来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/harness-design-long-running-apps)（2026-03-24）
+
+Anthropic 在长任务 harness 开发中发现了一个关键问题：**当 Agent 被要求评价自己产出的作品时，它会自信地夸赞——即使质量平庸**。
+
+这解释了为什么各工具的验证架构都倾向于**分离生成和评估**：
+
+| 工具 | 生成者 | 评估者 | 分离程度 |
+|------|--------|--------|---------|
+| **Claude Code /review** | Sonnet（变更摘要） | **独立 Opus 代理**（Bug 扫描 + 安全分析） | 完全分离 |
+| **Copilot CLI /review** | Agent | **实际编译 + 运行测试**（非 LLM） | 完全分离（确定性验证） |
+| **Aider 反射循环** | 主模型 | **lint/test 工具**（非 LLM） | 完全分离（确定性验证） |
+| **Anthropic Harness** | Generator | **独立 Evaluator**（Playwright 测试） | 完全分离 |
+| **Qwen Code Arena** | 多个 Generator | **用户**选优 | 生成分离，评估靠人 |
+
+> **Anthropic 原文**："Tuning a standalone evaluator to be skeptical turns out to be far more tractable than making a generator critical of its own work."（调校独立评估者比让生成者自我批评**容易得多**。）
+
+**实践建议**：如果你在构建 Agent 验证流程，**永远不要让 Agent 评价自己的输出**。用独立代理、确定性工具（编译/测试）、或人类评审。
+
+---
+
 ## 理想验证架构（未来方向）
 
 目前没有任何工具同时实现：
