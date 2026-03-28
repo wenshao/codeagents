@@ -4,9 +4,11 @@
 
 ### 上下文压缩
 当对话历史接近上下文窗口限制时，Claude Code 自动压缩早期对话内容，保留关键信息：
-- 自动触发：接近 token 上限时
+- 自动触发：接近 ~95% token 上限时
 - 手动触发：`/compact` 命令
 - Hook 支持：PreCompact/PostCompact 事件允许自定义压缩前后行为
+
+**压缩后 UI 行为**（二进制分析 v2.1.86）：压缩完成后，Claude Code **清空屏幕上的旧对话**，仅显示 "Summarized conversation" 标记。旧消息被标记为 `isCompactSummary: true` + `isVisibleInTranscriptOnly: true`——屏幕内容与模型上下文保持同步，防止用户引用"模型已忘记"的消息。这是与 Gemini CLI / Qwen Code（保留旧消息不清屏）的关键行为差异。
 
 ### 会话恢复
 ```bash
