@@ -96,10 +96,10 @@ Oh My OpenAgent 是 [Harness Engineering](../guides/build-your-own-agent.md) 概
 ## 安装
 
 ```bash
-bunx oh-my-openagent install
+bunx oh-my-opencode install
 ```
 
-需要 Node 24（推荐）或 Node 22.16+。依赖 OpenCode 作为基座运行。
+安装后提供独立二进制（macOS/Linux/Windows），无需 Bun/Node 运行时。依赖 OpenCode 作为基座运行。
 
 ## 优势
 
@@ -127,7 +127,5 @@ bunx oh-my-openagent install
 
 - [GitHub 仓库](https://github.com/code-yeongyu/oh-my-openagent)
 - [官方文档](https://ohmyopenagent.com/)
-- [ClawHub Skill 市场](https://ohmyopenagent.com/clawhub)（如果存在）
-- [Discord 社区](https://discord.gg/oh-my-openagent)（项目主要沟通渠道）
 
 > **免责声明**：以上数据基于 2026 年 3 月分析，Stars/功能等数据可能已过时。技术声明（如"零过期行错误"）为项目自述，未经独立验证。

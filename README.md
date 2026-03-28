@@ -1,6 +1,6 @@
 # AI 编程 Code Agent 对比
 
-> 基于源码分析和二进制反编译的 17 款 AI 编程 Code Agent 全面对比 | 120+ 文件 | 36,000+ 行 | 21 篇 Deep-Dive | 9 个 EVIDENCE.md
+> 基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比 | 120+ 文件 | 36,000+ 行 | 21 篇 Deep-Dive | 9 个 EVIDENCE.md
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -88,6 +88,7 @@
 | [Kimi CLI](./docs/tools/kimi-cli/) | 月之暗面 | Apache-2.0 | **7k** | Python | 6 | Wire 协议，D-Mail 时间回溯 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | - | TypeScript | 多种 | AI 原生 IDE，Background Agent |
 | [Qoder CLI](./docs/tools/qoder-cli/) | QoderAI | 专有 | - | Go | 多种 | Quest 模式，Claude Code 兼容 |
+| [Oh My OpenAgent](./docs/tools/oh-my-openagent.md) | code-yeongyu | SUL-1.0 | **~44k** | TypeScript | 多种 | OpenCode Harness 层，7~10 Discipline Agent |
 
 ---
 
