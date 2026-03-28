@@ -111,7 +111,7 @@
 |------|-------|------|
 | **Rust** | Claude Code, Goose, Warp | 50ms 启动，内存最低 |
 | **TypeScript** | Gemini CLI, Qwen Code, Codex CLI, Cline, Continue | Ink/React TUI 成熟 |
-| **Go + TS** | OpenCode | TypeScript（Bun）后端 + SolidJS TUI（v1.0 前 Go，已全面重写） |
+| **TypeScript（Bun）** | OpenCode | TypeScript（Bun）后端 + SolidJS TUI（v1.0 前 Go，已全面重写） |
 | **Python** | Aider, SWE-agent, OpenHands, Kimi CLI | LiteLLM 100+ 模型 |
 
 ---
