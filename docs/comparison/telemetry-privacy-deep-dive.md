@@ -249,6 +249,32 @@ export GOOSE_TELEMETRY_OFF=1
 
 ---
 
+## 隐私设计哲学：ZDR 与无状态架构
+
+### Codex CLI 的无状态设计（来源：[OpenAI Blog](https://openai.com/index/unrolling-the-codex-agent-loop/)，2026-01-24）
+
+Codex CLI 故意不使用 `previous_response_id` 参数，每次请求完全无状态：
+
+> "Every request is stateless, which is essential for ZDR customers who have opted out of data storage."
+
+这是**隐私优先的架构决策**——牺牲了会话连续性的便利，换取了数据不被存储的保证。
+
+### Anthropic 的质量承诺
+
+> "We never reduce model quality due to demand, time of day, or server load."
+> — [A postmortem of three recent issues](https://www.anthropic.com/engineering/a-postmortem-of-three-recent-issues)（2025-09-17）
+
+### 隐私 vs 功能的权衡
+
+| 隐私策略 | 代表 Agent | 牺牲的功能 |
+|---------|-----------|-----------|
+| **零遥测** | Kimi CLI、OpenCode | 无使用数据优化产品 |
+| **Opt-in 采样** | Aider（10%）、Goose | 大部分用户不贡献数据 |
+| **无状态架构** | Codex CLI（ZDR） | 无跨请求会话状态 |
+| **默认开启** | Claude Code（782 事件） | 用户可能不知情 |
+
+---
+
 ## 证据来源
 
 | Agent | 来源 | 获取方式 |

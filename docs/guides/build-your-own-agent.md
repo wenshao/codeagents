@@ -48,6 +48,49 @@
 
 > **Anthropic 的 Harness 洞察**（[来源](https://www.anthropic.com/engineering/harness-design-long-running-apps)）："The space of interesting harness combinations doesn't shrink as models improve. Instead, it moves."——**Harness 的价值不会随模型进步消失，只会迁移**。今天需要的 Sprint 分解，明天可能不再需要；但新的 Harness 组件（如 Evaluator 校准、Context Anxiety 管理）会出现。选择"路径 B 成品扩展"不意味着不需要 Harness 思维——而是用 SKILL.md + Hooks 实现轻量级 Harness。
 
+### Harness Engineering：2026 年的新兴学科
+
+> "The primary job of engineering teams is no longer to write code, but to design environments, specify intent, and build feedback loops."
+> — [OpenAI: Harness Engineering](https://openai.com/index/harness-engineering/)，2026-02-11
+
+**Harness Engineering** 在 2026 年初由 OpenAI 正式命名，核心主张：**工程师的角色从写代码转变为设计 AI Agent 写代码的环境**。
+
+#### OpenAI 的实践数据
+
+OpenAI 内部团队用 Codex CLI 构建了一个完整产品——**零行手写代码**，约 100 万行生成代码，~1500 个 PR，平均每工程师每天 **3.5 个 PR**，耗时约为手写的 **1/10**。
+
+> "Building software still demands discipline, but the discipline shows up more in the scaffolding rather than the code."
+
+#### Harness 的五大支柱
+
+| 支柱 | 说明 | 对应成品 Agent 实现 |
+|------|------|-------------------|
+| **文档即系统** | AGENTS.md 作为导航地图，指向 `docs/` 详细文档 | CLAUDE.md / AGENTS.md / GEMINI.md |
+| **架构约束** | 严格分层规则，代码只能"向前依赖" | SKILL.md `allowed-tools`、TOML 策略 |
+| **反馈循环** | Agent 失败时识别缺失（工具/护栏/文档）并补充 | Hooks（PreToolUse/PostToolUse）、auto-lint |
+| **熵管理** | 定期运行"垃圾回收"Agent 清理文档不一致和约束违规 | `/loop`、`/schedule` 定时任务 |
+| **渐进自治** | Agent 从辅助到端到端，仅在需要判断时上报人类 | Auto mode（AI 分类器审批） |
+
+> "When the agent struggles, we treat it as a signal: identify what is missing -- tools, guardrails, documentation -- and feed it back into the repository."
+
+#### 关键实证发现
+
+| 来源 | 发现 |
+|------|------|
+| [Martin Fowler / Thoughtworks](https://martinfowler.com/articles/exploring-gen-ai/harness-engineering.html)（2026-02-17） | Harness 三要素：上下文工程、架构约束、熵管理 |
+| [NxCode](https://www.nxcode.io/resources/news/harness-engineering-complete-guide-ai-agent-codex-2026) | LangChain coding agent 仅修改 Harness（不改模型），Terminal Bench 2.0 从 **52.8% → 66.5%** |
+| [Pragmatic Engineer](https://newsletter.pragmaticengineer.com/p/how-codex-is-built)（2026-02-17） | Codex 自身 90%+ 代码由 Codex 生成；工程师角色="Agent 管理者"，同时运行 4-8 个并行 Agent |
+
+> **核心洞察**：Harness 优化可以在不更换模型的情况下带来显著性能提升（52.8% → 66.5%）。这意味着无论选择哪条路径（SDK 框架 / 成品扩展 / Agent SDK），Harness 设计都是重要的技术投入方向。
+
+#### 对三条路径的影响
+
+| 路径 | Harness 实现方式 |
+|------|----------------|
+| **路径 A（SDK 框架）** | 完全自建 Harness（最大灵活性，最高成本）|
+| **路径 B（成品扩展）** | 用 AGENTS.md + SKILL.md + Hooks 实现轻量 Harness |
+| **路径 C（Agent SDK）** | 继承 Claude/Codex 的 Harness 能力（工具集、权限、压缩）|
+
 ---
 
 ## 选择决策树
@@ -381,7 +424,7 @@ for await (const event of thread.runStreamed("运行测试验证")) {
 
 ---
 
-## 工具设计原则（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/writing-tools-for-agents)）
+## 工具设计原则（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/writing-tools-for-agents)，2025-09-11）
 
 无论选择哪条路径，工具设计都是 Agent 质量的关键。Anthropic 总结了以下经验：
 
@@ -437,6 +480,37 @@ for await (const event of thread.runStreamed("运行测试验证")) {
 | Hook 设计 | 每个检查一个 Hook | 一个 Hook 脚本执行多项检查 |
 
 > **与 MCP 的关系**：Anthropic 指出 "The Model Context Protocol (MCP) can empower LLM agents with potentially hundreds of tools to solve real-world tasks."——但工具数量多不等于质量高。合并和命名空间策略对 MCP 工具同样适用。关于 MCP 命名约定（双下划线 vs 单下划线）对各 Agent 工具选择的具体影响，参见 [MCP 集成深度对比](../comparison/mcp-integration-deep-dive.md)中的「MCP 命名约定与模型工具选择」章节。
+
+---
+
+## Agent 工程实践洞察
+
+### 反馈循环设计（来源：[Claude Agent SDK](https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk)，2025-09-29）
+
+> "Agents often operate in a specific feedback loop: gather context -> take action -> verify work -> repeat."
+
+**TypeScript 优于 JavaScript 的反馈质量**：
+
+> "It is usually better to generate TypeScript and lint it than it is to generate pure JavaScript because it provides you with multiple additional layers of feedback."
+
+**子代理的两个核心价值**：
+
+> "Subagents are useful for two main reasons. First, they enable parallelization...Second, they help manage context: subagents use their own isolated context windows, and only send relevant information back to the orchestrator."
+
+### 多代理项目的成本模型（来源：[Building a C Compiler](https://www.anthropic.com/engineering/building-c-compiler)，2026-02-05）
+
+| 维度 | 数据 |
+|------|------|
+| 会话数 | ~2,000 次 Claude Code 会话 |
+| API 成本 | ~$20,000 |
+| 代码量 | 100,000 行 Rust |
+| 产出 | 可编译 Linux 6.9（x86/ARM/RISC-V）的 C 编译器 |
+
+> "Agent teams show the possibility of implementing entire, complex projects autonomously. This allows us, as users of these tools, to become more ambitious with our goals."
+
+### 多代理系统的经济可行性（来源：[Multi-Agent Research System](https://www.anthropic.com/engineering/multi-agent-research-system)，2025-06-13）
+
+> "Agents typically use about 4x more tokens than chat interactions, and multi-agent systems use about 15x more tokens than chats. For economic viability, multi-agent systems require tasks where the value of the task is high enough to pay for the increased performance."
 
 ---
 
