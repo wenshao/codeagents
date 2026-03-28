@@ -44,7 +44,7 @@
 | **OpenHands** | **125 万** | 70k |
 | **Aider** | 78 万 | 42k |
 | **Kimi CLI** | 45 万 | 7k |
-| **OpenCode** | — | **130k** |
+| **OpenCode** | — | **~132k** |
 
 > **Stars ≠ 采用**：Gemini CLI Stars（99k）是 Claude Code（83k）的 1.2 倍，但 npm 下载仅其 **7%**。Copilot CLI 增长最猛（4 周 ↑240%）。
 
@@ -76,7 +76,7 @@
 | [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | **99k** | TypeScript | 1 | 8 策略模型路由，TOML 策略引擎 |
 | [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | **83k** | Rust | 1 | 50ms 启动，24 Hook 事件，Channels |
 | [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | **70k** | Python | 100+ | Docker 沙箱，三层安全，多代理 |
-| [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | **68k** | TypeScript | 1 | 三平台 OS 沙箱，Cloud 远程执行 |
+| [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | **68k** | Rust | 1 | 三平台 OS 沙箱，Cloud 远程执行 |
 | [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | **59k** | TypeScript | 48+ | VS Code 原生，Git Checkpoint |
 | [Aider](./docs/tools/aider/) | Paul Gauthier | GPL-3.0 | **42k** | Python | 100+ | 14 编辑格式，三槽位模型，/undo |
 | [Goose](./docs/tools/goose/) | Block | Apache-2.0 | **34k** | Rust | 58+ | MCP 原生，11 Platform Extension，Recipe + Cron 调度 |
@@ -109,9 +109,9 @@
 
 | 语言 | Agent | 特点 |
 |------|-------|------|
-| **Rust** | Claude Code, Goose, Warp | 50ms 启动，内存最低 |
-| **TypeScript** | Gemini CLI, Qwen Code, Codex CLI, Cline, Continue | Ink/React TUI 成熟 |
-| **Go → TS** | OpenCode | TypeScript（Bun）后端 + SolidJS TUI（v1.0 前 Go，已全面重写） |
+| **Rust** | Claude Code, Codex CLI, Goose, Warp | 50ms 启动，内存最低 |
+| **TypeScript** | Gemini CLI, Qwen Code, Cline, Continue | Ink/React TUI 成熟 |
+| **TypeScript（Bun）** | OpenCode | TypeScript（Bun）后端 + SolidJS TUI（v1.0 前 Go，已全面重写） |
 | **Python** | Aider, SWE-agent, OpenHands, Kimi CLI | LiteLLM 100+ 模型 |
 
 ---
