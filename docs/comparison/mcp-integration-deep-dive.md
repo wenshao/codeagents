@@ -319,9 +319,9 @@ Anthropic 发现当 MCP 工具数量增长时，Agent 可以**通过代码调用
 
 | 功能 | 效果 | 数据 |
 |------|------|------|
-| **Tool Search Tool** | 按需发现工具，替代预加载 | 72K → 3K tokens（**85% 减少**） |
-| **Programmatic Tool Calling** | Claude 写代码编排工具调用 | 减少 API 往返 |
-| **Tool Use Examples** | few-shot 示例提升参数处理 | 72% → 90% 准确率 |
+| **Tool Search Tool** | 按需发现工具，替代预加载 | ~77K → ~8.7K tokens（原文称 **85% 减少**） |
+| **Programmatic Tool Calling** | Claude 写代码编排工具调用 | 43.6K → 27.3K tokens（37% 减少） |
+| **Tool Use Examples** | few-shot 示例提升参数处理 | 72% → 90% 准确率（原文数据） |
 
 > "Internal testing showed significant accuracy improvements on MCP evaluations when working with large tool libraries. Opus 4 improved from 49% to 74%, and Opus 4.5 improved from 79.5% to 88.1% with Tool Search Tool enabled."
 

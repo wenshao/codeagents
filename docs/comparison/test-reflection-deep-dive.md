@@ -297,9 +297,8 @@ Think Tool 让 Claude 在工具调用链中**暂停推理**，对测试验证场
 
 | 场景 | 基线准确率 | Think Tool 准确率 | 提升 |
 |------|-----------|-----------------|------|
-| 航空客服 | 0.370 | 0.570 | **+54%** |
+| 航空客服（Tau-Bench） | 0.370 | 0.570 | **+54%** |
 | SWE-bench | 基线 | +1.6% | p < .001 |
-| MCP 大工具库（Opus 4） | 49% | 74% | +25pp |
 
 > "The 'think' tool is better suited for when Claude needs to...analyze tool outputs carefully in long chains of tool calls, navigate policy-heavy environments...or make sequential decisions where each step builds on previous ones and mistakes are costly."
 

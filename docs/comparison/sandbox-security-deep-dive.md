@@ -336,7 +336,7 @@ Agent 动作
 
 > "Past examples include deleting remote git branches from a misinterpreted instruction, uploading an engineer's GitHub auth token to an internal compute cluster, and attempting migrations against a production database."
 
-**诚实的误报率**：auto mode 对真实危险操作的漏报率为 17%——这是 Anthropic 公开披露的数字，体现了透明度。
+**诚实的漏报率**：auto mode 对真实危险操作的漏报率（false negative rate）为 17%——这是 Anthropic 公开披露的数字，体现了透明度。
 
 ### Prompt Injection 防御：Agents Rule of Two（来源：[Simon Willison](https://simonwillison.net/2025/Nov/2/new-prompt-injection-papers/)，2025-11-02）
 
