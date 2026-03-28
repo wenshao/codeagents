@@ -1,7 +1,7 @@
 # Oh My OpenAgent
 
 **开发者：** code-yeongyu（韩国）
-**许可证：** SUL-1.0（自定义 Sisyphus Use License，非 OSI 标准）
+**许可证：** SUL-1.0（Sustainable Use License）
 **仓库：** [github.com/code-yeongyu/oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent)
 **官网：** [ohmyopenagent.com](https://ohmyopenagent.com/)
 **Stars：** ~44K（2026-03）
@@ -11,7 +11,7 @@
 
 ## 概述
 
-Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harness 层**，不是独立的 Agent——它在 OpenCode 之上添加了多代理编排、多模型路由和增强工具链。自称 "the best agent harness"，4 个月内获得 ~44K Stars。
+Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harness 层**，不是独立的 Agent——它在 OpenCode 之上添加了多代理编排、多模型路由和增强工具链。自称 "the best agent harness"，~44K Stars（2025-12 创建至 2026-03，基于 GitHub 数据）。
 
 与本项目收录的其他 Agent 的关键区别：**它不是从零构建的 Agent，而是 Harness Engineering 的实践案例**——在成品 Agent（OpenCode）之上设计环境、编排和反馈循环。
 
@@ -112,8 +112,7 @@ bunx oh-my-opencode install
 ## 劣势
 
 1. **基座已归档**——OpenCode（opencode-ai/opencode）于 2025 年 9 月归档，长期可持续性存在风险
-2. **非标准许可证**——SUL-1.0（Sisyphus Use License）非 OSI 标准，使用前需审查条款
-3. **依赖 OpenCode**——本身不是独立 Agent，无法脱离 OpenCode 运行
+2. **非标准许可证**——SUL-1.0（Sustainable Use License），使用前需审查条款
 4. **宣传语气较强**——技术声明（如"零过期行错误"）为项目自述，未经独立验证
 5. **AI 参与开发**——项目有 AI 贡献者账号（sisyphus-dev-ai），代码质量需额外关注
 
