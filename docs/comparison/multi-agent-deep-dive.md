@@ -320,6 +320,62 @@ Evaluator（评估）
 - 评估标准的措辞会**隐式引导 Generator**（如"museum quality"导致视觉趋同）
 - **Sprint 分解不是永恒的**——Sprint 最初用于所有模型（含 Opus 4.5），Opus 4.6 的长任务能力提升使得 Sprint 机制可以被完全移除（原文："I removed the sprint construct entirely"）
 
+### Progress File 模式：跨会话状态传递（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/building-effective-agents)）
+
+Anthropic 在长任务 harness 开发中发现：多代理系统的关键挑战是**跨会话状态传递**——当上下文重置后，新 Agent 如何快速了解之前的工作进展？
+
+**解决方案：`claude-progress.txt` + Git 历史**
+
+```
+Initializer Agent（首次会话）
+  → 创建 init.sh
+  → 创建 claude-progress.txt（空进展日志）
+  → 写入 feature-list.json（200+ 功能点，全部标记 "passes": false）
+  → 初始 Git commit
+
+Coding Agent（后续每次会话）
+  → 读取 claude-progress.txt + git log → 了解当前状态
+  → 选择一个 failing 功能点开始工作
+  → 完成后更新 claude-progress.txt + git commit
+  → 修改 feature-list.json 中对应功能的 "passes": true
+```
+
+> 原文："The key insight here was finding a way for agents to quickly understand the state of work when starting with a fresh context window, which is accomplished with the claude-progress.txt file alongside the git history."
+
+**为什么用 JSON 而非 Markdown**：
+
+> 原文："The model is less likely to inappropriately change or overwrite JSON files compared to Markdown files."
+
+**Feature List 防止提前宣告胜利**：
+
+```json
+{
+  "category": "functional",
+  "description": "New chat button creates a fresh conversation",
+  "steps": [
+    "Navigate to main interface",
+    "Click the 'New Chat' button",
+    "Verify a new conversation is created"
+  ],
+  "passes": false
+}
+```
+
+> 原文："It is unacceptable to remove or edit tests because this could lead to missing or buggy functionality."
+
+**各 Agent 的跨会话状态传递实现**：
+
+| Agent | 状态传递机制 | 等价于 progress file |
+|------|------------|-------------------|
+| **Claude Code** | auto-memory + `/compact` 摘要 | 部分等价（记忆系统） |
+| **Gemini CLI** | memory_manager → GEMINI.md | 部分等价（记忆文件） |
+| **Aider** | 递归摘要 `done_messages` | 仅上下文内（非文件） |
+| **Goose** | Recipe 配置 | ✗ |
+| **OpenHands** | EventStream 持久化 | 部分等价（事件日志） |
+| **自建 Harness** | `claude-progress.txt` + JSON feature list | **完整实现** |
+
+> **实践建议**：如果你在构建长任务多代理系统，务必实现类似 progress file 的机制。现有成品 Agent 的记忆系统（auto-memory、GEMINI.md）是轻量级替代，但缺少 JSON feature list 的"防提前完成"能力。
+
 ### 隔离策略
 
 | Agent | 隔离方式 | 上下文共享 |

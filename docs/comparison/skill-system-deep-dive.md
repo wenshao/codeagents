@@ -322,6 +322,46 @@ Claude Code 插件               Qwen Code / Gemini CLI
 
 ---
 
+## 渐进式披露与上下文工程（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)）
+
+Anthropic 在上下文工程实践中发现：**Skill 文档的加载不应一次性灌入全部内容**，而应采用渐进式披露（Progressive Disclosure）——Agent 通过探索逐步发现相关上下文，每次交互产生的上下文为后续决策提供信息。
+
+> 原文："Autonomous navigation enables progressive disclosure—agents incrementally discover relevant context through exploration."
+
+### 三层上下文策略
+
+| 层 | 名称 | 加载时机 | 对应 Skill 实现 |
+|---|------|---------|----------------|
+| 1 | **预加载上下文** | 会话启动时 | AGENTS.md/CLAUDE.md 注入系统提示 |
+| 2 | **即时检索** | 运行时按需 | Skill 通过 `glob`/`grep` 动态发现文件 |
+| 3 | **持久化外部记忆** | 跨会话持久 | `NOTES.md`、auto-memory、progress 文件 |
+
+> 原文："Claude Code employs this hybrid model: CLAUDE.md files upload into context initially, while glob and grep primitives enable just-in-time file navigation."
+
+### 对 Skill 设计的启示
+
+| 原则 | 说明 | 反面案例 |
+|------|------|---------|
+| **最小高信号 token 集** | Skill 正文只包含当前任务最相关的指令 | 将完整 API 文档塞入 SKILL.md |
+| **简洁明确的描述** | `description` 字段用简单语言写清用途 | 模糊描述导致模型选错 Skill |
+| **典型示例优于穷举** | 用 2-3 个代表性示例替代所有边界情况 | 列出 20 种输入格式的 Skill |
+
+> 原文："Find the smallest possible set of high-signal tokens that maximize the likelihood of some desired outcome."
+
+### 各 Agent 的渐进式披露实现
+
+| Agent | 预加载 | 即时检索 | 外部记忆 |
+|------|--------|---------|---------|
+| **Claude Code** | CLAUDE.md + 条件 Skill（`paths` glob） | Agent 工具动态发现 | auto-memory 4 类型 |
+| **Gemini CLI** | GEMINI.md + activate_skill | codebase_investigator 只读探索 | memory_manager → GEMINI.md |
+| **Qwen Code** | AGENTS.md + 继承 Skill | 继承 Gemini 工具集 | save_memory 工具 |
+| **Kimi CLI** | 三层 Skill 发现 | Agent 工具委托 | ✗ |
+| **Copilot CLI** | `.agent.yaml` 注入 | explore 代理（只读） | ✗ |
+
+> **实践建议**：设计 Skill 时，将**元数据层**（frontmatter）、**核心指令**（正文前半段）、**补充文件**（通过工具按需读取）分开。不要把所有信息都塞进 SKILL.md 正文——让 Agent 在执行过程中按需发现。
+
+---
+
 ## 证据来源
 
 | Agent | 来源 | 获取方式 |
