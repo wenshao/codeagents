@@ -215,6 +215,22 @@ done_messages ──→ 总 token > max_tokens (1024)?
 | 中触发 | Goose（80%）/ Kimi（85%） | 接近上限 | 平衡保留与安全 | 大会话可能来不及 |
 | 晚触发 | Claude Code（~95%） | 接近极限 | 保留最多上下文 | 紧急压缩、无验证时间 |
 
+### "Context Anxiety"上下文焦虑（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/harness-design-long-running-apps)，2026-03-24）
+
+Anthropic 工程团队在长任务 harness 开发中发现：**模型在上下文接近容量时会提前结束工作**——不是因为任务完成，而是因为"感知到"上下文即将耗尽。
+
+- **Sonnet 4.5**：context anxiety 严重，**单靠 compaction（原地摘要）不够**——因为 compaction 保持了连续性但没有给 Agent 一个"干净起点"，焦虑仍然持续。需要**完全重置上下文**（context reset，清空重来）才能保持长任务连贯性
+- **Opus 4.5**：**基本消除了此行为**（原文："Opus 4.5 largely removed that behavior on its own"），可以移除 context reset 机制
+
+> **Compaction vs Context Reset 的区别**（原文）：Compaction 是"原地摘要，保持连续性"；Context Reset 是"清空重来，代价是需要足够的交接信息让下一个 Agent 接手"。
+
+**这解释了压缩阈值差异的深层原因**：
+- Claude Code 设 ~95% 阈值——Opus 4.5 起 context anxiety 基本消除（"largely removed"），可以安全地晚触发
+- 如果使用 Sonnet 作为主模型，可能需要更早触发或使用 context reset
+- Gemini CLI 50% 阈值——可能 Gemini 模型也存在类似的 context anxiety
+
+> **实践建议**：压缩阈值不应只考虑"保留多少上下文"，还应考虑"模型在多少容量下开始焦虑"。不同模型的焦虑阈值不同。
+
 ### 验证步骤的价值
 
 只有 Gemini CLI 实现了独立验证（Phase 4 Probe）。其他所有工具都信任单次 LLM 输出。这是**成本与质量的核心权衡**——额外一次 LLM 调用的成本 vs 压缩质量提升。
