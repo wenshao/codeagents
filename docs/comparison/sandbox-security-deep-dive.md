@@ -338,6 +338,29 @@ Agent 动作
 
 **诚实的误报率**：auto mode 对真实危险操作的漏报率为 17%——这是 Anthropic 公开披露的数字，体现了透明度。
 
+### Prompt Injection 防御：Agents Rule of Two（来源：[Simon Willison](https://simonwillison.net/2025/Nov/2/new-prompt-injection-papers/)，2025-11-02）
+
+> "Prompt injection remains an unsolved problem, and attempts to block or filter them have not proven reliable enough to depend on."
+
+**致命三角（Lethal Trifecta）**——如果 Agent 同时满足以下三条，私有数据就可以被窃取：
+1. 访问私有数据
+2. 暴露给不受信任的内容
+3. 能够对外通信
+
+**Agents Rule of Two**：系统设计时最多满足上述三条中的两条。
+
+> "The current solution is to design systems with this in mind, and the Rule of Two is a solid way to think about that."
+
+**对 Code Agent 的映射**：
+
+| Agent | 私有数据访问 | 不受信任内容 | 对外通信 | 防御策略 |
+|------|------------|------------|---------|---------|
+| **Codex CLI** | ✓（代码） | ✓（用户输入） | **✗（网络沙箱）** | 切断对外通信 |
+| **Claude Code** | ✓（代码） | ✓（用户输入） | ✓（MCP/网络） | 双层分类器 + 沙箱 |
+| **Gemini CLI** | ✓（代码） | ✓（用户输入） | ✓（MCP） | seccomp + Conseca |
+
+> Codex CLI 的 OS 级网络隔离是唯一从架构上消除"致命三角"第三条的实现。
+
 ---
 
 ## 证据来源

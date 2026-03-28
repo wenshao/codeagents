@@ -258,6 +258,34 @@ FOUND WITHIN CHAT HISTORY"
 
 ---
 
+## Cursor：IDE Agent 的系统提示设计（来源：[blog.sshh.io](https://blog.sshh.io/p/how-cursor-ai-ide-works)，2025-03-16）
+
+Cursor 作为 IDE Agent 的代表，其系统提示设计与 CLI Agent 有本质区别：
+
+> "The trick to making a good AI IDE is figuring out what the LLM is good at and carefully designing the prompts and tools around their limitations."
+
+**工具注入方式**——不通过 API tool_use，而是在 prompt prefix 中注入：
+
+> "Rather than just filling in the assistant text, in the prefix we can prompt 'Say `read_file(path: str)` instead of responding if you need to read a file'."
+
+**架构**：Cursor 是完整的 VS Code fork（非插件），包含三层：VS Code fork + AI 模型编排层（支持 GPT-4/Claude/cursor-small）+ 上下文感知引擎（embeddings + AST 图谱）。
+
+**实际限制**：
+
+> "The apply-model is slow and error prone when editing extremely large files, break your files to be <500 LoC."
+
+### CLI Agent vs IDE Agent 系统提示设计差异
+
+| 维度 | CLI Agent（Claude Code 等） | IDE Agent（Cursor 等） |
+|------|--------------------------|----------------------|
+| 工具定义 | API 级 tool_use schema | Prompt 内联文本指令 |
+| 上下文来源 | CLAUDE.md + 文件系统探索 | AST 图谱 + embeddings + 打开的文件 |
+| 交互模式 | 完整对话历史 | Tab completion + inline diff |
+| 安全边界 | 28 BLOCK 规则 + 分类器 | IDE 沙箱 + 用户确认 |
+| 系统提示大小 | 大（8 模块，数千 tokens） | 小（聚焦当前编辑上下文） |
+
+---
+
 ## 证据来源
 
 | Agent | 来源 | 获取方式 |

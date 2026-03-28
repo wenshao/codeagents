@@ -236,6 +236,52 @@ Recipe 是 Goose 的 CI 等价物——参数化 YAML 模板 + Cron 调度。
 
 ---
 
+## 企业级部署数据（来源：多渠道综合）
+
+### 行业采用率
+
+| 数据点 | 来源 | 值 |
+|--------|------|-----|
+| 开发者使用/计划使用 AI 工具 | [Panto AI Statistics](https://www.getpanto.ai/blog/ai-coding-assistant-statistics)（2026-03） | **84%** |
+| 每日使用 AI 工具的开发者 | 同上 | **51%** |
+| 每周节省时间 | 同上 | **~3.6 小时/开发者** |
+| 合并代码中 AI 编写的比例 | 同上 | **22%** |
+| 企业应用包含 AI Agent | [Gartner](https://www.gartner.com/en/newsroom/press-releases/2025-08-26-gartner-predicts-40-percent-of-enterprise-apps-will-feature-task-specific-ai-agents-by-2026-up-from-less-than-5-percent-in-2025)（2025-08） | 5%（2025）→ **40%**（2026） |
+
+### 规模化部署建议（来源：[claude.com/blog/scaling-agentic-coding](https://claude.com/blog/scaling-agentic-coding)，2025-10-15）
+
+> "Rather than deploying to everyone at once or creating lengthy pilot phases, successful organizations build expertise incrementally."
+
+> "Start with a pilot group of 20-50 developers who already use AI-assisted tools."
+
+常见失败模式：
+
+> "New users sometimes give agentic tools overly broad tasks without sufficient context, leading to frustrating results."
+
+---
+
+## Agent 基础设施事故：Anthropic 事后分析（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/a-postmortem-of-three-recent-issues)，2025-09-17）
+
+Anthropic 公开了三次影响 Claude 质量的基础设施事故，对 Agent 可靠性有重要启示：
+
+**事故 1：上下文窗口路由错误**——请求被错误路由到不正确的服务器配置。
+
+> "At the worst impacted hour on August 31, 16% of Sonnet 4 requests were affected."
+
+**事故 2：输出损坏**——TPU 运行时优化 Bug 导致低概率 token 被赋予高概率。
+
+> "An issue caused by a runtime performance optimization occasionally assigned a high probability to tokens that should rarely be produced."
+
+**关键教训——内部评估未能捕获用户感知到的退化**：
+
+> "The evaluations we ran simply didn't capture the degradation users were reporting, in part because Claude often recovers well from isolated mistakes."
+
+> "Model quality is non-negotiable, so we accepted the minor efficiency impact."
+
+**对 CI/CD Agent 的启示**：Agent 在 CI 中自动运行时，基础设施问题可能导致间歇性失败但不被评估捕获——需要用户级别的质量监控，而非仅依赖自动化评估。
+
+---
+
 ## 证据来源
 
 | Agent | 来源 | 获取方式 |
