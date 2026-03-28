@@ -252,46 +252,25 @@ Copilot CLI 内置 `github-mcp-server`，但**默认不启用所有工具**：
 
 ## MCP 工具设计原则（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/writing-tools-for-agents)）
 
-Anthropic 在工具设计实践中发现：**MCP 赋予 Agent 数百个工具的能力，但工具数量多不等于质量高**。
+Anthropic 指出 MCP 赋予 Agent 数百个工具的能力，但工具数量多不等于质量高。关于通用的工具设计原则（合并优于增殖、命名空间策略、描述即 Prompt 工程），详见 [构建自己的 AI 编程 Agent：工具设计原则](../guides/build-your-own-agent.md#工具设计原则来源anthropic-engineering-blog)。
 
-> 原文："The Model Context Protocol (MCP) can empower LLM agents with potentially hundreds of tools to solve real-world tasks."
+以下聚焦于**MCP 特有的命名约定影响**：
 
-### 合并优于增殖
+### MCP 命名约定与模型工具选择
 
-> 原文："More tools don't always lead to better outcomes. Too many tools or overlapping tools can also distract agents from pursuing efficient strategies."
+> 原文："We have found selecting between prefix- and suffix-based namespacing to have non-trivial effects on tool-use evaluations."
 
-**对 MCP 服务器设计的具体影响**：
+各 Agent 的 MCP 命名约定差异**可能直接影响模型的工具选择准确率**：
 
-| 设计方式 | 工具数量 | Agent 效果 |
-|---------|---------|-----------|
-| 每个 API 端点一个 MCP 工具 | 多（10-50+） | 工具选择困难，上下文膨胀 |
-| 按任务合并为高阶工具 | 少（3-10） | 工具选择准确，token 效率高 |
+| Agent | 命名约定 | 分隔符 | 命名空间效果 |
+|------|---------|--------|------------|
+| **Claude Code** | `mcp__server__tool` | 双下划线 | 服务级命名空间清晰，无歧义 |
+| **Gemini CLI** | `mcp_{server}_{tool}` | 单下划线 | 与工具名内下划线冲突风险（如 `mcp_github_create_issue` 的边界在哪？） |
+| **Goose** | 标准 MCP 发现 | — | 无额外命名空间 |
 
-示例：与其提供 `get_customer_by_id`、`list_transactions`、`list_notes` 三个工具，不如合并为 `get_customer_context` 一个工具内部调用三个 API。
+Claude Code 选择双下划线可能正是为了避免 Gemini CLI 单下划线方案中服务名/工具名边界模糊的问题。这一设计选择值得 MCP 服务器开发者关注。
 
-### 命名空间与 MCP 命名约定
-
-> 原文："Namespacing tools by service and by resource can help agents select the right tools at the right time."
-
-这与各 Agent 的 MCP 工具命名约定直接相关：
-
-| Agent | 命名约定 | 命名空间效果 |
-|------|---------|------------|
-| **Claude Code** | `mcp__server__tool`（双下划线） | 服务级命名空间清晰 |
-| **Gemini CLI** | `mcp_{server}_{tool}`（单下划线） | 服务级命名空间，但与工具名内下划线冲突风险 |
-| **Goose** | 标准 MCP 发现 | 无额外命名空间 |
-
-> 原文关于前缀/后缀的发现："We have found selecting between prefix- and suffix-based namespacing to have non-trivial effects on tool-use evaluations."——这意味着 Claude Code 的双下划线 vs Gemini CLI 的单下划线选择**可能对模型的工具选择准确率有实际影响**。
-
-### 工具描述的 Prompt 工程
-
-MCP 工具的 `description` 字段本质上是面向模型的 prompt——微小改动会导致 Agent 行为的显著变化：
-
-- 返回**语义信息**（项目名称 `"codeagents"`）而非技术 ID（`"proj_abc123"`）
-- 实现**分页和过滤**，避免大量数据灌入上下文
-- 用简洁的描述写清**何时该用**这个工具，而非列出所有参数细节
-
-> **实践建议**：设计 MCP 服务器时，先问"工程师能否一眼判断该用哪个工具？"——如果人类分不清，模型更分不清。宁可合并为少量高阶工具，不要创建大量低阶工具。
+> **实践建议**：设计 MCP 服务器时，先问"工程师能否一眼判断该用哪个工具？"——如果人类分不清，模型更分不清。
 
 ---
 

@@ -361,6 +361,8 @@ Coding Agent（后续每次会话）
 }
 ```
 
+此外，Anthropic 还强调了功能测试列表的不可篡改性——防止 Agent 通过删除或修改测试来"伪造"进度：
+
 > 原文："It is unacceptable to remove or edit tests because this could lead to missing or buggy functionality."
 
 **各 Agent 的跨会话状态传递实现**：
@@ -372,9 +374,8 @@ Coding Agent（后续每次会话）
 | **Aider** | 递归摘要 `done_messages` | 仅上下文内（非文件） |
 | **Goose** | Recipe 配置 | ✗ |
 | **OpenHands** | EventStream 持久化 | 部分等价（事件日志） |
-| **自建 Harness** | `claude-progress.txt` + JSON feature list | **完整实现** |
 
-> **实践建议**：如果你在构建长任务多代理系统，务必实现类似 progress file 的机制。现有成品 Agent 的记忆系统（auto-memory、GEMINI.md）是轻量级替代，但缺少 JSON feature list 的"防提前完成"能力。
+> **自建 Harness 的完整实现**：如果你从零构建长任务多代理系统（如 Anthropic 的 Harness 方案），可以实现 `claude-progress.txt` + JSON feature list 的完整模式——这是目前最完备的跨会话状态传递方案，但需要自建 Harness 基础设施。现有成品 Agent 的记忆系统（auto-memory、GEMINI.md）是轻量级替代，但缺少 JSON feature list 的"防提前完成"能力。
 
 ### 隔离策略
 
