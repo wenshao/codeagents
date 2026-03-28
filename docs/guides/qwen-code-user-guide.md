@@ -251,7 +251,7 @@ Express + TypeScript + PostgreSQL + Prisma
 
 ### modelProviders 配置（自定义模型提供商）
 
-> 源码：`packages/core/src/models/types.ts`（ModelConfig 接口）
+> 源码：`packages/core/src/models/types.ts`（ModelConfig 接口）、`packages/core/src/core/contentGenerator.ts`（generationConfig）
 
 `modelProviders` 是 Qwen Code 最强大的配置项——可以接入任何 OpenAI 兼容 API、Anthropic、Gemini 以及本地模型。配置后通过 `/model` 切换。
 
@@ -278,8 +278,9 @@ Express + TypeScript + PostgreSQL + Prisma
 | `id` | string | **是** | 发送给 API 的模型 ID（如 `"gpt-4o"`、`"deepseek-chat"`） |
 | `name` | string | 否 | UI 显示名称（默认为 id） |
 | `description` | string | 否 | 模型描述 |
-| `envKey` | string | **是** | 存放 API Key 的**环境变量名**（如 `"OPENAI_API_KEY"`） |
+| `envKey` | string | 否 | 存放 API Key 的**环境变量名**（如 `"OPENAI_API_KEY"`）。自定义提供商通常需要，`qwen-oauth` 不需要 |
 | `baseUrl` | string | 否 | API 端点覆盖（自定义提供商必须） |
+| `capabilities` | object | 否 | 模型能力标记（如 `{ vision: true }`），预留字段 |
 | `generationConfig` | object | 否 | 生成参数（见下方） |
 
 **generationConfig 常用字段**：
@@ -290,8 +291,12 @@ Express + TypeScript + PostgreSQL + Prisma
 | `maxRetries` | 速率限制重试次数 |
 | `contextWindowSize` | 覆盖自动检测的上下文窗口大小 |
 | `enableCacheControl` | 启用缓存控制（DashScope 提供商） |
-| `reasoning` | 推理模式：`false` 或 `{ effort: "low"\|"medium"\|"high" }` |
-| `customHeaders` | 自定义 HTTP 头 |
+| `retryErrorCodes` | 自定义触发重试的 HTTP 状态码（`number[]`） |
+| `reasoning` | 推理模式：`false` 或 `{ effort?: "low"\|"medium"\|"high", budget_tokens?: number }` |
+| `schemaCompliance` | Schema 合规模式：`"auto"` 或 `"openapi_30"` |
+| `customHeaders` | 自定义 HTTP 头（`Record<string, string>`） |
+| `extra_body` | 额外请求体参数（仅 OpenAI 兼容，`Record<string, unknown>`） |
+| `modalities` | 输入模态控制（如 `{ image: true }`） |
 | `samplingParams` | 采样参数：`temperature`、`top_p`、`top_k`、`max_tokens` 等 |
 
 #### 常见提供商配置示例
