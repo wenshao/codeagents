@@ -252,7 +252,7 @@ Copilot CLI 内置 `github-mcp-server`，但**默认不启用所有工具**：
 
 ## MCP 工具设计原则（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/writing-tools-for-agents)）
 
-Anthropic 指出 MCP 赋予 Agent 数百个工具的能力，但工具数量多不等于质量高。关于通用的工具设计原则（合并优于增殖、命名空间策略、描述即 Prompt 工程），详见 [构建自己的 AI 编程 Agent：工具设计原则](../guides/build-your-own-agent.md#工具设计原则来源anthropic-engineering-blog)。
+Anthropic 指出 MCP 赋予 Agent 数百个工具的能力，但工具数量多不等于质量高。关于通用的工具设计原则（合并优于增殖、命名空间策略、描述即 Prompt 工程），详见[构建自己的 AI 编程 Agent](../guides/build-your-own-agent.md)中的「工具设计原则」章节。
 
 以下聚焦于**MCP 特有的命名约定影响**：
 

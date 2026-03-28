@@ -432,7 +432,7 @@ for await (const event of thread.runStreamed("运行测试验证")) {
 | SKILL.md 设计 | 每个子任务一个 Skill | 一个 Skill 编排完整工作流 |
 | Hook 设计 | 每个检查一个 Hook | 一个 Hook 脚本执行多项检查 |
 
-> **与 MCP 的关系**：Anthropic 指出 "MCP can empower LLM agents with potentially hundreds of tools"——但工具数量多不等于质量高。合并和命名空间策略对 MCP 工具同样适用。
+> **与 MCP 的关系**：Anthropic 指出 "MCP can empower LLM agents with potentially hundreds of tools"——但工具数量多不等于质量高。合并和命名空间策略对 MCP 工具同样适用。关于 MCP 命名约定（双下划线 vs 单下划线）对各 Agent 工具选择的具体影响，参见 [MCP 集成深度对比](../comparison/mcp-integration-deep-dive.md)中的「MCP 命名约定与模型工具选择」章节。
 
 ---
 
