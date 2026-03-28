@@ -440,6 +440,37 @@ for await (const event of thread.runStreamed("运行测试验证")) {
 
 ---
 
+## Agent 工程实践洞察
+
+### 反馈循环设计（来源：[Claude Agent SDK](https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk)，2025-09-29）
+
+> "Agents often operate in a specific feedback loop: gather context -> take action -> verify work -> repeat."
+
+**TypeScript 优于 JavaScript 的反馈质量**：
+
+> "It is usually better to generate TypeScript and lint it than it is to generate pure JavaScript because it provides you with multiple additional layers of feedback."
+
+**子代理的两个核心价值**：
+
+> "Subagents are useful for two main reasons. First, they enable parallelization...Second, they help manage context: subagents use their own isolated context windows, and only send relevant information back to the orchestrator."
+
+### 多代理项目的成本模型（来源：[Building a C Compiler](https://www.anthropic.com/engineering/building-c-compiler)，2026-02-05）
+
+| 维度 | 数据 |
+|------|------|
+| 会话数 | ~2,000 次 Claude Code 会话 |
+| API 成本 | ~$20,000 |
+| 代码量 | 100,000 行 Rust |
+| 产出 | 可编译 Linux 6.9（x86/ARM/RISC-V）的 C 编译器 |
+
+> "Agent teams show the possibility of implementing entire, complex projects autonomously. This allows us, as users of these tools, to become more ambitious with our goals."
+
+### 多代理系统的经济可行性（来源：[Multi-Agent Research System](https://www.anthropic.com/engineering/multi-agent-research-system)，2025-06-13）
+
+> "Agents typically use about 4x more tokens than chat interactions, and multi-agent systems use about 15x more tokens than chats. For economic viability, multi-agent systems require tasks where the value of the task is high enough to pay for the increased performance."
+
+---
+
 ## 相关资源
 
 ### 扩展开发

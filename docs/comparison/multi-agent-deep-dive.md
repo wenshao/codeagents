@@ -379,6 +379,34 @@ Coding Agent（后续每次会话）
 
 > **自建 Harness 的完整实现**：如果你从零构建长任务多代理系统（如 Anthropic 的 Harness 方案），可以实现 `claude-progress.txt` + JSON feature list 的完整模式——这是目前最完备的跨会话状态传递方案，但需要自建 Harness 基础设施。现有成品 Agent 的记忆系统（auto-memory、GEMINI.md）是轻量级替代，但缺少 JSON feature list 的"防提前完成"能力。
 
+### Anthropic 多代理研究系统：90.2% 提升（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/multi-agent-research-system)，2025-06-13）
+
+> "We found that a multi-agent system with Claude Opus 4 as the lead agent and Claude Sonnet 4 subagents outperformed single-agent Claude Opus 4 by 90.2% on our internal research eval."
+
+**成本模型**：
+
+> "Agents typically use about 4x more tokens than chat interactions, and multi-agent systems use about 15x more tokens than chats."
+
+**Token 使用解释了 80% 的性能差异**：
+
+> "Token usage by itself explains 80% of the variance, with the number of tool calls and the model choice as the two other explanatory factors."
+
+**工具测试代理**——Agent 自动改进其他 Agent 的工具描述：
+
+> "When given a flawed MCP tool, it attempts to use the tool and then rewrites the tool description to avoid failures...This process for improving tool ergonomics resulted in a 40% decrease in task completion time for future agents."
+
+### 构建 10 万行编译器：16 个并行 Claude 实例（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/building-c-compiler)，2026-02-05）
+
+> "Over nearly 2,000 Claude Code sessions and $20,000 in API costs, the agent team produced a 100,000-line compiler that can build Linux 6.9 on x86, ARM, and RISC-V."
+
+**关键工程经验**：
+
+| 问题 | 解决方案 |
+|------|---------|
+| **验证器必须近乎完美** | "Claude will work autonomously to solve whatever problem I give it. So it's important that the task verifier is nearly perfect, otherwise Claude will solve the wrong problem." |
+| **上下文窗口污染** | "The test harness should not print thousands of useless bytes. At most, it should print a few lines of output and log all important information to a file." |
+| **时间盲** | "Claude can't tell time and, left alone, will happily spend hours running tests instead of making progress." 解决方案：`--fast` 选项运行 1%-10% 随机采样 |
+
 ### 隔离策略
 
 | Agent | 隔离方式 | 上下文共享 |

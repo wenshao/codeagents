@@ -304,6 +304,30 @@ files.push(path.join(Global.Path.config, "AGENTS.md"));
 
 ---
 
+## Contextual Retrieval：检索失败率降低 67%（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/contextual-retrieval)，2024-09-19）
+
+Agent 记忆系统的底层技术——如何让检索更准确：
+
+> "Traditional RAG solutions remove context when encoding information, which often results in the system failing to retrieve the relevant information from the knowledge base."
+
+**解决方案**：在嵌入前为每个 chunk 添加上下文前缀：
+
+> "Contextual Retrieval solves this problem by prepending chunk-specific explanatory context to each chunk before embedding ('Contextual Embeddings') and creating the BM25 index ('Contextual BM25')."
+
+| 方案 | 检索失败率 | 降低幅度 |
+|------|-----------|---------|
+| 传统 RAG | 5.7% | — |
+| Contextual Embeddings + BM25 | 2.9% | -49% |
+| + Reranking | **1.9%** | **-67%** |
+
+**小知识库可以跳过 RAG**：
+
+> "If your knowledge base is smaller than 200,000 tokens (about 500 pages of material), you can just include the entire knowledge base in the prompt."
+
+**对 Agent 记忆系统的启示**：Claude Code 的 auto-memory（MEMORY.md < 200 行）和 Gemini CLI 的 GEMINI.md 本质上都是"小知识库直接注入 prompt"的策略——当记忆量小于 200K tokens 时，这比 RAG 更有效。
+
+---
+
 ## 证据来源
 
 | Agent | 来源 | 获取方式 |

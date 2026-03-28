@@ -251,6 +251,56 @@ AI 编辑 → 实际编译（Copilot） → 测试失败 → 反馈给 LLM（Aid
 
 ---
 
+## Agent 评估方法论（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)，2026-01-09）
+
+Anthropic 总结的 Agent 评估最佳实践，直接影响测试反射循环的设计：
+
+### 评估结果而非路径
+
+> "There is a common instinct to check that agents followed very specific steps like a sequence of tool calls in the right order. We've found this approach too rigid and results in overly brittle tests, as agents regularly find valid approaches that eval designers didn't anticipate."
+
+**对测试反射循环的启示**：Aider 的反射循环评估**测试是否通过**（结果），而非**修复步骤是否正确**（路径）——这与 Anthropic 的建议一致。
+
+### Eval-Driven Development
+
+> "Build evals to define planned capabilities before agents can fulfill them, then iterate until the agent performs well."
+
+### 0% 通过率 = 任务有 Bug
+
+> "With frontier models, a 0% pass rate across many trials (i.e. 0% pass@100) is most often a signal of a broken task, not an incapable agent."
+
+### 真实案例：评估 Bug 导致 42% → 95% 的跳跃
+
+> "Opus 4.5 initially scored 42% on CORE-Bench, until an Anthropic researcher found multiple issues: rigid grading that penalized '96.12' when expecting '96.124991...', ambiguous task specs, and stochastic tasks that were impossible to reproduce exactly. After fixing bugs...Opus 4.5's score jumped to 95%."
+
+## 基础设施噪声：基准分数波动 6 个百分点（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/infrastructure-noise)，2026）
+
+> "Infrastructure configuration can swing agentic coding benchmarks by several percentage points—sometimes more than the leaderboard gap between top models."
+
+> "In internal experiments, the gap between the most- and least-resourced setups on Terminal-Bench 2.0 was 6 percentage points (p < 0.01)."
+
+**对排行榜的启示**：
+
+> "Until resource methodology is standardized, our data suggests that leaderboard differences below 3 percentage points deserve skepticism until the eval configuration is documented and matched."
+
+> "A few-point lead might signal a real capability gap—or it might just be a bigger VM."
+
+## Think Tool：复杂推理中的暂停思考（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/claude-think-tool)，2025-03-20）
+
+Think Tool 让 Claude 在工具调用链中**暂停推理**，对测试验证场景有直接价值：
+
+> "Extended thinking is all about what Claude does before it starts generating a response...The 'think' tool is for Claude, once it starts generating a response, to add a step to stop and think about whether it has all the information it needs to move forward."
+
+| 场景 | 基线准确率 | Think Tool 准确率 | 提升 |
+|------|-----------|-----------------|------|
+| 航空客服 | 0.370 | 0.570 | **+54%** |
+| SWE-bench | 基线 | +1.6% | p < .001 |
+| MCP 大工具库（Opus 4） | 49% | 74% | +25pp |
+
+> "The 'think' tool is better suited for when Claude needs to...analyze tool outputs carefully in long chains of tool calls, navigate policy-heavy environments...or make sequential decisions where each step builds on previous ones and mistakes are costly."
+
+---
+
 ## 证据来源
 
 | Agent | 来源 | 获取方式 |
