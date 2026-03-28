@@ -341,7 +341,7 @@ Conseca 为每个提示生成动态安全策略，基于最小权限原则验证
 
 | Agent | 安全系统来源 |
 |------|-----------|
-| Claude Code | 二进制反编译：28 条 BLOCK 规则、22 Hook 事件、5 层设置、安全分类器 |
+| Claude Code | 二进制反编译：28 条 BLOCK 规则、24 Hook 事件、5 层设置、安全分类器 |
 | Codex CLI | 二进制分析 + 官方文档：三平台沙箱、审批模式、Guardian Approval |
 | Gemini CLI | 源码分析：TOML 策略引擎、Conseca LLM 安全、seccomp BPF、环境变量清洗 |
 | Goose | 源码分析：AdversaryInspector、RepetitionInspector、31 变量阻止 |

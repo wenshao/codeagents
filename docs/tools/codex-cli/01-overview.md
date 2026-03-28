@@ -3,7 +3,7 @@
 **开发者：** OpenAI
 **许可证：** Apache-2.0
 **仓库：** [github.com/openai/codex](https://github.com/openai/codex)
-**Stars：** 约 20k+
+**Stars：** ~68k
 **语言：** Rust（原生二进制）+ Node.js（薄启动层）
 **最后更新：** 2026-03
 

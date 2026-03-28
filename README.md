@@ -44,7 +44,7 @@
 | **OpenHands** | **125 万** | 70k |
 | **Aider** | 78 万 | 42k |
 | **Kimi CLI** | 45 万 | 7k |
-| **OpenCode** | — | **130k** |
+| **OpenCode** | — | **~12k**（已归档） |
 
 > **Stars ≠ 采用**：Gemini CLI Stars（99k）是 Claude Code（83k）的 1.2 倍，但 npm 下载仅其 **7%**。Copilot CLI 增长最猛（4 周 ↑240%）。
 
@@ -72,7 +72,7 @@
 
 | Agent | 开发者 | 许可证 | Stars | 语言 | 提供商 | 特色 |
 |------|--------|--------|-------|------|-------|------|
-| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | **130k** | Go + TS | 100+ | 多客户端（TUI+Web+桌面），37 LSP |
+| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | **~12k**（已归档） | TypeScript（Bun） | 100+ | 多客户端（TUI+Web+桌面），37 LSP |
 | [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | **99k** | TypeScript | 1 | 8 策略模型路由，TOML 策略引擎 |
 | [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | **83k** | Rust | 1 | 50ms 启动，24 Hook 事件，Channels |
 | [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | **70k** | Python | 100+ | Docker 沙箱，三层安全，多代理 |
@@ -120,7 +120,7 @@
 
 <details><summary><b>Agent 详情（源码级）— 8 个专题</b></summary>
 
-- **[Agent 索引](./docs/tools/)** — 16 个 Agent 的详细分析
+- **[Agent 索引](./docs/tools/)** — 18 个 Agent 的详细分析
 - **[Claude Code](./docs/tools/claude-code/)** — 7 篇（79 命令/架构/Skill+13 插件/24 Hook/会话）
 - **[Copilot CLI](./docs/tools/copilot-cli/)** — 3 篇（34 命令 + 67 工具 + 3 代理）
 - **[Codex CLI](./docs/tools/codex-cli/)** — 3 篇（28 命令 + 三平台沙箱）
@@ -204,7 +204,7 @@
 | Goose | **Rust** | ~55k 行 | MCP 原生，58+ 提供商 |
 | Gemini CLI | TypeScript | ~191k 行 | 8 策略路由，TOML 引擎 |
 | Qwen Code | TypeScript | ~191k 行 | Gemini 分叉 + Arena + 6+ 提供商 |
-| OpenCode | **Go + TS** | 983 TS + 359 TSX | 100+ Provider + 37 LSP + ACP |
+| OpenCode | **TypeScript（Bun）** | 983 TS + 359 TSX | 100+ Provider + 37 LSP + ACP |
 | Cline | TypeScript | ~40k 行 | Git Checkpoint + 48 提供商 |
 | SWE-agent | Python | ~20k 行 | ACI + Bundle 工具 |
 | OpenHands | Python | ~60k 行 | EventStream + 多代理 |

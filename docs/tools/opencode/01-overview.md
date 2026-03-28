@@ -4,7 +4,7 @@
 **许可证：** MIT
 **仓库：** [github.com/anomalyco/opencode](https://github.com/anomalyco/opencode)（npm: `opencode-ai`）
 **网站：** [opencode.ai](https://opencode.ai/)
-**Stars：** ~130k（454 贡献者，500 万月活开发者）
+**Stars：** ~12k（项目已于 2025-09 归档，后续项目为 Crush）
 **最后更新：** 2026-03
 
 ## 概述
