@@ -76,7 +76,7 @@ Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harn
 | **多代理** | 7~10 Discipline Agent | Teammates | 实验性 | 无 |
 | **模型路由** | 按任务类别自动路由 | 手动选择 | 无 | 手动选择 |
 | **编辑精度** | Hash-Anchored（LINE#ID） | Edit/MultiEdit | apply_patch | 继承 |
-| **Stars** | ~44K | N/A（闭源） | ~68K | ~12K |
+| **Stars** | ~44K | N/A（闭源） | ~68K | ~12K（已归档） |
 | **许可证** | SUL-1.0（自定义） | 专有 | Apache-2.0 | MIT |
 
 ## Harness Engineering 视角
@@ -93,20 +93,41 @@ Oh My OpenAgent 是 [Harness Engineering](../guides/build-your-own-agent.md) 概
 
 > **核心洞察**：Oh My OpenAgent 证明了 Harness 层可以在不修改底层 Agent（OpenCode）的情况下，通过编排、路由和工具增强带来显著的体验提升。这与 OpenAI Harness Engineering 文章的核心论点一致——"改进 Harness 可以在不更换模型的情况下带来显著性能提升"。
 
-## 注意事项
+## 安装
 
-- **非 OSI 标准许可证**：SUL-1.0（Sisyphus Use License）是自定义许可证，使用前需仔细审查条款
-- **基座项目已归档**：OpenCode（opencode-ai/opencode）已于 2025 年 9 月归档，项目迁移至 Crush（原作者 + Charm 团队）。Oh My OpenAgent 依赖一个已停止更新的基座，长期可持续性存在风险
-- **依赖 OpenCode**：本身不是独立 Agent，需要 OpenCode 作为基座
-- **宣传语气较强**：README 和文档有较强的营销风格，技术声明需独立验证
-- **AI 参与开发**：项目有 AI 贡献者账号（sisyphus-dev-ai，249 commits），maintainer 使用自己的 Agent 开发功能
+```bash
+bunx oh-my-openagent install
+```
 
-## 证据来源
+需要 Node 24（推荐）或 Node 22.16+。依赖 OpenCode 作为基座运行。
 
-| 来源 | 获取方式 |
-|------|---------|
-| [GitHub 仓库](https://github.com/code-yeongyu/oh-my-openagent) | 开源 |
-| [官方文档](https://ohmyopenagent.com/) | 官方网站 |
-| README.md + ARCHITECTURE.md | GitHub 直读 |
+## 优势
+
+1. **多代理编排**——7~10 个 Discipline Agent 按职能自动分工，Sisyphus 统一调度
+2. **多模型路由**——按任务类别自动选择最优模型（visual/deep/quick/ultrabrain）
+3. **Hash-Anchored Edit**——内容哈希验证编辑精确性，防止行号偏移
+4. **快速迭代**——多次日更，社区活跃（~44K Stars，4 个月）
+5. **Claude Code 兼容**——声称兼容 Claude Code hooks/commands/skills/MCPs/plugins
+
+## 劣势
+
+1. **基座已归档**——OpenCode（opencode-ai/opencode）于 2025 年 9 月归档，长期可持续性存在风险
+2. **非标准许可证**——SUL-1.0（Sisyphus Use License）非 OSI 标准，使用前需审查条款
+3. **依赖 OpenCode**——本身不是独立 Agent，无法脱离 OpenCode 运行
+4. **宣传语气较强**——技术声明（如"零过期行错误"）为项目自述，未经独立验证
+5. **AI 参与开发**——项目有 AI 贡献者账号（sisyphus-dev-ai），代码质量需额外关注
+
+## 使用场景
+
+- **最适合**：需要多模型路由 + 多代理编排的复杂项目，团队已熟悉 OpenCode
+- **适合**：想在不锁定单一模型的情况下使用 Claude/GPT/Gemini 等多种模型
+- **不太适合**：需要长期稳定维护的企业项目（基座已归档），对许可证有严格要求的场景
+
+## 资源链接
+
+- [GitHub 仓库](https://github.com/code-yeongyu/oh-my-openagent)
+- [官方文档](https://ohmyopenagent.com/)
+- [ClawHub Skill 市场](https://ohmyopenagent.com/clawhub)（如果存在）
+- [Discord 社区](https://discord.gg/oh-my-openagent)（项目主要沟通渠道）
 
 > **免责声明**：以上数据基于 2026 年 3 月分析，Stars/功能等数据可能已过时。技术声明（如"零过期行错误"）为项目自述，未经独立验证。
