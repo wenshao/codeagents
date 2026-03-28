@@ -42,7 +42,7 @@
 |------|----------|--------------|-------------------|
 | Claude Code | Rust | 原生 CLI | 代理式编程工具 |
 | Aider | Python | Git 原生 | 结对编程 |
-| Copilot CLI | Shell | 独立二进制 | 终端原生代理，GitHub 集成 |
+| Copilot CLI | TypeScript (Node.js SEA) | 独立二进制 | 终端原生代理，GitHub 集成 |
 | Cursor | TypeScript | IDE (VS Code) | AI 原生编辑器 |
 | SWE-agent | Python | Agent-Computer Interface | 基准性能 |
 | Cline | TypeScript | IDE 扩展 | 自主编码 |

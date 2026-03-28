@@ -10,7 +10,7 @@ Claude Code 在 2026 年已经不只是写代码的工具：
 Claude Code（Everything Code Agent）
   │
   ├── 编码能力（传统）
-  │   └── Read/Edit/Bash/Grep/Glob + 79 命令 + 14 编辑格式
+  │   └── Read/Edit/MultiEdit/Bash/Grep/Glob + ~79 命令 + 20+ 内置工具
   │
   ├── 外部世界连接（MCP 驱动）
   │   ├── 数据库查询（@modelcontextprotocol/server-postgres）
@@ -20,9 +20,9 @@ Claude Code（Everything Code Agent）
   │   └── 任何 API（自定义 MCP 服务器）
   │
   ├── 自动化（内置）
-  │   ├── /loop — 定时轮询（每 5 分钟检查部署状态）
+  │   ├── /loop — 定时轮询（默认间隔 10 分钟）
   │   ├── /schedule — Cron 定时（每天 9 点审查 PR）
-  │   └── Channels — 外部消息推送（Telegram/Discord）
+  │   └── Channels — 外部消息推送（Telegram/Discord，研究预览）
   │
   └── 团队协作
       ├── Teammates — AI-AI 多代理分工协作
@@ -37,7 +37,7 @@ Claude Code（Everything Code Agent）
 
 | 维度 | Everything Code Agent（终端原生） | IDE Agent（编辑器内嵌） | 混合型 |
 |------|-------------------------------|----------------------|--------|
-| **代表** | Claude Code、Codex CLI、Gemini CLI、Qwen Code、Aider、Copilot CLI、Kimi CLI | Cursor、Cline、Continue | Warp（终端替代）、Qoder CLI（ACP） |
+| **代表** | Claude Code、Codex CLI、Gemini CLI、Qwen Code、Aider、Copilot CLI、Kimi CLI | Cursor、Cline、Continue | Warp（Agentic Dev Env）、Qoder CLI（ACP） |
 | **核心定位** | **万能终端 Agent**（编码 + MCP 万物连接） | **编辑器增强**（补全 + 内联 + diff） | 终端 + IDE 桥接 |
 | **运行环境** | 终端进程 | IDE 扩展/内嵌 | 终端 + IDE |
 | **交互模式** | 对话式（prompt → 自主完成） | 内联式（补全 + diff 预览 + 侧边栏） | 混合 |
@@ -45,7 +45,9 @@ Claude Code（Everything Code Agent）
 | **自主性** | **高**（长链多步自主操作） | 中（需用户确认每步） | 高 |
 | **外部集成** | **MCP 协议**（连接任何外部系统） | 有限（IDE 内扩展） | 部分 |
 | **CI/CD** | **原生支持** | 通常不支持 | 部分 |
-| **启动速度** | 50ms~1.5s | 3~10s（Electron） | 亚秒级 |
+| **启动速度** | ~50ms（原生 Rust）~ ~1.5s（Node.js/Python） | 3~10s（Electron） | 亚秒级~数秒 |
+
+> **免责声明**：启动速度为本机实测数据（2026-03-26，`time <agent> --version`，3 次取中位数，Linux x86-64）。Claude Code v2.1.84、Codex CLI v0.116.0、Gemini CLI v0.34.0、Qwen Code v0.13.0。
 
 ---
 
@@ -152,27 +154,27 @@ Cursor 的交互方式：
 
 | Agent | 语言 | 启动 | 自主链长度 | CI 支持 | 独特能力 |
 |-------|------|------|----------|---------|---------|
-| **Claude Code** | Rust | **50ms** | 长（maxTurns 可配） | **`--bare` + stream-json** | 24 Hook + Prompt Hook + Channels |
+| **Claude Code** | Rust | **~50ms** | 长（maxTurns + --max-budget-usd） | **`--bare` + stream-json** | 24 Hook + Prompt Hook + Channels |
 | **Aider** | Python | ~1s | 3 次反射 | `--message` | 14 编辑格式 + Git 自动提交 |
-| **Codex CLI** | Rust | 76ms | 可配置 | 5 级审批 + Cloud | 三平台 OS 沙箱 |
-| **Gemini CLI** | TS | 1.5s | 100 轮 | TTY 自动检测 | 8 策略模型路由 |
-| **Qwen Code** | TS | 608ms | 100 轮 | `--non-interactive` | Arena 多模型竞争 |
-| **Copilot CLI** | Shell | 72ms | 可配置 | `-p` + Autopilot | 67 GitHub 工具 |
-| **Kimi CLI** | Python | ~1s | 100 步 | — | Wire 协议 + D-Mail |
+| **Codex CLI** | Rust | ~76ms | 4~5 级审批模式 | Cloud 远程执行（实验性） | 三平台 OS 沙箱（Windows 实验性） |
+| **Gemini CLI** | TS | ~1.5s | 100 轮 | TTY 自动检测 | 8 策略类（7 用户可见）模型路由 |
+| **Qwen Code** | TS | ~608ms | 100 轮（MAX_TURNS） | `--non-interactive` | Arena 多模型竞争 |
+| **Copilot CLI** | TS (Node.js SEA) | ~72ms | 可配置 | `-p` + Autopilot | 67 工具（12 核心 + 21 浏览器 + 48 平台） |
+| **Kimi CLI** | Python | ~1s | 100 步 | — | Wire 协议 + D-Mail（实验性，okabe 代理） |
 
 ### IDE Agent
 
 | Agent | 平台 | 代码补全 | 内联编辑 | 多文件编排 | 后台执行 | 独特能力 |
 |-------|------|---------|---------|-----------|---------|---------|
 | **Cursor** | VS Code 深度分叉 | **Tab**（最强） | **Cmd+K** | Composer | **Background Agent（云端）** | Rules(.mdc) + @ 引用 |
-| **Cline** | VS Code 扩展 | ✗ | WebView UI | ✓（subagent） | ✗ | **Git Checkpoint** + 24+ 工具 |
-| **Continue** | VS Code + JetBrains | **Tab** | ✗ | ✓ | ✗ | **PR Checks**（CI 审查规则） |
+| **Cline** | VS Code 扩展 | ✗ | WebView UI | ✓（只读子代理） | ✗ | **Git Checkpoint** + 26 工具 |
+| **Continue** | VS Code + JetBrains + CLI | **Tab** | ✗ | ✓ | ✗ | **PR Checks**（CI 审查规则） |
 
 ### 混合型
 
 | Agent | 类型 | 终端能力 | IDE 集成 | 独特定位 |
 |-------|------|---------|---------|---------|
-| **Warp** | 终端替代品 | GPU 渲染 + 块结构 | — | Oz Agent + Warp Drive 团队协作 |
+| **Warp** | Agentic Development Environment | GPU 渲染 + 块结构 | — | Oz Agent + Warp Drive 团队协作（Warp 2.0 四合一：Code/Agents/Terminal/Drive） |
 | **Qoder CLI** | CLI + ACP | Go 原生 43MB | **ACP 协议**（Zed/VS Code/JetBrains） | Quest 模式 + Experts 团队 |
 
 ---
@@ -187,7 +189,7 @@ Cursor 的交互方式：
 | **审批流程** | Claude 24 Hook + Gemini TOML + Codex 沙箱 | 弹窗确认 |
 | **企业管控** | managed-settings 远程下发 | Cursor Business 管理面板 |
 
-> Everything Agent 的安全模型显著更成熟——沙箱隔离、28 BLOCK 规则、策略引擎是 IDE Agent 没有的。
+> Everything Agent 的安全模型显著更成熟——沙箱隔离、28 BLOCK 规则（Claude Code）、TOML 策略引擎（Gemini CLI）是 IDE Agent 没有的。
 
 ---
 
@@ -198,7 +200,7 @@ Cursor 的交互方式：
 | **自动提交** | Aider（每次编辑自动 commit） | ✗（需手动） |
 | **检查点回退** | Claude Code（Esc）、Gemini CLI（/rewind 三选项） | Cline（Git Checkpoint 每步快照） |
 | **Worktree 隔离** | Claude Code Teammates（独立 worktree） | Cursor Background Agent（云端隔离） |
-| **归因系统** | Aider（Co-authored-by 三标志） | ✗ |
+| **归因系统** | Aider（Co-authored-by + 3 种归因选项） | ✗ |
 | **Git 命令** | Aider（/commit /undo /diff /git） | IDE Git 面板 |
 
 ---
@@ -260,7 +262,7 @@ Cursor 的交互方式：
 ## 八、未来趋势
 
 1. **Everything Agent 扩展边界**：Claude Code 从编码→MCP 万物连接→Channels 消息推送→Schedule 定时→Teammates 多代理——终端成为**通用 AI 操作中心**
-2. **IDE Agent 追赶自主性**：Cursor Background Agent（云端异步）和 Cline subagent（并行子代理）试图弥补自主性差距
+2. **IDE Agent 追赶自主性**：Cursor Background Agent（云端异步）和 Cline subagent（并行只读子代理）试图弥补自主性差距
 3. **ACP/MCP 协议融合**：Qoder CLI 的 ACP 试图标准化 CLI↔IDE 通信，MCP 已成为外部工具集成的事实标准
 4. **Agent 脱离本机**：Cursor Background Agent（云端 PR）、Claude Code Channels（Telegram 远程触发）、Codex Cloud（远程执行）——Agent 越来越不需要在本机运行
 5. **一个终端 = 一个 AI 团队**：Claude Code Teammates 让一个终端窗口同时运行多个 AI 代理协作，这是 IDE 范式难以复制的
@@ -273,10 +275,14 @@ Cursor 的交互方式：
 | Agent | 来源 | 获取方式 |
 |------|------|---------|
 | Claude Code | 二进制分析 v2.1.84 + `claude --help` | 本地二进制 |
-| Cursor | docs/tools/cursor-cli.md（476 行） | 官方文档 |
-| Cline | docs/tools/cline.md（151 行） | 开源 |
-| Continue | docs/tools/continue.md（190 行） | 开源 |
-| Warp | docs/tools/warp.md（382 行） | 官方文档 |
+| Cursor | docs/tools/cursor-cli.md | 官方文档 |
+| Cline | docs/tools/cline.md | 开源 |
+| Continue | docs/tools/continue.md | 开源 |
+| Warp | docs/tools/warp.md | 官方文档 |
 | Qoder CLI | docs/tools/qoder-cli/01-overview.md | Go 二进制分析 |
 | Aider | docs/tools/aider/ | 开源 |
-| Qwen Code | cli.js 二进制 strings v0.13.0 | npm 包分析 |
+| Qwen Code | docs/tools/qwen-code/ | 源码分析（Gemini CLI 分叉） |
+| Codex CLI | docs/tools/codex-cli/ | Rust 二进制分析 |
+| Gemini CLI | docs/tools/gemini-cli/ | 源码分析 |
+| Copilot CLI | docs/tools/copilot-cli/ | SEA 反编译 |
+| Kimi CLI | docs/tools/kimi-cli/ | 源码分析 |
