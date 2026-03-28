@@ -280,17 +280,17 @@ Cursor 的交互方式：
 
 ### OpenClaw：从消息平台到代码编辑
 
-[OpenClaw](https://openclaw.ai/)（原 Clawdbot/Moltbot，~340K GitHub Stars，MIT 协议）是一个通用 AI Agent 框架，以消息平台（WhatsApp/Telegram/Discord/Slack 等 12+）为主接口，通过 Skill 系统扩展到编程领域。
+[OpenClaw](https://openclaw.ai/)（原 Clawdbot/Moltbot，~340K GitHub Stars，MIT 协议）是一个通用 AI Agent 框架，以消息平台（WhatsApp/Telegram/Discord/Slack 等 22+）为主接口，通过 Skill 系统扩展到编程领域。
 
 ```
 OpenClaw（通用 Agent 框架）
   ├── 消息平台接口（22+ 平台）
-  │   └── WhatsApp / Telegram / Discord / Slack / Signal / iMessage
+  │   └── WhatsApp / Telegram / Discord / Slack / Signal / iMessage / Teams / Matrix / WeChat 等
   │
   ├── 常驻 Daemon 架构
   │   └── 持久化会话 + 跨对话记忆 + 心跳调度器
   │
-  ├── ~5,000+ Skill 市场（ClawHub，数量持续增长）
+  ├── ~5,000 Skill 市场（ClawHub，数量持续增长）
   │   ├── 编程 Skill（代码生成、文件操作、Shell 命令）
   │   ├── 自动化 Skill（邮件、日历、文件管理）
   │   ├── 数据分析 Skill
@@ -299,14 +299,14 @@ OpenClaw（通用 Agent 框架）
   └── 多模型后端（Claude / GPT / Ollama / vLLM / 本地模型）
 ```
 
-> **免责声明**：以上 OpenClaw 数据（Stars、Skill 数量、平台数）基于 2026 年 3 月分析，可能已过时。Skill 数量（~5,000+）为社区报告的估算值。
+> **免责声明**：以上 OpenClaw 数据（Stars、Skill 数量、平台数）基于 2026 年 3 月分析，可能已过时。Skill 数量（~5,000）为社区报告的估算值。
 
 ### 两个方向的对照
 
 | 维度 | Everything Code Agent → 通用 | 通用 Agent → 编程 |
 |------|---------------------------|-----------------|
 | **代表** | Claude Code 等（Qwen Code / Codex CLI / Gemini CLI 等 7+） | OpenClaw（Skill 市场） |
-| **核心优势** | 编程能力极深（以 Claude Code 为例：79 命令 + 20 工具 + 沙箱） | 平台连接极广（22+ 消息平台 + ~5000 Skill） |
+| **核心优势** | 编程能力极深（以 Claude Code 为例：79 命令 + 20 工具 + 沙箱） | 平台连接极广（22+ 消息平台 + ~5,000 Skill） |
 | **编程深度** | 专业级（Edit/MultiEdit + LSP 集成） | 基础级（文件操作 + Shell 命令） |
 | **外部集成** | MCP 协议（标准化工具连接） | Skill 市场（社区贡献） |
 | **运行模式** | 按需启动（会话制） | **常驻 Daemon**（始终在线） |
@@ -318,7 +318,7 @@ OpenClaw（通用 Agent 框架）
 从表面看，两个方向都在走向"万能 Agent"，并且在"消息触发 + 代码执行"等场景上正在交汇。但它们的核心优势来自不同方向：
 
 - **Everything Code Agent** 的核心能力是**深度代码理解**——Edit/MultiEdit 的 diff 精确性、仓库级上下文（Grep/Glob/Read）、安全沙箱（28 BLOCK 规则）、多代理代码审查。这些需要数万行专用代码。
-- **通用 Agent 框架** 的核心能力是**广度连接**——22+ 消息平台、~5000+ Skill、常驻 Daemon、跨应用自动化。编程只是 Skill 之一。
+- **通用 Agent 框架** 的核心能力是**广度连接**——22+ 消息平台、~5,000+ Skill、常驻 Daemon、跨应用自动化。编程只是 Skill 之一。
 
 > **类比**：Everything Code Agent 像一个**专科医生学了全科**（编程专精 + MCP 通用），通用 Agent 框架像一个**全科医生学了专科**（通用平台 + 编程 Skill）。两者都在扩展边界，但起点和深度不同。
 
@@ -362,4 +362,4 @@ OpenClaw（通用 Agent 框架）
 | Gemini CLI | docs/tools/gemini-cli/ | 源码分析 |
 | Copilot CLI | docs/tools/copilot-cli/ | SEA 反编译 |
 | Kimi CLI | docs/tools/kimi-cli/ | 源码分析 |
-| OpenClaw | 源码：`src/skills/`、`src/daemon/` | 开源（MIT） |
+| OpenClaw | 源码：`skills/`、`src/daemon/` | 开源（MIT） |
