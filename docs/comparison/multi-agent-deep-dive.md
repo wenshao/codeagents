@@ -320,7 +320,7 @@ Evaluator（评估）
 - 评估标准的措辞会**隐式引导 Generator**（如"museum quality"导致视觉趋同）
 - **Sprint 分解不是永恒的**——Sprint 最初用于所有模型（含 Opus 4.5），Opus 4.6 的长任务能力提升使得 Sprint 机制可以被完全移除（原文："I removed the sprint construct entirely"）
 
-### Progress File 模式：跨会话状态传递（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/building-effective-agents)）
+### Progress File 模式：跨会话状态传递（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)）
 
 Anthropic 在长任务 harness 开发中发现：多代理系统的关键挑战是**跨会话状态传递**——当上下文重置后，新 Agent 如何快速了解之前的工作进展？
 
@@ -340,11 +340,11 @@ Coding Agent（后续每次会话）
   → 修改 feature-list.json 中对应功能的 "passes": true
 ```
 
-> 原文："The key insight here was finding a way for agents to quickly understand the state of work when starting with a fresh context window, which is accomplished with the claude-progress.txt file alongside the git history."
+> "The key insight here was finding a way for agents to quickly understand the state of work when starting with a fresh context window, which is accomplished with the claude-progress.txt file alongside the git history. Inspiration for these practices came from knowing what effective software engineers do every day."
 
 **为什么用 JSON 而非 Markdown**：
 
-> 原文："The model is less likely to inappropriately change or overwrite JSON files compared to Markdown files."
+> "After some experimentation, we landed on using JSON for this, as the model is less likely to inappropriately change or overwrite JSON files compared to Markdown files."
 
 **Feature List 防止提前宣告胜利**：
 
@@ -363,7 +363,7 @@ Coding Agent（后续每次会话）
 
 此外，Anthropic 还强调了功能测试列表的不可篡改性——防止 Agent 通过删除或修改测试来"伪造"进度：
 
-> 原文："It is unacceptable to remove or edit tests because this could lead to missing or buggy functionality."
+> "We use strongly-worded instructions like 'It is unacceptable to remove or edit tests because this could lead to missing or buggy functionality.'"
 
 **各 Agent 的跨会话状态传递实现**：
 
