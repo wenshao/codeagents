@@ -580,3 +580,29 @@ pub struct ModelConfig {
 | **AG-UI** | 流式层 | Agent → 前端的标准化 SSE 事件流 |
 
 > A2A 是 MCP 的补充而非替代——"MCP provides helpful tools and context to agents; A2A lets agents talk to each other as opaque peers."
+
+### Harness Engineering：代理循环之上的环境设计（来源：[OpenAI Blog](https://openai.com/index/harness-engineering/)，2026-02-11）
+
+代理循环是 Agent 的内核，而 **Harness** 是包裹内核的外壳——决定了 Agent 在什么约束下、使用什么文档、通过什么反馈循环来工作。
+
+> "Humans steer. Agents execute."
+
+> "Give Codex a map, not a 1,000-page instruction manual."——AGENTS.md 作为导航地图指向 `docs/` 结构化文档，而非把所有信息塞进一个文件。
+
+**Harness vs 代理循环的关系**：
+
+```
+Harness（环境设计）
+  ├── 文档系统（AGENTS.md → docs/ 结构化文档）
+  ├── 架构约束（分层依赖规则、linter 检查）
+  ├── 反馈循环（测试失败 → Agent 自修复）
+  └── 熵管理（定期清理 Agent）
+      │
+      └── 代理循环（Agent 内核）
+            ├── 系统提示组装
+            ├── LLM API 调用
+            ├── 工具执行 + 权限检查
+            └── 上下文压缩
+```
+
+**关键实证**：LangChain Deep Agents 仅修改 Harness（不改模型），Terminal Bench 2.0 分数从 52.8% 提升到 66.5%——"改进 Harness 比改进底层模型产生更大的性能提升"。详见[构建自己的 AI 编程 Agent](../guides/build-your-own-agent.md)中的「Harness Engineering」章节。

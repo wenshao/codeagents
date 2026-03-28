@@ -48,6 +48,49 @@
 
 > **Anthropic 的 Harness 洞察**（[来源](https://www.anthropic.com/engineering/harness-design-long-running-apps)）："The space of interesting harness combinations doesn't shrink as models improve. Instead, it moves."——**Harness 的价值不会随模型进步消失，只会迁移**。今天需要的 Sprint 分解，明天可能不再需要；但新的 Harness 组件（如 Evaluator 校准、Context Anxiety 管理）会出现。选择"路径 B 成品扩展"不意味着不需要 Harness 思维——而是用 SKILL.md + Hooks 实现轻量级 Harness。
 
+### Harness Engineering：2026 年的新兴学科
+
+> "The primary job of engineering teams is no longer to write code, but to design environments, specify intent, and build feedback loops."
+> — [OpenAI: Harness Engineering](https://openai.com/index/harness-engineering/)，2026-02-11
+
+**Harness Engineering** 在 2026 年初由 OpenAI 正式命名，核心主张：**工程师的角色从写代码转变为设计 AI Agent 写代码的环境**。
+
+#### OpenAI 的实践数据
+
+OpenAI 内部团队用 Codex CLI 构建了一个完整产品——**零行手写代码**，约 100 万行生成代码，~1500 个 PR，平均每工程师每天 **3.5 个 PR**，耗时约为手写的 **1/10**。
+
+> "Building software still demands discipline, but the discipline shows up more in the scaffolding rather than the code."
+
+#### Harness 的五大支柱
+
+| 支柱 | 说明 | 对应成品 Agent 实现 |
+|------|------|-------------------|
+| **文档即系统** | AGENTS.md 作为导航地图，指向 `docs/` 详细文档 | CLAUDE.md / AGENTS.md / GEMINI.md |
+| **架构约束** | 严格分层规则，代码只能"向前依赖" | SKILL.md `allowed-tools`、TOML 策略 |
+| **反馈循环** | Agent 失败时识别缺失（工具/护栏/文档）并补充 | Hooks（PreToolUse/PostToolUse）、auto-lint |
+| **熵管理** | 定期运行"垃圾回收"Agent 清理文档不一致和约束违规 | `/loop`、`/schedule` 定时任务 |
+| **渐进自治** | Agent 从辅助到端到端，仅在需要判断时上报人类 | Auto mode（AI 分类器审批） |
+
+> "When the agent struggles, we treat it as a signal: identify what is missing -- tools, guardrails, documentation -- and feed it back into the repository."
+
+#### 关键实证发现
+
+| 来源 | 发现 |
+|------|------|
+| [Martin Fowler / Thoughtworks](https://martinfowler.com/articles/exploring-gen-ai/harness-engineering.html)（2026-02-17） | Harness 三要素：上下文工程、架构约束、熵管理 |
+| [NxCode](https://www.nxcode.io/resources/news/harness-engineering-complete-guide-ai-agent-codex-2026) | LangChain Deep Agents 仅修改 Harness（不改模型），Terminal Bench 2.0 从 **52.8% → 66.5%** |
+| [Pragmatic Engineer](https://newsletter.pragmaticengineer.com/p/how-codex-is-built)（2026-02-17） | Codex 自身 90%+ 代码由 Codex 生成；工程师角色="Agent 管理者"，同时运行 4-8 个并行 Agent |
+
+> **核心洞察**："改进 Harness 比改进底层模型产生更大的性能提升。"——这意味着无论你选择哪条路径（SDK 框架 / 成品扩展 / Agent SDK），Harness 设计才是真正的技术壁垒。
+
+#### 对三条路径的影响
+
+| 路径 | Harness 实现方式 |
+|------|----------------|
+| **路径 A（SDK 框架）** | 完全自建 Harness（最大灵活性，最高成本）|
+| **路径 B（成品扩展）** | 用 AGENTS.md + SKILL.md + Hooks 实现轻量 Harness |
+| **路径 C（Agent SDK）** | 继承 Claude/Codex 的 Harness 能力（工具集、权限、压缩）|
+
 ---
 
 ## 选择决策树
