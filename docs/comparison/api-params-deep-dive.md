@@ -232,7 +232,7 @@ pub struct ModelConfig {
 
 ---
 
-## 八、LLM SDK 生态
+## 七、LLM SDK 生态
 
 | SDK | 使用者 | 提供商覆盖 |
 |-----|--------|-----------|

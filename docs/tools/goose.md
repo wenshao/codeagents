@@ -4,7 +4,7 @@
 **许可证：** Apache-2.0
 **仓库：** [github.com/block/goose](https://github.com/block/goose)
 **文档：** [block.github.io/goose](https://block.github.io/goose/docs/quickstart/)
-**Stars：** 约 27k+
+**Stars：** ~33k
 **最后更新：** 2026-03
 
 ## 概述
