@@ -385,7 +385,9 @@ for await (const event of thread.runStreamed("运行测试验证")) {
 
 ### 合并优于增殖
 
-> "More tools don't always lead to better outcomes. Too many tools or overlapping tools can also distract agents from pursuing efficient strategies."
+> "More tools don't always lead to better outcomes."
+
+> "Too many tools or overlapping tools can also distract agents from pursuing efficient strategies."
 
 **反面案例**：为每个 API 端点创建独立工具（`list_users`、`list_events`、`create_event`）。
 
@@ -408,7 +410,7 @@ for await (const event of thread.runStreamed("运行测试验证")) {
 
 **命名前缀 vs 后缀的选择会影响模型性能**：
 
-> "We have found selecting between prefix- and suffix-based namespacing to have non-trivial effects on tool-use evaluations."
+> "We have found selecting between prefix- and suffix-based namespacing to have non-trivial effects on our tool-use evaluations."
 
 | 命名方式 | 示例 | 适用场景 |
 |---------|------|---------|
