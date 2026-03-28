@@ -320,7 +320,9 @@ Evaluator（评估）
 - 评估标准的措辞会**隐式引导 Generator**（如"museum quality"导致视觉趋同）
 - **Sprint 分解不是永恒的**——Sprint 最初用于所有模型（含 Opus 4.5），Opus 4.6 的长任务能力提升使得 Sprint 机制可以被完全移除（原文："I removed the sprint construct entirely"）
 
-### Progress File 模式：跨会话状态传递（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)）
+### Progress File 模式：跨会话状态传递（来源：[Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)，Justin Young，2025-11-26）
+
+> **注**：本节来源与上方 GAN 式评估章节（[Harness Design for Long-Running Application Development](https://www.anthropic.com/engineering/harness-design-long-running-apps)，Prithvi Rajasekaran，2026-03-24）是**两篇独立文章**。前者聚焦长任务 Agent 的运维实践（Progress File、Feature List、Incremental Commit），后者聚焦多代理评估架构（Planner→Generator→Evaluator）。两者互为补充但方案不同。
 
 Anthropic 在长任务 harness 开发中发现：多代理系统的关键挑战是**跨会话状态传递**——当上下文重置后，新 Agent 如何快速了解之前的工作进展？
 
