@@ -9,11 +9,13 @@
 ```
 Everything Code Agent（各 Agent 差异化扩展）
   │
-  ├── 编码能力（所有 Agent 共享）
-  │   └── Read/Edit/Bash/Grep/Glob + 斜杠命令 + 内置工具
+  ├── 编码能力（各 Agent 16~79 斜杠命令 + 16~20+ 内置工具）
+  │   └── Read/Edit/MultiEdit(Bash)/Grep/Glob + 专用工具
   │
   ├── 外部世界连接（MCP 驱动）
-  │   ├── 数据库查询、项目管理、团队通知、监控告警
+  │   ├── 数据库查询（如 @modelcontextprotocol/server-postgres)
+  │   ├── 项目管理（Jira/Linear MCP)、团队通知(Slack/Teams MCP)
+  │   ├── 监控/告警(Grafana/Datadog MCP)
   │   └── Claude Code / Qwen Code / Gemini CLI / Kimi CLI / Copilot CLI 均支持
   │
   ├── 各 Agent 的差异化扩展
@@ -104,6 +106,8 @@ Everything Code Agent（各 Agent 差异化扩展）
 | 理解**未知代码库** | **高**（Grep/Glob） | 低（依赖用户导航） |
 | 根据**光标位置**补全 | 不支持 | **极高**（Tab 补全） |
 | **查 Grafana 告警→修 Bug→通知** | **✓（MCP 全链路）** | ✗（无外部系统集成） |
+| **每天 9 点自动审查 PR** | **✓（Claude Code /schedule cron）** | ✗（无定时任务） |
+| **Telegram 远程触发任务** | **✓（Claude Code Channels）** | ✗ |
 | **Arena 多模型竞争选优** | **✓（Qwen Code）** | ✗ |
 | **GitHub PR/Issue 原生操作** | **✓（Copilot CLI）** | ✗（需浏览器） |
 
