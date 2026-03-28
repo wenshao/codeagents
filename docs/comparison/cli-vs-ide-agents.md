@@ -340,7 +340,7 @@ OpenClaw（通用 Agent 框架）
 4. **ACP/MCP 协议融合**：Qoder CLI 的 ACP 试图标准化 CLI↔IDE 通信，MCP 已成为外部工具集成的事实标准
 5. **Agent 脱离本机**：Cursor Background Agent（云端 PR）、Codex Cloud（远程执行）、Qwen Code Arena（多模型并行）——Agent 越来越不需要在本机运行
 6. **Terminal in IDE 是最佳妥协**：VS Code 集成终端运行 Claude Code / Qwen Code / Codex CLI，同时享受 IDE 补全和 Agent 自主性
-7. **通用 Agent 与专用 Agent 的边界模糊**：OpenClaw（~300K Stars）从消息平台切入编程，Claude Code 从编程扩展到 Telegram/Discord——两个方向在"消息触发 + 代码执行"场景上正在交汇
+7. **通用 Agent 与专用 Agent 的边界模糊**：OpenClaw（~300K+ Stars）从消息平台切入编程，Claude Code 从编程扩展到 Telegram/Discord——两个方向在"消息触发 + 代码执行"场景上正在交汇
 
 ---
 
