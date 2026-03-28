@@ -219,12 +219,14 @@ done_messages ──→ 总 token > max_tokens (1024)?
 
 Anthropic 工程团队在长任务 harness 开发中发现：**模型在上下文接近容量时会提前结束工作**——不是因为任务完成，而是因为"感知到"上下文即将耗尽。
 
-- **Sonnet 4.5**：context anxiety 严重，单靠压缩不够，需要**完全重置上下文**（context reset）才能保持长任务连贯性
-- **Opus 4.6**：不再有此问题，SDK 自动压缩即可处理
+- **Sonnet 4.5**：context anxiety 严重，**单靠 compaction（原地摘要）不够**——因为 compaction 保持了连续性但没有给 Agent 一个"干净起点"，焦虑仍然持续。需要**完全重置上下文**（context reset，清空重来）才能保持长任务连贯性
+- **Opus 4.5**：**基本消除了此行为**（原文："Opus 4.5 largely removed that behavior on its own"），可以移除 context reset 机制
+
+> **Compaction vs Context Reset 的区别**（原文）：Compaction 是"原地摘要，保持连续性"；Context Reset 是"清空重来，代价是需要足够的交接信息让下一个 Agent 接手"。
 
 **这解释了压缩阈值差异的深层原因**：
-- Claude Code 设 ~95% 阈值——因为 Opus 4.6 不焦虑，可以安全地晚触发
-- 如果使用 Sonnet 作为主模型，可能需要更早触发（如 ECC 推荐的 50%）
+- Claude Code 设 ~95% 阈值——新模型（Opus 4.5+）不焦虑，可以安全地晚触发
+- 如果使用 Sonnet 作为主模型，可能需要更早触发或使用 context reset
 - Gemini CLI 50% 阈值——可能 Gemini 模型也存在类似的 context anxiety
 
 > **实践建议**：压缩阈值不应只考虑"保留多少上下文"，还应考虑"模型在多少容量下开始焦虑"。不同模型的焦虑阈值不同。
