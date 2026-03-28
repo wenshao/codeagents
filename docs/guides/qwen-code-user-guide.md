@@ -249,6 +249,183 @@ Express + TypeScript + PostgreSQL + Prisma
 }
 ```
 
+### modelProviders 配置（自定义模型提供商）
+
+> 源码：`packages/core/src/models/types.ts`（ModelConfig 接口）
+
+`modelProviders` 是 Qwen Code 最强大的配置项——可以接入任何 OpenAI 兼容 API、Anthropic、Gemini 以及本地模型。配置后通过 `/model` 切换。
+
+**配置位置**：`~/.qwen/settings.json`（用户级）或 `.qwen/settings.json`（项目级）
+
+**顶层结构**：
+
+```json
+{
+  "modelProviders": {
+    "openai": [ /* OpenAI 兼容的模型列表 */ ],
+    "anthropic": [ /* Anthropic 模型列表 */ ],
+    "gemini": [ /* Google Gemini 模型列表 */ ]
+  }
+}
+```
+
+三个 `authType` 键决定使用哪个 SDK：`openai`（OpenAI SDK）、`anthropic`（Anthropic SDK）、`gemini`（Google GenAI SDK）。DeepSeek、OpenRouter、Ollama 等 OpenAI 兼容服务都使用 `openai` 键。
+
+**ModelConfig 字段**：
+
+| 字段 | 类型 | 必须 | 说明 |
+|------|------|------|------|
+| `id` | string | **是** | 发送给 API 的模型 ID（如 `"gpt-4o"`、`"deepseek-chat"`） |
+| `name` | string | 否 | UI 显示名称（默认为 id） |
+| `description` | string | 否 | 模型描述 |
+| `envKey` | string | **是** | 存放 API Key 的**环境变量名**（如 `"OPENAI_API_KEY"`） |
+| `baseUrl` | string | 否 | API 端点覆盖（自定义提供商必须） |
+| `generationConfig` | object | 否 | 生成参数（见下方） |
+
+**generationConfig 常用字段**：
+
+| 字段 | 说明 |
+|------|------|
+| `timeout` | 请求超时（毫秒） |
+| `maxRetries` | 速率限制重试次数 |
+| `contextWindowSize` | 覆盖自动检测的上下文窗口大小 |
+| `enableCacheControl` | 启用缓存控制（DashScope 提供商） |
+| `reasoning` | 推理模式：`false` 或 `{ effort: "low"\|"medium"\|"high" }` |
+| `customHeaders` | 自定义 HTTP 头 |
+| `samplingParams` | 采样参数：`temperature`、`top_p`、`top_k`、`max_tokens` 等 |
+
+#### 常见提供商配置示例
+
+**DashScope（阿里云百炼编码计划）**：
+
+```json
+{
+  "modelProviders": {
+    "openai": [{
+      "id": "qwen3-coder-plus",
+      "name": "Qwen3-Coder-Plus（百炼）",
+      "envKey": "BAILIAN_CODING_PLAN_API_KEY",
+      "baseUrl": "https://coding.dashscope.aliyuncs.com/v1"
+    }]
+  }
+}
+```
+
+**DeepSeek（OpenAI 兼容）**：
+
+```json
+{
+  "modelProviders": {
+    "openai": [{
+      "id": "deepseek-chat",
+      "name": "DeepSeek Chat",
+      "envKey": "DEEPSEEK_API_KEY",
+      "baseUrl": "https://api.deepseek.com/v1"
+    }]
+  }
+}
+```
+
+**OpenRouter（100+ 模型聚合）**：
+
+```json
+{
+  "modelProviders": {
+    "openai": [{
+      "id": "openai/gpt-4o",
+      "name": "GPT-4o（OpenRouter）",
+      "envKey": "OPENROUTER_API_KEY",
+      "baseUrl": "https://openrouter.ai/api/v1"
+    }]
+  }
+}
+```
+
+**Ollama（本地模型，无需付费）**：
+
+```json
+{
+  "modelProviders": {
+    "openai": [{
+      "id": "qwen2.5-7b",
+      "name": "Qwen2.5 7B（本地）",
+      "envKey": "OLLAMA_API_KEY",
+      "baseUrl": "http://localhost:11434/v1",
+      "generationConfig": {
+        "timeout": 300000,
+        "contextWindowSize": 32768
+      }
+    }]
+  }
+}
+```
+
+> Ollama 不需要真实 API Key，设置任意占位值即可：`export OLLAMA_API_KEY="ollama"`
+
+**Anthropic（Claude 系列）**：
+
+```json
+{
+  "modelProviders": {
+    "anthropic": [{
+      "id": "claude-sonnet-4-5",
+      "name": "Claude Sonnet 4.5",
+      "envKey": "ANTHROPIC_API_KEY",
+      "generationConfig": {
+        "contextWindowSize": 200000
+      }
+    }]
+  }
+}
+```
+
+**Google Gemini**：
+
+```json
+{
+  "modelProviders": {
+    "gemini": [{
+      "id": "gemini-2.5-flash",
+      "name": "Gemini 2.5 Flash",
+      "envKey": "GEMINI_API_KEY",
+      "generationConfig": {
+        "contextWindowSize": 1000000
+      }
+    }]
+  }
+}
+```
+
+#### 多提供商组合配置
+
+```json
+{
+  "modelProviders": {
+    "openai": [
+      { "id": "gpt-4o", "name": "GPT-4o", "envKey": "OPENAI_API_KEY" },
+      { "id": "deepseek-chat", "name": "DeepSeek", "envKey": "DEEPSEEK_API_KEY", "baseUrl": "https://api.deepseek.com/v1" },
+      { "id": "qwen2.5-7b", "name": "Qwen 本地", "envKey": "OLLAMA_API_KEY", "baseUrl": "http://localhost:11434/v1" }
+    ],
+    "anthropic": [
+      { "id": "claude-sonnet-4-5", "name": "Claude Sonnet 4.5", "envKey": "ANTHROPIC_API_KEY" }
+    ],
+    "gemini": [
+      { "id": "gemini-2.5-flash", "name": "Gemini Flash", "envKey": "GEMINI_API_KEY" }
+    ]
+  }
+}
+```
+
+配置完成后通过 `/model` 命令切换，所有配置的模型都会出现在选择列表中。
+
+#### 注意事项
+
+- **API Key 不存储在配置中**——`envKey` 引用的是环境变量名，运行时从 `process.env` 读取
+- **同一 authType 内不支持重复 id**——首个生效，后续重复跳过并发出警告
+- **项目级覆盖用户级**——`.qwen/settings.json` 的 `modelProviders` **完全替换**（非合并）`~/.qwen/settings.json` 的同名配置
+- **无效 authType 键静默忽略**——拼写错误（如 `"openai-custom"`）不会报错也不会生效
+- **`qwen-oauth` 不可覆盖**——内置的 OAuth 免费层无法通过 modelProviders 自定义
+
 ### 权限模式
 
 ```bash
