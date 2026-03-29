@@ -161,7 +161,16 @@ description: 部署到测试环境
 3. 使用 {{args}} 作为目标环境参数
 ```
 
-支持变量：`{{args}}`（参数注入）、`!{command}`（Shell 命令）、`@{filepath}`（文件内容）。项目级命令优先于用户级。
+支持变量（处理顺序：`@{...}` → `!{...}` → `{{args}}`）：
+- `{{args}}`——参数注入
+- `!{command}`——Shell 命令执行
+- `@{filepath}`——文件内容注入
+
+**目录映射规则**：`commands/git/commit.md` → `/git:commit`
+
+> **注**：TOML 格式命令文件已弃用但仍受支持，便于旧命令迁移。`!` 命令执行时自动设置 `QWEN_CODE=1` 环境变量。`@` 路径含空格时用 `\` 转义（如 `@My\ Documents/file.txt`）。
+
+项目级命令优先于用户级。
 
 ## CLI 参数
 

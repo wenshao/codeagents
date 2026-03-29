@@ -100,7 +100,8 @@ qwen extensions install <gemini-extension-github-url>
   "version": "1.0.0",
   "mcpServers": {
     "my-server": {
-      "command": "node my-server.js"
+      "command": "node",
+      "args": ["my-server.js"]
     }
   },
   "contextFileName": "QWEN.md",

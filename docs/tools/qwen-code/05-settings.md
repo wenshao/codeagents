@@ -25,7 +25,9 @@
 
 > **环境变量引用**：`settings.json` 中字符串值支持 `$VAR_NAME` 或 `${VAR_NAME}` 语法引用环境变量。
 
-## 完整设置项参考
+## 设置项参考
+
+> 以下覆盖官方文档中的所有分类。路径可通过 `QWEN_CODE_SYSTEM_DEFAULTS_PATH` 和 `QWEN_CODE_SYSTEM_SETTINGS_PATH` 环境变量覆盖。
 
 ### general（常规）
 
@@ -38,6 +40,12 @@
 | `general.checkpointing.enabled` | boolean | `false` | 启用会话检查点（支持恢复） |
 | `general.defaultFileEncoding` | string | `"utf-8"` | 新建文件编码（`"utf-8"` 或 `"utf-8-bom"`） |
 
+### output（输出）
+
+| 设置 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `output.format` | string | `"text"` | CLI 输出格式：`"text"` 或 `"json"` |
+
 ### model（模型）
 
 | 设置 | 类型 | 默认值 | 说明 |
@@ -46,6 +54,7 @@
 | `model.maxSessionTurns` | number | `-1` | 单次会话最大交互轮数（-1 无限制） |
 | `model.generationConfig` | object | — | 高级生成参数（详见用户指南 modelProviders 章节） |
 | `model.chatCompression.contextPercentageThreshold` | number | `0.7` | 压缩触发阈值（0~1，0.7 = 70%）。设为 0 禁用压缩 |
+| `model.skipNextSpeakerCheck` | boolean | `false` | 跳过下一轮发言者检查 |
 | `model.skipLoopDetection` | boolean | `false` | 禁用循环检测（频繁误报时可启用） |
 | `model.skipStartupContext` | boolean | `false` | 跳过启动时发送工作区上下文 |
 | `model.enableOpenAILogging` | boolean | `false` | 启用 OpenAI API 调用日志 |
@@ -61,11 +70,20 @@
 | `ui.hideBanner` | boolean | `false` | 隐藏横幅 |
 | `ui.hideFooter` | boolean | `false` | 隐藏底部页脚 |
 | `ui.showLineNumbers` | boolean | `true` | 代码块显示行号 |
+| `ui.showMemoryUsage` | boolean | `false` | 显示内存使用量 |
 | `ui.showCitations` | boolean | `true` | 显示引用来源 |
+| `ui.hideWindowTitle` | boolean | `false` | 隐藏窗口标题栏 |
 | `ui.accessibility.enableLoadingPhrases` | boolean | `true` | 加载状态提示语（无障碍时禁用） |
 | `ui.accessibility.screenReader` | boolean | `false` | 屏幕阅读器模式 |
 | `ui.customWittyPhrases` | string[] | `[]` | 自定义加载提示语列表 |
-| `enableWelcomeBack` | boolean | `true` | 返回项目时显示"欢迎回来"对话框 |
+| `ui.enableWelcomeBack` | boolean | `true` | 返回项目时显示"欢迎回来"对话框 |
+
+### ide（IDE 集成）
+
+| 设置 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `ide.enabled` | boolean | `false` | 启用 IDE 集成模式 |
+| `ide.hasSeenNudge` | boolean | `false` | 用户是否已看到 IDE 提示 |
 
 ### tools（工具）
 
@@ -73,11 +91,16 @@
 |------|------|--------|------|
 | `tools.approvalMode` | string | `"default"` | 审批模式：`plan`/`default`/`auto-edit`/`yolo` |
 | `tools.sandbox` | boolean/string | — | 沙箱环境（`true`/`false`/`"docker"`/`"podman"`） |
+| `tools.shell.enableInteractiveShell` | boolean | `false` | 使用 node-pty 交互式 Shell |
 | `tools.core` | string[] | — | 内置工具白名单（支持命令级限制） |
 | `tools.exclude` | string[] | — | 排除工具黑名单 |
 | `tools.allowed` | string[] | — | 跳过确认的工具列表 |
+| `tools.discoveryCommand` | string | — | 工具发现命令 |
+| `tools.callCommand` | string | — | 自定义工具调用命令 |
 | `tools.useRipgrep` | boolean | `true` | 使用 ripgrep 搜索 |
+| `tools.useBuiltinRipgrep` | boolean | `true` | 使用内置 ripgrep 二进制（`false` 时用系统 `rg`） |
 | `tools.truncateToolOutputThreshold` | number | `25000` | 工具输出截断字符数 |
+| `tools.truncateToolOutputLines` | number | `1000` | 截断时保留最大行数 |
 
 > **安全提示**：`tools.exclude` 中对 Shell 的命令级限制基于简单字符串匹配，易被绕过。建议用 `tools.core` 显式声明允许的命令。
 
@@ -89,6 +112,8 @@
 | `context.includeDirectories` | string[] | `[]` | 额外包含的目录（最多 5 个） |
 | `context.fileFiltering.respectGitIgnore` | boolean | `true` | 搜索时遵守 .gitignore |
 | `context.fileFiltering.respectQwenIgnore` | boolean | `true` | 搜索时遵守 .qwenignore |
+| `context.importFormat` | string | — | 导入记忆时使用的格式 |
+| `context.loadFromIncludeDirectories` | boolean | `false` | `/memory refresh` 是否从所有目录加载 QWEN.md |
 | `context.fileFiltering.enableFuzzySearch` | boolean | `true` | 启用模糊搜索（大项目可禁用提升性能） |
 | `context.fileFiltering.enableRecursiveFileSearch` | boolean | `true` | @ 补全时递归搜索文件 |
 
@@ -105,8 +130,17 @@
 | `headers` | object | 自定义 HTTP 头 |
 | `timeout` | number | 超时（毫秒） |
 | `trust` | boolean | 信任服务器（跳过确认） |
+| `description` | string | 服务器描述 |
 | `includeTools` | string[] | 工具白名单 |
 | `excludeTools` | string[] | 工具黑名单（优先于 includeTools） |
+
+### mcp（MCP 全局配置）
+
+| 设置 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `mcp.serverCommand` | string | — | 启动 MCP 服务器的命令 |
+| `mcp.allowed` | string[] | — | 允许连接的 MCP 服务器白名单 |
+| `mcp.excluded` | string[] | — | 禁止连接的黑名单（优先于 allowed） |
 
 > 优先级：`httpUrl` > `url` > `command`
 
@@ -118,9 +152,29 @@
 | `security.folderTrust.enabled` | 文件夹信任（默认 `false`） |
 | `security.auth.selectedType` | 当前认证类型 |
 | `security.auth.enforcedType` | 强制认证类型（企业用） |
+| `security.auth.useExternal` | 使用外部认证流程 |
+
+### advanced（高级）
+
+| 设置 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `advanced.autoConfigureMemory` | boolean | `false` | 自动配置 Node.js 内存限制 |
+| `advanced.dnsResolutionOrder` | string | — | DNS 解析顺序 |
+| `advanced.excludedEnvVars` | string[] | `["DEBUG","DEBUG_MODE"]` | 从项目上下文排除的环境变量 |
+| `advanced.bugCommand` | object | — | `/bug` 命令 URL 覆盖 |
+| `advanced.tavilyApiKey` | string | — | Tavily Web 搜索 API Key（旧格式） |
+
+### telemetry（遥测）
+
+| 设置 | 说明 |
+|------|------|
 | `telemetry.enabled` | 遥测开关 |
 | `telemetry.target` | 遥测目标（`local`/`gcp`） |
 | `telemetry.otlpEndpoint` | OTLP 端点 |
+| `telemetry.otlpProtocol` | OTLP 协议（`grpc`/`http`） |
+| `telemetry.logPrompts` | 日志中包含用户提示词 |
+| `telemetry.outfile` | 本地遥测输出文件路径 |
+| `telemetry.useCollector` | 使用外部 OTLP 收集器 |
 
 ## 配置迁移（旧格式→新格式）
 
