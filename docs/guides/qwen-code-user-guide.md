@@ -269,7 +269,7 @@ Express + TypeScript + PostgreSQL + Prisma
 }
 ```
 
-三个 `authType` 键决定使用哪个 SDK：`openai`（OpenAI SDK）、`anthropic`（Anthropic SDK）、`gemini`（Google GenAI SDK）。DeepSeek、OpenRouter、Ollama 等 OpenAI 兼容服务都使用 `openai` 键。
+四个用户可配置的 `authType` 键决定使用哪个 SDK：`openai`（OpenAI SDK）、`anthropic`（Anthropic SDK）、`gemini`（Google GenAI SDK）、`vertex-ai`（Google Vertex AI SDK）。DeepSeek、OpenRouter、Ollama 等 OpenAI 兼容服务都使用 `openai` 键。
 
 **ModelConfig 字段**：
 
@@ -283,7 +283,7 @@ Express + TypeScript + PostgreSQL + Prisma
 | `capabilities` | object | 否 | 模型能力标记（如 `{ vision: true }`），预留字段 |
 | `generationConfig` | object | 否 | 生成参数（见下方） |
 
-**generationConfig 常用字段**：
+**generationConfig 完整字段列表**（11 个）：
 
 | 字段 | 说明 |
 |------|------|
@@ -296,8 +296,8 @@ Express + TypeScript + PostgreSQL + Prisma
 | `schemaCompliance` | Schema 合规模式：`"auto"` 或 `"openapi_30"` |
 | `customHeaders` | 自定义 HTTP 头（`Record<string, string>`） |
 | `extra_body` | 额外请求体参数（仅 OpenAI 兼容，`Record<string, unknown>`） |
-| `modalities` | 输入模态控制（如 `{ image: true }`） |
-| `samplingParams` | 采样参数：`temperature`、`top_p`、`top_k`、`max_tokens` 等 |
+| `modalities` | 输入模态控制：`{ image?, pdf?, audio?, video?: boolean }` |
+| `samplingParams` | 采样参数（**atomic，完全替换不合并**）：`temperature`、`top_p`、`top_k`、`max_tokens`、`presence_penalty`、`frequency_penalty`、`repetition_penalty` |
 
 #### 常见提供商配置示例
 
@@ -429,6 +429,7 @@ Express + TypeScript + PostgreSQL + Prisma
 - **同一 authType 内不支持重复 id**——首个生效，后续重复跳过并发出警告
 - **项目级覆盖用户级**——`.qwen/settings.json` 的 `modelProviders` **完全替换**（非合并）`~/.qwen/settings.json` 的同名配置
 - **无效 authType 键静默忽略**——拼写错误（如 `"openai-custom"`）不会报错也不会生效
+- **`samplingParams`/`customHeaders`/`extra_body` 是 atomic（完全替换）**——如果你只设置 `samplingParams: { temperature: 0.5 }`，其他参数（`top_p` 等）不会继承默认值，而是变为 `undefined`
 - **`qwen-oauth` 不可覆盖**——内置的 OAuth 免费层无法通过 modelProviders 自定义
 
 ### 权限模式
