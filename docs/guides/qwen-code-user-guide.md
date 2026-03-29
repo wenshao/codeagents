@@ -269,7 +269,7 @@ Express + TypeScript + PostgreSQL + Prisma
 }
 ```
 
-四个用户可配置的 `authType` 键决定使用哪个 SDK：`openai`（OpenAI SDK）、`anthropic`（Anthropic SDK）、`gemini`（Google GenAI SDK）、`vertex-ai`（Google Vertex AI SDK）。DeepSeek、OpenRouter、Ollama 等 OpenAI 兼容服务都使用 `openai` 键。
+三个用户可配置的 `authType` 键决定使用哪个 SDK：`openai`（OpenAI SDK）、`anthropic`（Anthropic SDK）、`gemini`（Google GenAI SDK）。DeepSeek、OpenRouter、Ollama 等 OpenAI 兼容服务都使用 `openai` 键。
 
 **ModelConfig 字段**：
 
@@ -294,8 +294,8 @@ Express + TypeScript + PostgreSQL + Prisma
 | `retryErrorCodes` | 自定义触发重试的 HTTP 状态码（`number[]`） |
 | `reasoning` | 推理模式：`false` 或 `{ effort?: "low"\|"medium"\|"high", budget_tokens?: number }` |
 | `schemaCompliance` | Schema 合规模式：`"auto"` 或 `"openapi_30"` |
-| `customHeaders` | 自定义 HTTP 头（`Record<string, string>`） |
-| `extra_body` | 额外请求体参数（仅 OpenAI 兼容，`Record<string, unknown>`） |
+| `customHeaders` | 自定义 HTTP 头（**atomic，完全替换**，`Record<string, string>`） |
+| `extra_body` | 额外请求体参数（仅 OpenAI 兼容，**atomic，完全替换**，`Record<string, unknown>`） |
 | `modalities` | 输入模态控制：`{ image?, pdf?, audio?, video?: boolean }` |
 | `samplingParams` | 采样参数（**atomic，完全替换不合并**）：`temperature`、`top_p`、`top_k`、`max_tokens`、`presence_penalty`、`frequency_penalty`、`repetition_penalty` |
 
