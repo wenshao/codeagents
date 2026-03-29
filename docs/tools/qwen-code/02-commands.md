@@ -134,7 +134,7 @@ Qwen Code 提供 41 个内置斜杠命令，加上从 MCP prompts、bundled skil
 
 ```bash
 @src/auth/login.ts       # 将文件内容注入为上下文
-@src/components/          # 将目录结构注入为上下文
+@src/components/          # 递归读取目录下所有文本文件注入为上下文
 ```
 
 ### ! 命令（Shell 执行）

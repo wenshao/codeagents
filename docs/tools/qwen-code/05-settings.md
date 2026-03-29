@@ -134,6 +134,8 @@
 | `includeTools` | string[] | 工具白名单 |
 | `excludeTools` | string[] | 工具黑名单（优先于 includeTools） |
 
+> 连接优先级：`httpUrl` > `url` > `command`
+
 ### mcp（MCP 全局配置）
 
 | 设置 | 类型 | 默认值 | 说明 |
@@ -144,15 +146,20 @@
 
 > 优先级：`httpUrl` > `url` > `command`
 
-### privacy / security / telemetry
+### privacy（隐私）
 
-| 设置 | 说明 |
-|------|------|
-| `privacy.usageStatisticsEnabled` | 使用统计收集（默认 `true`） |
-| `security.folderTrust.enabled` | 文件夹信任（默认 `false`） |
-| `security.auth.selectedType` | 当前认证类型 |
-| `security.auth.enforcedType` | 强制认证类型（企业用） |
-| `security.auth.useExternal` | 使用外部认证流程 |
+| 设置 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `privacy.usageStatisticsEnabled` | boolean | `true` | 使用统计收集 |
+
+### security（安全）
+
+| 设置 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `security.folderTrust.enabled` | boolean | `false` | 文件夹信任 |
+| `security.auth.selectedType` | string | — | 当前认证类型 |
+| `security.auth.enforcedType` | string | — | 强制认证类型（企业用） |
+| `security.auth.useExternal` | boolean | — | 使用外部认证流程 |
 
 ### advanced（高级）
 
@@ -241,6 +248,10 @@ v0.3.0 起，旧的否定式命名自动迁移为肯定式：
 | `NO_COLOR` | 禁用彩色输出 |
 | `TAVILY_API_KEY` | Tavily Web 搜索 API Key |
 | `DEBUG` / `DEBUG_MODE` | 启用调试日志 |
+| `QWEN_CODE_SYSTEM_DEFAULTS_PATH` | 覆盖系统默认配置文件路径 |
+| `QWEN_CODE_SYSTEM_SETTINGS_PATH` | 覆盖系统设置文件路径 |
+| `QWEN_CODE_LANG` | 设置 UI 语言 |
+| `CLI_TITLE` | 自定义 CLI 标题 |
 
 ## 沙箱
 
