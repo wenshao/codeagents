@@ -195,3 +195,25 @@ v0.3.0 起，旧的否定式命名自动迁移为肯定式：
 - `QWEN_SANDBOX` 环境变量
 - `--yolo` 模式下默认启用沙箱
 - 支持 Docker / Podman / macOS Seatbelt / 自定义命令
+
+macOS Seatbelt 配置文件（通过 `SEATBELT_PROFILE` 环境变量切换）：
+- `permissive-open`（默认）：仅限制写入
+- `strict`：严格模式
+- 自定义：`.qwen/sandbox-macos-<profile>.sb`
+
+## 信任文件夹
+
+通过 `security.folderTrust.enabled: true` 启用。未信任的文件夹中，Qwen Code 会：
+- 忽略 `.qwen/settings.json` 和 `.env` 文件
+- 禁用扩展
+- 强制手动工具确认
+
+## 退出码
+
+| 码 | 错误 | 说明 |
+|---|------|------|
+| 41 | FatalAuthenticationError | 认证失败 |
+| 42 | FatalInputError | 无效输入 |
+| 44 | FatalSandboxError | 沙箱错误 |
+| 52 | FatalConfigError | settings.json 无效 |
+| 53 | FatalTurnLimitedError | 达到最大轮数 |
