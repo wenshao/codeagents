@@ -4,13 +4,14 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path('/root/git/codeagents-x1')
+ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / 'docs'
 DATA_FILE = DOCS / 'data' / 'agents-metadata.json'
 README = ROOT / 'README.md'
 SUMMARY = DOCS / 'SUMMARY.md'
 TOOLS_INDEX = DOCS / 'tools' / 'README.md'
 EVIDENCE_INDEX = DOCS / 'evidence-index.md'
+EVIDENCE_PATTERN = re.compile(r'^\|\s*([^|]+?)\s*\|\s*[^|]*\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|', re.MULTILINE)
 
 CHECK_FILES = [
     README,
@@ -38,12 +39,13 @@ def check_required_files(errors: list[str]):
 
 
 def check_evidence_paths(metadata: dict, errors: list[str]):
-    for agent in metadata.get('agents', []):
+    for index, agent in enumerate(metadata.get('agents', [])):
+        agent_label = agent.get('id', f'index-{index}')
         evidence_path = agent.get('evidence', {}).get('evidence_path')
         if evidence_path:
             full = ROOT / evidence_path
             if not full.exists():
-                errors.append(f"Missing evidence path for {agent['id']}: {evidence_path}")
+                errors.append(f"Missing evidence path for {agent_label}: {evidence_path}")
 
 
 def check_agent_mentions(metadata: dict, warnings: list[str]):
@@ -91,6 +93,32 @@ def check_tools_index_consistency(warnings: list[str]):
         warnings.append('docs/tools/README.md lists Qoder CLI as a directory link but labels it 单文件; consider clarifying depth/type.')
 
 
+def check_evidence_index_matches_data(metadata: dict, errors: list[str]):
+    text = read_text(EVIDENCE_INDEX)
+    evidence_rows = {}
+    for agent_name, status, source_type in EVIDENCE_PATTERN.findall(text):
+        evidence_rows[agent_name.strip()] = {
+            'status': status.strip('` '),
+            'source_type': source_type.strip('` '),
+        }
+
+    for agent in metadata.get('agents', []):
+        name = agent.get('name')
+        evidence = agent.get('evidence', {})
+        row = evidence_rows.get(name)
+        if not row:
+            errors.append(f'docs/evidence-index.md is missing an evidence row for {name}')
+            continue
+        if row.get('status') != evidence.get('status'):
+            errors.append(
+                f"docs/evidence-index.md status mismatch for {name}: {row.get('status')} != {evidence.get('status')}"
+            )
+        if row.get('source_type') != evidence.get('source_type'):
+            errors.append(
+                f"docs/evidence-index.md source_type mismatch for {name}: {row.get('source_type')} != {evidence.get('source_type')}"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
@@ -106,6 +134,7 @@ def main() -> int:
     check_agent_mentions(metadata, warnings)
     check_links(errors, warnings)
     check_tools_index_consistency(warnings)
+    check_evidence_index_matches_data(metadata, errors)
 
     if errors:
         for item in errors:

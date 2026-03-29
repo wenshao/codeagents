@@ -40,7 +40,7 @@
 }
 ```
 
-### 3. 汇总页尽量引用数据源，而不是手工散落维护
+### 4. 汇总页尽量引用数据源，而不是手工散落维护
 
 以下页面应优先从本目录读取或至少手动同步校验：
 
@@ -52,7 +52,7 @@
 - `docs/comparison/system-requirements.md`
 - `docs/tools/README.md`
 
-### 4. 证据状态标准
+### 5. 证据状态标准
 
 - `complete`：有完整多文件分析，且存在 `EVIDENCE.md`
 - `partial`：有目录级分析，但证据仍不完整或主要来自二进制/外部线索
@@ -72,6 +72,9 @@ python3 scripts/check_all.py
 如需单独执行，也可以使用：
 
 ```bash
+python3 scripts/check_data_schema.py
 python3 scripts/check_repo_consistency.py
 python3 scripts/check_stale_data.py
 ```
+
+> **说明**：`check_stale_data.py` 当前为“告警型检查”，用于提示可能的漂移或过期信息；是否阻断提交应由维护者结合上下文判断。

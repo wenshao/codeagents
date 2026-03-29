@@ -34,6 +34,7 @@
 - 如果涉及证据完备度变化，同步更新 `docs/evidence-index.md`
 - 提交前优先运行统一检查：`python3 scripts/check_all.py`
 - 如需单独执行，可运行：`python3 scripts/check_data_schema.py`、`python3 scripts/check_repo_consistency.py` 和 `python3 scripts/check_stale_data.py`
+- `check_stale_data.py` 目前为告警型检查，主要用于提示潜在漂移
 
 ### 3. 添加示例
 

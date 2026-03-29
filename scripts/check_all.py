@@ -3,7 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path('/root/git/codeagents-x1')
+ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / 'scripts'
 CHECKS = [
     ('data schema', SCRIPTS / 'check_data_schema.py'),

@@ -153,3 +153,5 @@ python3 scripts/check_data_schema.py
 python3 scripts/check_repo_consistency.py
 python3 scripts/check_stale_data.py
 ```
+
+> `check_stale_data.py` 目前为告警型检查，主要用于提示潜在漂移，不默认作为阻断条件。

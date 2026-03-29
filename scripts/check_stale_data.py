@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
 
-ROOT = Path('/root/git/codeagents-x1')
+ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / 'docs'
 DATA_FILE = DOCS / 'data' / 'agents-metadata.json'
 
