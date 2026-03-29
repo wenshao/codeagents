@@ -206,7 +206,7 @@ codex cloud diff <TASK_ID>                   # 查看 diff
 
 ## Goose `goose schedule`（本地 cron 调度）
 
-> 来源：[Goose CLI Commands](https://block.github.io/goose/docs/guides/goose-cli-commands/)，[GitHub Discussions #4389](https://github.com/block/goose/discussions/4389)
+> 来源：[Goose CLI Commands](https://block.github.io/goose/docs/guides/goose-cli-commands/)（2026-03 访问），[GitHub Discussions #4389](https://github.com/block/goose/discussions/4389)
 
 ### 与 Claude Code `/schedule` 的对比
 
@@ -248,7 +248,7 @@ Goose 的调度只能执行 Recipe（YAML/JSON 定义的可复用任务模板）
 
 ## Aider `--watch-files`（文件监视 + AI 注释触发）
 
-> 来源：[Aider Watch Docs](https://aider.chat/docs/usage/watch.html)
+> 来源：[Aider Watch Docs](https://aider.chat/docs/usage/watch.html)（2026-03 访问）
 
 Aider 的 `--watch-files` 不是循环命令，而是**基于文件变更的 AI 触发机制**：
 

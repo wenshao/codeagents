@@ -204,7 +204,7 @@ codex --dangerously-bypass-...     → 绕过一切（仅限测试环境）
 
 ## TUI 斜杠命令（28 个，官方文档验证）
 
-> 来源：[官方斜杠命令文档](https://developers.openai.com/codex/cli/slash-commands)，28 个命令。
+> 来源：[官方斜杠命令文档](https://developers.openai.com/codex/cli/slash-commands)（2026-03 访问），28 个命令。
 > 注：Rust 编译的二进制中命令名以 enum 形式存储，无法通过 `strings` 直接提取，以官方文档为权威来源。
 
 ### 会话控制

@@ -1,6 +1,6 @@
 # 5. Qwen Code 配置系统
 
-> 来源：[官方文档](https://qwenlm.github.io/qwen-code-docs/zh/users/configuration/settings/)，v0.3.0+ 嵌套结构格式
+> 来源：[官方文档](https://qwenlm.github.io/qwen-code-docs/zh/users/configuration/settings/)（2026-03 访问），v0.3.0+ 嵌套结构格式
 
 ## 配置层级（7 层优先级）
 

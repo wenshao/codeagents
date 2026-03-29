@@ -78,7 +78,7 @@ gh pr edit --add-reviewer @copilot
 
 ### Codex CLI 代码审查
 
-> 来源：[OpenAI Developers](https://developers.openai.com/codex/cli/features)
+> 来源：[OpenAI Developers](https://developers.openai.com/codex/cli/features)（2026-03 访问）
 
 ```bash
 # PR 评论触发审查
@@ -91,7 +91,7 @@ gh pr edit --add-reviewer @copilot
 
 ### Gemini CLI `/code-review`（官方扩展）
 
-> 来源：[gemini-cli-extensions/code-review](https://github.com/gemini-cli-extensions/code-review)
+> 来源：[gemini-cli-extensions/code-review](https://github.com/gemini-cli-extensions/code-review)（2026-03 访问）
 
 ```bash
 # 安装扩展（需要 Gemini CLI v0.4.0+）
@@ -122,7 +122,7 @@ gemini extensions install https://github.com/gemini-cli-extensions/code-review
 
 ### Claude Code 三层压缩（源码：API `compact-2026-01-12`）
 
-> 来源：[Claude API Compaction 文档](https://platform.claude.com/docs/en/build-with-claude/compaction)
+> 来源：[Claude API Compaction 文档](https://platform.claude.com/docs/en/build-with-claude/compaction)（2026-03 访问）
 
 ```bash
 # 手动压缩
@@ -610,7 +610,7 @@ Wire 协议的 JSONL 格式使会话可在不同环境间迁移。
 
 ### Goose 的 MCP 原生架构（独有）
 
-> 来源：[Goose MCP 深度分析](https://dev.to/lymah/deep-dive-into-gooses-extension-system-and-model-context-protocol-mcp-3ehl)，Goose 已捐赠给 Linux 基金会 [Agentic AI Foundation (AAIF)](https://www.linuxfoundation.org/press/linux-foundation-announces-the-formation-of-the-agentic-ai-foundation)
+> 来源：[Goose MCP 深度分析](https://dev.to/lymah/deep-dive-into-gooses-extension-system-and-model-context-protocol-mcp-3ehl)（2025），Goose 已捐赠给 Linux 基金会 [Agentic AI Foundation (AAIF)](https://www.linuxfoundation.org/press/linux-foundation-announces-the-formation-of-the-agentic-ai-foundation)
 
 所有工具都通过 MCP 协议实现，没有"内置工具"概念：
 - Host → Goose（管理多个 MCP 客户端）
@@ -757,7 +757,7 @@ approval_mode = "auto"
 
 ### Gemini CLI TOML 策略引擎详解
 
-> 来源：[Policy Engine 文档](https://geminicli.com/docs/reference/policy-engine/)
+> 来源：[Policy Engine 文档](https://geminicli.com/docs/reference/policy-engine/)（2026-03 访问）
 
 **5 层优先级**（最终优先级 = `tier_base + toml_priority / 1000`）：
 
@@ -775,7 +775,7 @@ Admin 目录强制严格所有权检查，防止权限提升。
 
 ### Codex CLI 三平台 OS 级沙箱（源码：`codex-rs/`）
 
-> 来源：[OpenAI 安全文档](https://developers.openai.com/codex/agent-approvals-security)、[DeepWiki 沙箱分析](https://deepwiki.com/openai/codex/5.6-sandboxing-implementation)
+> 来源：[OpenAI 安全文档](https://developers.openai.com/codex/agent-approvals-security)、[DeepWiki 沙箱分析](https://deepwiki.com/openai/codex/5.6-sandboxing-implementation)（2026-03 访问）
 
 **最硬核的安全实现——OS 原生隔离，三个平台各有专用方案：**
 
@@ -803,7 +803,7 @@ Admin 目录强制严格所有权检查，防止权限提升。
 
 ### Goose 权限系统
 
-> 来源：[Goose 工具权限文档](https://block.github.io/goose/docs/guides/managing-tools/tool-permissions/)
+> 来源：[Goose 工具权限文档](https://block.github.io/goose/docs/guides/managing-tools/tool-permissions/)（2026-03 访问）
 
 三级工具权限 × 四种操作模式：
 

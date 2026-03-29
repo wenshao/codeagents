@@ -22,7 +22,7 @@
 
 ## 一、Goose：MCP 原生架构（全工具 MCP 驱动）
 
-> 来源：[Goose MCP 文档](https://block.github.io/goose/docs/)，`rmcp` Rust SDK
+> 来源：[Goose MCP 文档](https://block.github.io/goose/docs/)（2026-03 访问），`rmcp` Rust SDK
 
 **所有工具都通过 MCP 协议实现**，没有"内置工具"概念：
 

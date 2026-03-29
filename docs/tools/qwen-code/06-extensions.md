@@ -1,6 +1,6 @@
 # 6. Qwen Code 扩展系统
 
-> 来源：[官方文档](https://qwenlm.github.io/qwen-code-docs/zh/users/extension/introduction/)
+> 来源：[官方文档](https://qwenlm.github.io/qwen-code-docs/zh/users/extension/introduction/)（2026-03 访问）
 
 ## 概述
 

@@ -101,7 +101,7 @@ Rust 原生 CLI / Metal(macOS) + Vulkan(Linux/Win) GPU 渲染
 | Shift+Tab | 循环切换审批模式（DEFAULT → AUTO_EDIT → PLAN → YOLO） |
 | Esc Esc | 触发 `/rewind`（RewindViewer 组件） |
 
-**v0.35 新增：自定义快捷键 + Vim 增强**（来源：[v0.35 Release Notes](https://geminicli.com/docs/changelogs/latest/)）
+**v0.35 新增：自定义快捷键 + Vim 增强**（来源：[v0.35 Release Notes](https://geminicli.com/docs/changelogs/latest/)，2026-03）
 
 - **自定义键绑定**：支持自定义 keybindings、字面字符绑定、扩展终端协议键
 - **Vim 模式增强**：新增 `X`、`~`、`r`、`f/F/t/T` 动作 + yank/paste 支持

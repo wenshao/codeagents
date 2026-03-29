@@ -81,7 +81,7 @@ Claude Code 的 Hook 系统是其最独特的能力之一。与传统脚本 Hook
 | `CwdChanged` | 工作目录变更时 | v2.1.83 二进制确认 |
 | `FileChanged` | 文件变更检测时 | v2.1.83 二进制确认 |
 
-> 来源：[官方 Hooks 文档](https://code.claude.com/docs/en/hooks)，全部 24 个事件在 v2.1.83 二进制中确认存在。
+> 来源：[官方 Hooks 文档](https://code.claude.com/docs/en/hooks)（2026-03 访问），全部 24 个事件在 v2.1.83 二进制中确认存在。
 
 ### Hook 配置示例
 

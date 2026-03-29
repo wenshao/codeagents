@@ -217,7 +217,7 @@ Claude Code 的 Skill 系统有隐式模型选择：
 
 ### 配额倍率系统
 
-> 来源：[GitHub Copilot 官方文档](https://docs.github.com/en/copilot)，倍率因版本/计划而异。
+> 来源：[GitHub Copilot 官方文档](https://docs.github.com/en/copilot)（2026-03 访问），倍率因版本/计划而异。
 
 | 模型 | 配额倍率 | 说明 |
 |------|---------|------|
@@ -293,7 +293,7 @@ codex --oss --model qwen3:32b
 
 ## 八、Goose：注册表驱动 + 快速 Fallback
 
-> 来源：[Goose 文档](https://block.github.io/goose/docs/)、开源代码
+> 来源：[Goose 文档](https://block.github.io/goose/docs/)（2026-03 访问）、开源代码
 
 ```yaml
 # ~/.config/goose/config.yaml

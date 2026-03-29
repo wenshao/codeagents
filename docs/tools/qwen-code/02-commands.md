@@ -126,7 +126,7 @@ Qwen Code 提供 41 个内置斜杠命令，加上从 MCP prompts、bundled skil
 
 ## 其他命令类型
 
-> 来源：[官方文档](https://qwenlm.github.io/qwen-code-docs/zh/users/features/commands/)
+> 来源：[官方文档](https://qwenlm.github.io/qwen-code-docs/zh/users/features/commands/)（2026-03 访问）
 
 除斜杠命令外，Qwen Code 还支持 3 种命令类型：
 
