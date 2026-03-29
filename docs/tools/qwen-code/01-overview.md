@@ -59,7 +59,13 @@ AGENTS.md 声明：*"This project is based on Google Gemini CLI with adaptations
 ## 安装
 
 ```bash
-# npm（推荐，需要 Node.js 20+）
+# 一键安装脚本（推荐，Linux/macOS）
+curl -fsSL https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/installation/install-qwen.sh | bash
+
+# Windows（以管理员身份运行 CMD）
+curl -fsSL -o %TEMP%\install-qwen.bat https://qwen-code-assets.oss-cn-hangzhou.aliyuncs.com/installation/install-qwen.bat && %TEMP%\install-qwen.bat
+
+# npm（需要 Node.js 20+）
 npm install -g @qwen-code/qwen-code@latest
 
 # bun
@@ -71,6 +77,8 @@ brew install qwen-code
 # 验证安装
 qwen --version
 ```
+
+> **VS Code 扩展（Beta）**：Qwen Code Companion 提供图形化 IDE 体验，从 VS Code Marketplace 安装即可在侧边栏中使用。
 
 ## 模型支持
 

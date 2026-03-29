@@ -8,6 +8,8 @@
 | [02-commands.md](./02-commands.md) | 41 个斜杠命令、子命令、CLI 参数 |
 | [03-architecture.md](./03-architecture.md) | 技术架构、Agent Loop、Arena、扩展系统 |
 | [04-tools.md](./04-tools.md) | 16 个核心工具、MCP 动态工具、权限分类 |
+| [05-settings.md](./05-settings.md) | 完整配置参考（7 层优先级、settings.json 全字段） |
+| [06-extensions.md](./06-extensions.md) | 扩展系统（Claude/Gemini 跨平台兼容、qwen-extension.json） |
 | [EVIDENCE.md](./EVIDENCE.md) | 源码分析证据（遥测、认证、模型、Arena） |
 | [用户指南](../../guides/qwen-code-user-guide.md) | 安装、免费使用、Arena 模式 |
 
