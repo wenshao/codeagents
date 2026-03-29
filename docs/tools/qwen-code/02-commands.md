@@ -124,6 +124,54 @@ Qwen Code 提供 41 个内置斜杠命令，加上从 MCP prompts、bundled skil
 | `/memory` | `show` / `add` / `refresh` | 查看/添加/刷新记忆 |
 | `/stats` | `model` / `tools` | 模型/工具使用统计 |
 
+## 其他命令类型
+
+> 来源：[官方文档](https://qwenlm.github.io/qwen-code-docs/zh/users/features/commands/)
+
+除斜杠命令外，Qwen Code 还支持 3 种命令类型：
+
+### @ 命令（文件/目录注入）
+
+```bash
+@src/auth/login.ts       # 将文件内容注入为上下文
+@src/components/          # 递归读取目录下所有文本文件注入为上下文
+```
+
+### ! 命令（Shell 执行）
+
+```bash
+!git status              # 直接执行 Shell 命令
+!npm test                # 运行测试
+!                        # 单独 ! 进入 Shell 模式
+```
+
+### 自定义命令（Markdown 文件）
+
+在 `~/.qwen/commands/`（用户级）或 `.qwen/commands/`（项目级）放置 `.md` 文件：
+
+```markdown
+---
+name: deploy
+description: 部署到测试环境
+---
+
+请执行以下部署步骤：
+1. 运行 !{npm run build} 构建项目
+2. 读取 @{deploy.config.json} 获取配置
+3. 使用 {{args}} 作为目标环境参数
+```
+
+支持变量（处理顺序：`@{...}` → `!{...}` → `{{args}}`）：
+- `{{args}}`——参数注入
+- `!{command}`——Shell 命令执行
+- `@{filepath}`——文件内容注入
+
+**目录映射规则**：`commands/git/commit.md` → `/git:commit`
+
+> **注**：TOML 格式命令文件已弃用但仍受支持，便于旧命令迁移。`!` 命令执行时自动设置 `QWEN_CODE=1` 环境变量。`@` 路径含空格时用 `\` 转义（如 `@My\ Documents/file.txt`）。
+
+项目级命令优先于用户级。
+
 ## CLI 参数
 
 ```bash
