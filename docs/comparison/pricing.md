@@ -1,20 +1,22 @@
 # 14. 定价与成本对比
 
-> 2026 年 3 月数据。AI 编程工具的费用模式差异巨大——从完全免费到每月 $200+。
+> 动态定价与免费层信息请优先以 [`../data/agents-metadata.json`](../data/agents-metadata.json) 和 [`../data/CHANGELOG.md`](../data/CHANGELOG.md) 为准。本文保留结构化对比与成本分析方法。
 
 ## 定价模式总览
 
-| Agent | 模式 | 月费 | 免费层 | 按量计费 |
-|------|------|------|--------|---------|
-| **Claude Code** | 订阅 + API | Pro $20, Max $100/$200 | 无 | API: 按 token |
-| **Copilot CLI** | 订阅 | Free/Pro $10/Business $19/Enterprise $39 | ✓（有限） | Premium Requests 配额 |
-| **Codex CLI** | API 按量 | 无月费 | 无 | 按 token |
-| **Aider** | API 按量（自带 key） | 无月费 | 无（需 API key） | 取决于所选模型 |
-| **Gemini CLI** | API + 免费层 | 无月费 | **1,500 次/天**（Gemini API） | API 按量 |
-| **Qwen Code** | 免费 + API | 无月费 | **1,000 次/天**（OAuth） | DashScope 按量 |
-| **Kimi CLI** | API 按量 | 无月费 | 有限免费额度 | Moonshot API 按量 |
-| **Goose** | API 按量（自带 key） | 无月费 | 无 | 取决于所选模型 |
-| **OpenCode** | API 按量 | 无月费 | 无 | 取决于提供商 |
+> 本表仅保留定价结构。具体月费、免费层额度等高频变化数字请查阅 `docs/data/agents-metadata.json`。
+
+| Agent | 模式 | 免费层形态 | 按量计费 |
+|------|------|-----------|---------|
+| **Claude Code** | 订阅 + API | 无 | API: 按 token |
+| **Copilot CLI** | 订阅 | 有限 | Premium Requests 配额 |
+| **Codex CLI** | API 按量 | 无 | 按 token |
+| **Aider** | API 按量（自带 key） | 无 | 取决于所选模型 |
+| **Gemini CLI** | API + 免费层 | 每日额度 | API 按量 |
+| **Qwen Code** | 免费 + API | 每日额度 | DashScope 按量 |
+| **Kimi CLI** | API 按量 | 有限免费额度 | Moonshot API 按量 |
+| **Goose** | API 按量（自带 key） | 无 | 取决于所选模型 |
+| **OpenCode** | API 按量 | 无 | 取决于提供商 |
 
 ## Claude Code 详细定价
 
@@ -94,12 +96,12 @@ API 按量价格（参考）：
 | 策略 | 适用工具 | 说明 |
 |------|---------|------|
 | **选择小模型做简单任务** | 全部 | Haiku/mini 比 Opus 便宜 10-20 倍 |
-| **利用免费层** | Gemini CLI, Qwen Code, Copilot | 日常简单任务可完全免费 |
+| **利用免费层** | Gemini CLI, Qwen Code, Copilot | 先核对 `docs/data/agents-metadata.json` 中当前免费层额度 |
 | **Prompt Caching** | Claude Code, Aider | 减少重复系统提示的 token 费用 |
 | **上下文压缩** | 全部 | 定期 /compact 减少 token 累积 |
 | **Aider 的 /architect** | Aider | 用强模型规划、弱模型执行，节省 50%+ |
-| **Copilot 免费模型** | Copilot CLI | gpt-5-mini 和 gpt-4.1 为 0x 倍率 |
-| **订阅 vs API** | Claude Code | 日均 >$3.3 时 Max $100 更划算 |
+| **Copilot 免费模型** | Copilot CLI | 具体模型倍率以官方定价页为准 |
+| **订阅 vs API** | Claude Code | 应结合最新月费与任务频率重新估算 |
 
 ---
 

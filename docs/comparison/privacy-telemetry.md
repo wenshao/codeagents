@@ -1,21 +1,23 @@
 # 3. 隐私与遥测对比
 
-> 各 CLI Agent 的数据采集、安全监控和隐私控制对比。基于源码分析和二进制反编译。
+> 各 CLI Agent 的数据采集、安全监控和隐私控制对比。高频变化的验证日期和证据状态请结合 [`../data/CHANGELOG.md`](../data/CHANGELOG.md) 与 [`../evidence-index.md`](../evidence-index.md) 一起查看。
 
 ## 遥测系统对比
 
+> 本表保留能力边界与采集类型。若默认状态或证据完备度发生变化，请同步更新 `docs/evidence-index.md` 与 `docs/data/CHANGELOG.md`。
+
 | Agent | 遥测提供商 | 默认状态 | 采集 Machine ID | 采集硬件信息 | 采集 MAC 地址 |
 |------|-----------|---------|-----------------|-------------|-------------|
-| **Claude Code** | Anthropic Metrics + Datadog + Segment | 开启 | **是**（IOPlatformUUID / /etc/machine-id） | **是**（CPU、主机名、平台） | **否** |
-| **Copilot CLI** | GitHub/Microsoft 内部 | 开启 | 未确认 | **是**（平台信息） | 未确认 |
-| **Codex CLI** | OpenAI 内部 | 开启 | 未确认 | **是**（平台信息） | 未确认 |
-| **Aider** | PostHog | **关闭**（opt-in，10% 采样） | **是**（随机 UUID） | **是**（OS、架构） | **否** |
-| **Gemini CLI** | OpenTelemetry + Google Clearcut | 开启 | **是**（持久化 UUID） | **是**（CPU/GPU/RAM 详细） | **否** |
-| **Kimi CLI** | **无** | — | **否** | **否** | **否** |
-| **OpenCode** | **无** | — | **否** | **否** | **否** |
-| **Goose** | PostHog | **关闭**（opt-in） | **是**（随机 UUID） | **是**（OS、架构） | **否** |
-| **Qwen Code** | OTEL（重品牌）+ **阿里云 RUM**（新增） | 开启 | **是**（继承 Gemini UUID） | **是**（继承 CPU/GPU/RAM） | **否** |
-| **Qoder CLI** | Qoder 自有（api1.qoder.sh） | 开启 | **是**（`getMachineKey`） | 未确认 | **否** |
+| **Claude Code** | Anthropic Metrics + Datadog + Segment | 开启 | 是 | 是 | 否 |
+| **Copilot CLI** | GitHub/Microsoft 内部 | 开启 | 未确认 | 是 | 未确认 |
+| **Codex CLI** | OpenAI 内部 | 开启 | 未确认 | 是 | 未确认 |
+| **Aider** | PostHog | 默认关闭（opt-in） | 是 | 是 | 否 |
+| **Gemini CLI** | OpenTelemetry + Google Clearcut | 开启 | 是 | 是 | 否 |
+| **Kimi CLI** | 无 | — | 否 | 否 | 否 |
+| **OpenCode** | 无 | — | 否 | 否 | 否 |
+| **Goose** | PostHog | 默认关闭（opt-in） | 是 | 是 | 否 |
+| **Qwen Code** | OTEL（重品牌）+ 阿里云 RUM | 开启 | 是 | 是 | 否 |
+| **Qoder CLI** | Qoder 自有 | 开启 | 是 | 未确认 | 否 |
 
 ## 遥测端点
 
@@ -102,13 +104,15 @@
 
 ## 证据来源
 
+> 证据状态、最后验证日期、补强优先级请统一查看 [`../evidence-index.md`](../evidence-index.md)。本节只保留分析方式入口。
+
 | Agent | 分析方式 | 证据文件 |
 |------|----------|----------|
-| Claude Code | Bun 字节码反编译（v2.1.81） | `claude-code/EVIDENCE.md` |
-| Copilot CLI | Node.js SEA 反编译（v1.0.11/0.0.403） | `copilot-cli/EVIDENCE.md` |
-| Codex CLI | Rust 二进制 strings + --help（v0.116.0） | `codex-cli/EVIDENCE.md` |
+| Claude Code | Bun 字节码反编译 | `claude-code/EVIDENCE.md` |
+| Copilot CLI | Node.js SEA 反编译 | `copilot-cli/EVIDENCE.md` |
+| Codex CLI | Rust 二进制 strings + --help | `codex-cli/EVIDENCE.md` |
 | Aider | 源码 `aider/analytics.py` | `aider/EVIDENCE.md` |
 | Gemini CLI | 源码 `packages/core/src/telemetry/` + `safety/` | `gemini-cli/EVIDENCE.md` |
 | Kimi CLI | 源码 `src/kimi_cli/` 全量搜索 | `kimi-cli/EVIDENCE.md` |
 | OpenCode | 源码 `internal/` 全量搜索 | `opencode/EVIDENCE.md` |
-| Goose | 源码 `crates/goose/src/` + `crates/goose-cli/src/` | 源码分析 |
+| Goose | 源码 `crates/goose/src/` + `crates/goose-cli/src/` | `goose/EVIDENCE.md` |

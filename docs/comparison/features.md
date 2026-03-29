@@ -175,7 +175,7 @@
 | Copilot CLI | 订阅制 | 1 premium request | 1 premium request | Copilot 订阅含配额 |
 | Cursor | 订阅制 | 1 fast request | 多个 request | Pro $20/月 500 次 |
 | Goose | API 按量 | ~$0.02-0.10 | ~$0.50-3 | 多提供商 |
-| Gemini CLI | API 按量/免费 | 免费 | ~$0.10-1 | 有免费层级 |
+| Gemini CLI | API 按量/免费 | 免费 | ~$0.10-1 | 1500 次/天免费层 |
 | OpenHands | API 按量 | ~$0.05-0.20 | ~$2-10 | 多代理消耗更高 |
 | Qwen Code | 免费/API | 免费 | 免费 | 每日 1000 次 |
 | Kimi CLI | API 按量 | ~$0.01-0.05 | ~$0.20-1 | 国内模型成本低 |

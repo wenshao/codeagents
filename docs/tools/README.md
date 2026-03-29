@@ -47,9 +47,9 @@
 
 ## 新增 Agent
 
-| Agent | 文件 | 行数 | 特色 |
+| Agent | 形态 | 深度 | 特色 |
 |------|------|------|------|
-| [Qoder CLI](./qoder-cli/) | 单文件 | 179 | Go 原生，Quest 模式，Claude Code 兼容，信用制 |
+| [Qoder CLI](./qoder-cli/) | 目录 | 多文件 | Go 原生，Quest 模式，Claude Code 兼容，信用制 |
 
 ## 增强系统
 
