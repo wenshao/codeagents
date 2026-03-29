@@ -1,6 +1,8 @@
 # 0. 一页总结：AI 编程 Code Agent 选型
 
 > 给没时间看 34,600+ 行文档的人。2026 年 3 月。
+>
+> **维护说明**：本页包含若干动态数据摘要。更新时请先核对 [`docs/data/agents-metadata.json`](./data/agents-metadata.json) 与 [`docs/evidence-index.md`](./evidence-index.md)。
 
 ## 一句话定位
 
@@ -10,8 +12,8 @@
 | **Copilot CLI** | GitHub 原生集成，读取所有主流指令文件（CLAUDE.md/GEMINI.md/AGENTS.md），67 个内置工具 | GitHub 重度用户和企业团队 |
 | **Codex CLI** | OpenAI 官方，三平台 OS 级沙箱（Seatbelt/Bubblewrap/Windows Tokens），Rust 核心 | 安全敏感场景和 OpenAI 生态用户 |
 | **Aider** | Git 原生老牌工具，14 种编辑格式，PageRank 仓库地图，99% 一人开发 | Git 重度用户和喜欢细粒度控制的开发者 |
-| **Gemini CLI** | Google 官方，Stars 最多（99k），TOML 策略引擎，四阶段压缩算法 | Google Cloud 用户和大团队 |
-| **Qwen Code** | Gemini CLI 分叉 + 阿里云生态，每天 1000 次免费，Arena 多模型竞争模式 | 中文开发者和成本敏感用户 |
+| **Gemini CLI** | Google 官方，TOML 策略引擎，四阶段压缩算法 | Google Cloud 用户和大团队 |
+| **Qwen Code** | Gemini CLI 分叉 + 阿里云生态，提供免费层，Arena 多模型竞争模式 | 中文开发者和成本敏感用户 |
 | **Kimi CLI** | 月之暗面出品，零遥测（隐私最佳），双模式交互（TUI + Shell） | 隐私敏感用户和国内开发者 |
 | **Goose** | Block 出品后捐赠 Linux 基金会，MCP 原生架构，398 个贡献者 | MCP 生态和开源社区 |
 | **OpenCode** | 多客户端（TUI+Web+桌面），37 个 LSP，100+ 模型提供商 | 需要多客户端和 IDE 集成的团队 |
@@ -34,15 +36,14 @@
 
 ## 关键数字对比
 
+> 动态数字（Stars、免费层、验证日期）请以 [`docs/data/agents-metadata.json`](./data/agents-metadata.json) 为准。
+
 | | Claude Code | Copilot CLI | Codex CLI | Aider | Gemini CLI | Qwen Code | Kimi CLI |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| **Stars** | 82k | 10k | 67k | 42k | 99k | 21k | 7k |
 | **命令数** | ~60 | 34 | 28 | 42 | 39 | 40+ | 28 |
 | **工具数** | 20+ | 67 | 9 | — | 23 | 18 | 18 |
 | **沙箱** | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | ✗ |
 | **遥测** | 782 事件 | 有 | 有 | opt-in 10% | 194 键 | 阿里 RUM | **零** |
-| **免费层** | ✗ | 有限 | ✗ | ✗ | 1500/天 | 1000/天 | 有限 |
-| **月费** | $20-200 | $0-39 | 按量 | 按量 | 按量 | 按量 | 按量 |
 
 ## 安全等级
 

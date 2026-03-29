@@ -1,6 +1,6 @@
 # 5. 系统要求对比
 
-> 各工具的运行环境要求。数据来源: package.json engines / pyproject.toml / 二进制分析。
+> 各工具的运行环境要求。动态运行时版本与体积信息如有变化，请优先参考 [`../data/CHANGELOG.md`](../data/CHANGELOG.md) 记录的最近更新时间，并结合源码/安装包重新验证。
 
 ## 语言与运行时要求
 
@@ -37,16 +37,18 @@
 
 ## 二进制大小
 
-| Agent | 二进制大小 | 包含内容 |
-|------|-----------|---------|
-| **Claude Code** | ~227 MB | Bun 运行时 + JS bundle + 原生模块 (tree-sitter, sharp, audio) |
-| **Copilot CLI** | ~133 MB | Node.js SEA + JS bundle (15MB + 11MB) + 原生模块 (keytar, pty) |
-| **Codex CLI** | ~137 MB | Rust 静态链接 (musl) + ripgrep |
-| **Goose** | ~50 MB | Rust 编译 (rmcp SDK) |
-| **Gemini CLI** | ~50 MB (npm) | TypeScript + WASM (tree-sitter) |
-| **Qwen Code** | ~55 MB (npm) | TypeScript + WASM (tree-sitter) |
-| **Aider** | ~20 MB (pip) | Python 包 + 依赖 |
-| **Kimi CLI** | ~15 MB (pip) | Python 包 + 依赖 |
+> 安装体积和包大小属于高频变化信息，详细数值建议与 `docs/data/CHANGELOG.md` 一起维护；本表保留量级与组成说明。
+
+| Agent | 体积量级 | 包含内容 |
+|------|---------|---------|
+| **Claude Code** | ~200MB+ | Bun 运行时 + JS bundle + 原生模块 (tree-sitter, sharp, audio) |
+| **Copilot CLI** | ~100MB+ | Node.js SEA + JS bundle + 原生模块 (keytar, pty) |
+| **Codex CLI** | ~100MB+ | Rust 静态链接 (musl) + ripgrep |
+| **Goose** | ~50MB | Rust 编译 (rmcp SDK) |
+| **Gemini CLI** | ~50MB | TypeScript + WASM (tree-sitter) |
+| **Qwen Code** | ~50MB | TypeScript + WASM (tree-sitter) |
+| **Aider** | ~20MB | Python 包 + 依赖 |
+| **Kimi CLI** | ~15MB | Python 包 + 依赖 |
 
 ## 沙箱依赖
 
@@ -79,6 +81,6 @@
 |------|-----|
 | 实现语言 | Go |
 | 运行时 | 无需额外运行时（静态链接二进制） |
-| 二进制大小 | 43 MB |
+| 二进制大小 | ~40MB |
 | 安装 | `npm install -g @qoder-ai/qodercli` |
 | Node.js 要求 | 仅 npm 安装需要（二进制本身不依赖 Node.js） |
