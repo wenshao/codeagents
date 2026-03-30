@@ -35,6 +35,7 @@
 | OpenCode | 多文件 | `complete` | `source-analysis` | `docs/tools/opencode/EVIDENCE.md` | 2026-03-26 | 月度 |
 | Goose | 多文件 | `complete` | `source-analysis` | `docs/tools/goose/EVIDENCE.md` | 2026-03-26 | 月度 |
 | Qoder CLI | 多文件 | `partial` | `binary-analysis` | `docs/tools/qoder-cli/EVIDENCE.md` | 2026-03-26 | 双周 |
+| Oh My OpenAgent | 单文件 | `single-file-only` | `summary-analysis` | `docs/tools/oh-my-openagent.md` | 2026-03-26 | 季度 |
 | Cline | 单文件 | `single-file-only` | `summary-analysis` | `docs/tools/cline.md` | 2026-03-26 | 季度 |
 | Continue | 单文件 | `single-file-only` | `summary-analysis` | `docs/tools/continue.md` | 2026-03-26 | 季度 |
 | Cursor CLI | 单文件 | `single-file-only` | `summary-analysis` | `docs/tools/cursor-cli.md` | 2026-03-26 | 季度 |

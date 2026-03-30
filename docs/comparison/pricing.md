@@ -20,11 +20,13 @@
 
 ## Claude Code 详细定价
 
-| 计划 | 月费 | 包含 | 模型 | Opus 用量 |
+> 月费与计划细节属于高频变化信息，请优先以 `docs/data/agents-metadata.json`、`docs/data/CHANGELOG.md` 和官方定价页为准。此处仅保留计划结构与成本方法。
+
+| 计划 | 形态 | 包含 | 模型 | Opus 用量 |
 |------|------|------|------|----------|
-| **Pro** | $20 | 有限使用 | Sonnet 4.6（默认） | 有限 |
-| **Max (5x)** | $100 | 高速率 | Opus 4.6（默认） | 高 |
-| **Max (20x)** | $200 | 最高速率 | Opus 4.6（默认） | 最高 |
+| **Pro** | 订阅 | 有限使用 | Sonnet 4.6（默认） | 有限 |
+| **Max (5x)** | 高阶订阅 | 高速率 | Opus 4.6（默认） | 高 |
+| **Max (20x)** | 高阶订阅 | 最高速率 | Opus 4.6（默认） | 最高 |
 | **API** | 按量 | 无限（按 token） | 全部 | 无限 |
 
 API 按量价格（参考）：
@@ -37,12 +39,14 @@ API 按量价格（参考）：
 
 ## Copilot CLI 详细定价
 
-| 计划 | 月费 | Premium Requests | 免费模型 |
+> 订阅价格与配额可能频繁调整，请优先以 `docs/data/agents-metadata.json`、`docs/data/CHANGELOG.md` 和官方定价页为准。
+
+| 计划 | 形态 | Premium Requests | 免费模型 |
 |------|------|-----------------|---------|
-| **Free** | $0 | 有限 | gpt-5-mini (0x), gpt-4.1 (0x) |
-| **Pro** | $10 | 500/月 | 同上 |
-| **Business** | $19/人 | 500/月 | 同上 |
-| **Enterprise** | $39/人 | 1000/月 | 同上 |
+| **Free** | 免费 | 有限 | gpt-5-mini (0x), gpt-4.1 (0x) |
+| **Pro** | 个人订阅 | 500/月 | 同上 |
+| **Business** | 团队订阅 | 500/月 | 同上 |
+| **Enterprise** | 企业订阅 | 1000/月 | 同上 |
 
 模型倍率：
 
@@ -61,9 +65,9 @@ API 按量价格（参考）：
 
 | Agent | 模型 | 估算 token | 估算费用 |
 |------|------|-----------|---------|
-| Claude Code (Pro) | Sonnet 4.6 | ~50K in + ~10K out | 包含在 $20/月 |
+| Claude Code (Pro) | Sonnet 4.6 | ~50K in + ~10K out | 包含在订阅内 |
 | Claude Code (API) | Sonnet 4.6 | ~50K in + ~10K out | ~$0.30 |
-| Copilot CLI (Pro) | claude-sonnet-4.5 | 1 premium request | 包含在 $10/月 |
+| Copilot CLI (Pro) | claude-sonnet-4.5 | 1 premium request | 包含在订阅内 |
 | Codex CLI | gpt-5.1-codex | ~50K in + ~10K out | ~$0.20 |
 | Aider | claude-sonnet-4.6 | ~30K in + ~5K out | ~$0.17 |
 | Gemini CLI | gemini-2.5-pro | ~50K in + ~10K out | 免费层 |
@@ -73,10 +77,10 @@ API 按量价格（参考）：
 
 | Agent | 模型 | 估算 token | 估算费用 |
 |------|------|-----------|---------|
-| Claude Code (Pro) | Sonnet 4.6 | ~500K in + ~100K out | 包含在 $20/月 |
+| Claude Code (Pro) | Sonnet 4.6 | ~500K in + ~100K out | 包含在订阅内 |
 | Claude Code (API) | Sonnet 4.6 | ~500K in + ~100K out | ~$3.00 |
 | Claude Code (API) | Opus 4.6 | ~500K in + ~100K out | ~$15.00 |
-| Copilot CLI (Pro) | claude-sonnet-4.5 | ~10 premium requests | 包含在 $10/月 |
+| Copilot CLI (Pro) | claude-sonnet-4.5 | ~10 premium requests | 包含在订阅内 |
 | Codex CLI | gpt-5.1-codex | ~500K in + ~100K out | ~$2.00 |
 | Aider | claude-sonnet-4.6 | ~300K in + ~50K out | ~$1.65 |
 | Gemini CLI | gemini-2.5-pro | ~500K in + ~100K out | 免费层（可能触发限制） |
@@ -85,7 +89,7 @@ API 按量价格（参考）：
 
 | Agent | 模型 | 估算 token | 估算费用 |
 |------|------|-----------|---------|
-| Claude Code (Max) | Opus 4.6 | ~2M in + ~500K out | 包含在 $100/月 |
+| Claude Code (Max) | Opus 4.6 | ~2M in + ~500K out | 包含在高阶订阅内 |
 | Claude Code (API) | Opus 4.6 | ~2M in + ~500K out | ~$67.50 |
 | Copilot CLI (Pro) | claude-opus-4.5 | ~30 requests (3x) | 可能超出 500 配额 |
 | Codex CLI | gpt-5.1-codex-max | ~2M in + ~500K out | ~$15.00 |
@@ -109,11 +113,13 @@ API 按量价格（参考）：
 
 ## Qoder CLI 定价（信用制）
 
-| 计划 | 月费 | 月信用 |
-|------|------|--------|
-| Free | $0 | 300 |
-| Pro | $10（50% off） | 2,000 |
-| Pro+ | $30（50% off） | 6,000 |
-| Ultra | $100（50% off） | 20,000 |
+> 信用与月费均可能调整，请优先参考 `docs/data/agents-metadata.json`、`docs/data/CHANGELOG.md` 与官方页面。
 
-> 附加信用 $0.01/个，1000 起购。
+| 计划 | 形态 | 月信用 |
+|------|------|--------|
+| Free | 免费 | 300 |
+| Pro | 订阅 | 2,000 |
+| Pro+ | 高阶订阅 | 6,000 |
+| Ultra | 高阶订阅 | 20,000 |
+
+> 附加信用按量购买，具体单价与起购门槛以官方页面为准。

@@ -83,7 +83,7 @@
 | [Warp](./docs/tools/warp.md) | Warp | 专有 | Rust | 多种 | GPU 渲染终端，块结构输出 |
 | [Qwen Code](./docs/tools/qwen-code/) | 阿里云 | Apache-2.0 | TypeScript | 6+ | 免费 1000 次/天，Arena 多模型竞争，41 命令 |
 | [SWE-agent](./docs/tools/swe-agent.md) | Princeton | MIT | Python | 100+ | SWE-bench 评估，Docker 沙箱 |
-| [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | Shell | 多种 | 67 GitHub 工具，GitHub 生态集成 |
+| [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | TypeScript | 多种 | 67 GitHub 工具，GitHub 生态集成 |
 | [Kimi CLI](./docs/tools/kimi-cli/) | 月之暗面 | Apache-2.0 | Python | 6 | Wire 协议，D-Mail 时间回溯 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | TypeScript | 多种 | AI 原生 IDE，Background Agent |
 | [Qoder CLI](./docs/tools/qoder-cli/) | QoderAI | 专有 | Go | 多种 | Quest 模式，Claude Code 兼容 |

@@ -26,7 +26,7 @@
 
 ├── 企业安全合规 → Claude Code（28 条 BLOCK + 5 层设置 + 沙箱）
 ├── GitHub 深度集成 → Copilot CLI（35 GitHub 工具 + Actions/PR/Issues）
-├── 完全免费 → Qwen Code（1000 次/天）或 Gemini CLI（1500 次/天）
+├── 完全免费 → Qwen Code 或 Gemini CLI（具体额度见 docs/data/agents-metadata.json）
 ├── 隐私零遥测 → Kimi CLI（零分析）或 OpenCode（零分析）
 ├── Git 工作流控制 → Aider（/commit /undo /diff /git + 自动提交归因）
 ├── 最大模型灵活性 → Goose（58+ 提供商）或 Aider（100+ via LiteLLM）

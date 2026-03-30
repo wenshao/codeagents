@@ -244,6 +244,30 @@
       }
     },
     {
+      "id": "oh-my-openagent",
+      "name": "Oh My OpenAgent",
+      "category": "single-file",
+      "license": "SUL-1.0",
+      "developer": "code-yeongyu",
+      "implementation_language": "TypeScript",
+      "runtime": "OpenCode Harness / Node.js",
+      "package_ecosystem": "npm",
+      "stars": "~44k",
+      "downloads": {
+        "type": "unknown",
+        "value": "—",
+        "as_of": "2026-03-26"
+      },
+      "pricing_summary": "取决于底层模型提供商",
+      "free_tier": "取决于底层提供商",
+      "evidence": {
+        "status": "single-file-only",
+        "source_type": "summary-analysis",
+        "evidence_path": "docs/tools/oh-my-openagent.md",
+        "last_verified": "2026-03-26"
+      }
+    },
+    {
       "id": "cline",
       "name": "Cline",
       "category": "single-file",
