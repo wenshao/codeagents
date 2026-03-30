@@ -151,9 +151,9 @@ done_messages ──→ 总 token > max_tokens (1024)?
 
 ## 三、Claude Code：三层压缩体系
 
-> 来源：本仓库现有 Claude Code 文档对 `compact-2026-01-12` 的记载 + 二进制分析上下文；补充见 `docs/tools/claude-code/02-commands.md` 与 `docs/tools/claude-code/EVIDENCE.md`
+> 来源：本仓库现有 Claude Code 文档对 compact 相关接口的记载 + 二进制分析上下文；补充见 `docs/tools/claude-code/02-commands.md` 与 `docs/tools/claude-code/EVIDENCE.md`
 >
-> 注：本仓库 `Claude Code` 证据页目前未系统收录压缩实现细节；`compact-2026-01-12` 这一标识符在仓库内多篇文档中被用于描述 compact 相关接口，但其公开 API 文档溯源仍应继续独立复核。因此，以下若涉及阈值、小版本行为或 prompt 细节，应理解为“基于仓库现有文档与二进制分析的整理”，而非完整源码级钉证。
+> 注：本仓库 `Claude Code` 证据页目前未系统收录压缩实现细节；`compact-2026-01-12` 这一标识符目前主要出现在仓库内部文档整理中，尚未建立稳定的外部公开文档溯源。因此，以下若涉及阈值、小版本行为、接口标识或 prompt 细节，应理解为“基于仓库现有文档与二进制分析上下文的整理”，而非完整源码级钉证。
 
 ### 三层设计
 
@@ -290,7 +290,7 @@ Qwen Code 的上下文压缩框架总体上沿袭 Gemini CLI：包括 `ChatCompr
 
 | Agent | 已证实控制面 | 已证实生命周期/骨架 | 仍未知 |
 |------|-------------|-------------------|------|
-| **Claude Code** | `/compact [指令]`、`PreCompact` / `PostCompact`、仓库文档记载的 compact 接口标识 | 三层压缩体系、`<summary>` 输出约束 | 精确阈值常量、完整 compact prompt、接口标识的公开文档溯源、微压缩算法细节 |
+| **Claude Code** | `/compact [指令]`、`PreCompact` / `PostCompact`、仓库内部文档记载的 compact 接口标识 | 三层压缩体系、`<summary>` 输出约束 | 精确阈值常量、完整 compact prompt、接口标识的稳定外部公开溯源、微压缩算法细节 |
 | **Copilot CLI** | `/compact`、`infiniteSessions.backgroundCompactionThreshold`、`bufferExhaustionThreshold` | infinite sessions、checkpoint titles 作为会话骨架 | 默认阈值数值、手动与后台 compact 是否共用同一实现 |
 | **Codex CLI** | `/compact`、`compact_prompt`、`model_auto_compact_token_limit`、`model_context_window` | `thread/compact/start`、`thread/compacted` 事件 | 默认 compact prompt、默认阈值、`enable_request_compression` 与摘要 compact 的准确关系 |
 
@@ -443,11 +443,11 @@ if (message.summarizeMetadata) {
 
 > "Opus 4 improved from 49% to 74%, and Opus 4.5 improved from 79.5% to 88.1% with Tool Search Tool enabled."
 
-### 代码执行模式：98.7% token 减少
+### 代码执行模式：更激进的 token 节流路径
 
-更极端的方案——Agent 通过代码直接调用 MCP 工具，中间结果留在执行环境而非进入上下文：
+更极端的方案——Agent 通过代码直接调用 MCP 工具，中间结果留在执行环境而非进入上下文。
 
-> "This reduces the token usage from 150,000 tokens to 2,000 tokens--a time and cost saving of 98.7%."
+> 注：仓库当前整理稿中曾引用一组 `150,000 → 2,000 tokens（98.7%）` 的数字来说明这种代码执行模式的节流潜力；但本文在本轮收敛中未继续将其作为已稳定钉住的单一外部数据点，而仅保留其方法论含义：**把中间结果留在执行环境，而不是写回聊天上下文，本身就是比“事后压缩历史”更激进的 token 节流路径。**
 
 **对上下文压缩的启示**：压缩算法优化对话历史只是治标；**从源头减少工具定义和中间结果的 token 消耗**才是治本。Tool Search Tool 和代码执行模式是压缩之外的第二条路径。
 
@@ -462,7 +462,7 @@ if (message.summarizeMetadata) {
 |------|---------|---------|
 | Gemini CLI | `packages/core/src/services/chatCompressionService.ts` + `packages/core/src/prompts/snippets.ts` | GitHub 源码 |
 | Aider | `aider/history.py`（143 行）+ `aider/prompts.py` | GitHub 源码 |
-| Claude Code | `docs/tools/claude-code/02-commands.md` 中对 `compact-2026-01-12` 的记载 + `docs/tools/claude-code/EVIDENCE.md` | 仓库文档整理 + 二进制分析 |
+| Claude Code | `docs/tools/claude-code/02-commands.md` 中对 compact 相关接口的仓库内记载 + `docs/tools/claude-code/EVIDENCE.md` | 仓库文档整理 + 二进制分析 |
 | Kimi CLI | `src/kimi_cli/soul/compaction.py` + `src/kimi_cli/prompts/compact.md` | GitHub 源码 |
 | Goose | `crates/goose/src/context_mgmt/mod.rs` + [官方文档](https://block.github.io/goose/docs/guides/sessions/smart-context-management/) | GitHub 源码 + 官方文档 |
 | Qwen Code | `docs/tools/qwen-code/EVIDENCE.md`（确认 Gemini CLI 分叉）+ 本仓库其他对比分档 | 分叉关系 + 仓库交叉审计 |
