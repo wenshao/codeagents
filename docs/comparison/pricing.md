@@ -4,7 +4,7 @@
 
 ## 定价模式总览
 
-> 本表仅保留定价结构。具体月费、免费层额度等高频变化数字请查阅 `docs/data/agents-metadata.json`。
+> 本表仅保留定价结构。具体月费、免费层额度等高频变化数字请查阅 [`../data/agents-metadata.json`](../data/agents-metadata.json)。
 
 | Agent | 模式 | 免费层形态 | 按量计费 |
 |------|------|-----------|---------|
@@ -20,7 +20,7 @@
 
 ## Claude Code 详细定价
 
-> 月费与计划细节属于高频变化信息，请优先以 `docs/data/agents-metadata.json`、`docs/data/CHANGELOG.md` 和官方定价页为准。此处仅保留计划结构与成本方法。
+> 月费与计划细节属于高频变化信息，请优先以 [`../data/agents-metadata.json`](../data/agents-metadata.json)、[`../data/CHANGELOG.md`](../data/CHANGELOG.md) 和官方定价页为准。此处仅保留计划结构与成本方法。
 
 | 计划 | 形态 | 包含 | 模型 | Opus 用量 |
 |------|------|------|------|----------|
@@ -39,7 +39,7 @@ API 按量价格（参考）：
 
 ## Copilot CLI 详细定价
 
-> 订阅价格与配额可能频繁调整，请优先以 `docs/data/agents-metadata.json`、`docs/data/CHANGELOG.md` 和官方定价页为准。
+> 订阅价格与配额可能频繁调整，请优先以 [`../data/agents-metadata.json`](../data/agents-metadata.json)、[`../data/CHANGELOG.md`](../data/CHANGELOG.md) 和官方定价页为准。
 
 | 计划 | 形态 | Premium Requests | 免费模型 |
 |------|------|-----------------|---------|
@@ -113,7 +113,7 @@ API 按量价格（参考）：
 
 ## Qoder CLI 定价（信用制）
 
-> 信用与月费均可能调整，请优先参考 `docs/data/agents-metadata.json`、`docs/data/CHANGELOG.md` 与官方页面。
+> 信用与月费均可能调整，请优先参考 [`../data/agents-metadata.json`](../data/agents-metadata.json)、[`../data/CHANGELOG.md`](../data/CHANGELOG.md) 与官方页面。
 
 | 计划 | 形态 | 月信用 |
 |------|------|--------|
