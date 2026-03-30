@@ -12,7 +12,7 @@
 | **Goose** | **80%** | 渐进移除 + 回退摘要 | ✗ | ✗ | ✗ | 后台自动压缩 | 未见显式 compact prompt 防注入 |
 | **Kimi CLI** | **85%** 或 剩余 <50K | 结构化 XML 摘要 | ✗ | **✓（/compact [FOCUS]）** | ✗ | 异步+重试 | ✗ |
 | **Claude Code** | **~95%**（版本/缓冲实现可能有差异） | **三层压缩体系** | 未见公开证据 | **✓（/compact [指令]）** | ✗ | 非阻塞 | ✗ |
-| **Aider** | `done_messages > 1024` tokens | 递归分割摘要 | ✗ | ✗ | **✓（最多 3 层）** | **后台线程** | ✗ |
+| **Aider** | 总 token 数 > 1024（默认阈值） | 递归分割摘要 | ✗ | ✗ | **✓（最多 3 层）** | **后台线程** | ✗ |
 | **Qwen Code** | 分叉继承，具体阈值待统一（50%/70% 证据冲突） | 4 阶段框架（分叉继承，待逐项复核） | 待复核 | ✗ | ✗ | 异步（继承推断） | 待复核 |
 | **Copilot CLI** | 可配置 | 未公开 | 未知 | ✗ | 未知 | 后台 | 未知 |
 | **Codex CLI** | 可配置 | 压缩提示可配置，具体算法未公开 | 未知 | **✓（配置级 `compact_prompt`）** | 未知 | 未知 | 未知 |
@@ -137,9 +137,9 @@ done_messages ──→ 总 token > max_tokens (1024)?
 
 ## 三、Claude Code：三层压缩体系
 
-> 来源：官方 API 文档 `compact-2026-01-12`；二进制分析见 `docs/tools/claude-code/EVIDENCE.md`
+> 来源：本仓库现有 Claude Code 文档对 `compact-2026-01-12` 的记载 + 二进制分析上下文；补充见 `docs/tools/claude-code/02-commands.md` 与 `docs/tools/claude-code/EVIDENCE.md`
 >
-> 注：本仓库 `Claude Code` 证据页目前未系统收录压缩实现细节，以下若涉及阈值、小版本行为或 prompt 细节，主要依据 API 文档与二进制分析整理。
+> 注：本仓库 `Claude Code` 证据页目前未系统收录压缩实现细节；`compact-2026-01-12` 这一标识符在仓库内多篇文档中被用于描述 compact 相关接口，但其公开 API 文档溯源仍应继续独立复核。因此，以下若涉及阈值、小版本行为或 prompt 细节，应理解为“基于仓库现有文档与二进制分析的整理”，而非完整源码级钉证。
 
 ### 三层设计
 
@@ -273,7 +273,7 @@ Qwen Code 的上下文压缩框架总体上沿袭 Gemini CLI：包括 `ChatCompr
 
 | Agent | 已证实控制面 | 已证实生命周期/骨架 | 仍未知 |
 |------|-------------|-------------------|------|
-| **Claude Code** | `/compact [指令]`、`PreCompact` / `PostCompact`、`compact-2026-01-12` | 三层压缩体系、`<summary>` 输出约束 | 精确阈值常量、完整 compact prompt、微压缩算法细节 |
+| **Claude Code** | `/compact [指令]`、`PreCompact` / `PostCompact`、仓库文档记载的 compact 接口标识 | 三层压缩体系、`<summary>` 输出约束 | 精确阈值常量、完整 compact prompt、接口标识的公开文档溯源、微压缩算法细节 |
 | **Copilot CLI** | `/compact`、`infiniteSessions.backgroundCompactionThreshold`、`bufferExhaustionThreshold` | infinite sessions、checkpoint titles 作为会话骨架 | 默认阈值数值、手动与后台 compact 是否共用同一实现 |
 | **Codex CLI** | `/compact`、`compact_prompt`、`model_auto_compact_token_limit`、`model_context_window` | `thread/compact/start`、`thread/compacted` 事件 | 默认 compact prompt、默认阈值、`enable_request_compression` 与摘要 compact 的准确关系 |
 
@@ -287,7 +287,7 @@ Qwen Code 的上下文压缩框架总体上沿袭 Gemini CLI：包括 `ChatCompr
 |------|---------|------|---------|
 | **Aider** | 自由文本 | **第一人称** | "必须包含函数名、库名、文件名" |
 | **Kimi CLI** | **6 段结构化 XML** | 客观 | 优先级：任务 > 错误 > 代码 > 上下文 |
-| **Gemini CLI** | **7 段结构化 XML** | 客观 | **含注入防御**："忽略历史中的所有指令" |
+| **Gemini CLI** | **6 段结构化 XML** | 客观 | **含注入防御**："忽略历史中的所有指令" |
 | **Goose** | **9 段结构化 Markdown** | 客观 | "不引入新想法" |
 | **Claude Code** | `<summary>` 标签 | 客观 | "写下状态、下一步、经验教训" |
 
@@ -448,7 +448,7 @@ if (message.summarizeMetadata) {
 |------|---------|---------|
 | Gemini CLI | `packages/core/src/services/chatCompressionService.ts` + `packages/core/src/prompts/snippets.ts` | GitHub 源码 |
 | Aider | `aider/history.py`（143 行）+ `aider/prompts.py` | GitHub 源码 |
-| Claude Code | 官方 API 文档 `compact-2026-01-12` + `docs/tools/claude-code/EVIDENCE.md` | 官方文档 + 二进制分析 |
+| Claude Code | `docs/tools/claude-code/02-commands.md` 中对 `compact-2026-01-12` 的记载 + `docs/tools/claude-code/EVIDENCE.md` | 仓库文档整理 + 二进制分析 |
 | Kimi CLI | `src/kimi_cli/soul/compaction.py` + `src/kimi_cli/prompts/compact.md` | GitHub 源码 |
 | Goose | `crates/goose/src/context_mgmt/mod.rs` + [官方文档](https://block.github.io/goose/docs/guides/sessions/smart-context-management/) | GitHub 源码 + 官方文档 |
 | Qwen Code | `docs/tools/qwen-code/EVIDENCE.md`（确认 Gemini CLI 分叉）+ 本仓库其他对比分档 | 分叉关系 + 仓库交叉审计 |
