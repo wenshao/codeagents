@@ -40,6 +40,20 @@
 
 > **阅读提示**：下面各节主要比较“压缩本体”；但实际长会话体验往往同样取决于这些外围机制是否足够强。
 
+### 研究背景：为什么上下文压缩仍然必要
+
+从近两年的论文与工程文章看，“上下文压缩”之所以仍是 Agent 设计中的核心问题，不是因为模型没有更大的 context window，而是因为**标称窗口大小**、**有效可用上下文**与**长任务稳定性**并不等价。
+
+- **长上下文不等于高质量利用**：`Lost in the Middle`（Liu et al., 2023）指出，模型在长上下文里对中间位置的信息利用明显弱于首尾位置；这意味着“尽量保留全部原始历史”不一定优于“保留更高信号的摘要或结构化状态”
+- **标称窗口不等于有效工作窗口**：`RULER`（Hsieh et al., 2024）强调，模型宣称支持的长上下文长度与其在复杂任务中的稳定可用上下文并不相同；随着长度和任务复杂度上升，真实可用窗口会缩水
+- **压缩只是 context engineering 的一个子问题**：Anthropic 在 `Effective Context Engineering for AI Agents` 中将 compression、retrieval、memory、context selection 放在同一框架下讨论，核心目标不是“塞进更多 token”，而是“保留最小但高信号的上下文”
+- **compaction 并不总优于 reset**：Anthropic 在 `Harness Design for Long-Running Agentic Apps` 中进一步提出 `context anxiety`——某些模型在接近上下文上限时会提前收尾。此时 compaction 虽能保留连续性，却不一定能移除导致退化的状态；结构化 handoff + context reset 反而可能更稳
+- **压缩不只等于摘要**：`Selective Context`（Li et al., 2023）说明，prompt/context compression 还可以通过选择性剪枝完成，而不仅仅是生成摘要；这对理解 Copilot CLI / Codex CLI 这类“算法细节未公开，但配置面可控”的工具尤其重要
+
+因此，本文比较的重点不是“谁保留了更多 token”，而是：**谁能在有限且会退化的有效上下文中，保留更高信号的信息，并用更低成本维持任务连续性。**
+
+> 参考：Liu et al., *Lost in the Middle* (2023)；Hsieh et al., *RULER* (2024)；Anthropic, *Effective Context Engineering for AI Agents*；Anthropic, *Harness Design for Long-Running Agentic Apps*；Li et al., *Selective Context* (2023)
+
 ---
 
 ## 一、Gemini CLI：四阶段压缩 + 双 LLM 验证（公开实现中流程最细的一类）
@@ -454,3 +468,11 @@ if (message.summarizeMetadata) {
 | Qwen Code | `docs/tools/qwen-code/EVIDENCE.md`（确认 Gemini CLI 分叉）+ 本仓库其他对比分档 | 分叉关系 + 仓库交叉审计 |
 | Copilot CLI | `infiniteSessions.backgroundCompactionThreshold` | SEA 反编译 |
 | Codex CLI | `compact_prompt`、`model_auto_compact_token_limit` 配置项 | 二进制分析 |
+
+### 外部研究 / 工程参考
+
+- Liu et al., [*Lost in the Middle: How Language Models Use Long Contexts*](https://arxiv.org/abs/2307.03172), 2023
+- Hsieh et al., [*RULER: What’s the Real Context Size of Your Long-Context Language Models?*](https://arxiv.org/abs/2404.06654), 2024
+- Li et al., [*Selective Context: Compressing Context to Enhance Inference Efficiency of Large Language Models*](https://arxiv.org/abs/2310.06201), 2023
+- Anthropic, [*Effective Context Engineering for AI Agents*](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)
+- Anthropic, [*Harness Design for Long-Running Agentic Apps*](https://www.anthropic.com/engineering/harness-design-long-running-apps)
