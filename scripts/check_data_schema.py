@@ -19,6 +19,7 @@ AGENT_REQUIRED = {
 AGENT_OPTIONAL = {'stars', 'downloads', 'pricing_summary', 'free_tier'}
 DOWNLOADS_REQUIRED = {'type', 'value', 'as_of'}
 EVIDENCE_REQUIRED = {'status', 'source_type', 'evidence_path', 'last_verified'}
+STARS_SENTINEL_VALUES = {'-', '—', 'unknown'}
 
 
 def load_json(path: Path):
@@ -89,13 +90,16 @@ def validate_agent(
     download_types: set[str],
     evidence_status_values: set[str],
     evidence_source_types: set[str],
+    agent_required: set[str],
+    downloads_required: set[str],
+    evidence_required: set[str],
 ):
     label = f'agents[{index}]'
     if not isinstance(agent, dict):
         errors.append(f'{label}: must be an object')
         return
 
-    require_keys(agent, AGENT_REQUIRED, AGENT_OPTIONAL, label, errors)
+    require_keys(agent, agent_required, AGENT_OPTIONAL, label, errors)
 
     agent_id = agent.get('id')
     if not isinstance(agent_id, str) or not ID_RE.match(agent_id):
@@ -114,8 +118,12 @@ def validate_agent(
     if category not in category_values:
         errors.append(f'{label}.category: must be one of {sorted(category_values)}')
 
-    if 'stars' in agent and not isinstance(agent.get('stars'), str):
-        errors.append(f'{label}.stars: must be a string when present')
+    if 'stars' in agent:
+        stars_value = agent.get('stars')
+        if not isinstance(stars_value, str) or not stars_value.strip():
+            errors.append(f'{label}.stars: must be a non-empty string when present')
+        elif stars_value not in STARS_SENTINEL_VALUES and not re.match(r'^~?\d+(?:\.\d+)?[kKmM]?$', stars_value):
+            errors.append(f'{label}.stars: must be a compact count like `83k` or a sentinel value {sorted(STARS_SENTINEL_VALUES)}')
     if 'pricing_summary' in agent and not isinstance(agent.get('pricing_summary'), str):
         errors.append(f'{label}.pricing_summary: must be a string when present')
     if 'free_tier' in agent and not isinstance(agent.get('free_tier'), str):
@@ -126,7 +134,7 @@ def validate_agent(
         if not isinstance(downloads, dict):
             errors.append(f'{label}.downloads: must be an object')
         else:
-            require_keys(downloads, DOWNLOADS_REQUIRED, set(), f'{label}.downloads', errors)
+            require_keys(downloads, downloads_required, set(), f'{label}.downloads', errors)
             if downloads.get('type') not in download_types:
                 errors.append(f'{label}.downloads.type: must be one of {sorted(download_types)}')
             if not isinstance(downloads.get('value'), str) or not downloads.get('value').strip():
@@ -138,7 +146,7 @@ def validate_agent(
     if not isinstance(evidence, dict):
         errors.append(f'{label}.evidence: must be an object')
     else:
-        require_keys(evidence, EVIDENCE_REQUIRED, set(), f'{label}.evidence', errors)
+        require_keys(evidence, evidence_required, set(), f'{label}.evidence', errors)
         if evidence.get('status') not in evidence_status_values:
             errors.append(f'{label}.evidence.status: must be one of {sorted(evidence_status_values)}')
         if evidence.get('source_type') not in evidence_source_types:
@@ -202,10 +210,6 @@ def main() -> int:
     if not isinstance(agents, list) or not agents:
         errors.append('root.agents: must be a non-empty array')
     else:
-        global AGENT_REQUIRED, DOWNLOADS_REQUIRED, EVIDENCE_REQUIRED
-        AGENT_REQUIRED = agent_required
-        DOWNLOADS_REQUIRED = downloads_required
-        EVIDENCE_REQUIRED = evidence_required
         seen_ids: set[str] = set()
         for idx, agent in enumerate(agents):
             validate_agent(
@@ -217,6 +221,9 @@ def main() -> int:
                 download_types,
                 evidence_status_values,
                 evidence_source_types,
+                agent_required,
+                downloads_required,
+                evidence_required,
             )
 
     if errors:

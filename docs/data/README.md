@@ -27,7 +27,9 @@
 
 ### 3. 动态事实必须带时间戳
 
-所有动态数据都应包含 `as_of` 或 `last_verified`：
+所有动态数据都应有明确时间基准：
+- 优先使用字段内的 `as_of` 或 `last_verified`
+- 对于 `stars` 这类紧凑展示字段，统一以顶层 `last_updated` 作为批次时间基准
 
 ```json
 {

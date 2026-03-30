@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.com/codeagents-x1/docs/data/agents-metadata.schema.json",
+  "$id": "https://example.com/codeagents/docs/data/agents-metadata.schema.json",
   "title": "agents-metadata",
   "type": "object",
   "additionalProperties": false,
