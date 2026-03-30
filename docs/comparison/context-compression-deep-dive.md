@@ -99,7 +99,7 @@
 | `DEFAULT_COMPRESSION_TOKEN_THRESHOLD` | 0.5 | 50% 容量触发 |
 | `COMPRESSION_PRESERVE_THRESHOLD` | 0.3 | 保留最近 30% |
 | 截断预算 | 50K tokens | Phase 1 预算 |
-| 旧工具截断 | 最后 30 行 | 超预算工具输出 |
+| 旧工具截断 | 前 20% + 后 80% 字符 | 超预算工具输出，完整内容落临时文件 |
 
 ### 独有特性
 
