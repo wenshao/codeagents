@@ -349,4 +349,4 @@ chmod +x script.sh
 - [工具文档](../tools/) - 详细工具指南
 - [功能对比](../comparison/features.md) - 横向对比
 - [架构解析](../architecture/overview.md) - 代理如何工作
-- [基准测试](../benchmarks/) - 性能数据
+- [基准测试](../benchmarks/overview.md) - 性能数据

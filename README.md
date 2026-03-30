@@ -6,6 +6,8 @@
 
 **👉 [一页总结（选型速查）](./docs/SUMMARY.md)** — 给没时间看全部文档的人
 
+> **维护说明**：高频变化的数据（Stars、下载量、价格、验证日期）开始统一沉淀到 [`docs/data/`](./docs/data/README.md)。证据完备度与验证状态见 [`docs/evidence-index.md`](./docs/evidence-index.md)。
+
 ## 核心发现
 
 ### 源码分析纠正的"常识"
@@ -29,26 +31,21 @@
 
 > Rust 二进制（50ms）比 Node.js SEA（72ms）快 30%，比 npm 包（1.5s）快 **30 倍**。Qwen Code 作为 Gemini CLI 分叉，安装仅 48MB（上游 509MB 的 9%），启动快 2.5 倍。
 
-### 实际采用量（2026-03-26 API 实时查询）
+### 实际采用量（汇总入口）
 
-| Agent | npm 周下载 | 4 周趋势 | Stars | 版本数 | 首发 |
-|-------|-----------|---------|-------|-------|------|
-| **Claude Code** | **1,020 万** | 934→951→987→1,020 万 ↑ | 83k | 359 | 2025-02 |
-| **Codex CLI** | **368 万** | 214→275→356→368 万 ↑↑ | 68k | 1,543 | 2025-04 |
-| **Gemini CLI** | 74 万 | 76→66→73→74 万 → | **99k** | 539 | 2025-06 |
-| **Copilot CLI** | 64 万 | 19→25→42→64 万 **↑↑↑** | 10k | 588 | 2025-09 |
-| **Qwen Code** | 8.4 万 | 6→16→11→8.4 万 ↑ | 21k | 353 | 2025-07 |
+> 高频变化数据已集中维护在 [`docs/data/agents-metadata.json`](./docs/data/agents-metadata.json)。
+>
+> 当前 README 仅保留结论性摘要，详细数字、验证日期和证据状态请查看：
+> - [`docs/data/agents-metadata.json`](./docs/data/agents-metadata.json)
+> - [`docs/evidence-index.md`](./docs/evidence-index.md)
+> - [`docs/comparison/evolution-community.md`](./docs/comparison/evolution-community.md)
 
-| Agent | PyPI 月下载 | Stars |
-|-------|-----------|-------|
-| **OpenHands** | **125 万** | 70k |
-| **Aider** | 78 万 | 42k |
-| **Kimi CLI** | 45 万 | 7k |
-| **OpenCode** | — | **~132k** |
+- Claude Code、Codex CLI 在 npm 生态采用量领先
+- Gemini CLI 社区热度高，但采用量与 Claude Code 不完全同步
+- Qwen Code、Kimi CLI 在中文开发者语境下增长明显
+- OpenHands、Aider 在 Python / research-oriented 场景保持稳定关注度
 
-> **Stars ≠ 采用**：Gemini CLI Stars（99k）是 Claude Code（83k）的 1.2 倍，但 npm 下载仅其 **7%**。Copilot CLI 增长最猛（4 周 ↑240%）。
-
-*数据来源：[npm Registry API](https://api.npmjs.org/)、[PyPI Stats](https://pypistats.org/)、`gh api`*
+*数据来源：[npm Registry API](https://api.npmjs.org/)、[PyPI Stats](https://pypistats.org/)、`gh api`；具体数值请以 `docs/data/agents-metadata.json` 为准。*
 
 ---
 
@@ -59,7 +56,7 @@
 | **日常编码** | Claude Code 或 Aider | 最强推理 / 最好 Git 集成 |
 | **免费使用** | Qwen Code 或 Gemini CLI | 1000 次/天免费 OAuth / Google 账号 |
 | **多模型切换** | OpenCode 或 Goose | 100+ models.dev / 58+ 提供商 |
-| **VS Code 用户** | Cline 或 Continue | 59k Stars IDE 原生 / PR Checks |
+| **VS Code 用户** | Cline 或 Continue | IDE 原生集成 / PR Checks |
 | **中文开发者** | Qwen Code 或 Kimi CLI | 6 语言 UI / 月之暗面中文模型 |
 | **CI/CD 自动化** | SWE-agent 或 OpenHands | 批量评估 / Docker 沙箱 |
 | **安全沙箱** | Codex CLI 或 Gemini CLI | 三平台 OS 沙箱 / TOML 策略引擎 |
@@ -70,25 +67,27 @@
 
 ## 快速对比表
 
-| Agent | 开发者 | 许可证 | Stars | 语言 | 提供商 | 特色 |
-|------|--------|--------|-------|------|-------|------|
-| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | **~132k** | TypeScript（Bun） | 100+ | 多客户端（TUI+Web+桌面），37 LSP |
-| [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | **99k** | TypeScript | 1 | 8 策略模型路由，TOML 策略引擎 |
-| [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | **83k** | Rust | 1 | 50ms 启动，24 Hook 事件，Channels |
-| [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | **70k** | Python | 100+ | Docker 沙箱，三层安全，多代理 |
-| [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | **68k** | Rust | 1 | 三平台 OS 沙箱，Cloud 远程执行 |
-| [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | **59k** | TypeScript | 48+ | VS Code 原生，Git Checkpoint |
-| [Aider](./docs/tools/aider/) | Paul Gauthier | GPL-3.0 | **42k** | Python | 100+ | 14 编辑格式，三槽位模型，/undo |
-| [Goose](./docs/tools/goose/) | Block | Apache-2.0 | **34k** | Rust | 58+ | MCP 原生，11 Platform Extension，Recipe + Cron 调度 |
-| [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | **32k** | TypeScript | 60+ | PR Checks CI 审查，语义索引 |
-| [Warp](./docs/tools/warp.md) | Warp | 专有 | **26k** | Rust | 多种 | GPU 渲染终端，块结构输出 |
-| [Qwen Code](./docs/tools/qwen-code/) | 阿里云 | Apache-2.0 | **21k** | TypeScript | 6+ | 免费 1000 次/天，Arena 多模型竞争，41 命令 |
-| [SWE-agent](./docs/tools/swe-agent.md) | Princeton | MIT | **19k** | Python | 100+ | SWE-bench 评估，Docker 沙箱 |
-| [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | **10k** | Shell | 多种 | 67 GitHub 工具，增长 ↑240%/月 |
-| [Kimi CLI](./docs/tools/kimi-cli/) | 月之暗面 | Apache-2.0 | **7k** | Python | 6 | Wire 协议，D-Mail 时间回溯 |
-| [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | - | TypeScript | 多种 | AI 原生 IDE，Background Agent |
-| [Qoder CLI](./docs/tools/qoder-cli/) | QoderAI | 专有 | - | Go | 多种 | Quest 模式，Claude Code 兼容 |
-| [Oh My OpenAgent](./docs/tools/oh-my-openagent.md) | code-yeongyu | SUL-1.0 | **~44k** | TypeScript | 多种 | OpenCode Harness 层，7~10 Discipline Agent |
+> 为减少动态数字重复维护，Stars / 下载量 / 免费层等高频变化数据已迁移到 [`docs/data/agents-metadata.json`](./docs/data/agents-metadata.json)。
+
+| Agent | 开发者 | 许可证 | 语言 | 提供商 | 特色 |
+|------|--------|--------|------|-------|------|
+| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | TypeScript（Bun） | 100+ | 多客户端（TUI+Web+桌面），37 LSP |
+| [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | TypeScript | 1 | 8 策略模型路由，TOML 策略引擎 |
+| [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | Rust | 1 | 50ms 启动，24 Hook 事件，Channels |
+| [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | Python | 100+ | Docker 沙箱，三层安全，多代理 |
+| [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | Rust | 1 | 三平台 OS 沙箱，Cloud 远程执行 |
+| [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | TypeScript | 48+ | VS Code 原生，Git Checkpoint |
+| [Aider](./docs/tools/aider/) | Paul Gauthier | GPL-3.0 | Python | 100+ | 14 编辑格式，三槽位模型，/undo |
+| [Goose](./docs/tools/goose/) | Block | Apache-2.0 | Rust | 58+ | MCP 原生，11 Platform Extension，Recipe + Cron 调度 |
+| [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | TypeScript | 60+ | PR Checks CI 审查，语义索引 |
+| [Warp](./docs/tools/warp.md) | Warp | 专有 | Rust | 多种 | GPU 渲染终端，块结构输出 |
+| [Qwen Code](./docs/tools/qwen-code/) | 阿里云 | Apache-2.0 | TypeScript | 6+ | 免费 1000 次/天，Arena 多模型竞争，41 命令 |
+| [SWE-agent](./docs/tools/swe-agent.md) | Princeton | MIT | Python | 100+ | SWE-bench 评估，Docker 沙箱 |
+| [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | TypeScript | 多种 | 67 GitHub 工具，GitHub 生态集成 |
+| [Kimi CLI](./docs/tools/kimi-cli/) | 月之暗面 | Apache-2.0 | Python | 6 | Wire 协议，D-Mail 时间回溯 |
+| [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | TypeScript | 多种 | AI 原生 IDE，Background Agent |
+| [Qoder CLI](./docs/tools/qoder-cli/) | QoderAI | 专有 | Go | 多种 | Quest 模式，Claude Code 兼容 |
+| [Oh My OpenAgent](./docs/tools/oh-my-openagent.md) | code-yeongyu | SUL-1.0 | TypeScript | 多种 | OpenCode Harness 层，7~10 Discipline Agent |
 
 ---
 

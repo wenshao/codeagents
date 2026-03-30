@@ -28,6 +28,13 @@
 - 用新数据更新基准测试
 - 修正不准确之处
 - 提高清晰度
+- 如果涉及动态指标（Stars、下载量、价格、验证日期），优先更新 `docs/data/agents-metadata.json`
+- 修改数据层前，先核对 `docs/data/SCHEMA.md`
+- 如果动态数据发生变更，同步更新 `docs/data/CHANGELOG.md`
+- 如果涉及证据完备度变化，同步更新 `docs/evidence-index.md`
+- 提交前优先运行统一检查：`python3 scripts/check_all.py`
+- 如需单独执行，可运行：`python3 scripts/check_data_schema.py`、`python3 scripts/check_repo_consistency.py` 和 `python3 scripts/check_stale_data.py`
+- `check_stale_data.py` 目前为告警型检查，主要用于提示潜在漂移
 
 ### 3. 添加示例
 
@@ -160,6 +167,12 @@
 - [ ] 信息准确
 - [ ] 写作清晰中立
 - [ ] 无不必要的格式更改
+- [ ] 动态数据已同步到 `docs/data/agents-metadata.json`（如适用）
+- [ ] 已核对 `docs/data/SCHEMA.md`（如适用）
+- [ ] 动态数据变更已记录到 `docs/data/CHANGELOG.md`（如适用）
+- [ ] 证据状态已同步到 `docs/evidence-index.md`（如适用）
+- [ ] 已运行 `python3 scripts/check_all.py`
+- [ ] 如有需要，已分别运行 `python3 scripts/check_data_schema.py`、`python3 scripts/check_repo_consistency.py` 和 `python3 scripts/check_stale_data.py`
 
 ## 我们希望覆盖的领域
 
