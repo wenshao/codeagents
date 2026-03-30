@@ -82,4 +82,4 @@ Kimi CLI   OpenCode   Aider      Goose     Claude Code   Copilot   Gemini CLI
 
 - **深度分析**：[claude-code/](./tools/claude-code/) | [copilot-cli/](./tools/copilot-cli/) | [codex-cli/](./tools/codex-cli/) | [gemini-cli/](./tools/gemini-cli/) | [更多...](./tools/)
 - **对比文档**：[功能矩阵](./comparison/features.md) | [命令深度](./comparison/slash-commands-deep-dive.md) | [隐私遥测](./comparison/privacy-telemetry.md) | [定价](./comparison/pricing.md) | [系统要求](./comparison/system-requirements.md)
-- **实用指南**：[入门](./guides/getting-started.md) | [配置示例](./guides/config-examples.md) | [迁移](./guides/migration.md) | [故障排查](./guides/troubleshooting.md)
+- **实用指南**：[入门](./guides/getting-started.md) | [长期记忆](./guides/long-term-memory.md) | [配置示例](./guides/config-examples.md) | [迁移](./guides/migration.md) | [故障排查](./guides/troubleshooting.md)
