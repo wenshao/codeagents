@@ -183,7 +183,7 @@
 [工作流](./docs/guides/workflows.md) | [配置示例](./docs/guides/config-examples.md) | [迁移](./docs/guides/migration.md) | [故障排查](./docs/guides/troubleshooting.md) | [高效提示词](./docs/guides/effective-prompts.md)
 
 **深度配置：**
-[CLAUDE.md 写作](./docs/guides/writing-claude-md.md) | [AGENTS.md](./docs/guides/agents-md.md) | [Skill 设计](./docs/guides/skill-design.md) | [Hooks](./docs/guides/hooks-config.md) | [上下文管理](./docs/guides/context-management.md) | [安全加固](./docs/guides/security-hardening.md)
+[CLAUDE.md 写作](./docs/guides/writing-claude-md.md) | [AGENTS.md](./docs/guides/agents-md.md) | [长期记忆与个性化](./docs/guides/long-term-memory.md) | [Skill 设计](./docs/guides/skill-design.md) | [Hooks](./docs/guides/hooks-config.md) | [上下文管理](./docs/guides/context-management.md) | [安全加固](./docs/guides/security-hardening.md)
 
 **架构选型：**
 [构建自己的 Agent](./docs/guides/build-your-own-agent.md) — SDK 框架 vs 成品 Agent 扩展，4 层扩展路径（SKILL → Hooks → MCP → 插件）
