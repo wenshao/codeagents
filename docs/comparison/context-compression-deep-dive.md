@@ -31,7 +31,7 @@
 |------|-----------|----------------------|-----------|
 | **Gemini CLI** | 先截断旧工具输出（50K 预算） | `PreCompress` Hook + checkpoint / rewind + `codebase_investigator` 仓库调查 | 阈值固定；可手动 `/compress`（仓库文档多写作自动为主） |
 | **Claude Code** | 微压缩（长工具输出截断/摘要） | `PreCompact` / `PostCompact` Hook + Prompt Caching | `/compact [指令]` |
-| **Goose** | 每 10 个工具调用后台摘要；超限前优先移除中间工具输出 | UI 保留完整历史，活跃模型上下文仅保留摘要结果 | `GOOSE_AUTO_COMPACT_THRESHOLD`、`GOOSE_CONTEXT_STRATEGY`、手动 compact |
+| **Goose** | 以 10 个工具调用为一批进行增量摘要；超限前优先移除中间工具输出 | UI 保留完整历史，活跃模型上下文仅保留摘要结果 | `GOOSE_AUTO_COMPACT_THRESHOLD`、手动 compact |
 | **Kimi CLI** | loop_control 里预留 `reserved_context_size=50000` | `CompactionBegin/End` 事件 + checkpoint 绑定的 `/compact` 入口 | `/compact [FOCUS]` |
 | **Aider** | 依赖显式文件管理降低上下文噪声 | 后台线程压缩 + 极长会话退化到 `summarize_all()` | 自动为主 |
 | **Qwen Code** | 分叉继承 Gemini 压缩框架；并列 `LoopDetectionService` | `PreCompact` Hook + loop 检测服务 | 细节主要见仓库内部源码分析，尚未统一到证据页 |
@@ -179,7 +179,7 @@ done_messages ──→ 总 token > max_tokens (1024)?
 
 仓库内二次分析与 Goose 官方 smart-context-management 文档共同指向一个更完整的流程：
 
-1. **增量后台摘要**：默认每超过 10 个工具调用，会先对较旧的工具输出生成后台摘要，降低一次性压缩负载
+1. **增量后台摘要**：按 10 个工具调用为一批，对较旧的工具输出做增量摘要，降低一次性压缩负载
 2. **超限 compact**：当会话继续逼近 context limit，再启动“中间向外”的渐进移除与 full compact 回退链路
 
 这说明 Goose 的设计重点不是“等到 80% 再一次性大总结”，而是尽量把历史工具输出持续折叠，保留头尾骨架与近期现场。
