@@ -527,3 +527,84 @@ pub struct ModelConfig {
 | **预留空间** | 无 | 无 | 50K tokens | 无 |
 | **LLM 调用** | LiteLLM | @google/genai SDK | kosong (自研) + tenacity | Provider trait |
 | **流式输出** | 默认开启 | 默认流式 | 流式 | Provider 决定 |
+
+---
+
+## 代理循环工程洞察
+
+### Codex CLI 代理循环内部（来源：[OpenAI Engineering Blog](https://openai.com/index/unrolling-the-codex-agent-loop/)，2026-01-24）
+
+> "The agent loop is the core logic in Codex CLI that is responsible for orchestrating the interaction between the user, the model, and the tools the model invokes."
+
+**二次方成本问题**：每次工具调用迭代都追加到 prompt，导致"A single turn can involve many iterations between model inference and tool execution"，发送到 Responses API 的 JSON 量呈二次方增长。
+
+**解决方案——Prompt 缓存使采样变为线性**：通过保持请求间的精确前缀匹配实现缓存命中，"With cache hits, sampling becomes linear rather than quadratic."
+
+**无状态架构（隐私优先）**：Codex CLI 故意不使用 `previous_response_id`，"every request is stateless, which is essential for ZDR customers who have opted out of data storage."
+
+**三类工具的信任边界**：
+
+| 工具来源 | 沙箱 | 信任级别 |
+|---------|------|---------|
+| Codex 内置工具 | OS 级沙箱 | 最高 |
+| API 提供的工具 | 无沙箱 | 中等 |
+| MCP 服务器工具 | **无沙箱**，需自行保障 | 最低 |
+
+> "Other tools from MCP servers are not sandboxed by Codex and must enforce their own guardrails."
+
+### Agent 反馈循环设计原则（来源：[Claude Agent SDK](https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk)，2025-09-29）
+
+> "The key design principle behind Claude Code is that Claude needs the same tools that programmers use every day."
+
+> "Agents often operate in a specific feedback loop: gather context -> take action -> verify work -> repeat."
+
+**三层验证模式**：
+
+| 层 | 类型 | 示例 |
+|---|------|------|
+| 规则反馈 | 确定性 | 代码 lint、类型检查、测试 |
+| 视觉反馈 | 半确定性 | 截图/渲染比较 |
+| LLM-as-Judge | 概率性 | 另一个模型评估输出质量 |
+
+### Agent 协议全景（来源：[Google Developers Blog](https://developers.googleblog.com/developers-guide-to-ai-agent-protocols/)，2026-03-18）
+
+6 大标准化协议构成分层架构：
+
+| 协议 | 层 | 解决的问题 |
+|------|---|-----------|
+| **MCP** | 数据层 | Agent ↔ 系统/数据库 |
+| **A2A** | Agent 层 | Agent ↔ Agent 互操作 |
+| **UCP** | 商业层 | 标准化交易 |
+| **AP2** | 授权层 | 支付护栏 |
+| **A2UI** | UI 层 | 18 个组件原语的声明式 JSON |
+| **AG-UI** | 流式层 | Agent → 前端的标准化 SSE 事件流 |
+
+> A2A 是 MCP 的补充而非替代——"MCP provides helpful tools and context to agents; A2A lets agents talk to each other as opaque peers."
+
+### Harness Engineering：代理循环之上的环境设计（来源：[OpenAI Blog](https://openai.com/index/harness-engineering/)，2026-02-11）
+
+代理循环是 Agent 的内核，而 **Harness** 是包裹内核的外壳——决定了 Agent 在什么约束下、使用什么文档、通过什么反馈循环来工作。
+
+> "Humans steer. Agents execute."
+
+> "Give Codex a map, not a 1,000-page instruction manual."——AGENTS.md 作为导航地图指向 `docs/` 结构化文档，而非把所有信息塞进一个文件。
+
+**Harness vs 代理循环的关系**：
+
+```
+Harness（环境设计）
+  ├── 文档系统（AGENTS.md → docs/ 结构化文档）
+  ├── 架构约束（分层依赖规则、linter 检查）
+  ├── 反馈循环（测试失败 → Agent 自修复）
+  └── 熵管理（定期清理 Agent）
+      │
+      └── 代理循环（Agent 内核）
+            ├── 系统提示组装
+            ├── LLM API 调用
+            ├── 工具执行 + 权限检查
+            └── 上下文压缩
+```
+
+**关键实证**：LangChain coding agent 仅修改 Harness（不改模型），Terminal Bench 2.0 分数从 52.8% 提升到 66.5%——表明 Harness 优化可以在不更换模型的情况下带来显著性能提升。详见[构建自己的 AI 编程 Agent](../guides/build-your-own-agent.md)中的「Harness Engineering」章节。
+
+**实践案例**：[Oh My OpenAgent](../tools/oh-my-openagent.md)（~44K Stars）在 OpenCode 之上构建了 7~10 个 Discipline Agent 编排 + 分类模型路由 + Hash-Anchored Edit，是目前最成功的开源 Harness 层实践。

@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
 
-ROOT = Path('/root/git/codeagents-x1')
+ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / 'docs'
 DATA_FILE = DOCS / 'data' / 'agents-metadata.json'
 
@@ -99,7 +99,7 @@ def check_tracked_files_for_token_drift(metadata_tokens: dict[str, dict[str, set
             matched_agents = [name for name in metadata_tokens if name in line]
             for agent_name in matched_agents:
                 token_groups = metadata_tokens[agent_name]
-                if 'Stars' in line or 'stars' in line or 'Stars' in line:
+                if 'Stars' in line or 'stars' in line:
                     if token_groups['stars'] and not any(token in line for token in token_groups['stars'] if token):
                         warnings.append(
                             f'{path.relative_to(ROOT)}:{line_no} 中 {agent_name} 的 Stars 可能未与 docs/data 同步: {line.strip()}'

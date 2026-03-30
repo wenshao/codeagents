@@ -11,7 +11,7 @@
 | **Claude Code** | Anthropic Metrics + Datadog + Segment | 开启 | 是 | 是 | 否 |
 | **Copilot CLI** | GitHub/Microsoft 内部 | 开启 | 未确认 | 是 | 未确认 |
 | **Codex CLI** | OpenAI 内部 | 开启 | 未确认 | 是 | 未确认 |
-| **Aider** | PostHog | 默认关闭（opt-in） | 是 | 是 | 否 |
+| **Aider** | PostHog | 默认关闭（opt-in，10% 采样） | 是 | 是 | 否 |
 | **Gemini CLI** | OpenTelemetry + Google Clearcut | 开启 | 是 | 是 | 否 |
 | **Kimi CLI** | 无 | — | 否 | 否 | 否 |
 | **OpenCode** | 无 | — | 否 | 否 | 否 |
@@ -54,6 +54,7 @@
 
 ### Aider（源码 analytics.py）
 - 随机 UUID（非关联到账户）
+- 默认关闭；用户 opt-in 后按 10% 采样发送遥测
 - python_version, os_platform, os_release, machine, aider_version
 - model 名（未知模型自动 redact 为 `provider/REDACTED`）
 

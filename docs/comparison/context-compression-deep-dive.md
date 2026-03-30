@@ -303,9 +303,139 @@ Qwen Code 的上下文压缩框架总体上沿袭 Gemini CLI：包括 `ChatCompr
 | 中触发 | Goose（80%）/ Kimi（85%） | 接近上限 | 平衡保留与安全 | 大会话可能来不及 |
 | 晚触发 | Claude Code（~95%，实际表现可能受版本/缓冲实现影响） | 接近极限 | 保留最多上下文 | 紧急压缩、无验证时间 |
 
+### "Context Anxiety"上下文焦虑（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/harness-design-long-running-apps)，2026-03-24）
+
+Anthropic 工程团队在长任务 harness 开发中发现：**模型在上下文接近容量时会提前结束工作**——不是因为任务完成，而是因为"感知到"上下文即将耗尽。
+
+- **Sonnet 4.5**：context anxiety 严重，**单靠 compaction（原地摘要）不够**——因为 compaction 保持了连续性但没有给 Agent 一个"干净起点"，焦虑仍然持续。需要**完全重置上下文**（context reset，清空重来）才能保持长任务连贯性
+- **Opus 4.5**：**基本消除了此行为**（原文："Opus 4.5 largely removed that behavior on its own"），可以移除 context reset 机制
+
+> **Compaction vs Context Reset 的区别**（原文）：Compaction 是"原地摘要，保持连续性"；Context Reset 是"清空重来，代价是需要足够的交接信息让下一个 Agent 接手"。
+
+**这解释了压缩阈值差异的深层原因**：
+- Claude Code 设 ~95% 阈值——如果使用 Opus 4.5+，context anxiety 的影响可能已大幅降低（"largely removed"），使得更晚触发压缩成为可能
+- 如果使用 Sonnet 作为主模型，可能需要更早触发或使用 context reset
+- Gemini CLI 50% 阈值——可能 Gemini 模型也存在类似的 context anxiety
+
+> **实践建议**：压缩阈值不应只考虑"保留多少上下文"，还应考虑"模型在多少容量下开始焦虑"。不同模型的焦虑阈值不同。
+
+### "Context Rot"上下文腐烂（来源：[Effective Context Engineering](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)，2025-09-29）
+
+与 Context Anxiety（模型主动提前结束）不同，Context Rot 是**被动的质量退化**：
+
+> "Every new token introduced depletes this budget by some amount."
+
+- Transformer 的 **n² 成对 token 关系**导致上下文越大、注意力越分散
+- 类比人类工作记忆——容量有限，信息过多会降低每条信息的处理质量
+- 好的上下文工程是找到"**最小的高信号 token 集**，最大化期望结果的概率"
+
+**三种对抗 Context Rot 的技术**：
+
+| 技术 | 说明 | 对应工具实现 |
+|------|------|-----------|
+| **Compaction** | 原地摘要，保留架构决策/未解决 Bug/实现细节，丢弃冗余工具输出 | Claude Code 三层压缩、Gemini CLI 四阶段、Aider 递归分割、Kimi CLI SimpleCompaction、Qwen Code 四阶段（继承） |
+| **结构化笔记**（Agentic Memory） | Agent 写外部笔记，需要时拉回。"以最小开销提供持久记忆" | Claude Code auto-memory、Gemini memory_manager |
+| **子代理架构** | 委托给专用子代理，返回"浓缩摘要（通常 1,000-2,000 tokens）" | Claude Code Agent 工具、Gemini CLI 5 个子代理 |
+
+> **核心洞察**："Context Anxiety 是模型主动逃避，Context Rot 是被动质量退化——前者可通过模型升级显著缓解（Opus 4.5 'largely removed' 此行为，但非完全消除），后者是 Transformer 架构的固有限制，只能通过上下文工程缓解。"
+
 ### 验证步骤的价值
 
 在本文覆盖且实现细节可核实的 Agent 中，Gemini CLI 是目前唯一明确展示独立 Probe 验证步骤的方案。对 Claude Code、Copilot CLI、Codex CLI 这类闭源或细节未公开工具，更稳妥的表述应是“**未见公开证据**”而不是直接断言其不存在。这体现了成本与质量之间的一组典型权衡：额外一次 LLM 调用的成本 vs 压缩质量提升。
+
+---
+
+## 八、压缩后的 UI 行为：清屏 vs 保留
+
+压缩不仅是后端操作——**用户看到什么**直接影响对 Agent 状态的认知。各 Agent 在压缩后的 UI 处理策略差异显著。
+
+### Claude Code：压缩后清屏 + 显示摘要标记
+
+从 v2.1.86 二进制分析，Claude Code 压缩后的 UI 流程：
+
+> **注**：`us()`、`LU$()`、`F$()` 为混淆后的函数名（逆向推断），`isCompactSummary`、`isVisibleInTranscriptOnly`、`pendingPostCompaction` 为 strings 提取的确定性属性名，可信度更高。
+
+```
+compact_start → 显示 "Compacting conversation" 旋转器
+  → 压缩完成
+  → 设置 pendingPostCompaction = true
+  → 重新追加会话元数据
+  → 旧消息替换为 isCompactSummary + isVisibleInTranscriptOnly 标记的摘要消息
+  → 屏幕清空旧对话，仅显示 "Summarized conversation" 标记
+  → compact_end → 清除旋转器
+```
+
+**关键代码（反编译提取）**：
+
+```javascript
+// 压缩后的消息标记
+F$({
+  content: summary,
+  isCompactSummary: true,           // ← 标记为压缩摘要
+  isVisibleInTranscriptOnly: true,  // ← 仅在 transcript 视图中可见
+  summarizeMetadata: {
+    messagesSummarized: originalCount
+  }
+})
+
+// UI 渲染：检测到 summarizeMetadata 时显示特殊组件
+if (message.summarizeMetadata) {
+  // 渲染 "Summarized conversation" 标记（非完整对话历史）
+}
+```
+
+**设计原因**：
+1. **状态一致性**——屏幕显示的内容与模型上下文保持同步，避免用户引用"模型已忘记"的消息
+2. **心理重置**——视觉清空给用户一个"干净起点"信号，与 Anthropic 描述的 Context Reset 理念一致
+3. **减少误导**——如果保留旧消息，用户会以为模型"记得"全部细节，但实际上只有压缩摘要
+
+### 各 Agent 压缩后 UI 行为对比
+
+| Agent | 压缩后清屏？ | 用户看到什么 | 来源 |
+|------|------------|------------|------|
+| **Claude Code** | **是** | "Summarized conversation" 标记 + 新的空白对话区域 | 二进制分析 v2.1.86 |
+| **Kimi CLI**（Web UI） | **是** | 仅保留最后一轮用户消息起的内容 | 源码：`useSessionStream.ts` `CompactionEnd` handler |
+| **Gemini CLI** | 否 | 内联显示 "Chat history compressed from X to Y tokens" | 源码：`compressCommand.ts` → `ui.addItem()` |
+| **Qwen Code** | 否 | 继承 Gemini（内联压缩状态消息） | 源码：`compressCommand.ts`（分叉） |
+| **Aider** | 否 | 后台静默替换消息列表，无可见变化（verbose 模式下显示一行日志） | 源码：`base_coder.py` L1002-1034 |
+| **Codex CLI** | 否 | 显示警告："Long threads and multiple compactions can cause the model to be less accurate" | 二进制分析：`compact.rs` → `WarningEvent` |
+| **Goose** | 未知 | 未找到压缩后 UI 行为的源码证据 | — |
+| **Copilot CLI** | 未知 | 未找到压缩后 UI 行为的源码证据 | — |
+
+### 设计权衡分析
+
+| 策略 | 优势 | 劣势 |
+|------|------|------|
+| **清屏**（Claude Code、Kimi） | 状态一致、心理重置、防误导 | 用户失去视觉上下文回溯、可能中断思路 |
+| **保留**（Gemini、Qwen、Aider、Codex） | 视觉连续性、可回溯历史、不中断流程 | 用户可能误以为模型"记得"全部内容 |
+
+> **核心洞察**：清屏与否反映了两种不同的设计哲学——**状态准确性**（显示的 = 模型知道的）vs **视觉连续性**（保留用户的阅读上下文）。Claude Code 和 Kimi CLI 选择了前者，其他 Agent 选择了后者。没有绝对的对错——这取决于用户对 Agent 状态感知的期望。
+
+---
+
+## 九、工具定义膨胀：134K tokens 的教训（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/advanced-tool-use)，2025-11-24）
+
+上下文压缩不仅要处理对话历史——**工具定义本身就是上下文膨胀的主要来源**：
+
+> "At Anthropic, we've seen tool definitions consume 134K tokens before optimization."
+
+### Tool Search Tool：85% token 减少
+
+| 方式 | Token 消耗 | 说明 |
+|------|-----------|------|
+| 传统预加载（50+ MCP 工具） | ~77K tokens | 全部定义一次性灌入 |
+| Tool Search Tool | ~8.7K tokens | 按需发现相关工具 |
+| 减少幅度 | **~85%**（原文数据） | — |
+
+> "Opus 4 improved from 49% to 74%, and Opus 4.5 improved from 79.5% to 88.1% with Tool Search Tool enabled."
+
+### 代码执行模式：98.7% token 减少
+
+更极端的方案——Agent 通过代码直接调用 MCP 工具，中间结果留在执行环境而非进入上下文：
+
+> "This reduces the token usage from 150,000 tokens to 2,000 tokens--a time and cost saving of 98.7%."
+
+**对上下文压缩的启示**：压缩算法优化对话历史只是治标；**从源头减少工具定义和中间结果的 token 消耗**才是治本。Tool Search Tool 和代码执行模式是压缩之外的第二条路径。
 
 ---
 

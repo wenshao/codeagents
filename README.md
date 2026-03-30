@@ -1,6 +1,6 @@
 # AI 编程 Code Agent 对比
 
-> 基于源码分析和二进制反编译的 17 款 AI 编程 Code Agent 全面对比 | 120+ 文件 | 36,000+ 行 | 21 篇 Deep-Dive | 9 个 EVIDENCE.md
+> 基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比 | 120+ 文件 | 36,000+ 行 | 21 篇 Deep-Dive | 9 个 EVIDENCE.md
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -71,11 +71,11 @@
 
 | Agent | 开发者 | 许可证 | 语言 | 提供商 | 特色 |
 |------|--------|--------|------|-------|------|
-| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | Go + TS | 100+ | 多客户端（TUI+Web+桌面），37 LSP |
+| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | TypeScript（Bun） | 100+ | 多客户端（TUI+Web+桌面），37 LSP |
 | [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | TypeScript | 1 | 8 策略模型路由，TOML 策略引擎 |
 | [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | Rust | 1 | 50ms 启动，24 Hook 事件，Channels |
 | [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | Python | 100+ | Docker 沙箱，三层安全，多代理 |
-| [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | TypeScript | 1 | 三平台 OS 沙箱，Cloud 远程执行 |
+| [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | Rust | 1 | 三平台 OS 沙箱，Cloud 远程执行 |
 | [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | TypeScript | 48+ | VS Code 原生，Git Checkpoint |
 | [Aider](./docs/tools/aider/) | Paul Gauthier | GPL-3.0 | Python | 100+ | 14 编辑格式，三槽位模型，/undo |
 | [Goose](./docs/tools/goose/) | Block | Apache-2.0 | Rust | 58+ | MCP 原生，11 Platform Extension，Recipe + Cron 调度 |
@@ -83,10 +83,11 @@
 | [Warp](./docs/tools/warp.md) | Warp | 专有 | Rust | 多种 | GPU 渲染终端，块结构输出 |
 | [Qwen Code](./docs/tools/qwen-code/) | 阿里云 | Apache-2.0 | TypeScript | 6+ | 免费 1000 次/天，Arena 多模型竞争，41 命令 |
 | [SWE-agent](./docs/tools/swe-agent.md) | Princeton | MIT | Python | 100+ | SWE-bench 评估，Docker 沙箱 |
-| [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | Shell | 多种 | 67 GitHub 工具，GitHub 生态集成 |
+| [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | TypeScript | 多种 | 67 GitHub 工具，GitHub 生态集成 |
 | [Kimi CLI](./docs/tools/kimi-cli/) | 月之暗面 | Apache-2.0 | Python | 6 | Wire 协议，D-Mail 时间回溯 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | TypeScript | 多种 | AI 原生 IDE，Background Agent |
 | [Qoder CLI](./docs/tools/qoder-cli/) | QoderAI | 专有 | Go | 多种 | Quest 模式，Claude Code 兼容 |
+| [Oh My OpenAgent](./docs/tools/oh-my-openagent.md) | code-yeongyu | SUL-1.0 | TypeScript | 多种 | OpenCode Harness 层，7~10 Discipline Agent |
 
 ---
 
@@ -107,9 +108,9 @@
 
 | 语言 | Agent | 特点 |
 |------|-------|------|
-| **Rust** | Claude Code, Goose, Warp | 50ms 启动，内存最低 |
-| **TypeScript** | Gemini CLI, Qwen Code, Codex CLI, Cline, Continue | Ink/React TUI 成熟 |
-| **Go + TS** | OpenCode | TypeScript（Bun）后端 + SolidJS TUI（v1.0 前 Go，已全面重写） |
+| **Rust** | Claude Code, Codex CLI, Goose, Warp | 50ms 启动，内存最低 |
+| **TypeScript** | Gemini CLI, Qwen Code, Cline, Continue | Ink/React TUI 成熟 |
+| **TypeScript（Bun）** | OpenCode | TypeScript（Bun）后端 + SolidJS TUI（v1.0 前 Go，已全面重写） |
 | **Python** | Aider, SWE-agent, OpenHands, Kimi CLI | LiteLLM 100+ 模型 |
 
 ---
@@ -118,7 +119,7 @@
 
 <details><summary><b>Agent 详情（源码级）— 8 个专题</b></summary>
 
-- **[Agent 索引](./docs/tools/)** — 16 个 Agent 的详细分析
+- **[Agent 索引](./docs/tools/)** — 18 个 Agent 的详细分析
 - **[Claude Code](./docs/tools/claude-code/)** — 7 篇（79 命令/架构/Skill+13 插件/24 Hook/会话）
 - **[Copilot CLI](./docs/tools/copilot-cli/)** — 3 篇（34 命令 + 67 工具 + 3 代理）
 - **[Codex CLI](./docs/tools/codex-cli/)** — 3 篇（28 命令 + 三平台沙箱）
@@ -202,7 +203,7 @@
 | Goose | **Rust** | ~55k 行 | MCP 原生，58+ 提供商 |
 | Gemini CLI | TypeScript | ~191k 行 | 8 策略路由，TOML 引擎 |
 | Qwen Code | TypeScript | ~191k 行 | Gemini 分叉 + Arena + 6+ 提供商 |
-| OpenCode | **Go + TS** | 983 TS + 359 TSX | 100+ Provider + 37 LSP + ACP |
+| OpenCode | **TypeScript（Bun）** | 983 TS + 359 TSX | 100+ Provider + 37 LSP + ACP |
 | Cline | TypeScript | ~40k 行 | Git Checkpoint + 48 提供商 |
 | SWE-agent | Python | ~20k 行 | ACI + Bundle 工具 |
 | OpenHands | Python | ~60k 行 | EventStream + 多代理 |

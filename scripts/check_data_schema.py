@@ -5,15 +5,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-ROOT = Path('/root/git/codeagents-x1')
+ROOT = Path(__file__).resolve().parents[1]
 DATA_FILE = ROOT / 'docs' / 'data' / 'agents-metadata.json'
 SCHEMA_FILE = ROOT / 'docs' / 'data' / 'agents-metadata.schema.json'
 DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 ID_RE = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
-CATEGORY_VALUES = {'deep-analysis', 'single-file'}
-DOWNLOAD_TYPES = {'npm_weekly', 'pypi_monthly', 'none', 'unknown'}
-EVIDENCE_STATUS = {'complete', 'partial', 'single-file-only'}
-EVIDENCE_SOURCE_TYPES = {'source-analysis', 'binary-analysis', 'summary-analysis', 'official-docs'}
 TOP_LEVEL_REQUIRED = {'schema_version', 'last_updated', 'agents'}
 TOP_LEVEL_OPTIONAL = {'maintainer_note'}
 AGENT_REQUIRED = {
@@ -23,11 +19,46 @@ AGENT_REQUIRED = {
 AGENT_OPTIONAL = {'stars', 'downloads', 'pricing_summary', 'free_tier'}
 DOWNLOADS_REQUIRED = {'type', 'value', 'as_of'}
 EVIDENCE_REQUIRED = {'status', 'source_type', 'evidence_path', 'last_verified'}
+STARS_SENTINEL_VALUES = {'-', '—', 'unknown'}
 
 
 def load_json(path: Path):
     with path.open('r', encoding='utf-8') as f:
         return json.load(f)
+
+
+def is_schema_shape_expected(schema: dict) -> bool:
+    if not isinstance(schema, dict):
+        return False
+    required_keys = {'$schema', 'type', 'properties', '$defs'}
+    if not required_keys.issubset(schema.keys()):
+        return False
+    if schema.get('type') != 'object':
+        return False
+    properties = schema.get('properties', {})
+    defs = schema.get('$defs', {})
+    return (
+        isinstance(properties, dict)
+        and isinstance(defs, dict)
+        and 'agents' in properties
+        and 'agent' in defs
+        and 'downloads' in defs
+        and 'evidence' in defs
+    )
+
+
+def get_required_keys(schema: dict, path: tuple[str, ...]) -> set[str]:
+    node = schema
+    for key in path:
+        node = node[key]
+    return set(node.get('required', []))
+
+
+def get_enum_values(schema: dict, path: tuple[str, ...]) -> set[str]:
+    node = schema
+    for key in path:
+        node = node[key]
+    return set(node.get('enum', []))
 
 
 def is_valid_date(value: str) -> bool:
@@ -50,13 +81,25 @@ def require_keys(obj: dict, required: set[str], optional: set[str], label: str, 
         errors.append(f'{label}: unexpected key `{key}`')
 
 
-def validate_agent(agent: dict, index: int, errors: list[str], seen_ids: set[str]):
+def validate_agent(
+    agent: dict,
+    index: int,
+    errors: list[str],
+    seen_ids: set[str],
+    category_values: set[str],
+    download_types: set[str],
+    evidence_status_values: set[str],
+    evidence_source_types: set[str],
+    agent_required: set[str],
+    downloads_required: set[str],
+    evidence_required: set[str],
+):
     label = f'agents[{index}]'
     if not isinstance(agent, dict):
         errors.append(f'{label}: must be an object')
         return
 
-    require_keys(agent, AGENT_REQUIRED, AGENT_OPTIONAL, label, errors)
+    require_keys(agent, agent_required, AGENT_OPTIONAL, label, errors)
 
     agent_id = agent.get('id')
     if not isinstance(agent_id, str) or not ID_RE.match(agent_id):
@@ -72,11 +115,15 @@ def validate_agent(agent: dict, index: int, errors: list[str], seen_ids: set[str
             errors.append(f'{label}.{field}: must be a non-empty string')
 
     category = agent.get('category')
-    if category not in CATEGORY_VALUES:
-        errors.append(f'{label}.category: must be one of {sorted(CATEGORY_VALUES)}')
+    if category not in category_values:
+        errors.append(f'{label}.category: must be one of {sorted(category_values)}')
 
-    if 'stars' in agent and not isinstance(agent.get('stars'), str):
-        errors.append(f'{label}.stars: must be a string when present')
+    if 'stars' in agent:
+        stars_value = agent.get('stars')
+        if not isinstance(stars_value, str) or not stars_value.strip():
+            errors.append(f'{label}.stars: must be a non-empty string when present')
+        elif stars_value not in STARS_SENTINEL_VALUES and not re.match(r'^~?\d+(?:\.\d+)?[kKmM]?$', stars_value):
+            errors.append(f'{label}.stars: must be a compact count like `83k` or a sentinel value {sorted(STARS_SENTINEL_VALUES)}')
     if 'pricing_summary' in agent and not isinstance(agent.get('pricing_summary'), str):
         errors.append(f'{label}.pricing_summary: must be a string when present')
     if 'free_tier' in agent and not isinstance(agent.get('free_tier'), str):
@@ -87,9 +134,9 @@ def validate_agent(agent: dict, index: int, errors: list[str], seen_ids: set[str
         if not isinstance(downloads, dict):
             errors.append(f'{label}.downloads: must be an object')
         else:
-            require_keys(downloads, DOWNLOADS_REQUIRED, set(), f'{label}.downloads', errors)
-            if downloads.get('type') not in DOWNLOAD_TYPES:
-                errors.append(f'{label}.downloads.type: must be one of {sorted(DOWNLOAD_TYPES)}')
+            require_keys(downloads, downloads_required, set(), f'{label}.downloads', errors)
+            if downloads.get('type') not in download_types:
+                errors.append(f'{label}.downloads.type: must be one of {sorted(download_types)}')
             if not isinstance(downloads.get('value'), str) or not downloads.get('value').strip():
                 errors.append(f'{label}.downloads.value: must be a non-empty string')
             if not is_valid_date(downloads.get('as_of')):
@@ -99,13 +146,18 @@ def validate_agent(agent: dict, index: int, errors: list[str], seen_ids: set[str
     if not isinstance(evidence, dict):
         errors.append(f'{label}.evidence: must be an object')
     else:
-        require_keys(evidence, EVIDENCE_REQUIRED, set(), f'{label}.evidence', errors)
-        if evidence.get('status') not in EVIDENCE_STATUS:
-            errors.append(f'{label}.evidence.status: must be one of {sorted(EVIDENCE_STATUS)}')
-        if evidence.get('source_type') not in EVIDENCE_SOURCE_TYPES:
-            errors.append(f'{label}.evidence.source_type: must be one of {sorted(EVIDENCE_SOURCE_TYPES)}')
-        if not isinstance(evidence.get('evidence_path'), str) or not evidence.get('evidence_path').strip():
+        require_keys(evidence, evidence_required, set(), f'{label}.evidence', errors)
+        if evidence.get('status') not in evidence_status_values:
+            errors.append(f'{label}.evidence.status: must be one of {sorted(evidence_status_values)}')
+        if evidence.get('source_type') not in evidence_source_types:
+            errors.append(f'{label}.evidence.source_type: must be one of {sorted(evidence_source_types)}')
+        evidence_path = evidence.get('evidence_path')
+        if not isinstance(evidence_path, str) or not evidence_path.strip():
             errors.append(f'{label}.evidence.evidence_path: must be a non-empty string')
+        else:
+            full_path = ROOT / evidence_path
+            if not full_path.exists():
+                errors.append(f'{label}.evidence.evidence_path: file does not exist: {evidence_path}')
         if not is_valid_date(evidence.get('last_verified')):
             errors.append(f'{label}.evidence.last_verified: must be a valid YYYY-MM-DD date')
 
@@ -122,16 +174,30 @@ def main() -> int:
 
     try:
         data = load_json(DATA_FILE)
-        load_json(SCHEMA_FILE)
+        schema = load_json(SCHEMA_FILE)
     except json.JSONDecodeError as exc:
         print(f'ERROR: invalid JSON: {exc}')
+        return 1
+
+    if not is_schema_shape_expected(schema):
+        print('ERROR: schema file exists but does not match the expected validation structure')
         return 1
 
     if not isinstance(data, dict):
         print('ERROR: top-level JSON must be an object')
         return 1
 
-    require_keys(data, TOP_LEVEL_REQUIRED, TOP_LEVEL_OPTIONAL, 'root', errors)
+    category_values = get_enum_values(schema, ('$defs', 'agent', 'properties', 'category'))
+    download_types = get_enum_values(schema, ('$defs', 'downloads', 'properties', 'type'))
+    evidence_status_values = get_enum_values(schema, ('$defs', 'evidence', 'properties', 'status'))
+    evidence_source_types = get_enum_values(schema, ('$defs', 'evidence', 'properties', 'source_type'))
+
+    top_level_required = get_required_keys(schema, tuple())
+    agent_required = get_required_keys(schema, ('$defs', 'agent'))
+    downloads_required = get_required_keys(schema, ('$defs', 'downloads'))
+    evidence_required = get_required_keys(schema, ('$defs', 'evidence'))
+
+    require_keys(data, top_level_required, TOP_LEVEL_OPTIONAL, 'root', errors)
 
     if not isinstance(data.get('schema_version'), int) or data.get('schema_version', 0) < 1:
         errors.append('root.schema_version: must be an integer >= 1')
@@ -146,7 +212,19 @@ def main() -> int:
     else:
         seen_ids: set[str] = set()
         for idx, agent in enumerate(agents):
-            validate_agent(agent, idx, errors, seen_ids)
+            validate_agent(
+                agent,
+                idx,
+                errors,
+                seen_ids,
+                category_values,
+                download_types,
+                evidence_status_values,
+                evidence_source_types,
+                agent_required,
+                downloads_required,
+                evidence_required,
+            )
 
     if errors:
         for err in errors:

@@ -138,7 +138,7 @@ if (!frontmatter.description) {
 | 无 frontmatter 行为 | 空元数据 + 全文作为 prompt | **抛出异常，不加载** |
 | 设计理念 | 信任模型推断能力 | 依赖 harness 结构化校验 |
 
-> **实际影响**：将 Claude Code 的 Skill 文件直接复制到 Qwen Code 的 `.qwen/skills/` 目录时，如果该 Skill 没有 YAML frontmatter，Claude Code 能正常加载但 Qwen Code 会静默忽略。迁移时需要补充 frontmatter。
+> **实际影响**：将 Claude Code 的 Skill 文件直接复制到 Qwen Code 的 `.qwen/skills/` 目录时，如果该 Skill 没有 YAML frontmatter，Claude Code 能正常加载但 Qwen Code 会**抛出异常，Skill 不加载**。迁移时需要补充 frontmatter。
 
 ### 条件激活（Conditional Skills）
 
@@ -319,6 +319,60 @@ Claude Code 插件               Qwen Code / Gemini CLI
 ```
 
 > **注意**：转换不是 100% 等价——Claude Code 的 `context: fork`、`allowed-tools`、`model` 覆盖在 Gemini/Qwen 中无直接对应。
+
+---
+
+## 渐进式披露与上下文工程（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)，2025-09-29）
+
+Anthropic 在上下文工程实践中发现：**Skill 文档的加载不应一次性灌入全部内容**，而应采用渐进式披露（Progressive Disclosure）——Agent 通过探索逐步发现相关上下文，每次交互产生的上下文为后续决策提供信息。
+
+> "Letting agents navigate and retrieve data autonomously also enables progressive disclosure—in other words, allows agents to incrementally discover relevant context through exploration."
+
+### 三层上下文策略
+
+| 层 | 名称 | 加载时机 | 对应实现机制 |
+|---|------|---------|-------------|
+| 1 | **预加载上下文** | 会话启动时 | AGENTS.md/CLAUDE.md 注入系统提示 |
+| 2 | **即时检索** | 运行时按需 | Skill 通过 `glob`/`grep` 动态发现文件 |
+| 3 | **持久化外部记忆** | 跨会话持久 | `NOTES.md`、auto-memory、progress 文件 |
+
+> "Claude Code is an agent that employs this hybrid model: CLAUDE.md files are naively dropped into context up front, while primitives like glob and grep allow it to navigate its environment and retrieve files just-in-time."
+
+### 对 Skill 设计的启示
+
+| 原则 | 说明 | 反面案例 |
+|------|------|---------|
+| **最小高信号 token 集** | Skill 正文只包含当前任务最相关的指令 | 将完整 API 文档塞入 SKILL.md |
+| **简洁明确的描述** | `description` 字段用简单语言写清用途 | 模糊描述导致模型选错 Skill |
+| **典型示例优于穷举** | 用 2-3 个代表性示例替代所有边界情况 | 列出 20 种输入格式的 Skill |
+
+> "Good context engineering means finding the smallest possible set of high-signal tokens that maximize the likelihood of some desired outcome."
+
+### 各 Agent 的渐进式披露实现
+
+| Agent | 预加载 | 即时检索 | 外部记忆 |
+|------|--------|---------|---------|
+| **Claude Code** | CLAUDE.md（无条件） | Agent 工具动态发现 + 条件 Skill（`paths` glob 按需激活） | auto-memory 4 类型 |
+| **Gemini CLI** | GEMINI.md + activate_skill | codebase_investigator 只读探索 | memory_manager → GEMINI.md |
+| **Qwen Code** | AGENTS.md + 继承 Skill | 继承 codebase_investigator 类似机制（glob/grep/read） | save_memory 工具 |
+| **Kimi CLI** | 三层 Skill 发现 | Agent 工具委托 | ✗ |
+| **Copilot CLI** | `.agent.yaml` 注入 | explore 代理（只读） | ✗ |
+
+> **实践建议**：设计 Skill 时，将**元数据层**（frontmatter）、**核心指令**（正文前半段）、**补充文件**（通过工具按需读取）分开。不要把所有信息都塞进 SKILL.md 正文——让 Agent 在执行过程中按需发现。
+
+### Agent Skills 的三层渐进式加载（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)，2025-10-16）
+
+Anthropic 将 Skill 比作"一本组织良好的手册——从目录开始，到具体章节，再到详细附录"：
+
+| 层 | 名称 | 加载条件 | 示例 |
+|---|------|---------|------|
+| 1 | **元数据层** | 始终加载到系统提示 | SKILL.md 的 YAML frontmatter（name + description） |
+| 2 | **内容层** | Skill 变得相关时加载 | SKILL.md 正文（完整指令） |
+| 3 | **引用层** | Agent 按需访问 | 捆绑的脚本、配置模板、示例文件 |
+
+> "Because agents have filesystem and code execution tools, the amount of context that can be bundled into a skill is effectively unbounded."
+
+这意味着 Skill 的上下文容量**不受 SKILL.md 文件大小限制**——复杂的领域知识可以放在引用文件中，Agent 在执行过程中按需读取。
 
 ---
 

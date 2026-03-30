@@ -61,7 +61,7 @@
 | `implementation_language` | string | 是 | 静态 | 主要实现语言 |
 | `runtime` | string | 是 | 半静态 | 运行时或分发形态 |
 | `package_ecosystem` | string | 是 | 半静态 | npm / pypi / desktop / none 等 |
-| `stars` | string | 否 | 动态 | 社区热度指标，建议保持与外部来源一致 |
+| `stars` | string | 否 | 动态 | 社区热度指标，默认表示 GitHub Stars 的紧凑展示值；时间基准由顶层 `last_updated` 统一约束 |
 | `downloads` | object | 否 | 动态 | 下载量信息 |
 | `pricing_summary` | string | 否 | 动态 | 定价摘要，适合汇总页使用 |
 | `free_tier` | string | 否 | 动态 | 免费层摘要 |
@@ -97,6 +97,13 @@
 - `pypi_monthly`
 - `none`
 - `unknown`
+
+### `stars`
+
+- 默认语义：GitHub Stars 的紧凑展示值，如 `83k`、`~132k`
+- 时间基准：由顶层 `last_updated` 统一表示本批动态数据的采样时间
+- 允许哨兵值：`-`、`—`、`unknown`
+- 对于闭源或无明确仓库映射的 Agent，可使用 `-` / `unknown`，并在相应文档中说明原因
 
 ### `evidence.status`
 
@@ -153,3 +160,5 @@ python3 scripts/check_data_schema.py
 python3 scripts/check_repo_consistency.py
 python3 scripts/check_stale_data.py
 ```
+
+> `check_stale_data.py` 目前为告警型检查，主要用于提示潜在漂移，不默认作为阻断条件。

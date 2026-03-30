@@ -26,7 +26,7 @@
 
 ├── 企业安全合规 → Claude Code（28 条 BLOCK + 5 层设置 + 沙箱）
 ├── GitHub 深度集成 → Copilot CLI（35 GitHub 工具 + Actions/PR/Issues）
-├── 完全免费 → Qwen Code（1000 次/天）或 Gemini CLI（1500 次/天）
+├── 完全免费 → Qwen Code 或 Gemini CLI（具体额度见 docs/data/agents-metadata.json）
 ├── 隐私零遥测 → Kimi CLI（零分析）或 OpenCode（零分析）
 ├── Git 工作流控制 → Aider（/commit /undo /diff /git + 自动提交归因）
 ├── 最大模型灵活性 → Goose（58+ 提供商）或 Aider（100+ via LiteLLM）
@@ -40,7 +40,7 @@
 
 | | Claude Code | Copilot CLI | Codex CLI | Aider | Gemini CLI | Qwen Code | Kimi CLI |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| **命令数** | ~60 | 34 | 28 | 42 | 39 | 40+ | 28 |
+| **命令数** | ~79 | 34 | 28 | 42 | 39 | 40+ | 28 |
 | **工具数** | 20+ | 67 | 9 | — | 23 | 18 | 18 |
 | **沙箱** | ✓ | ✗ | ✓ | ✗ | ✓ | ✓ | ✗ |
 | **遥测** | 782 事件 | 有 | 有 | opt-in 10% | 194 键 | 阿里 RUM | **零** |

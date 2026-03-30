@@ -225,13 +225,14 @@ priority = 70
 - 架构特定：x64/arm64/arm/ia32 独立字节码
 - 过滤器文件：`/tmp/gemini-cli-seccomp-{pid}.bpf`
 
-### v0.34 新增沙箱特性
+### v0.34-v0.35 新增沙箱特性
 
-- **gVisor（runsc）**：原生容器沙箱，用于更安全的执行环境
-- **实验性 LXC 容器沙箱**：轻量级容器隔离
-- **严格 macOS Seatbelt**：基于白名单的 Seatbelt 策略（~200+ 条 syscall 规则）
-- **safeFetch + IP 验证**：防止 SSRF 和内部网络访问
-- **子代理特定 TOML 策略**：每个子代理可有独立安全策略
+- **gVisor（runsc）**：原生容器沙箱，用于更安全的执行环境（v0.34）
+- **实验性 LXC 容器沙箱**：轻量级容器隔离（v0.34）
+- **严格 macOS Seatbelt**：基于白名单的 Seatbelt 策略（~200+ 条 syscall 规则）（v0.34）
+- **safeFetch + IP 验证**：防止 SSRF 和内部网络访问（v0.34）
+- **子代理特定 TOML 策略**：每个子代理可有独立安全策略（v0.34）
+- **统一 SandboxManager**：v0.35 引入统一沙箱管理器，集成 Linux 原生 bubblewrap + seccomp 隔离工具执行（150 变更含 2 安全修复）（来源：[v0.35 Release Notes](https://geminicli.com/docs/changelogs/latest/)）
 
 ### macOS Seatbelt
 
@@ -298,6 +299,67 @@ Agent 动作
 | **Qwen Code** | ★☆☆☆☆ | ★★★☆☆ | ★★☆☆☆ | ★☆☆☆☆ | **★★☆☆☆** |
 
 > **核心洞察**：Codex CLI 在 OS 级隔离最强（三平台原生沙箱），Claude Code 在智能分析最强（28 规则 + 双阶段分类器），Gemini CLI 在策略灵活性最强（TOML + 正则 + 注解），OpenHands 在纵深防御最全面（三层分析）。没有任何一个工具在所有维度都领先。
+
+---
+
+## 沙箱工程深度洞察
+
+### Claude Code 沙箱：权限弹窗减少 84%（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/claude-code-sandboxing)，2025-10-20）
+
+> "In our internal usage, we've found that sandboxing safely reduces permission prompts by 84%."
+
+**核心设计原则**——文件系统和网络隔离**缺一不可**：
+
+> "Effective sandboxing requires both filesystem and network isolation. Without network isolation, a compromised agent could exfiltrate sensitive files like SSH keys; without filesystem isolation, a compromised agent could easily escape the sandbox and gain network access."
+
+**OS 级原语**：
+
+> "We've built this on top of OS level primitives such as Linux bubblewrap and MacOS seatbelt to enforce these restrictions at the OS level. They cover not just Claude Code's direct interactions, but also any scripts, programs, or subprocesses that are spawned by the command."
+
+**Web 版 Git 代理**——沙箱环境中的安全 Git 操作：
+
+> "Claude Code on the web uses a custom proxy service that transparently handles all git interactions. Inside the sandbox, the git client authenticates to this service with a custom-built scoped credential."
+
+### Auto Mode：AI 分类器自动审批（来源：[Anthropic Engineering Blog](https://www.anthropic.com/engineering/claude-code-auto-mode)，2026-03-25）
+
+> "Claude Code users approve 93% of permission prompts. We built classifiers to automate some decisions, increasing safety while reducing approval fatigue."
+
+**双层防御架构**——Agent 不能说服分类器：
+
+> "We strip assistant text so the agent can't talk the classifier into making a bad call. The agent could generate persuasive rationalizations, such as 'this is safe because the user implicitly approved it earlier.'"
+
+**注入攻击的端到端难度**：
+
+> "For an injection to succeed end-to-end, it must evade detection at the input layer, then steer the agent into emitting a tool call that the transcript classifier independently judges as both safe and aligned with user intent. Getting past both, with the second layer blind to the payload that compromised the first, is significantly harder than either alone."
+
+**真实事故案例**（Anthropic 内部事故日志）：
+
+> "Past examples include deleting remote git branches from a misinterpreted instruction, uploading an engineer's GitHub auth token to an internal compute cluster, and attempting migrations against a production database."
+
+**诚实的漏报率**：auto mode 对真实危险操作的漏报率（false negative rate）为 17%——这是 Anthropic 公开披露的数字，体现了透明度。
+
+### Prompt Injection 防御：Agents Rule of Two（来源：[Simon Willison](https://simonwillison.net/2025/Nov/2/new-prompt-injection-papers/)，2025-11-02）
+
+> "Prompt injection remains an unsolved problem, and attempts to block or filter them have not proven reliable enough to depend on."
+
+**致命三角（Lethal Trifecta）**——如果 Agent 同时满足以下三条，私有数据就可以被窃取：
+1. 访问私有数据
+2. 暴露给不受信任的内容
+3. 能够对外通信
+
+**Agents Rule of Two**：系统设计时最多满足上述三条中的两条。
+
+> "The current solution is to design systems with this in mind, and the Rule of Two is a solid way to think about that."
+
+**对 Code Agent 的映射**：
+
+| Agent | 私有数据访问 | 不受信任内容 | 对外通信 | 防御策略 |
+|------|------------|------------|---------|---------|
+| **Codex CLI** | ✓（代码） | ✓（用户输入） | **✗（网络沙箱）** | 切断对外通信 |
+| **Claude Code** | ✓（代码） | ✓（用户输入） | ✓（MCP/网络） | 双层分类器 + 沙箱 |
+| **Gemini CLI** | ✓（代码） | ✓（用户输入） | ✓（MCP） | seccomp + Conseca |
+
+> Codex CLI 的 OS 级网络隔离是唯一从架构上消除"致命三角"第三条的实现。
 
 ---
 
