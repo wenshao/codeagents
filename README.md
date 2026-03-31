@@ -100,11 +100,13 @@
 | 流派 | 代表 Agent | 核心模式 |
 |------|---------|---------|
 | **编辑优先** | Aider | LLM 直接输出代码修改（14 种格式），需文本解析 |
-| **工具调用** | Claude Code, Codex CLI, Gemini CLI, Qwen Code, OpenCode, Cline, Goose, Copilot CLI, Kimi CLI, Qoder CLI, Cursor, Warp, Continue | 结构化 function calling，LLM 通过 API 返回 tool calls |
-| **文本 ReAct** | SWE-agent | Reason→Act→Observe→Repeat，支持纯文本动作解析（非原生 function calling） |
+| **工具调用** | Claude Code, Codex CLI, Gemini CLI, Qwen Code, OpenCode, Cline, Goose, Copilot CLI, Kimi CLI | 结构化 function calling，LLM 通过 API 返回 tool calls |
+| **混合 ReAct** | SWE-agent | 兼容 function calling（默认）与文本动作解析，文本解析是其鲜明特征 |
 | **事件驱动** | OpenHands | EventStream 发布/订阅，Action/Observation 完全解耦 |
 
-> **注**："工具调用"和"ReAct 循环"并非互斥——所有 Agent 内部都遵循 ReAct 模式（思考→行动→观察→重复）。上表按**动作表达方式**区分：是否通过结构化 API（function calling）还是文本解析来表达动作。
+> **注 1**："工具调用"和"ReAct 循环"并非互斥——所有 Agent 内部都遵循 ReAct 模式（思考→行动→观察→重复）。上表按**动作表达方式**区分：是否通过结构化 API（function calling）还是文本解析来表达动作。
+>
+> **注 2**：Cursor、Warp、Continue、Qoder CLI 等闭源/IDE 嵌入式 Agent 具有工具系统能力（多支持 MCP），但本仓库现有证据不足以确认其使用原生 API function calling，暂不列入「工具调用」流派。
 
 ## 技术栈
 

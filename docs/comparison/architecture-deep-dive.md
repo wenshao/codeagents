@@ -113,17 +113,17 @@ graph TD
 
 > **注**：所有工具调用 Agent 内部都遵循 ReAct 模式（思考→行动→观察→重复），差异在于通过结构化 API 返回 tool calls。
 
-### 文本 ReAct 循环
+### 混合 ReAct 循环
 
 ```
-思考 → 文本动作 → 解析 → 执行 → 观察 → 重复
+思考 → 动作 → 解析 → 执行 → 观察 → 重复
 ```
 
 **使用者**：SWE-agent
 
-- SWE-agent 的 `DefaultAgent.step()` 支持多种解析器，包括纯文本 `ThoughtActionParser` 和 `ActionOnlyParser`
-- 也支持 `FunctionCallingParser`（原生 function calling），但核心设计围绕文本动作解析
-- 与"工具调用"流派的区别：动作通过文本表达而非结构化 API
+- SWE-agent 的 `DefaultAgent.step()` 支持多种解析器，`FunctionCallingParser`（原生 function calling，**默认**）和纯文本 `ThoughtActionParser`、`ActionOnlyParser`
+- 文本动作解析是兼容路径，适用于不支持 function calling 的模型，也是其鲜明特征之一
+- 与"工具调用"流派的区别：SWE-agent 同时支持两种动作表达方式，而非仅依赖原生 function calling
 
 ### 编辑-提交循环
 
@@ -372,11 +372,11 @@ Tree-sitter AST 解析（30+ 语言）
 ### 1. 四大架构流派
 
 - **编辑优先**（Aider）：LLM 直接输出代码修改，需文本解析，工具是辅助
-- **工具调用**（Claude Code、Gemini CLI、Qwen Code、Codex CLI、OpenCode、Cline、Goose 等）：LLM 通过结构化 function calling 操作环境，是主流模式
-- **文本 ReAct**（SWE-agent）：通过文本解析动作（非原生 function calling），适合学术评估
+- **工具调用**（Claude Code、Gemini CLI、Qwen Code、Codex CLI、OpenCode、Cline、Goose、Copilot CLI、Kimi CLI）：LLM 通过结构化 function calling 操作环境，是主流模式
+- **混合 ReAct**（SWE-agent）：兼容 function calling（默认）与文本动作解析，文本解析是其鲜明特征
 - **事件驱动**（OpenHands）：完全解耦的事件总线，最灵活但最复杂
 
-> **关键认知**："工具调用"与"ReAct 循环"并非互斥。所有 Agent 内部都遵循 ReAct 模式，差异在于**动作表达方式**：结构化 API（function calling）还是文本解析。
+> **关键认知**："工具调用"与"ReAct 循环"并非互斥。所有 Agent 内部都遵循 ReAct 模式，差异在于**动作表达方式**：结构化 API（function calling）还是文本解析。Cursor、Warp、Continue、Qoder CLI 等闭源/IDE 嵌入式 Agent 暂因证据不足未列入「工具调用」流派。
 
 ### 2. Gemini CLI 是事实上的"开源 Claude Code 模板"
 
