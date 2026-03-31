@@ -1,6 +1,8 @@
 # 9. Claude Code 多代理系统（Swarm / Agent / Coordinator）
 
-> Claude Code 的多代理系统实现了完整的 **Leader-Worker 协作模型**，支持进程内、终端分屏和独立窗口三种后端，通过文件邮箱实现跨进程通信。本文基于源码分析（`utils/swarm/` 7,548 LOC + `tools/AgentTool/` 6,782 LOC + `utils/teammateMailbox.ts` 1,183 LOC + `utils/tasks.ts` 862 LOC + `utils/teleport.tsx` + UI (2,020) + `tools/SendMessageTool/` 967 LOC + `tools/AgentTool/agentMemory*.ts` 374 + 其他共 ~20,200 行），覆盖 Agent 定义、Swarm 架构、协调模式、任务管理、邮箱通信、Agent Memory 和远程隔离。
+> Claude Code 的多代理系统实现了完整的 **Leader-Worker 协作模型**，支持进程内、终端分屏和独立窗口三种后端，通过文件邮箱实现跨进程通信。本文基于源码分析（`utils/swarm/` 7,548 LOC + `tools/AgentTool/` 6,782 LOC + `utils/teammateMailbox.ts` 1,183 LOC + `utils/tasks.ts` 862 LOC + `utils/teleport.tsx` + UI (2,020) + `tools/SendMessageTool/` 997 LOC + `tools/AgentTool/agentMemory*.ts` 374 + 其他共 ~20,500 行），覆盖 Agent 定义、Swarm 架构、协调模式、任务管理、邮箱通信、Agent Memory 和远程隔离。
+>
+> **LOC 去重说明**：上表中 Swarm 后端/权限/团队含在 Swarm 核心，Agent 执行/UI/定义含在 Agent 工具。去重后主要模块合计 ~18,000 LOC，加上辅助模块（backends/registry.ts 464、spawnInProcess.ts 328 等）共 ~20,500 行。
 >
 > **适用场景**：其他 Code Agent 开发者设计多代理协作系统时，可将本文作为架构参考。
 >
@@ -22,7 +24,7 @@
 | **Agent 定义** | (含在 Agent 工具) | `tools/AgentTool/loadAgentsDir.ts` (755) | Agent 定义加载 |
 | **邮箱通信** | 1,183 LOC | `utils/teammateMailbox.ts` (1,183) | 文件邮箱消息总线 |
 | **任务管理** | 862 LOC | `utils/tasks.ts` (862) | 文件级任务列表、原子认领 |
-| **发送消息** | 967 LOC | `tools/SendMessageTool/SendMessageTool.ts` (917) | 跨代理消息路由 |
+| **发送消息** | 997 LOC | `tools/SendMessageTool/SendMessageTool.ts` (917) + prompt (49) + UI (30) + constants (1) | 跨代理消息路由 |
 | **远程传送** | 2,020 LOC | `utils/teleport.tsx` (1,225) + UI 5 组件 (795) | 本地↔远程会话迁移 |
 | **协调模式** | 369 LOC | `coordinator/coordinatorMode.ts` (369) | 纯协调者系统提示 |
 | **团队生成** | 1,093 LOC | `tools/shared/spawnMultiAgent.ts` (1,093) | 3 后端 teammate 生成 |
@@ -123,10 +125,10 @@ interface PluginAgentDefinition extends BaseAgentDefinition {
 | **statusline-setup** | 配置 | Read, Edit | Sonnet | 始终启用 |
 | **explore** | 搜索 | Glob/Grep/Read/Bash（只读） | Haiku（外部）/ Inherit（内部） | `BUILTIN_EXPLORE_PLAN_AGENTS` 编译标志 + `tengu_amber_stoat` GrowthBook（默认开） |
 | **plan** | 规划 | 同 explore | Inherit | 同 explore |
-| **claude-code-guide** | 指南 | Glob/Grep/Read/WebFetch/WebSearch | Haiku | 非 SDK 入口点（排除 sdk-ts/sdk-py/sdk-cli） |
+| **claude-code-guide** | 指南 | Read/WebFetch/WebSearch + Glob/Grep（Ant-native 变体用 Bash 替代 Glob/Grep） | Haiku | 非 SDK 入口点（排除 sdk-ts/sdk-py/sdk-cli） |
 | **verification** | 验证 | 全部（禁止编辑/写入） | Inherit | `VERIFICATION_AGENT` 编译标志 + `tengu_hive_evidence` GrowthBook（默认关） |
 
-**Coordinator agents**：当 `COORDINATOR_MODE` 启用时，`getBuiltInAgents()` 替换为 `getCoordinatorAgents()`（来自 `coordinator/workerAgent.js`），上述 6 个 Agent 均不加载。
+**Coordinator agents**：当 `COORDINATOR_MODE` 启用时，`getBuiltInAgents()` 替换为 `getCoordinatorAgents()`（动态 `require('../../coordinator/workerAgent.js')`，源码中仅有编译产物路径，`.ts` 源文件未包含在泄露仓库中），上述 6 个 Agent 均不加载。
 
 **SDK 覆盖**：`CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS=1` 可在非交互模式下禁用所有内置 Agent。
 
@@ -202,16 +204,16 @@ interface AgentToolInput {
 ### 9.3.2 三路径路由
 
 ```typescript
-// AgentTool.call() 核心路由逻辑
+// AgentTool.call() 核心路由逻辑（伪代码）
 if (input.name && input.team_name) {
   // 路径 1: Swarm/Teammate 生成
   return spawnTeammate(config, context)
 } else if (!input.subagent_type && isForkSubagentEnabled()) {
-  // 路径 2: Fork 子代理（共享上下文）
-  return runForkSubagent(config, context)
+  // 路径 2: Fork 子代理（selectedAgent = FORK_AGENT, 调用 runAgent()）
+  return runAgent(forkContext)
 } else {
-  // 路径 3: 标准子代理（独立上下文）
-  return runStandardSubagent(config, context)
+  // 路径 3: 标准子代理（查找 effectiveType, 调用 runAgent()）
+  return runAgent(standardContext)
 }
 ```
 
@@ -322,11 +324,11 @@ spawnTeammate(config, context)
 ```
 
 **模型解析链**：`resolveTeammateModel(inputModel, leaderModel)`
-- `'inherit'` → 使用 leader 的模型
-- `undefined` → 使用默认（Claude Opus 4.6，provider-aware）
+- `'inherit'` → 使用 leader 的模型（`leaderModel ?? getDefaultTeammateModel()`）
+- `undefined` → `getDefaultTeammateModel(leaderModel)`（provider-aware 默认值，考虑 leader 模型）
 - 显式指定 → 使用指定模型
 
-**CLI 标志传播**：`buildInheritedCliFlags()` 将 `--dangerously-skip-permissions`、`--model`、`--settings`、`--plugin-dir`、`--chrome` 从 leader 传播到 teammate。
+**CLI 标志传播**：`buildInheritedCliFlags()` 将 `--dangerously-skip-permissions`、`--permission-mode`、`--model`、`--settings`、`--plugin-dir`、`--chrome`/`--no-chrome`、`--teammate-mode` 从 leader 传播到 teammate。
 
 ### 9.4.2 后端注册与检测
 
@@ -335,16 +337,16 @@ spawnTeammate(config, context)
 **后端检测优先级**：
 
 ```
-detectAndGetBackend():
+detectAndGetBackend():  // Pane 后端检测（tmux/iTerm2）
   ├── isInsideTmux() → tmux 内嵌套 → TmuxBackend
   ├── isInITerm2() && isIt2CliAvailable() → iTerm2 原生 → ITermBackend
   ├── isTmuxAvailable() → 外部 tmux → TmuxBackend
-  └── 无可用后端 → 仅 in-process 模式
+  └── 无可用后端 → throw Error（安装指引）
 
-isInProcessEnabled():
+isInProcessEnabled():  // In-process 独立判断
   ├── teammate-mode 配置 → in-process
   ├── CLAUDE_CODE_TEAMMATE_COMMAND 环境变量 → in-process
-  └── 无后端可用 → in-process fallback
+  └── detectAndGetBackend() 抛出异常时 → in-process fallback
 ```
 
 ### 9.4.3 Tmux 后端
@@ -474,7 +476,7 @@ interface TeammateMessage {
 
 ### 9.5.2 结构化消息类型
 
-邮箱支持 **10+ 种结构化协议消息**：
+邮箱支持 **14 种结构化协议消息**：
 
 | 消息类型 | 方向 | 用途 |
 |---------|------|------|
@@ -482,15 +484,16 @@ interface TeammateMessage {
 | `IdleNotificationMessage` | Worker → Leader | 空闲通知 |
 | `PermissionRequestMessage` | Worker → Leader | 权限请求 |
 | `PermissionResponseMessage` | Leader → Worker | 权限响应 |
-| `SandboxPermissionRequest` | Worker → Leader | 沙箱网络权限 |
-| `PlanApprovalRequest` | Worker → Leader | 计划审批 |
-| `PlanApprovalResponse` | Leader → Worker | 审批结果 |
-| `ShutdownRequest` | Leader → Worker | 关闭请求 |
-| `ShutdownApproved` | Worker → Leader | 接受关闭 |
-| `ShutdownRejected` | Worker → Leader | 拒绝关闭 |
+| `SandboxPermissionRequestMessage` | Worker → Leader | 沙箱网络权限请求 |
+| `SandboxPermissionResponseMessage` | Leader → Worker | 沙箱网络权限响应 |
+| `PlanApprovalRequestMessage` | Worker → Leader | 计划审批请求 |
+| `PlanApprovalResponseMessage` | Leader → Worker | 审批结果 |
+| `ShutdownRequestMessage` | Leader → Worker | 关闭请求 |
+| `ShutdownApprovedMessage` | Worker → Leader | 接受关闭 |
+| `ShutdownRejectedMessage` | Worker → Leader | 拒绝关闭 |
 | `TaskAssignmentMessage` | Leader → Worker | 任务分配通知 |
-| `TeamPermissionUpdate` | Leader → 广播 | 权限规则变更 |
-| `ModeSetRequest` | Leader → Worker | 切换权限模式 |
+| `TeamPermissionUpdateMessage` | Leader → 广播 | 权限规则变更 |
+| `ModeSetRequestMessage` | Leader → Worker | 切换权限模式 |
 
 ### 9.5.3 并发保护
 

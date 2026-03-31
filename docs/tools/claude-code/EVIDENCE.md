@@ -1156,13 +1156,13 @@ Source code confirms: `MultiEdit` is only a UI verb mapping in `bridge/sessionRu
   - explore + plan: gated by `BUILTIN_EXPLORE_PLAN_AGENTS` (build-time) + `tengu_amber_stoat` (GrowthBook, default true)
   - claude-code-guide: excluded for SDK entrypoints (sdk-ts/sdk-py/sdk-cli)
   - verification: gated by `VERIFICATION_AGENT` (build-time) + `tengu_hive_evidence` (GrowthBook, default false)
-  - When COORDINATOR_MODE active: replaced by `getCoordinatorAgents()` from coordinator/workerAgent.js
+  - When COORDINATOR_MODE active: replaced by `getCoordinatorAgents()` via dynamic `require('../../coordinator/workerAgent.js')` — .ts source not present in leaked repo
 - `agentColorManager.ts` (66 LOC): 8-color palette with per-agent assignment
 - `constants.ts` (12 LOC): AGENT_TOOL_NAME = 'Agent', LEGACY_AGENT_TOOL_NAME = 'Task'
 
 ### Mailbox System (from `utils/teammateMailbox.ts`, 1,183 LOC)
 
-- 10+ structured message types: plain text, idle notification, permission request/response, sandbox permission, plan approval, shutdown request/approval/rejection, task assignment, team permission update, mode set
+- 14 structured message types (all with `Message` suffix in source): TeammateMessage, IdleNotificationMessage, PermissionRequestMessage, PermissionResponseMessage, SandboxPermissionRequestMessage, SandboxPermissionResponseMessage, PlanApprovalRequestMessage, PlanApprovalResponseMessage, ShutdownRequestMessage, ShutdownApprovedMessage, ShutdownRejectedMessage, TaskAssignmentMessage, TeamPermissionUpdateMessage, ModeSetRequestMessage
 - `proper-lockfile` with 10-30 retries for all mutations
 - Inbox path: `~/.claude/teams/{team}/inboxes/{agent}.json`
 - `formatTeammateMessages()`: XML `<teammate-message>` format for model consumption
@@ -1175,9 +1175,12 @@ Source code confirms: `MultiEdit` is only a UI verb mapping in `bridge/sessionRu
 - `unassignTeammateTasks()`: clean up on teammate departure
 - File locking: `proper-lockfile` with 30 retries, 5-100ms backoff
 
-### Send Message Tool (from `tools/SendMessageTool/`, 967 LOC)
+### Send Message Tool (from `tools/SendMessageTool/`, 4 files, 997 LOC total)
 
-- Direct message, broadcast (`*`), UDS socket, Remote Control bridge routing
+- `SendMessageTool.ts` (917 LOC): Direct message, broadcast (`*`), UDS socket, Remote Control bridge routing
+- `prompt.ts` (49 LOC): dynamic prompt generation
+- `UI.tsx` (30 LOC): message display components
+- `constants.ts` (1 LOC): tool name constant
 - Auto-resume stopped agents on message delivery
 - Bridge messages require explicit user consent
 
