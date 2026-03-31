@@ -38,22 +38,22 @@
 
 ### 架构与设计
 
-| Agent | 语言 | 架构 | 主要设计目标 |
+| Agent | 语言 | 架构/定位 | 主要设计目标 |
 |------|----------|--------------|-------------------|
-| Claude Code | Rust | 原生 CLI | 代理式编程工具 |
-| Aider | Python | Git 原生 | 结对编程 |
-| Copilot CLI | TypeScript (Node.js SEA) | 独立二进制 | 终端原生代理，GitHub 集成 |
-| Cursor | TypeScript | IDE (VS Code) | AI 原生编辑器 |
-| SWE-agent | Python | Agent-Computer Interface | 基准性能 |
-| Cline | TypeScript | IDE 扩展 | 自主编码 |
-| Goose | Rust | MCP 原生 | 模型灵活性 |
-| OpenCode | TypeScript | 多代理（7 内置） | 多客户端 AI 平台（TUI + Web + 桌面） |
-| Continue | TypeScript | IDE + CLI + CI/CD | PR Checks + 语义索引 |
-| Warp | Rust | 终端替代品 | 现代终端 + AI |
-| Gemini CLI | TypeScript | ReAct 循环 | Google 生态 |
-| OpenHands | Python | 复合 AI | 完全自主 |
-| Qwen Code | TypeScript | ReAct 循环（Gemini CLI 分叉） | 中文开发者生态 |
-| Kimi CLI | Python | 多代理（4 内置）+ Wire 协议 | 双模式交互 + 多客户端（TUI + Web + IDE） |
+| Claude Code | Rust | CLI Agent（工具调用） | 代理式编程工具 |
+| Aider | Python | CLI Agent（编辑优先，Git 原生） | 结对编程 |
+| Copilot CLI | TypeScript (Node.js SEA) | CLI Agent（工具调用，GitHub 集成） | 终端原生代理，GitHub 集成 |
+| Cursor | TypeScript | IDE Agent（VS Code fork） | AI 原生编辑器 |
+| SWE-agent | Python | CLI Agent（混合 ReAct，ACI） | 基准性能 |
+| Cline | TypeScript | IDE Agent（VS Code 扩展） | 自主编码 |
+| Goose | Rust | CLI Agent（工具调用，MCP 原生） | 模型灵活性 |
+| OpenCode | TypeScript | CLI Agent（工具调用，多代理） | 多客户端 AI 平台（TUI + Web + 桌面） |
+| Continue | TypeScript | IDE + CLI + CI/CD Agent | PR Checks + 语义索引 |
+| Warp | Rust | 终端 Agent（GPU 渲染终端） | 现代终端 + AI |
+| Gemini CLI | TypeScript | CLI Agent（工具调用，function calling） | Google 生态 |
+| OpenHands | Python | CLI Agent（事件驱动，EventStream） | 完全自主 |
+| Qwen Code | TypeScript | CLI Agent（工具调用，Gemini CLI 分叉） | 中文开发者生态 |
+| Kimi CLI | Python | CLI Agent（工具调用，Wire 协议） | 双模式交互 + 多客户端（TUI + Web + IDE） |
 
 ### 核心功能对比
 

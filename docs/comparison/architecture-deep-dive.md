@@ -95,17 +95,38 @@ graph TD
 
 所有工具的核心都是一个代理循环，但实现方式差异显著：
 
-### 纯 ReAct 循环
+### 工具调用循环（主流）
 
 ```
-思考 → 行动 → 观察 → 重复
+消息 → LLM → function calling → 工具执行 → 结果 → 重复
 ```
 
-**使用者**：Gemini CLI、Qwen Code、SWE-agent
+**使用者**：Claude Code、Gemini CLI、Qwen Code、Codex CLI、OpenCode、Cline、Goose、Copilot CLI、Kimi CLI
 
-- Gemini CLI 的 `GeminiClient` 最多 100 轮，通过 `Scheduler` 调度工具
-- SWE-agent 的 `DefaultAgent.step()` 逐步执行，支持多种解析器
-- Qwen Code 继承 Gemini CLI 架构，增加了 Loop 检测（Levenshtein 距离）
+- Claude Code 使用 Anthropic `tool_use` API，20+ 内置工具
+- Gemini CLI/Qwen Code 使用 `@google/genai` function calling，`CoreToolScheduler`（1790 行）调度工具
+- Codex CLI 使用 OpenAI function calling + `apply_patch`
+- OpenCode 使用 Vercel AI SDK v5 统一接口，19+ 工具
+- Cline 在 VS Code 内执行，24+ 工具，每步自动 Git Checkpoint
+- Goose 通过 MCP 协议统一工具接口（所有工具走 MCP）
+- Copilot CLI 使用 YAML 定义的代理，`tool_choice` 列出现在模型配置矩阵
+- Kimi CLI "工具调用解析" + `ToolCall`/`ToolResult` Wire 事件，多提供商
+
+> **注 1**：许多交互式 coding agent 都可以理解为 ReAct-like 循环（reasoning → acting → observation → repeat）。差异主要在于**动作表达/编排机制**：function calling、文本解析、编辑格式、事件流等。
+>
+> **注 2**：Cursor、Warp、Continue、Qoder CLI 等闭源/IDE 嵌入式 Agent 具有工具系统能力（多支持 MCP），但本仓库现有证据不足以确认其使用原生 API function calling，暂不列入。Oh My OpenAgent 基于 OpenCode Harness 层，继承工具调用架构但不直接调用 LLM API。
+
+### 混合 ReAct 循环
+
+```
+思考 → 动作 → 解析 → 执行 → 观察 → 重复
+```
+
+**使用者**：SWE-agent
+
+- SWE-agent 的 `DefaultAgent.step()` 支持多种解析器，`FunctionCallingParser`（原生 function calling，**默认**）和纯文本 `ThoughtActionParser`、`ActionOnlyParser`
+- 文本动作解析是兼容路径，适用于不支持 function calling 的模型，也是其鲜明特征之一
+- 与"工具调用"流派的区别：SWE-agent 同时支持两种动作表达方式，而非仅依赖原生 function calling
 
 ### 编辑-提交循环
 
@@ -118,18 +139,6 @@ graph TD
 - 独特的编辑格式系统（14 种），模型输出直接包含代码修改
 - 反思循环：lint/测试失败自动重试（最多 3 次）
 - 每次修改自动 Git 提交，天然版本控制
-
-### 工具调用循环
-
-```
-消息 → LLM → 工具调用 → 执行 → 结果 → 重复
-```
-
-**使用者**：Claude Code、OpenCode、Cline、Goose
-
-- Claude Code/OpenCode 使用结构化工具调用（function calling）
-- Cline 在 VS Code 内执行，每步自动 Git Checkpoint
-- Goose 通过 MCP 协议统一工具接口
 
 ### 事件驱动循环
 
@@ -363,11 +372,16 @@ Tree-sitter AST 解析（30+ 语言）
 
 ## 关键洞察
 
-### 1. 三大架构流派
+### 1. 四大架构流派
 
-- **编辑优先**（Aider）：LLM 直接输出代码修改，工具是辅助
-- **工具调用**（Claude Code、OpenCode、Cline、Goose）：LLM 通过结构化工具调用操作环境
+- **编辑优先**（Aider）：LLM 直接输出代码修改，需文本解析，工具是辅助
+- **工具调用**（Claude Code、Gemini CLI、Qwen Code、Codex CLI、OpenCode、Cline、Goose、Copilot CLI、Kimi CLI）：LLM 通过结构化 function calling 操作环境，是主流模式
+- **混合 ReAct**（SWE-agent、mini-swe-agent）：兼容 function calling（默认）与文本动作解析，文本解析是其鲜明特征
 - **事件驱动**（OpenHands）：完全解耦的事件总线，最灵活但最复杂
+
+> **关键认知**：许多交互式 coding agent 都可以理解为 ReAct-like 循环（reasoning → acting → observation → repeat）。本文为了可操作地分类，主要按**动作表达/编排机制**区分：function calling、文本解析、编辑格式、事件流等。ReAct 原论文的核心是 reasoning + acting + observation 的交错交互模式，不强制要求动作用纯文本表达。
+>
+> **未列入的 Agent**：Cursor、Warp、Continue、Qoder CLI 等闭源/IDE 嵌入式 Agent 暂因证据不足未列入「工具调用」流派。Oh My OpenAgent 基于 OpenCode Harness 层，继承工具调用架构但不直接调用 LLM API，视为「工具调用」的间接成员。
 
 ### 2. Gemini CLI 是事实上的"开源 Claude Code 模板"
 
