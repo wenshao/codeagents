@@ -744,3 +744,115 @@ const keepAliveIntervalMs = getPollIntervalConfig().session_keepalive_interval_v
 ```
 
 GrowthBook flag: `tengu_bridge_poll_interval_config` controls the entire config object with 5-minute refresh.
+
+---
+
+## SOURCE CODE ANALYSIS: Tool System
+
+### Tool Base Architecture (from `Tool.ts`)
+
+Core interface `Tool<Input, Output, P>` with methods:
+- `call()` — execute, returns `ToolResult<T>`
+- `isEnabled()` — feature gate (default: `true`)
+- `isReadOnly()` — read classification (default: `false`, fail-closed)
+- `isConcurrencySafe()` — parallel execution (default: `false`, fail-closed)
+- `isDestructive()` — irreversible ops (default: `false`)
+- `validateInput()` — pre-permission validation
+- `checkPermissions()` — permission rule matching
+- `interruptBehavior()` — `'cancel'` or `'block'` on new user input
+- `preparePermissionMatcher()` — hook pattern matching
+
+`buildTool()` factory fills safe defaults (fail-closed: concurrency=false, readonly=false).
+
+`ToolResult<T>` = `{ data, newMessages?, contextModifier?, mcpMeta? }`
+`ToolUseContext` = `{ options: { tools, mcpClients, agentDefinitions }, abortController, messages, getAppState/setAppState, readFileState, agentId? }`
+
+### BashTool (from `tools/BashTool/`, 18 files, 12,411 LOC)
+
+Input schema: `command` (string), `timeout` (number, optional), `description` (string, optional), `run_in_background` (boolean, optional), `dangerouslyDisableSandbox` (boolean, optional).
+
+Key constants:
+- `PROGRESS_THRESHOLD_MS = 2000`
+- `ASSISTANT_BLOCKING_BUDGET_MS = 15,000` (Kairos auto-background)
+- `maxResultSizeChars = 30,000`
+- `MAX_PERSISTED_SIZE = 64 MB`
+
+Command classification sets: BASH_SEARCH_COMMANDS (find/grep/rg/ag), BASH_READ_COMMANDS (cat/head/tail/jq), BASH_SILENT_COMMANDS (mv/cp/rm/mkdir).
+
+Security pipeline (`bashSecurity.ts`, 2,593 lines): 23 validators covering injection, misparsing, obfuscation, IFS, Zsh dangerous commands, brace expansion, Unicode whitespace, etc.
+
+Permission model (`bashPermissions.ts`, 2,622 lines): 41 SAFE_ENV_VARS whitelist (Go/Rust/Node/Python/Locale). 19 BARE_SHELL_PREFIXES blocked from rule suggestions (sh/bash/sudo/env). `MAX_SUBCOMMANDS_FOR_SECURITY_CHECK = 50`.
+
+### FileEditTool (from `tools/FileEditTool/`, 6 files, 1,812 LOC)
+
+Input schema: `file_path`, `old_string`, `new_string`, `replace_all` (default false).
+
+Matching pipeline: exact match → curly-quote normalization → XML desanitization. No fuzzy matching.
+
+10 error codes: team memory secret (0), no-op (1), path denied (2), file exists (3), file not found (4), ipynb (5), not read (6), stale (7), not found (8), multiple matches (9).
+
+Write safety: synchronous mtime critical section between check and write. `MAX_EDIT_FILE_SIZE = 1 GiB`.
+
+### FileReadTool (from `tools/FileReadTool/`, 5 files, 1,602 LOC)
+
+Input schema: `file_path`, `offset` (1-based), `limit`, `pages` (PDF range).
+
+Supported types: text (2000 lines max), images (sharp pipeline), PDF (inline/extract), notebooks (.ipynb), binary (rejected).
+
+Limits: `maxSizeBytes = 256 KB`, `maxTokens = 25,000`, `MAX_LINES_TO_READ = 2000`.
+
+Blocked device paths: `/dev/zero`, `/dev/random`, `/dev/urandom`, `/dev/full`, `/dev/stdin`, `/dev/tty`, `/dev/fd/0-2`, `/proc/*/fd/0-2`.
+
+### FileWriteTool (from `tools/FileWriteTool/`, 3 files, 856 LOC)
+
+Input schema: `file_path`, `content`. Atomic write: mkdir + history backup (async) → readFileSync + mtime check + write (sync critical section). Always LF line endings. New files skip read-first requirement.
+
+### AgentTool (from `tools/AgentTool/`, 14 files, 6,072 LOC)
+
+Input schema: `description`, `prompt`, `subagent_type?`, `model?` (sonnet/opus/haiku), `run_in_background?`, `name?`, `team_name?`, `mode?`, `isolation?`, `cwd?`.
+
+Four spawn modes (priority): Teammate → Remote (Ant-only) → Fork (inherits full context, max cache hit) → Subagent (independent context).
+
+Fork guard: scan for `<fork_boilerplate>` tag or `querySource === 'agent:builtin:fork'`. Fork rules: no re-fork, no conversation, 500-word limit, structured output format.
+
+Tool filtering: MCP always allowed → ALL_AGENT_DISALLOWED_TOOLS → CUSTOM_AGENT_DISALLOWED_TOOLS → ASYNC_AGENT_ALLOWED_TOOLS.
+
+Agent definitions from 3 sources: built-in → plugin → user/project (`.claude/agents/*.md`).
+
+### GrepTool (from `tools/GrepTool/`, 3 files, 795 LOC)
+
+Input schema: `pattern`, `path?`, `glob?`, `output_mode?` (default: files_with_matches), `-i?`, `type?`, `head_limit?` (default: 250), `multiline?`.
+
+Ripgrep invocation: `--hidden`, exclude VCS dirs (`.git/.svn/.hg/.bzr/.jj/.sl`), `--max-columns 500`. `files_with_matches` sorted by mtime.
+
+### ToolSearchTool (from `tools/ToolSearchTool/`, 3 files, 593 LOC)
+
+Input schema: `query` (string), `max_results` (default 5). Scoring: exact name match +10, partial +5, searchHint +4, description +2. MCP prefix matches weighted higher (+12/+6). `select:ToolName` for direct selection.
+
+### PowerShellTool (from `tools/PowerShellTool/`, 14 files, 8,959 LOC)
+
+Windows-only equivalent of BashTool. Separate security and permission validation pipeline.
+
+### Remaining Tools Summary
+
+| Tool | LOC | Key Schema Fields |
+|------|-----|-------------------|
+| WebFetch | 1,131 | `url`, `prompt` |
+| WebSearch | 569 | `query`, `allowed_domains?`, `blocked_domains?` |
+| NotebookEdit | 587 | `notebook_path`, `cell_id?`, `new_source`, `edit_mode?` |
+| TaskCreate | 195 | `subject`, `description`, `activeForm?` |
+| TaskGet | 153 | `taskId` |
+| TaskUpdate | 484 | `taskId`, `status?`, `addBlocks?`, `metadata?` |
+| CronCreate | 543 | `cron`, `prompt`, `recurring?`, `durable?` |
+| TeamCreate | 359 | `team_name`, `description?` |
+| SendMessage | 997 | `to`, `message`, `summary?` |
+| Brief | 610 | `message`, `attachments?`, `status` |
+| AskUserQuestion | 309 | `questions` (1-4), `metadata?` |
+| LSP | 2,005 | `operation` (9 types), `filePath`, `line`, `character` |
+| RemoteTrigger | 192 | `action`, `trigger_id?`, `body?` |
+| Skill | 1,477 | `skill`, `args?` |
+| Config | 809 | `setting`, `value?` |
+| EnterPlanMode | 329 | (empty) |
+| ExitPlanMode | 605 | `allowedPrompts?` |
+| EnterWorktree | 177 | `name?` |
+| ExitWorktree | 386 | `action` (keep/remove), `discard_changes?` |
