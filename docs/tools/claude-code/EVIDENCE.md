@@ -1112,3 +1112,124 @@ Source code confirms: `MultiEdit` is only a UI verb mapping in `bridge/sessionRu
 - `MODEL_CONTEXT_WINDOW_DEFAULT = 200,000` tokens; 1M for Sonnet 4 / Opus 4-6
 - `tokenCountWithEstimation()`: last API response usage + rough estimate for appended messages, 4/3 padding
 - Handles parallel tool calls: walks back to first sibling with same `message.id`
+
+---
+
+## Multi-Agent / Swarm System Deep-Dive Evidence (Section 9)
+
+### Swarm Core (from `utils/swarm/`, 22 files, 7,548 LOC total)
+
+- `inProcessRunner.ts` (1,552 LOC): wraps `runAgent()` with AsyncLocalStorage context isolation, progress tracking, idle notification, plan mode approval, permission handling, mailbox polling, auto-compact, Perfetto tracing
+- `permissionSync.ts` (928 LOC): file-based permission coordination with lockfile-protected request files, timeout handling, sandbox variants
+- `teamHelpers.ts` (683 LOC): `TeamFile` type with members array, CRUD operations, worktree/session cleanup registration
+- `TmuxBackend.ts` (764 LOC): split-pane creation with 30/70 layout, pane coloring, hide/show via break-pane/join-pane
+- `registry.ts` (464 LOC): `detectAndGetBackend()` priority flow (tmux nested > iTerm2 > tmux external), `isInProcessEnabled()`
+- `backends/types.ts` (311 LOC): `BackendType` union, `PaneBackend` interface (13 methods), `TeammateSpawnConfig`, `TeammateExecutor` interface
+- `PaneBackendExecutor.ts` (354 LOC): adapts PaneBackend to TeammateExecutor, constructs spawn commands, manages mailbox writes
+- `InProcessBackend.ts` (339 LOC): TeammateExecutor for in-process mode, delegates to spawnInProcess + startInProcess
+- `spawnInProcess.ts` (328 LOC): creates TeammateContext with independent AbortController, registers InProcessTeammateTaskState
+- `spawnUtils.ts` (146 LOC): CLI flag propagation (model, settings, permissions, chrome flags)
+- `teammateInit.ts` (129 LOC): registers Stop hook for idle notification, applies team-wide allowed paths
+- `reconnection.ts` (119 LOC): computes initial teamContext for AppState from resumed sessions
+- `teammateLayoutManager.ts` (107 LOC): color assignment from AGENT_COLORS palette, pane creation delegation
+- `constants.ts` (33 LOC): TEAM_LEAD_NAME, SWARM_SESSION_NAME, env vars for teammate command/color/plan mode
+
+### Agent Tool (from `tools/AgentTool/`, 20 files, 6,782 LOC total)
+
+- `AgentTool.tsx` (1,397 LOC): `buildTool()` with input schema, 3-path routing (teammate/fork/standard), output schema
+- `runAgent.ts` (973 LOC): creates subagent context, initializes agent-specific MCP servers, assembles tool pool, calls `query()`
+- `UI.tsx` (871 LOC): React components for progress, grouped tool use, result messages, error/rejected states
+- `loadAgentsDir.ts` (755 LOC): `AgentDefinition` type hierarchy (BuiltIn/Custom/Plugin), loads from 4 locations
+- `agentToolUtils.ts` (686 LOC): tool resolution, agent lifecycle, async launch/completion handling
+- `prompt.ts` (287 LOC): dynamic prompt generation varying by coordinator mode, fork gate, subscription type
+- `resumeAgent.ts` (265 LOC): resumes previously spawned agent via SendMessage
+- `forkSubagent.ts` (210 LOC): FORK_AGENT definition, `buildForkedMessages()` for cache-identical prefixes
+- `agentMemorySnapshot.ts` (197 LOC): agent memory snapshot/restore for UI
+- `agentMemory.ts` (177 LOC): scoped persistent memory (user/project/local)
+- `built-in/claudeCodeGuideAgent.ts` (205 LOC): Claude Code usage Q&A agent
+- `built-in/verificationAgent.ts` (152 LOC): test/typecheck/failure investigation agent (gated on `tengu_hive_evidence`)
+- `built-in/statuslineSetup.ts` (144 LOC): terminal statusline integration agent
+- `built-in/planAgent.ts` (92 LOC): read-only architecture planner
+- `built-in/exploreAgent.ts` (83 LOC): read-only search specialist (uses Haiku for external users)
+- `builtInAgents.ts` (72 LOC): registry returning agents based on feature gates
+  - general-purpose + statusline-setup: always enabled
+  - explore + plan: gated by `BUILTIN_EXPLORE_PLAN_AGENTS` (build-time) + `tengu_amber_stoat` (GrowthBook, default true)
+  - claude-code-guide: excluded for SDK entrypoints (sdk-ts/sdk-py/sdk-cli)
+  - verification: gated by `VERIFICATION_AGENT` (build-time) + `tengu_hive_evidence` (GrowthBook, default false)
+  - When COORDINATOR_MODE active: replaced by `getCoordinatorAgents()` via dynamic `require('../../coordinator/workerAgent.js')` — .ts source not present in leaked repo
+- `agentColorManager.ts` (66 LOC): 8-color palette with per-agent assignment
+- `constants.ts` (12 LOC): AGENT_TOOL_NAME = 'Agent', LEGACY_AGENT_TOOL_NAME = 'Task'
+
+### Mailbox System (from `utils/teammateMailbox.ts`, 1,183 LOC)
+
+- 14 structured message types (all with `Message` suffix in source): TeammateMessage, IdleNotificationMessage, PermissionRequestMessage, PermissionResponseMessage, SandboxPermissionRequestMessage, SandboxPermissionResponseMessage, PlanApprovalRequestMessage, PlanApprovalResponseMessage, ShutdownRequestMessage, ShutdownApprovedMessage, ShutdownRejectedMessage, TaskAssignmentMessage, TeamPermissionUpdateMessage, ModeSetRequestMessage
+- `proper-lockfile` with 10-30 retries for all mutations
+- Inbox path: `~/.claude/teams/{team}/inboxes/{agent}.json`
+- `formatTeammateMessages()`: XML `<teammate-message>` format for model consumption
+
+### Task Management (from `utils/tasks.ts`, 862 LOC)
+
+- `Task` type with monotonic integer IDs, status lifecycle, dependency graph (blocks/blockedBy)
+- `claimTaskWithBusyCheck()`: task-list-level lock for TOCTOU prevention
+- `getAgentStatuses()`: computes idle/busy for all team members
+- `unassignTeammateTasks()`: clean up on teammate departure
+- File locking: `proper-lockfile` with 30 retries, 5-100ms backoff
+
+### Send Message Tool (from `tools/SendMessageTool/`, 4 files, 997 LOC total)
+
+- `SendMessageTool.ts` (917 LOC): Direct message, broadcast (`*`), UDS socket, Remote Control bridge routing
+- `prompt.ts` (49 LOC): dynamic prompt generation
+- `UI.tsx` (30 LOC): message display components
+- `constants.ts` (1 LOC): tool name constant
+- Auto-resume stopped agents on message delivery
+- Bridge messages require explicit user consent
+
+### Coordinator Mode (from `coordinator/coordinatorMode.ts`, 369 LOC)
+
+- Gated: `feature('COORDINATOR_MODE')` AND `CLAUDE_CODE_COORDINATOR_MODE=1`
+- System prompt (~200 lines): pure orchestrator, never edits code
+- 4-phase workflow suggested in prompt: Research → Synthesis → Implementation → Verification (⚠️ informal, not formal architecture)
+- Continue vs Spawn 6-scenario decision matrix (exact source text):
+  1. "Research explored exactly the files that need editing" → Continue
+  2. "Research was broad but implementation is narrow" → Spawn fresh
+  3. "Correcting a failure or extending recent work" → Continue
+  4. "Verifying code a different worker just wrote" → Spawn fresh
+  5. "First implementation attempt used the wrong approach entirely" → Spawn fresh
+  6. "Completely unrelated task" → Spawn fresh
+- Core principle: "There is no universal default. Think about how much of the worker's context overlaps with the next task. High overlap → continue. Low overlap → spawn fresh."
+
+### Spawn Engine (from `tools/shared/spawnMultiAgent.ts`, 1,093 LOC)
+
+- `spawnTeammate()`: main entry for both TeammateTool and AgentTool
+- Model resolution: 'inherit' → leader, undefined → default (Opus 4.6)
+- Name deduplication: appends -2, -3 suffixes
+- Backend dispatch: in-process → split-pane → separate-window
+
+### Agent ID (from `utils/agentId.ts`, 99 LOC)
+
+- Format: `agentName@teamName` (deterministic, human-readable)
+- Request ID: `{type}-{timestamp}@{agentId}`
+- `@` separator reserved; agent names sanitized to remove `@`
+
+### Teleport (from `utils/teleport.tsx`, 1,225 LOC + 6 UI components = 2,020 LOC total)
+
+- `teleportToRemote()`: Haiku generates title/branch → git bundle → upload to Anthropic API
+- `resumeFromTeleport()`: fetch remote logs → reconstruct conversation → checkout branch
+- OAuth authentication
+- Progress steps: validating → fetching_logs → fetching_branch → checking_out → done
+- UI components: `TeleportError.tsx` (188), `TeleportResumeWrapper.tsx` (166), `TeleportProgress.tsx` (139), `TeleportStash.tsx` (115), `TeleportRepoMismatchDialog.tsx` (103), `useTeleportResume.tsx` (84) = 795 LOC
+
+### Agent Memory (from `tools/AgentTool/agentMemory.ts` 177 LOC + `agentMemorySnapshot.ts` 197 LOC = 374 LOC)
+
+- `AgentMemoryScope`: `'user' | 'project' | 'local'` — determines storage path
+- `getAgentMemoryDir(agentType, scope)`: routes scope → physical directory
+  - user: `~/.claude/agent-memory/{agentType}/`
+  - project: `{cwd}/.claude/agent-memory/{agentType}/` (VCS-committable)
+  - local: `{cwd}/.claude/agent-memory-local/{agentType}/`
+- `loadAgentMemoryPrompt()`: injects scope-specific memory instructions into agent system prompts
+- `isAgentMemoryPath()`: security gate for permission system and memory detection
+- Snapshot system: `checkAgentMemorySnapshot()` returns `initialize` / `prompt-update` / `none`
+  - `initializeFromSnapshot()`: first-time copy from `.claude/agent-memory-snapshots/{agentType}/`
+  - Feature gate: `feature('AGENT_MEMORY_SNAPSHOT') && isAutoMemoryEnabled()`
+- Consumers: `permissions/filesystem.ts`, `memoryFileDetection.ts`, `attachments.ts`, `loadAgentsDir.ts`, `loadPluginAgents.ts`
+- When enabled, file read/write/edit tools auto-injected into agent's allowed tools
