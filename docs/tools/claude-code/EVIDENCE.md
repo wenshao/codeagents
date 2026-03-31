@@ -1196,9 +1196,25 @@ Source code confirms: `MultiEdit` is only a UI verb mapping in `bridge/sessionRu
 - Request ID: `{type}-{timestamp}@{agentId}`
 - `@` separator reserved; agent names sanitized to remove `@`
 
-### Teleport (from `utils/teleport.tsx`, 1,225 LOC + 5 UI components)
+### Teleport (from `utils/teleport.tsx`, 1,225 LOC + 6 UI components = 2,020 LOC total)
 
 - `teleportToRemote()`: Haiku generates title/branch → git bundle → upload to Anthropic API
 - `resumeFromTeleport()`: fetch remote logs → reconstruct conversation → checkout branch
 - OAuth authentication
 - Progress steps: validating → fetching_logs → fetching_branch → checking_out → done
+- UI components: `TeleportError.tsx` (188), `TeleportResumeWrapper.tsx` (166), `TeleportProgress.tsx` (139), `TeleportStash.tsx` (115), `TeleportRepoMismatchDialog.tsx` (103), `useTeleportResume.tsx` (84) = 795 LOC
+
+### Agent Memory (from `tools/AgentTool/agentMemory.ts` 177 LOC + `agentMemorySnapshot.ts` 197 LOC = 374 LOC)
+
+- `AgentMemoryScope`: `'user' | 'project' | 'local'` — determines storage path
+- `getAgentMemoryDir(agentType, scope)`: routes scope → physical directory
+  - user: `~/.claude/agent-memory/{agentType}/`
+  - project: `{cwd}/.claude/agent-memory/{agentType}/` (VCS-committable)
+  - local: `{cwd}/.claude/agent-memory-local/{agentType}/`
+- `loadAgentMemoryPrompt()`: injects scope-specific memory instructions into agent system prompts
+- `isAgentMemoryPath()`: security gate for permission system and memory detection
+- Snapshot system: `checkAgentMemorySnapshot()` returns `initialize` / `prompt-update` / `none`
+  - `initializeFromSnapshot()`: first-time copy from `.claude/agent-memory-snapshots/{agentType}/`
+  - Feature gate: `feature('AGENT_MEMORY_SNAPSHOT') && isAutoMemoryEnabled()`
+- Consumers: `permissions/filesystem.ts`, `memoryFileDetection.ts`, `attachments.ts`, `loadAgentsDir.ts`, `loadPluginAgents.ts`
+- When enabled, file read/write/edit tools auto-injected into agent's allowed tools

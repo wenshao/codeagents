@@ -1,6 +1,6 @@
 # 9. Claude Code 多代理系统（Swarm / Agent / Coordinator）
 
-> Claude Code 的多代理系统实现了完整的 **Leader-Worker 协作模型**，支持进程内、终端分屏和独立窗口三种后端，通过文件邮箱实现跨进程通信。本文基于源码分析（`utils/swarm/` 7,548 LOC + `tools/AgentTool/` 6,782 LOC + `utils/teammateMailbox.ts` 1,183 LOC + `utils/tasks.ts` 862 LOC + `utils/teleport.tsx` 1,225 LOC + `tools/SendMessageTool/` 967 LOC + 其他共 ~19,000 行），覆盖 Agent 定义、Swarm 架构、协调模式、任务管理、邮箱通信和远程隔离。
+> Claude Code 的多代理系统实现了完整的 **Leader-Worker 协作模型**，支持进程内、终端分屏和独立窗口三种后端，通过文件邮箱实现跨进程通信。本文基于源码分析（`utils/swarm/` 7,548 LOC + `tools/AgentTool/` 6,782 LOC + `utils/teammateMailbox.ts` 1,183 LOC + `utils/tasks.ts` 862 LOC + `utils/teleport.tsx` + UI (2,020) + `tools/SendMessageTool/` 967 LOC + `tools/AgentTool/agentMemory*.ts` 374 + 其他共 ~20,200 行），覆盖 Agent 定义、Swarm 架构、协调模式、任务管理、邮箱通信、Agent Memory 和远程隔离。
 >
 > **适用场景**：其他 Code Agent 开发者设计多代理协作系统时，可将本文作为架构参考。
 >
@@ -13,17 +13,17 @@
 | 子系统 | 目录总规模 | 核心文件（单文件 LOC） | 职责 |
 |--------|-----------|----------------------|------|
 | **Swarm 核心** | 7,548 LOC | `utils/swarm/inProcessRunner.ts` (1,552) | 进程内 teammate 执行引擎 |
-| **Swarm 后端** | — | `utils/swarm/backends/TmuxBackend.ts` (764) | tmux 分屏管理 |
-| **Swarm 权限** | — | `utils/swarm/permissionSync.ts` (928) | 文件级权限委托 |
-| **Swarm 团队** | — | `utils/swarm/teamHelpers.ts` (683) | 团队文件管理 |
+| **Swarm 后端** | (含在 Swarm 核心) | `utils/swarm/backends/TmuxBackend.ts` (764) | tmux 分屏管理 |
+| **Swarm 权限** | (含在 Swarm 核心) | `utils/swarm/permissionSync.ts` (928) | 文件级权限委托 |
+| **Swarm 团队** | (含在 Swarm 核心) | `utils/swarm/teamHelpers.ts` (683) | 团队文件管理 |
 | **Agent 工具** | 6,782 LOC | `tools/AgentTool/AgentTool.tsx` (1,397) | Agent 入口（3 种执行路径） |
-| **Agent 执行** | — | `tools/AgentTool/runAgent.ts` (973) | 子代理执行引擎 |
-| **Agent UI** | — | `tools/AgentTool/UI.tsx` (871) | React 进度/状态渲染 |
-| **Agent 定义** | — | `tools/AgentTool/loadAgentsDir.ts` (755) | Agent 定义加载 |
+| **Agent 执行** | (含在 Agent 工具) | `tools/AgentTool/runAgent.ts` (973) | 子代理执行引擎 |
+| **Agent UI** | (含在 Agent 工具) | `tools/AgentTool/UI.tsx` (871) | React 进度/状态渲染 |
+| **Agent 定义** | (含在 Agent 工具) | `tools/AgentTool/loadAgentsDir.ts` (755) | Agent 定义加载 |
 | **邮箱通信** | 1,183 LOC | `utils/teammateMailbox.ts` (1,183) | 文件邮箱消息总线 |
 | **任务管理** | 862 LOC | `utils/tasks.ts` (862) | 文件级任务列表、原子认领 |
 | **发送消息** | 967 LOC | `tools/SendMessageTool/SendMessageTool.ts` (917) | 跨代理消息路由 |
-| **远程传送** | 1,225 LOC | `utils/teleport.tsx` (1,225) | 本地↔远程会话迁移 |
+| **远程传送** | 2,020 LOC | `utils/teleport.tsx` (1,225) + UI 5 组件 (795) | 本地↔远程会话迁移 |
 | **协调模式** | 369 LOC | `coordinator/coordinatorMode.ts` (369) | 纯协调者系统提示 |
 | **团队生成** | 1,093 LOC | `tools/shared/spawnMultiAgent.ts` (1,093) | 3 后端 teammate 生成 |
 | **代理 ID** | 99 LOC | `utils/agentId.ts` (99) | 确定性代理 ID 格式 |
@@ -219,6 +219,58 @@ const FORK_AGENT: BuiltInAgentDefinition = {
 ```
 
 **关键设计**：fork 复用父级 API 消息前缀，使 prompt cache 命中率最大化，降低 token 成本。
+
+### 9.3.5 Agent Memory
+
+源码：`tools/AgentTool/agentMemory.ts` (177 LOC) + `agentMemorySnapshot.ts` (197 LOC)
+
+子代理可通过 `memory` 字段声明持久化记忆，实现跨会话知识积累。Agent Memory 独立于 07-session.md 描述的全局 Memory 系统，是每个 Agent 定义的**局部私有记忆**。
+
+**作用域**：
+
+| Scope | 存储路径 | 跨项目 | VCS |
+|-------|---------|--------|-----|
+| `user` | `~/.claude/agent-memory/{agentType}/` | ✅ | ❌ |
+| `project` | `{cwd}/.claude/agent-memory/{agentType}/` | ❌ | ✅（提交到 Git） |
+| `local` | `{cwd}/.claude/agent-memory-local/{agentType}/` | ❌ | ❌ |
+
+**定义方式**：在 Agent 定义的 frontmatter 中声明：
+
+```markdown
+---
+agentType: security-reviewer
+memory: project
+---
+
+You are a security review agent. Remember vulnerability patterns...
+```
+
+**Prompt 注入**：`loadAgentMemoryPrompt()` 在 Agent 系统提示中注入记忆指令：
+- **user scope**：保持通用性建议，因跨项目共享
+- **project scope**：鼓励项目特定知识记录，通过 Git 与团队共享
+- **local scope**：记录机器特定配置，不进入 VCS
+
+记忆文件为 `MEMORY.md`，存放在对应 scope 目录下。Agent 在每次会话中可读写此文件以积累经验。
+
+**Snapshot 系统**：
+
+源码：`tools/AgentTool/agentMemorySnapshot.ts` (197 LOC)
+
+项目维护者可通过 `.claude/agent-memory-snapshots/{agentType}/` 提供种子记忆：
+
+| 动作 | 触发条件 | 行为 |
+|------|---------|------|
+| `initialize` | 本地无记忆文件 | 从 snapshot 复制 `.md` 文件 |
+| `prompt-update` | snapshot 更新时间 > 已同步时间 | 设置 `pendingSnapshotUpdate` 标志 |
+| `none` | 已同步或无 snapshot | 无操作 |
+
+**Feature gate**：`feature('AGENT_MEMORY_SNAPSHOT') && isAutoMemoryEnabled()`
+
+**集成点**：
+- 权限系统（`utils/permissions/filesystem.ts`）：`isAgentMemoryPath()` 放行 Agent 记忆路径
+- 记忆检测（`utils/memoryFileDetection.ts`）：分类 Agent 记忆文件用于折叠/徽章显示
+- 附件系统（`utils/attachments.ts`）：`@agent-` 提及时搜索对应 Agent 记忆目录
+- 工具注入：`isAutoMemoryEnabled()` 时自动将文件读/写/编辑工具加入 Agent 的 allowed tools
 
 ## 9.4 Swarm 架构
 
@@ -507,7 +559,7 @@ getTaskListId() 优先级:
 
 | 工具 | LOC | 功能 |
 |------|-----|------|
-| `TaskCreateTool` | 138 | 创建任务（支持 hook 拦截） |
+| `TaskCreateTool` | 195 | 创建任务（支持 hook 拦截） |
 | `TaskGetTool` | — | 查询单个任务 |
 | `TaskListTool` | — | 列出所有任务 |
 | `TaskUpdateTool` | — | 更新任务状态/描述 |
@@ -614,11 +666,12 @@ resumeFromTeleport():
 
 | 组件 | LOC | 功能 |
 |------|-----|------|
-| `TeleportError.tsx` | 188 | 错误处理 UI |
-| `TeleportResumeWrapper.tsx` | 166 | 恢复加载状态 |
-| `TeleportStash.tsx` | 115 | Git stash 管理 |
-| `TeleportProgress.tsx` | 139 | 进度指示（5 步） |
+| `TeleportError.tsx` | 188 | 前置条件检查（登录、stash） |
+| `TeleportResumeWrapper.tsx` | 166 | 恢复加载编排 |
+| `TeleportProgress.tsx` | 139 | 5 步进度指示 |
+| `TeleportStash.tsx` | 115 | Git stash 对话框 |
 | `TeleportRepoMismatchDialog.tsx` | 103 | 仓库不匹配对话框 |
+| `useTeleportResume.tsx` | 84 | 恢复状态管理 Hook |
 
 **进度步骤**：`validating` → `fetching_logs` → `fetching_branch` → `checking_out` → `done`
 
@@ -721,6 +774,7 @@ resumeFromTeleport():
 - [ ] 支持多位置加载（全局/项目/插件/策略）
 - [ ] Frontmatter 格式的 Markdown 定义文件
 - [ ] Feature gate 控制内置 agent 启用
+- [ ] Agent Memory 局部持久化（3 scope + snapshot 种子）
 
 ### 多代理生成
 - [ ] 三后端架构（in-process / split-pane / separate-window）
@@ -769,4 +823,5 @@ resumeFromTeleport():
 | 任务系统 | 文件级 + 高位水印 | 数据库 | 无需额外依赖；并发依赖文件锁性能 |
 | Fork 子代理 | 共享 prompt cache 前缀 | 完全独立会话 | 降低 token 成本；上下文可能过重 |
 | 权限委托 | Leader UI 桥接 | 自动审批 | 安全性高；增加用户交互 |
+| Agent Memory | 3-scope 文件存储 | 全局 KV 存储 | 代码级隔离清晰；文件粒度较粗 |
 | 上下文隔离 | AsyncLocalStorage | 独立进程 | 共享 API/MCP 资源；实现复杂 |
