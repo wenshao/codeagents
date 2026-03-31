@@ -398,3 +398,276 @@ From binary analysis of telemetry event construction:
 - macOS: plist-based managed settings
 - Windows: Registry policies at HKLM/HKCU\SOFTWARE\Policies\ClaudeCode
 - Settings key: "Settings" under policy path
+
+########## SOURCE CODE ANALYSIS: Remote Control / Bridge ##########
+
+> 以下数据来自 Claude Code 源码分析（`bridge/`、`remote/`、`utils/`、`entrypoints/` 等目录，约 35,000 行 TypeScript），与 v2.1.87 ELF 二进制反编译交叉验证。文件名和行号可直接追溯。
+
+### Source Code File Map
+
+| 文件路径 | 行数 | 职责 |
+|----------|------|------|
+| `bridge/bridgeMain.ts` | 2,999 | 主桥接编排器（standalone daemon/server 模式） |
+| `bridge/replBridge.ts` | 2,406 | REPL 会话内桥接核心 |
+| `bridge/remoteBridgeCore.ts` | 1,008 | Env-less v2 桥接核心 |
+| `bridge/initReplBridge.ts` | 569 | 桥接初始化 |
+| `bridge/sessionRunner.ts` | 550 | 会话执行器 |
+| `bridge/bridgeApi.ts` | 539 | Bridge API 层 |
+| `bridge/bridgeUI.ts` | 530 | Bridge UI 层 |
+| `bridge/bridgeMessaging.ts` | 461 | 消息协议处理 |
+| `bridge/createSession.ts` | 384 | 会话创建 |
+| `bridge/replBridgeTransport.ts` | 370 | 传输层抽象 |
+| `bridge/types.ts` | 262 | 类型定义 |
+| `bridge/jwtUtils.ts` | 256 | JWT 认证工具 |
+| `bridge/trustedDevice.ts` | 210 | 设备信任管理 |
+| `bridge/bridgeEnabled.ts` | 202 | 启用/禁用逻辑 |
+| `bridge/pollConfig.ts` | 110 | Polling 配置 |
+| `bridge/pollConfigDefaults.ts` | 82 | 默认 polling 参数 |
+| `bridge/flushGate.ts` | 71 | 历史消息刷新门控 |
+| `bridge/capacityWake.ts` | 56 | 容量唤醒信号 |
+| `remote/SessionsWebSocket.ts` | 404 | Sessions WebSocket 客户端 |
+| `remote/RemoteSessionManager.ts` | 343 | 远程会话管理 |
+| `remote/sdkMessageAdapter.ts` | 302 | SDK 消息适配器 |
+| `entrypoints/sdk/controlSchemas.ts` | ~510 | Zod v4 控制消息 schema（21 种子类型） |
+| `utils/concurrentSessions.ts` | 205 | PID 文件并发会话管理 |
+| `utils/sessionIngressAuth.ts` | 131 | 3 层 token 优先级链 |
+| `utils/sessionActivity.ts` | 123 | refcount 心跳计时器 |
+| `utils/controlMessageCompat.ts` | 35 | iOS camelCase 兼容层 |
+| `services/api/sessionIngress.ts` | 464 | Session-Ingress API（乐观并发写入） |
+| `utils/teleport.tsx` | 1,226 | Teleport 远程会话创建/恢复 |
+| `server/directConnectManager.ts` | 213 | DirectConnect WebSocket 客户端 |
+
+### Dual-Generation Transport Architecture
+
+**v1 (HybridTransport)** — `bridge/replBridge.ts`:
+- 读取：WebSocket 长连接
+- 写入：POST 到 Session-Ingress 端点
+- 认证：OAuth token（通过 `refreshHeaders` 回调注入刷新后的 token）
+- 重连：指数退避（2s → 60s，15 分钟放弃）
+- 选择条件：默认
+
+**v2 (SSETransport + CCRClient)** — `bridge/remoteBridgeCore.ts`:
+- 读取：SSE（Server-Sent Events）
+- 写入：POST 到 CCR `/worker/*` 端点
+- 认证：JWT（含 `session_id` claim + `worker` role）
+- 重连：SSE 401 触发 OAuth 刷新 + 凭证重取
+- 选择条件：服务端通过 `secret.use_code_sessions` 标志切换；`CLAUDE_BRIDGE_USE_CCR_V2` env var 强制
+
+### Session States (from `server/types.ts`)
+
+```typescript
+type SessionState = 'starting' | 'running' | 'detached' | 'stopping' | 'stopped'
+```
+
+### Session Registration (from `utils/concurrentSessions.ts`)
+
+PID file at `$CONFIG_DIR/sessions/{process.pid}.json`:
+```json
+{
+  "pid": "<process.pid>",
+  "sessionId": "<UUID>",
+  "cwd": "<original working dir>",
+  "startedAt": "<timestamp>",
+  "kind": "<interactive|bg|daemon|daemon-worker>",
+  "entrypoint": "<CLAUDE_CODE_ENTRYPOINT env>",
+  "messagingSocketPath": "<CLAUDE_CODE_MESSAGING_SOCKET>",
+  "name": "<CLAUDE_CODE_SESSION_NAME>",
+  "logPath": "<CLAUDE_CODE_SESSION_LOG>",
+  "agent": "<CLAUDE_CODE_AGENT>",
+  "status": "<busy|idle|waiting>"
+}
+```
+
+Session kinds: `'interactive' | 'bg' | 'daemon' | 'daemon-worker'`
+Filename validation: `/^\d+\.json$/` prevents accidental deletion of non-PID files.
+
+### Redux State Machine (13 fields, from `bridge/replBridge.ts`)
+
+```javascript
+replBridgeEnabled: false,
+replBridgeExplicit: false,
+replBridgeOutboundOnly: false,
+replBridgeConnected: false,
+replBridgeSessionActive: false,
+replBridgeReconnecting: false,
+replBridgeConnectUrl: undefined,
+replBridgeSessionUrl: undefined,
+replBridgeEnvironmentId: undefined,
+replBridgeSessionId: undefined,
+replBridgeError: undefined,
+replBridgeInitialName: undefined,
+showRemoteCallout: false
+```
+
+### Dependency Injection: BridgeCoreParams (from `bridge/initReplBridge.ts`)
+
+Injected params (no direct imports from bootstrap/state or sessionStorage):
+- `createSession` — 创建新会话
+- `archiveSession` — 归档会话
+- `toSDKMessages` — 内部消息→SDK 消息转换
+- `onAuth401` — 401 认证失败回调
+- `getPollIntervalConfig` — 获取 GrowthBook 下发的 polling 参数
+- `onSetPermissionMode` — 权限模式变更回调（含 auto gate check + bypassPermissions availability check）
+- `onEnvironmentLost` — 环境丢失回调
+
+Returned handle (ReplBridgeHandle):
+- Read-only: `bridgeSessionId`, `environmentId`, `sessionIngressUrl`
+- Methods: `writeMessages()`, `writeSdkMessages()`, `sendControlRequest()`, `sendControlResponse()`, `sendControlCancelRequest()`, `sendResult()`, `teardown()`
+
+### Control Request Subtypes (21 types, from `entrypoints/sdk/controlSchemas.ts`)
+
+Zod v4 schemas using `lazySchema()` wrappers:
+
+| subtype | Schema Name |
+|---------|-------------|
+| `initialize` | `SDKControlInitializeRequestSchema` |
+| `interrupt` | `SDKControlInterruptRequestSchema` |
+| `can_use_tool` | `SDKControlPermissionRequestSchema` |
+| `set_permission_mode` | `SDKControlSetPermissionModeRequestSchema` |
+| `set_model` | `SDKControlSetModelRequestSchema` |
+| `set_max_thinking_tokens` | `SDKControlSetMaxThinkingTokensRequestSchema` |
+| `mcp_status` | `SDKControlMcpStatusRequestSchema` |
+| `get_context_usage` | `SDKControlGetContextUsageRequestSchema` |
+| `rewind_files` | `SDKControlRewindFilesRequestSchema` |
+| `cancel_async_message` | `SDKControlCancelAsyncMessageRequestSchema` |
+| `seed_read_state` | `SDKControlSeedReadStateRequestSchema` |
+| `hook_callback` | `SDKHookCallbackRequestSchema` |
+| `mcp_message` | `SDKControlMcpMessageRequestSchema` |
+| `mcp_set_servers` | `SDKControlMcpSetServersRequestSchema` |
+| `reload_plugins` | `SDKControlReloadPluginsRequestSchema` |
+| `mcp_reconnect` | `SDKControlMcpReconnectRequestSchema` |
+| `mcp_toggle` | `SDKControlMcpToggleRequestSchema` |
+| `stop_task` | `SDKControlStopTaskRequestSchema` |
+| `apply_flag_settings` | `SDKControlApplyFlagSettingsRequestSchema` |
+| `get_settings` | `SDKControlGetSettingsRequestSchema` |
+| `elicitation` | `SDKControlElicitationRequestSchema` |
+
+Message envelopes:
+- `SDKControlRequestSchema`: `{ type: 'control_request', request_id: string, request: <inner> }`
+- `SDKControlResponseSchema`: `{ type: 'control_response', response: { subtype: 'success'|'error', ... } }`
+- `SDKControlCancelRequestSchema`: `{ type: 'control_cancel_request', request_id: string }`
+- `SDKKeepAliveMessageSchema`: `{ type: 'keep_alive' }`
+- `SDKUpdateEnvironmentVariablesMessageSchema`: `{ type: 'update_environment_variables', variables: Record<string,string> }`
+
+### Session Ingress Auth (3-tier, from `utils/sessionIngressAuth.ts`)
+
+Priority chain:
+1. `CLAUDE_CODE_SESSION_ACCESS_TOKEN` env var
+2. `CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR` → read from `/dev/fd/{fd}` (macOS) or `/proc/self/fd/{fd}` (Linux)
+3. `CLAUDE_SESSION_INGRESS_TOKEN_FILE` or default `/home/claude/.claude/remote/.session_ingress_token`
+
+Auth header construction:
+- Session keys (`sk-ant-sid` prefix): `Cookie: sessionKey={token}` + optional `X-Organization-Uuid`
+- JWTs: `Authorization: Bearer {token}`
+
+### Token Refresh
+
+**v1 (OAuth)** — `bridge/replBridge.ts`:
+- `clearOAuthTokenCache()` + `checkAndRefreshOAuthTokenIfNeeded()`
+- `refreshHeaders` callback injects fresh OAuth into WebSocket
+- Child process: `update_environment_variables` stdin message updates `CLAUDE_CODE_SESSION_ACCESS_TOKEN`
+
+**v2 (JWT)** — `bridge/remoteBridgeCore.ts`:
+- `createTokenRefreshScheduler`: fires 5 minutes before JWT expiry
+- Calls `/bridge` endpoint to refresh, each call bumps epoch
+- `authRecoveryInFlight` flag serializes concurrent refresh requests
+- SSE 401 → `onAuth401` → re-fetch OAuth → re-fetch credentials → rebuild transport
+- `initialFlushDone` reset to false for history re-flush
+
+### Connection Backoff Constants (from `bridge/replBridge.ts`)
+
+```
+POLL_ERROR_INITIAL_DELAY_MS = 2_000
+POLL_ERROR_MAX_DELAY_MS = 60_000
+POLL_ERROR_GIVE_UP_MS = 15 * 60 * 1000 (15 minutes)
+MAX_ENVIRONMENT_RECREATIONS = 3
+```
+
+Standalone daemon (from `bridge/bridgeMain.ts`):
+```
+connInitialMs: 2_000
+connCapMs: 120_000 (2 min)
+connGiveUpMs: 600_000 (10 min)
+generalInitialMs: 500
+generalCapMs: 30_000
+generalGiveUpMs: 600_000
+```
+
+### Reconnection Strategies (from `bridge/replBridge.ts`)
+
+1. **Reconnect-in-place**: `reuseEnvironmentId` → if backend returns same env ID, `reconnectSession()` re-queues. `currentSessionId` stays same, URL valid, `previouslyFlushedUUIDs` preserved.
+2. **Fresh session fallback**: If env differs (TTL-expired) or `reconnectSession` throws, archive old + create new.
+
+### Sleep Detection (from `bridge/replBridge.ts`)
+
+If `setTimeout` overshoots deadline by 60+ seconds → process was suspended → reset error budget + force fast-poll cycle.
+
+### Echo Dedup (from `bridge/replBridge.ts`)
+
+Two-layer UUID protection:
+1. `initialMessageUUIDs` — messages sent during session creation
+2. `recentPostedUUIDs` — `BoundedUUIDSet(2000)` ring buffer for live writes
+Both mirrored in `recentInboundUUIDs` for re-delivered inbound prompts.
+
+### Session Activity Tracking (from `utils/sessionActivity.ts`)
+
+- `SESSION_ACTIVITY_INTERVAL_MS = 30_000` (30 seconds)
+- `SessionActivityReason = 'api_call' | 'tool_exec'`
+- Refcount-based: `startSessionActivity(reason)` / `stopSessionActivity(reason)`
+- Gate: `CLAUDE_CODE_REMOTE_SEND_KEEPALIVES` env var
+
+### iOS Compatibility (from `utils/controlMessageCompat.ts`)
+
+`normalizeControlMessageKeys(obj)`: converts camelCase `requestId` → snake_case `request_id`. Reason: older iOS app builds missing Swift CodingKeys mapping. Snake_case wins when both present.
+
+### Session-Ingress Optimistic Concurrency (from `services/api/sessionIngress.ts`)
+
+- `PUT /v1/session_ingress/session/{sessionId}` with `Last-Uuid` header
+- 409 Conflict: adopts server's `x-last-uuid` and retries. If entry already stored (`x-last-uuid === entry.uuid`), recovers silently.
+- 10 retries max, exponential backoff (500ms base, 8s cap)
+- Per-session `sequential()` wrapper prevents concurrent writes
+
+### Multi-Session Tracking (from `bridge/bridgeMain.ts`)
+
+Runtime data structures:
+```
+activeSessions: Map<string, SessionHandle>
+sessionStartTimes: Map<string, number>
+sessionWorkIds: Map<string, string>
+sessionIngressTokens: Map<string, string>
+sessionTimers: Map<string, Timeout>
+completedWorkIds: Set<string>
+sessionWorktrees: Map<string, WorktreeInfo>
+timedOutSessions: Set<string>
+v2Sessions: Set<string>
+```
+
+Spawn modes: `'single-session' | 'same-dir' | 'worktree'`
+GrowthBook gate: `tengu_ccr_bridge_multi_session`
+Interactive toggle: 'w' key switches spawn mode at runtime
+
+### Bridge Pointer (Crash Recovery, from `bridge/replBridge.ts`)
+
+Written after session creation. Contains `{sessionId, environmentId, source: 'standalone' | 'repl'}`.
+Hourly mtime refresh prevents staleness.
+On `--continue`, reads pointer across worktree siblings.
+Perpetual mode: does NOT send result or stopWork on teardown; backend TTL (300s) expires and re-queues.
+
+### GrowthBook Feature Flags (from source)
+
+- `tengu_bridge_poll_interval_config` — dynamic polling parameter tuning
+- `tengu_bridge_initial_history_cap` — initial history flush cap (default 200)
+- `tengu_ccr_bridge_multi_session` — multi-session per environment gate
+- `tengu_ccr_bundle_seed_enabled` — git bundle fallback for Teleport
+
+### Teleport (from `utils/teleport.tsx`)
+
+Source selection ladder:
+1. **GitHub clone** (default): CCR clones from repo's origin URL. Requires GitHub remote + CCR GitHub App.
+2. **Git bundle** (fallback): `git bundle --all`, uploaded via Files API. Triggered when GitHub preflight fails and `tengu_ccr_bundle_seed_enabled` gate is on. `CCR_FORCE_BUNDLE=1` forces this path.
+3. **Empty sandbox**: when no repo detected.
+
+Session creation: `POST /v1/sessions` with `anthropic-beta: ccr-byoc-2025-07-29` header.
+Title/branch generation: Claude Haiku generates `{title, branch}`, branch prefix `claude/`.
+Polling: `GET /v1/sessions/{id}/events` cursor-based, max 50 pages.
+Archive: `POST /v1/sessions/{id}/archive`, 409 = already archived (success).
