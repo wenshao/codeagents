@@ -973,3 +973,142 @@ Source code confirms: `MultiEdit` is only a UI verb mapping in `bridge/sessionRu
 - Permission rule format: `ToolName`, `ToolName(content)`, `ToolName(prefix:*)`
 - Rule sources (8): userSettings, projectSettings, localSettings, flagSettings, policySettings, cliArg, command, session
 - `ToolPermissionContext` accessed via `context.getAppState().toolPermissionContext` — always reads latest state
+
+---
+
+## Session & Memory System Deep-Dive Evidence (Section 7)
+
+### Compaction System (from `services/compact/`)
+
+**compact.ts (1,706 LOC)**:
+- `compactConversation()`: Full compaction with forked-agent path (reuses prompt cache) + streaming fallback
+- `partialCompactConversation()`: Direction-aware partial compaction ('from' preserves cache, 'up_to' invalidates)
+- `POST_COMPACT_MAX_FILES_TO_RESTORE = 5`, `POST_COMPACT_TOKEN_BUDGET = 50,000`, `POST_COMPACT_MAX_TOKENS_PER_FILE = 5,000`
+- `POST_COMPACT_SKILLS_TOKEN_BUDGET = 25,000`, `POST_COMPACT_MAX_TOKENS_PER_SKILL = 5,000`
+- `MAX_PTL_RETRIES = 3` for prompt-too-long recovery
+- `CompactionResult` interface: `boundaryMarker`, `summaryMessages`, `attachments`, `hookResults`, `messagesToKeep?`, `preCompactTokenCount?`, `postCompactTokenCount?`
+- Skills truncated (5K each, 25K total) because "instructions at the top of a skill file are usually the critical part"
+- `sentSkillNames` NOT reset because "re-injecting full skill_listing (~4K tokens) post-compact is pure cache_creation with marginal benefit"
+- Images stripped because "Images are not needed for generating a conversation summary and can cause the compaction API call itself to hit the prompt-too-long limit"
+
+**autoCompact.ts (351 LOC)**:
+- `MAX_OUTPUT_TOKENS_FOR_SUMMARY = 20,000` (based on p99.99 = 17,387 tokens)
+- `AUTOCOMPACT_BUFFER_TOKENS = 13,000`
+- `WARNING_THRESHOLD_BUFFER_TOKENS = 20,000`
+- `MANUAL_COMPACT_BUFFER_THRESHOLD = 3,000`
+- `MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3` (circuit breaker, "was causing ~250K wasted API calls/day")
+- `getEffectiveContextWindowSize(model)`: raw context - reserved output tokens
+- `getAutoCompactThreshold(model)`: effective window - 13,000
+- Env overrides: `CLAUDE_CODE_AUTO_COMPACT_WINDOW`, `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`, `DISABLE_COMPACT`, `DISABLE_AUTO_COMPACT`
+
+**microCompact.ts (531 LOC)**:
+- `COMPACTABLE_TOOLS` = Set of: FileRead, Shell, Grep, Glob, WebSearch, WebFetch, FileEdit, FileWrite
+- Two paths: cache-editing API (ant-only, `CACHED_MICROCOMPACT` gate) + time-based (server cache expired)
+- Only runs for main thread (`isMainThreadSource`) — "forked agents would cause main thread to try deleting tools that don't exist"
+- `IMAGE_MAX_TOKEN_SIZE = 2,000`
+
+**sessionMemoryCompact.ts (631 LOC)**:
+- `DEFAULT_SM_COMPACT_CONFIG`: `minTokens: 10,000`, `minTextBlockMessages: 5`, `maxTokens: 40,000`
+- `adjustIndexToPreserveAPIInvariants()`: prevents splitting tool_use/tool_result pairs
+- Handles streaming artifact: "streaming yields separate messages per content block with same message.id but different uuids"
+
+**prompt.ts (374 LOC)**:
+- 3-segment structure: `NO_TOOLS_PREAMBLE` + `<analysis>` scratchpad + 9-section summary template + `NO_TOOLS_TRAILER`
+- Preamble first because "Sonnet 4.6+ adaptive-thinking models sometimes attempts tool call despite weaker trailer instruction" (2.79% on 4.6 vs 0.01% on 4.5)
+- 9 sections: Primary Request, Key Concepts, Files/Code, Errors/Fixes, Problem Solving, User Messages, Pending Tasks, Current Work, Optional Next Step
+
+### Session Storage (from `utils/sessionStorage.ts`, 5,106 LOC)
+
+- Session file: `~/.claude/projects/{sanitized_project_path}/{sessionId}.jsonl` (append-only)
+- `MAX_TRANSCRIPT_READ_BYTES = 50 MB`, `FLUSH_INTERVAL_MS = 100 ms`
+- File permissions: `0o600` for files, `0o700` for directories
+- `Project` singleton: write queue pattern with 100ms drain interval
+- Metadata types: `last-prompt`, `custom-title`, `tag`, `agent-name`, `agent-color`, `agent-setting`, `mode`, `worktree-state`, `pr-link`
+- `progress` entries excluded from parentUuid chain (caused chain forks, bugs #14373, #23537)
+- Lazy file creation: not created until first user/assistant message
+
+### Session Restore (from `utils/sessionRestore.ts`, 552 LOC + `utils/conversationRecovery.ts`, 598 LOC)
+
+- `loadConversationForResume()` → deserialize + filter → `processResumedConversation()`
+- Deserialization pipeline: `migrateLegacyAttachmentTypes` → `filterUnresolvedToolUses` → `filterOrphanedThinkingOnlyMessages` → `filterWhitespaceOnlyAssistantMessages`
+- `detectTurnInterruption()`: 'none' | 'interrupted_prompt' | 'interrupted_turn'
+- Brief mode: `SendUserMessage` tool results are terminal (not interrupted)
+- Worktree tri-state: `undefined` (never touched) | `null` (exited) | `object` (active)
+
+### CLAUDE.md Discovery (from `utils/claudemd.ts`, 1,480 LOC)
+
+- 6 layers: Managed → User → Project/Local → AutoMem → TeamMem
+- Loading priority: LATER = HIGHER (reverse of intuition, matches LLM attention)
+- `@include` directive: recursive, `MAX_INCLUDE_DEPTH = 5`, cycle detection via `processedPaths`
+- `getMemoryFiles()` (line 790, memoized): processes in order with settings-gated levels
+- `claudeMdExcludes` patterns skip User/Project/Local files; Managed/AutoMem/TeamMem never excluded
+
+### AutoMem Path Resolution (from `memdir/paths.ts`, 278 LOC)
+
+- Priority: env var → settings.json (trusted sources only, NOT projectSettings) → default path
+- `validateMemoryPath()`: rejects relative, root, Windows drive, UNC, null bytes, bare `~`
+- `isAutoMemoryEnabled()`: env disable → bare/simple mode → remote mode → settings → default enabled
+
+### Memory Types (from `memdir/memoryTypes.ts`, 271 LOC)
+
+- 4 types: `user` (always private), `feedback` (corrections/confirmations), `project` (ongoing work), `reference` (external pointers)
+- `WHAT_NOT_TO_SAVE_SECTION`: no code patterns, no git history, no debug solutions, no CLAUDE.md content, no ephemeral tasks
+- Truncation: MEMORY.md capped at 200 lines AND 25KB
+
+### Extract Memories (from `services/extractMemories/extractMemories.ts`, 616 LOC)
+
+- Feature gates: `tengu_passport_quail` + `tengu_slate_thimble`
+- Uses `runForkedAgent()` sharing prompt cache
+- Mutual exclusion with main agent: `hasMemoryWritesSince()` check
+- Allowed tools: FileEdit, FileWrite, FileRead, Glob, Grep, Bash (read-only), REPL
+
+### autoDream (from `services/autoDream/autoDream.ts`, 325 LOC)
+
+- 3-gate cascade: time (24h) + session count (5) + lock (file-based)
+- `SESSION_SCAN_INTERVAL_MS = 10 minutes` scan throttle
+- KAIROS mode: appends timestamped bullets to date-named log files
+- Success: `tengu_auto_dream_completed` telemetry
+- Failure: rolls back lock mtime for time-gate re-trigger
+
+### Team Memory Sync (from `services/teamMemorySync/index.ts`, 1,257 LOC)
+
+- API: `GET/PUT /api/claude_code/team_memory?repo={owner/repo}`
+- Sync: pull = server wins, push = delta upload by SHA-256, deletions do NOT propagate
+- `MAX_FILE_SIZE_BYTES = 250,000`, `MAX_PUT_BODY_BYTES = 200,000`
+- `TEAM_MEMORY_SYNC_TIMEOUT_MS = 30,000`, `MAX_RETRIES = 3`
+- Auth: first-party OAuth with INFERENCE + PROFILE scopes
+- Security: `scanForSecrets()` pre-push, `validateTeamMemKey()` path validation
+
+### Worktree (from `utils/worktree.ts`, 1,519 LOC)
+
+- `VALID_WORKTREE_SLUG_SEGMENT = /^[a-zA-Z0-9._-]+$/`, `MAX_WORKTREE_SLUG_LENGTH = 64`
+- `flattenSlug()`: replaces `/` with `+` to avoid git ref D/F conflicts
+- Fast resume: reads `.git` pointer directly (no subprocess, saves ~15ms)
+- Lazy fetch: skips `git fetch` if `origin/<branch>` already local (saves 6-8s)
+- Stale cleanup: only ephemeral-pattern slugs, fail-closed on git ambiguity
+- `EPHEMERAL_WORKTREE_PATTERNS`: 6 regex patterns for throwaway worktrees
+
+### File History / Checkpoints (from `utils/fileHistory.ts`, 1,116 LOC)
+
+- Backup path: `~/.claude/file-history/<sessionId>/<hash>@v<N>`
+- `MAX_SNAPSHOTS = 100`
+- 3-phase pattern: sync capture → async I/O → sync commit (prevents React re-render storms)
+- `fileHistoryRewind()`: restores files to snapshot state; `applySnapshot()` deletes/creates as needed
+- `copyFileHistoryForResume()`: hard links (`fs.link`) for cross-session migration
+- Mtime fast path: if original file mtime < backup time, skip content comparison
+- Version dedup: same-content files share `{hash}@v1` backup name
+- Enabled by default; disabled by `CLAUDE_CODE_DISABLE_FILE_CHECKPOINTING` or config; SDK requires explicit opt-in
+
+### Concurrent Sessions (from `utils/concurrentSessions.ts`, 204 LOC)
+
+- PID file: `~/.claude/sessions/{process.pid}.json`
+- `SessionKind`: 'interactive' | 'bg' | 'daemon' | 'daemon-worker'
+- `SessionStatus`: 'busy' | 'idle' | 'waiting'
+- Stale cleanup: auto-delete dead PID files (skip on WSL)
+- Filename validation: `/^\d+\.json$/`
+
+### Token Management (from `utils/tokens.ts`, 261 LOC + `utils/context.ts`, 221 LOC)
+
+- `MODEL_CONTEXT_WINDOW_DEFAULT = 200,000` tokens; 1M for Sonnet 4 / Opus 4-6
+- `tokenCountWithEstimation()`: last API response usage + rough estimate for appended messages, 4/3 padding
+- Handles parallel tool calls: walks back to first sibling with same `message.id`
