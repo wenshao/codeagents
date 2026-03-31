@@ -67,7 +67,7 @@
 
 ## 快速对比表
 
-> 为减少动态数字重复维护，Stars / 下载量 / 免费层等高频变化数据已迁移到 [`docs/data/agents-metadata.json`](./docs/data/agents-metadata.json)。
+> 高频变化数据（Stars / 下载量 / 免费层）的权威来源为 [`docs/data/agents-metadata.json`](./docs/data/agents-metadata.json)。下表 Stars 列为 **2026-03-31 快照**，按 Stars 降序排列；后续更新将通过脚本从数据层自动生成，不再手工同步。
 
 | Agent | 开发者 | 许可证 | 语言 | Stars | 提供商 | 特色 |
 |------|--------|--------|------|------|-------|------|
