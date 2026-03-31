@@ -99,10 +99,12 @@
 
 | 流派 | 代表 Agent | 核心模式 |
 |------|---------|---------|
-| **编辑优先** | Aider | LLM 直接输出代码修改（14 种格式） |
-| **工具调用** | Claude Code, Codex CLI, OpenCode, Cline, Goose | 结构化 function calling |
-| **事件驱动** | OpenHands | EventStream 发布/订阅 |
-| **ReAct 循环** | Gemini CLI, Qwen Code, SWE-agent | Reason→Act→Observe→Repeat（思考→行动→观察→重复） |
+| **编辑优先** | Aider | LLM 直接输出代码修改（14 种格式），需文本解析 |
+| **工具调用** | Claude Code, Codex CLI, Gemini CLI, Qwen Code, OpenCode, Cline, Goose, Copilot CLI, Kimi CLI, Qoder CLI, Cursor, Warp, Continue | 结构化 function calling，LLM 通过 API 返回 tool calls |
+| **文本 ReAct** | SWE-agent | Reason→Act→Observe→Repeat，支持纯文本动作解析（非原生 function calling） |
+| **事件驱动** | OpenHands | EventStream 发布/订阅，Action/Observation 完全解耦 |
+
+> **注**："工具调用"和"ReAct 循环"并非互斥——所有 Agent 内部都遵循 ReAct 模式（思考→行动→观察→重复）。上表按**动作表达方式**区分：是否通过结构化 API（function calling）还是文本解析来表达动作。
 
 ## 技术栈
 

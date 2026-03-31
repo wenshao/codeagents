@@ -50,9 +50,9 @@
 | OpenCode | TypeScript | 多代理（7 内置） | 多客户端 AI 平台（TUI + Web + 桌面） |
 | Continue | TypeScript | IDE + CLI + CI/CD | PR Checks + 语义索引 |
 | Warp | Rust | 终端替代品 | 现代终端 + AI |
-| Gemini CLI | TypeScript | ReAct 循环 | Google 生态 |
-| OpenHands | Python | 复合 AI | 完全自主 |
-| Qwen Code | TypeScript | ReAct 循环（Gemini CLI 分叉） | 中文开发者生态 |
+| Gemini CLI | TypeScript | 工具调用（function calling） | Google 生态 |
+| OpenHands | Python | 事件驱动（EventStream） | 完全自主 |
+| Qwen Code | TypeScript | 工具调用（Gemini CLI 分叉） | 中文开发者生态 |
 | Kimi CLI | Python | 多代理（4 内置）+ Wire 协议 | 双模式交互 + 多客户端（TUI + Web + IDE） |
 
 ### 核心功能对比

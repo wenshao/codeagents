@@ -95,17 +95,35 @@ graph TD
 
 所有工具的核心都是一个代理循环，但实现方式差异显著：
 
-### 纯 ReAct 循环
+### 工具调用循环（主流）
 
 ```
-思考 → 行动 → 观察 → 重复
+消息 → LLM → function calling → 工具执行 → 结果 → 重复
 ```
 
-**使用者**：Gemini CLI、Qwen Code、SWE-agent
+**使用者**：Claude Code、Gemini CLI、Qwen Code、Codex CLI、OpenCode、Cline、Goose、Copilot CLI、Kimi CLI、Qoder CLI、Cursor、Warp、Continue
 
-- Gemini CLI 的 `GeminiClient` 最多 100 轮，通过 `Scheduler` 调度工具
-- SWE-agent 的 `DefaultAgent.step()` 逐步执行，支持多种解析器
-- Qwen Code 继承 Gemini CLI 架构，增加了 Loop 检测（Levenshtein 距离）
+- Claude Code 使用 Anthropic `tool_use` API，20+ 内置工具
+- Gemini CLI/Qwen Code 使用 `@google/genai` function calling，`CoreToolScheduler`（1790 行）调度工具
+- Codex CLI 使用 OpenAI function calling + `apply_patch`
+- OpenCode 使用 Vercel AI SDK v5 统一接口，19+ 工具
+- Cline 在 VS Code 内执行，24+ 工具，每步自动 Git Checkpoint
+- Goose 通过 MCP 协议统一工具接口（所有工具走 MCP）
+- Copilot CLI 使用 YAML 定义的代理 + 67 工具
+
+> **注**：所有工具调用 Agent 内部都遵循 ReAct 模式（思考→行动→观察→重复），差异在于通过结构化 API 返回 tool calls。
+
+### 文本 ReAct 循环
+
+```
+思考 → 文本动作 → 解析 → 执行 → 观察 → 重复
+```
+
+**使用者**：SWE-agent
+
+- SWE-agent 的 `DefaultAgent.step()` 支持多种解析器，包括纯文本 `ThoughtActionParser` 和 `ActionOnlyParser`
+- 也支持 `FunctionCallingParser`（原生 function calling），但核心设计围绕文本动作解析
+- 与"工具调用"流派的区别：动作通过文本表达而非结构化 API
 
 ### 编辑-提交循环
 
@@ -118,18 +136,6 @@ graph TD
 - 独特的编辑格式系统（14 种），模型输出直接包含代码修改
 - 反思循环：lint/测试失败自动重试（最多 3 次）
 - 每次修改自动 Git 提交，天然版本控制
-
-### 工具调用循环
-
-```
-消息 → LLM → 工具调用 → 执行 → 结果 → 重复
-```
-
-**使用者**：Claude Code、OpenCode、Cline、Goose
-
-- Claude Code/OpenCode 使用结构化工具调用（function calling）
-- Cline 在 VS Code 内执行，每步自动 Git Checkpoint
-- Goose 通过 MCP 协议统一工具接口
 
 ### 事件驱动循环
 
@@ -363,11 +369,14 @@ Tree-sitter AST 解析（30+ 语言）
 
 ## 关键洞察
 
-### 1. 三大架构流派
+### 1. 四大架构流派
 
-- **编辑优先**（Aider）：LLM 直接输出代码修改，工具是辅助
-- **工具调用**（Claude Code、OpenCode、Cline、Goose）：LLM 通过结构化工具调用操作环境
+- **编辑优先**（Aider）：LLM 直接输出代码修改，需文本解析，工具是辅助
+- **工具调用**（Claude Code、Gemini CLI、Qwen Code、Codex CLI、OpenCode、Cline、Goose 等）：LLM 通过结构化 function calling 操作环境，是主流模式
+- **文本 ReAct**（SWE-agent）：通过文本解析动作（非原生 function calling），适合学术评估
 - **事件驱动**（OpenHands）：完全解耦的事件总线，最灵活但最复杂
+
+> **关键认知**："工具调用"与"ReAct 循环"并非互斥。所有 Agent 内部都遵循 ReAct 模式，差异在于**动作表达方式**：结构化 API（function calling）还是文本解析。
 
 ### 2. Gemini CLI 是事实上的"开源 Claude Code 模板"
 
