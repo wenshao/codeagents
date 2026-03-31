@@ -15,10 +15,12 @@
 | 类别 | 工具数 | 加载方式 | 说明 |
 |------|--------|----------|------|
 | **核心工具** | 10 | 始终加载（`alwaysLoad`） | Read, Write, Edit, Bash, Glob, Grep, Agent, TodoWrite, ToolSearch, StructuredOutput |
-| **延迟工具** | 25 | ToolSearch 按需加载（`shouldDefer`） | WebFetch, WebSearch, NotebookEdit, Task\*, Cron\*, Worktree\*, RemoteTrigger, Brief, AskUserQuestion, Skill, PlanMode\*, LSP, MCP 相关, Config |
+| **延迟工具** | 25 | ToolSearch 按需加载（`shouldDefer`） | WebFetch, WebSearch, NotebookEdit, Task\*, Cron\*, Worktree\*, RemoteTrigger, Brief, AskUserQuestion, SendMessage, Team\*, Skill, PlanMode\*, LSP, MCP 相关, Config |
 | **内部工具** | 3 | 始终加载 | REPLTool, SleepTool, TaskStop（含 KillShell 别名） |
 | **条件工具** | 1 | 仅 Windows | PowerShell |
 | **MCP 工具** | ∞ | 动态注册 | `mcp__serverName__toolName` 格式，由 MCP 服务器提供 schema |
+
+> **分类 vs `shouldDefer`**：源码中 TodoWrite 和 TaskStop 的 `shouldDefer` 属性均为 `true`，但本文将 TodoWrite 归为「核心」（功能上始终需要用于任务跟踪）、TaskStop 归为「内部」（辅助功能）。此分类基于工具的功能角色，而非 `shouldDefer` 属性。实际延迟加载逻辑由 `isDeferredTool()`（`ToolSearchTool/prompt.ts:62`）统一管理，`shouldDefer` 是其中的一个判断条件。
 
 ### 4.1.2 工具生命周期
 
@@ -541,6 +543,7 @@ Fork 是最高效的子代理模式：
 | 10 | `validateQuotedNewline` | 23 | 引号字符串内换行且下一行以 `#` 开头（绕过 stripCommentLines） |
 | 11 | `validateCarriageReturn` | 7 | 引号外的 `\r`（shell-quote/bash 分词差异） |
 | 12 | `validateNewlines` | 7 | 非引号内容中的换行（隐藏的第二命令） |
+> **注**：`validateCarriageReturn` 和 `validateNewlines` 共享 enum ID 7（`NEWLINES`）。源码中 `BASH_SECURITY_CHECK_IDS` 枚举共 23 个值（ID 1-23），但实际有 25 个 `validate*` 函数（含无 enum ID 的 `validateEmpty` 和 `validateSafeCommandSubstitution`）。文档中"23 层验证器"指 enum ID 数。
 | 13 | `validateIFSInjection` | 11 | 任何 `$IFS` 或 `${...IFS...}` 使用 |
 | 14 | `validateProcEnvironAccess` | 13 | `/proc/*/environ` 路径访问 |
 | 15 | `validateDangerousPatterns` | 8 | 反引号、进程替换 `<()`/`>()`、`$()`、`${}`、zsh glob 限定符 |
@@ -866,6 +869,7 @@ ToolName(prefix:*)            # 前缀规则（如 "Bash(git commit:*)"）
 | **TaskGet** | `taskId` | 获取任务详情 |
 | **TaskUpdate** | `taskId`, `status?`, `subject?`, `description?`, `addBlocks?`, `addBlockedBy?`, `owner?`, `metadata?` | 更新任务（`status: 'deleted'` 删除） |
 | **TaskList** | — | 列出所有任务 |
+| **TaskOutput** | `taskId` | 获取任务输出结果（584 LOC，源码: `tools/TaskOutputTool/`） |
 
 - Feature gate：`isTodoV2Enabled()`
 - **与 TodoWrite 互斥**：当 `isTodoV2Enabled()` 为 true（交互式 CLI 会话）时，TodoWrite 被禁用，TaskCreate/TaskGet/TaskUpdate/TaskList 启用。非交互模式（SDK）下相反。两者不可共存（源码: `tools.ts` + 各工具 `isEnabled()` 守卫）。
@@ -873,6 +877,8 @@ ToolName(prefix:*)            # 前缀规则（如 "Bash(git commit:*)"）
 - 团队集成：teammate 标记 `in_progress` 时自动设置 owner；owner 变更通知
 
 ### 4.7.5 Cron 工具（源码: `tools/ScheduleCronTool/`）
+
+> **命名说明**：目录名 `ScheduleCronTool` 包含 3 个子工具文件（`CronCreateTool.ts` / `CronDeleteTool.ts` / `CronListTool.ts`），工具名为 `ScheduleCron`。4.10 清单中按目录列为单条目。
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
