@@ -924,7 +924,7 @@ Found 3 issues:
 
 **实现细节：**
 - 渲染远程控制配置 UI
-- 向 Anthropic API 注册并轮询获取工作（outbound HTTPS polling）
+- 向 Anthropic API 注册会话（WebSocket/SSE 双向通信）
 - 允许在浏览器中操作终端会话
 - 支持跨设备远程操作
 
