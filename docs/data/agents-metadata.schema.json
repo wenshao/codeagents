@@ -145,6 +145,11 @@
           "type": "string",
           "minLength": 1
         },
+        "github_repo": {
+          "type": ["string", "null"],
+          "description": "GitHub repo in owner/repo format. Null if no public repo.",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
         "stars": {
           "type": "string"
         },

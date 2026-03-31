@@ -1,7 +1,7 @@
 # Qwen Code 源码深度分析证据
 
 ## 基本信息
-- 仓库: QwenLM/qwen-code, Apache-2.0, TypeScript, 21k+ stars
+- 仓库: QwenLM/qwen-code, Apache-2.0, TypeScript, ~21k stars
 - 基于: Google Gemini CLI 分叉
 - AGENTS.md: "This project is based on Google Gemini CLI with adaptations to better support Qwen-Coder models."
 

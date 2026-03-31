@@ -1,7 +1,7 @@
 # Goose 源码深度分析证据
 
 ## 基本信息
-- 仓库: block/goose, Apache-2.0, Rust, 33k+ stars
+- 仓库: block/goose, Apache-2.0, Rust, 34k+ stars
 - 版本: v1.28.0（源码: `ui/desktop/package.json`，`Cargo.toml` workspace）
 - 架构: MCP 原生（所有工具通过 MCP 协议）
 - SDK: rmcp (Rust MCP SDK)

@@ -16,7 +16,7 @@ AGENT_REQUIRED = {
     'id', 'name', 'category', 'license', 'developer',
     'implementation_language', 'runtime', 'package_ecosystem', 'evidence'
 }
-AGENT_OPTIONAL = {'stars', 'downloads', 'pricing_summary', 'free_tier'}
+AGENT_OPTIONAL = {'stars', 'downloads', 'pricing_summary', 'free_tier', 'github_repo'}
 DOWNLOADS_REQUIRED = {'type', 'value', 'as_of'}
 EVIDENCE_REQUIRED = {'status', 'source_type', 'evidence_path', 'last_verified'}
 STARS_SENTINEL_VALUES = {'-', '—', 'unknown'}

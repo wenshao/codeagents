@@ -214,7 +214,7 @@ GlobalBus ←── 文件变更/状态事件（10 秒心跳 + 自动重连）
 | 2025-08 | v0.3 → v0.5 | 首批 releases；会话管理、Context Path、格式化器 |
 | 2025-03 ~ 07 | 开发期 | Go + Bubbletea TUI 启动（原名 termai），Go→TypeScript 渐进重写，无 release |
 
-一年内发布 **450+ releases**，从 Go TUI 原型成长为 ~132k Stars 的多客户端 AI 编程平台。
+一年内发布 **450+ releases**，从 Go TUI 原型成长为 ~133k Stars 的多客户端 AI 编程平台。
 
 ### v1.3.0 关键变化（2026-03-22）
 

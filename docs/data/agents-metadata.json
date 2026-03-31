@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "last_updated": "2026-03-30",
+  "last_updated": "2026-03-31",
   "maintainer_note": "Dynamic metrics should be updated from official APIs or clearly labeled estimates. Static architecture facts should be sourced from repository analysis or EVIDENCE.md.",
   "agents": [
     {
@@ -12,7 +12,8 @@
       "implementation_language": "Rust",
       "runtime": "Bun（内嵌）/ 原生二进制",
       "package_ecosystem": "npm",
-      "stars": "83k",
+      "github_repo": "anthropics/claude-code",
+      "stars": "85k",
       "downloads": {
         "type": "npm_weekly",
         "value": "1020万",
@@ -49,7 +50,8 @@
         "source_type": "binary-analysis",
         "evidence_path": "docs/tools/copilot-cli/EVIDENCE.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "github/copilot-cli"
     },
     {
       "id": "codex-cli",
@@ -73,7 +75,8 @@
         "source_type": "binary-analysis",
         "evidence_path": "docs/tools/codex-cli/EVIDENCE.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "openai/codex"
     },
     {
       "id": "gemini-cli",
@@ -84,7 +87,7 @@
       "implementation_language": "TypeScript",
       "runtime": "Node.js >= 20",
       "package_ecosystem": "npm",
-      "stars": "99k",
+      "stars": "100k",
       "downloads": {
         "type": "npm_weekly",
         "value": "74万",
@@ -97,7 +100,8 @@
         "source_type": "source-analysis",
         "evidence_path": "docs/tools/gemini-cli/EVIDENCE.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "google-gemini/gemini-cli"
     },
     {
       "id": "qwen-code",
@@ -121,7 +125,8 @@
         "source_type": "source-analysis",
         "evidence_path": "docs/tools/qwen-code/EVIDENCE.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "QwenLM/qwen-code"
     },
     {
       "id": "aider",
@@ -132,7 +137,7 @@
       "implementation_language": "Python",
       "runtime": "Python >= 3.10",
       "package_ecosystem": "pypi",
-      "stars": "42k",
+      "stars": "43k",
       "downloads": {
         "type": "pypi_monthly",
         "value": "78万",
@@ -145,7 +150,8 @@
         "source_type": "source-analysis",
         "evidence_path": "docs/tools/aider/EVIDENCE.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "Aider-AI/aider"
     },
     {
       "id": "kimi-cli",
@@ -169,7 +175,8 @@
         "source_type": "source-analysis",
         "evidence_path": "docs/tools/kimi-cli/EVIDENCE.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "MoonshotAI/kimi-cli"
     },
     {
       "id": "opencode",
@@ -180,7 +187,7 @@
       "implementation_language": "TypeScript（v1.0+）",
       "runtime": "Bun 1.3+",
       "package_ecosystem": "none",
-      "stars": "130k",
+      "stars": "133k",
       "downloads": {
         "type": "none",
         "value": "—",
@@ -193,7 +200,8 @@
         "source_type": "source-analysis",
         "evidence_path": "docs/tools/opencode/EVIDENCE.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "anomalyco/opencode"
     },
     {
       "id": "goose",
@@ -217,7 +225,8 @@
         "source_type": "source-analysis",
         "evidence_path": "docs/tools/goose/EVIDENCE.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "block/goose"
     },
     {
       "id": "qoder-cli",
@@ -241,7 +250,8 @@
         "source_type": "binary-analysis",
         "evidence_path": "docs/tools/qoder-cli/EVIDENCE.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": null
     },
     {
       "id": "oh-my-openagent",
@@ -252,7 +262,7 @@
       "implementation_language": "TypeScript",
       "runtime": "OpenCode Harness / Node.js",
       "package_ecosystem": "npm",
-      "stars": "~44k",
+      "stars": "~45k",
       "downloads": {
         "type": "unknown",
         "value": "—",
@@ -265,7 +275,8 @@
         "source_type": "summary-analysis",
         "evidence_path": "docs/tools/oh-my-openagent.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "code-yeongyu/oh-my-openagent"
     },
     {
       "id": "cline",
@@ -276,7 +287,7 @@
       "implementation_language": "TypeScript",
       "runtime": "VS Code 扩展",
       "package_ecosystem": "vscode-marketplace",
-      "stars": "59k",
+      "stars": "60k",
       "downloads": {
         "type": "unknown",
         "value": "—",
@@ -289,7 +300,8 @@
         "source_type": "summary-analysis",
         "evidence_path": "docs/tools/cline.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "cline/cline"
     },
     {
       "id": "continue",
@@ -313,7 +325,8 @@
         "source_type": "summary-analysis",
         "evidence_path": "docs/tools/continue.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "continuedev/continue"
     },
     {
       "id": "cursor-cli",
@@ -324,7 +337,7 @@
       "implementation_language": "TypeScript",
       "runtime": "IDE / Desktop",
       "package_ecosystem": "desktop",
-      "stars": "-",
+      "stars": "~33k",
       "downloads": {
         "type": "unknown",
         "value": "—",
@@ -337,7 +350,8 @@
         "source_type": "summary-analysis",
         "evidence_path": "docs/tools/cursor-cli.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "cursor/cursor"
     },
     {
       "id": "openhands",
@@ -361,7 +375,8 @@
         "source_type": "summary-analysis",
         "evidence_path": "docs/tools/openhands.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "OpenHands/OpenHands"
     },
     {
       "id": "swe-agent",
@@ -385,7 +400,8 @@
         "source_type": "summary-analysis",
         "evidence_path": "docs/tools/swe-agent.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "SWE-agent/SWE-agent"
     },
     {
       "id": "warp",
@@ -409,7 +425,8 @@
         "source_type": "summary-analysis",
         "evidence_path": "docs/tools/warp.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": "warpdotdev/Warp"
     },
     {
       "id": "mini-swe-agent",
@@ -433,7 +450,8 @@
         "source_type": "summary-analysis",
         "evidence_path": "docs/tools/mini-swe-agent.md",
         "last_verified": "2026-03-26"
-      }
+      },
+      "github_repo": null
     }
   ]
 }

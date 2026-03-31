@@ -14,4 +14,4 @@
 | [用户指南](../../guides/qwen-code-user-guide.md) | 安装、免费使用、Arena 模式 |
 
 **仓库：** [github.com/QwenLM/qwen-code](https://github.com/QwenLM/qwen-code)
-**Stars：** 21k+ | **许可证：** Apache-2.0 | **语言：** TypeScript
+**Stars：** ~21k | **许可证：** Apache-2.0 | **语言：** TypeScript
