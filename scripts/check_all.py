@@ -6,15 +6,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / 'scripts'
 CHECKS = [
-    ('data schema', SCRIPTS / 'check_data_schema.py'),
-    ('repository consistency', SCRIPTS / 'check_repo_consistency.py'),
-    ('stale data', SCRIPTS / 'check_stale_data.py'),
+    ('data schema', str(SCRIPTS / 'check_data_schema.py')),
+    ('repository consistency', str(SCRIPTS / 'check_repo_consistency.py')),
+    ('stale data', str(SCRIPTS / 'check_stale_data.py')),
+    ('repo URL (schema-only)', str(SCRIPTS / 'check_repo_url.py') + ' --no-api'),
 ]
 
 
-def run_check(label: str, script: Path) -> int:
-    print(f'==> Running {label}: {script.name}')
-    result = subprocess.run([sys.executable, str(script)], cwd=ROOT)
+def run_check(label: str, script: str) -> int:
+    print(f'==> Running {label}: {script}')
+    parts = script.split()
+    result = subprocess.run([sys.executable] + parts, cwd=ROOT)
     print(f'==> Exit code: {result.returncode}\n')
     return result.returncode
 

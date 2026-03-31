@@ -98,6 +98,14 @@
 - `none`
 - `unknown`
 
+### `github_repo`
+
+- 格式：`owner/repo`，如 `anomalyco/opencode`、`anthropics/claude-code`
+- 语义：Agent 对应的 GitHub 仓库（Stars 数据的来源）
+- 无公开仓库的 Agent 设为 `null`（如 Qoder CLI）
+- 校验：`scripts/check_repo_url.py` 会调用 GitHub API 验证仓库存在且 Stars 数量级与 `stars` 字段一致（2x 以内）
+- **更新 Stars 前必须核对此字段**，禁止凭记忆猜测仓库地址
+
 ### `stars`
 
 - 默认语义：GitHub Stars 的紧凑展示值，如 `85k`、`~45k`

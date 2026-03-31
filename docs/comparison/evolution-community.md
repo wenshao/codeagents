@@ -1,6 +1,6 @@
 # 13. 版本迭代与社区数据
 
-> 采集时间: 2026-03-31。数据来源: GitHub API (`gh api repos/X`)。
+> 采集时间: 2026-03-31。Stars / Forks / 贡献者 / 创建时间来自 GitHub API（`gh api repos/X`）；许可证和语言字段部分结合仓库文档或人工校验（如 GitHub 返回 `NOASSERTION` 或 `null` 时以实际声明为准）。
 
 ## 项目概览
 

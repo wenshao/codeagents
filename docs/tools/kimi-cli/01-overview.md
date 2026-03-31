@@ -169,7 +169,7 @@ OPENAI_BASE_URL, OPENAI_API_KEY
 
 ## 劣势
 
-1. **社区规模**：与 OpenCode（~12k Stars）、Gemini CLI（~100k Stars）相比社区较小
+1. **社区规模**：与 OpenCode（~133k Stars）、Gemini CLI（~100k Stars）相比社区较小
 2. **Python 启动速度**：不如 Rust/Go 原生编译（但提供 PyInstaller 二进制）
 3. **文档**：英文文档相对较新，中文资源更丰富
 4. **部分功能实验性**：D-Mail、okabe 代理、远程执行仍在演进

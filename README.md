@@ -71,11 +71,13 @@
 
 | Agent | 开发者 | 许可证 | 语言 | Stars | 提供商 | 特色 |
 |------|--------|--------|------|------|-------|------|
+| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | TypeScript（Bun） | 133k | 100+ | 多客户端（TUI+Web+桌面），37 LSP |
 | [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | TypeScript | 100k | 1 | 8 策略模型路由，TOML 策略引擎 |
 | [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | Rust | 85k | 1 | 50ms 启动，24 Hook 事件，Channels |
 | [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | Python | 70k | 100+ | Docker 沙箱，三层安全，多代理 |
 | [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | Rust | 68k | 1 | 三平台 OS 沙箱，Cloud 远程执行 |
 | [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | TypeScript | 60k | 48+ | VS Code 原生，Git Checkpoint |
+| [Oh My OpenAgent](./docs/tools/oh-my-openagent.md) | code-yeongyu | SUL-1.0 | TypeScript | ~45k | 多种 | OpenCode Harness 层，7~10 Discipline Agent |
 | [Aider](./docs/tools/aider/) | Paul Gauthier | GPL-3.0 | Python | 43k | 100+ | 14 编辑格式，三槽位模型，/undo |
 | [Goose](./docs/tools/goose/) | Block | Apache-2.0 | Rust | 34k | 58+ | MCP 原生，11 Platform Extension，Recipe + Cron 调度 |
 | [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | TypeScript | 32k | 68+ | PR Checks CI 审查，语义索引 |
@@ -83,11 +85,9 @@
 | [Warp](./docs/tools/warp.md) | Warp | 专有 | Rust | 26k | 多种 | GPU 渲染终端，块结构输出 |
 | [Qwen Code](./docs/tools/qwen-code/) | 阿里云 | Apache-2.0 | TypeScript | 21k | 6+ | 免费 1000 次/天，Arena 多模型竞争，41 命令 |
 | [SWE-agent](./docs/tools/swe-agent.md) | Princeton | MIT | Python | 19k | 100+ | SWE-bench 评估，Docker 沙箱 |
-| [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | TypeScript（Bun） | 12k | 100+ | 多客户端（TUI+Web+桌面），37 LSP |
 | [Copilot CLI](./docs/tools/copilot-cli/) | GitHub | 专有 | TypeScript | 10k | 多种 | 67 GitHub 工具，GitHub 生态集成 |
 | [Kimi CLI](./docs/tools/kimi-cli/) | 月之暗面 | Apache-2.0 | Python | 7k | 6 | Wire 协议，D-Mail 时间回溯 |
 | [Qoder CLI](./docs/tools/qoder-cli/) | QoderAI | 专有 | Go | — | 多种 | Quest 模式，Claude Code 兼容 |
-| [Oh My OpenAgent](./docs/tools/oh-my-openagent.md) | code-yeongyu | SUL-1.0 | TypeScript | ~45k | 多种 | OpenCode Harness 层，7~10 Discipline Agent |
 
 ---
 
