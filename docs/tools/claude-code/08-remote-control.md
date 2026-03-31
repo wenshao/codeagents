@@ -2,7 +2,7 @@
 
 > Remote Control 允许从手机、平板或任意浏览器远程操控本地运行的 Claude Code 终端会话。会话**始终在本地执行**，远程端仅作为交互窗口。
 >
-> **数据来源**：CLI 子命令/参数和故障排查指南来自 [Anthropic 官方文档](https://docs.anthropic.com/en/docs/claude-code/remote-control)（2026-03）；`/remote-control` 斜杠命令类型来自 v2.1.81 二进制反编译；环境变量名来自 [EVIDENCE.md](./EVIDENCE.md) 反编译提取；**技术架构细节来自源码分析**（`bridge/`、`remote/`、`utils/`、`entrypoints/` 等目录，约 35,000 行 TypeScript）。
+> **数据来源**：CLI 子命令/参数和故障排查指南来自 [Anthropic 官方文档](https://docs.anthropic.com/en/docs/claude-code/remote-control)（2026-03）；环境变量名来自 [EVIDENCE.md](./EVIDENCE.md) 源码提取；**技术架构细节来自源码分析**（`bridge/`、`remote/`、`utils/`、`entrypoints/` 等目录，约 35,000 行 TypeScript）。
 
 ## 8.1 概述
 
@@ -152,7 +152,7 @@ Remote Control 采用 **三方中继**（Three-Party Relay）架构，Anthropic 
 | 组件 | 职责 | 证据来源 |
 |------|------|----------|
 | 会话注册 | v1: `registerBridgeEnvironment()` → `environment_id` + `environment_secret`；v2: `createCodeSession()` → JWT | 源码: `bridge/replBridge.ts` |
-| 资格检查 | `admin_requests/eligibility` 端点判定用户是否可使用 RC（受订阅类型、管理员策略、组织策略影响） | v2.1.87 反编译 |
+| 资格检查 | `admin_requests/eligibility` 端点判定用户是否可使用 RC（受订阅类型、管理员策略、组织策略影响） | 源码: `services/api/adminRequests.ts` + `bridge/bridgeEnabled.ts` |
 | 凭证刷新 | v1: OAuth 刷新 → `refreshHeaders` 回调；v2: JWT 过期前 5 分钟调用 `/bridge` 端点，bump epoch 防双刷 | 源码: `bridge/remoteBridgeCore.ts` |
 | 策略执行 | `policy_limits` 端点查询组织级 RC 开关；Team/Enterprise 管理员门控 | EVIDENCE.md |
 | 配置下发 | GrowthBook 特性门控（`tengu_bridge_poll_interval_config`、`tengu_bridge_initial_history_cap` 等）动态调整运行参数 | 源码: `bridge/bridgeMain.ts` |
@@ -288,17 +288,17 @@ Remote Control 的安全架构采用多层防护：
 | `GET /v1/sessions/{id}/events` | CCR v2 事件流（游标分页，1000 条/页，最多 100 页） | 源码: `utils/teleport.tsx` |
 | `POST /v1/sessions/{id}/archive` | 归档远程会话（409 = 已归档，视为成功） | 源码: `utils/teleport.tsx` |
 | `GET /v1/sessions/{id}/teleport-events` | Teleport 事件流（Spanner v2 / threadstore 回退） | 源码: `services/api/sessionIngress.ts` |
-| `api.anthropic.com/admin_requests/eligibility` | 资格检查端点（RC 启用前的资格判定） | v2.1.87 反编译 |
-| `api.anthropic.com/api/claude_code_grove` | Grove 端点（用途待确认） | v2.1.87 反编译 |
-| `api.anthropic.com/api/claude_code_penguin_mode` | 快速模式端点 | v2.1.87 反编译 |
-| `api.anthropic.com/api/claude_code_shared_session_transcripts` | 共享会话转录 | v2.1.87 反编译 |
-| `api.anthropic.com/api/claude_code/team_memory` | 团队记忆 | v2.1.87 反编译 |
+| `api.anthropic.com/admin_requests/eligibility` | 资格检查端点（RC 启用前的资格判定） | 源码: `services/api/adminRequests.ts` |
+| `api.anthropic.com/api/claude_code_grove` | Grove 端点（用途待确认） | EVIDENCE.md |
+| `api.anthropic.com/api/claude_code_penguin_mode` | 快速模式端点 | EVIDENCE.md |
+| `api.anthropic.com/api/claude_code_shared_session_transcripts` | 共享会话转录 | EVIDENCE.md |
+| `api.anthropic.com/api/claude_code/team_memory` | 团队记忆 | EVIDENCE.md |
 
-> **注意**：Remote Control 专用的会话注册和消息中继端点 URL 未在 v2.1.87 二进制中明文暴露（可能通过拼接构造或从服务端动态获取）。上述端点为反编译中确认的基础设施端点。
+> **注意**：Remote Control 专用的会话注册和消息中继端点 URL 未在源码中明文暴露（可能通过拼接构造或从服务端动态获取）。上述端点为源码和 EVIDENCE.md 中确认的基础设施端点。
 
 ### 8.6.7 相关环境变量
 
-前 7 项来自 [Anthropic 官方文档](https://docs.anthropic.com/en/docs/claude-code/remote-control)；其余为 v2.1.87 反编译提取。
+前 7 项来自 [Anthropic 官方文档](https://docs.anthropic.com/en/docs/claude-code/remote-control)；其余来自源码分析（`bridge/`、`utils/` 等目录）。
 
 | 变量 | 影响 | 来源 |
 |------|------|------|
@@ -309,17 +309,17 @@ Remote Control 的安全架构采用多层防护：
 | `CLAUDE_CODE_USE_BEDROCK` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
 | `CLAUDE_CODE_USE_VERTEX` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
 | `CLAUDE_CODE_USE_FOUNDRY` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
-| `CLAUDE_CODE_SESSION_ACCESS_TOKEN` | 会话访问凭证；存在时客户端类型被判定为 "remote" | v2.1.87 反编译 |
-| `CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR` | WebSocket 认证（文件描述符传递）；存在时客户端类型被判定为 "remote" | v2.1.87 反编译 |
-| `CLAUDE_CODE_ENTRYPOINT` | 值为 `"remote"` 时标记为远程入口，改变客户端类型行为 | v2.1.87 反编译 |
-| `CLAUDE_CODE_REMOTE` | 存在时影响 auto-memory 行为；传递给 teammate spawn 环境 | v2.1.87 反编译 |
-| `CLAUDE_CODE_ENVIRONMENT_KIND` | 值为 `"bridge"` 时标识为桥接子进程 | v2.1.87 反编译 |
-| `CLAUDE_CODE_POST_FOR_SESSION_INGRESS_V2` | 值为 `"1"` 时启用 V2 会话入口协议 | v2.1.87 反编译 |
-| `SSE_PORT` | SSE 本地端口（反编译提取，可能用于 Remote Control 或 MCP SSE 传输） | EVIDENCE.md |
+| `CLAUDE_CODE_SESSION_ACCESS_TOKEN` | 会话访问凭证；存在时客户端类型被判定为 "remote" | 源码: `utils/sessionIngressAuth.ts` |
+| `CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR` | WebSocket 认证（文件描述符传递）；存在时客户端类型被判定为 "remote" | 源码: `utils/sessionIngressAuth.ts` |
+| `CLAUDE_CODE_ENTRYPOINT` | 值为 `"remote"` 时标记为远程入口，改变客户端类型行为 | 源码: `utils/concurrentSessions.ts` |
+| `CLAUDE_CODE_REMOTE` | 存在时影响 auto-memory 行为；传递给 teammate spawn 环境 | 源码: `bridge/replBridge.ts` |
+| `CLAUDE_CODE_ENVIRONMENT_KIND` | 值为 `"bridge"` 时标识为桥接子进程 | 源码: `bridge/replBridge.ts` |
+| `CLAUDE_CODE_POST_FOR_SESSION_INGRESS_V2` | 值为 `"1"` 时启用 V2 会话入口协议 | 源码: `bridge/remoteBridgeCore.ts` |
+| `SSE_PORT` | SSE 本地端口（源码提取，可能用于 Remote Control 或 MCP SSE 传输） | EVIDENCE.md |
 
 ### 8.6.8 实现者 Checklist：设计决策表
 
-> 以下清单提炼自反编译分析和官方文档。每个条目对应实现一个 Remote Control 类功能时**必须做出的设计决策**，Claude Code 的选择作为参考标注。
+> 以下清单提炼自源码分析和官方文档。每个条目对应实现一个 Remote Control 类功能时**必须做出的设计决策**，Claude Code 的选择作为参考标注。
 
 | # | 设计决策 | Claude Code 的选择 | 实现考量 |
 |---|----------|-------------------|----------|
@@ -423,7 +423,7 @@ Claude Code 提供了多种跨设备工作方式，各有侧重：
 
 ## 8.13 实现参考：面向 Code Agent 开发者
 
-> 以下数据来自源码分析（`bridge/`、`remote/`、`utils/`、`entrypoints/` 等目录，约 35,000 行 TypeScript）及 v2.1.87 ELF 二进制反编译交叉验证。源码文件名和行号可直接追溯。
+> 以下数据来自源码分析（`bridge/`、`remote/`、`utils/`、`entrypoints/` 等目录，约 35,000 行 TypeScript）。源码文件名和行号可直接追溯。
 >
 > **适用场景**：其他 Code Agent 开发者实现类似"远程控制"功能时，可将本节作为架构参考。Claude Code 的实现是经过生产验证的方案，但并非唯一可行路径。
 
@@ -432,7 +432,7 @@ Claude Code 提供了多种跨设备工作方式，各有侧重：
 Remote Control 在 Redux AppState 中维护 13 个桥接状态字段（源码: `bridge/replBridge.ts`）：
 
 ```javascript
-// v2.1.87 二进制反编译：AppState 初始状态
+// 源码: bridge/replBridge.ts — AppState 初始状态
 replBridgeEnabled: false,          // 是否启用桥接（旧字段，已迁移至 remoteControlAtStartup）
 replBridgeExplicit: false,         // 用户是否主动启用（vs 自动启用）
 replBridgeOutboundOnly: false,     // 仅出站模式：可推送消息但不接受远程控制指令
@@ -448,10 +448,10 @@ replBridgeInitialName: undefined,  // 初始会话名称（--name 参数值）
 showRemoteCallout: false           // UI 标志：是否显示远程控制提示
 ```
 
-**状态迁移逻辑**（反编译 `Cl7` 函数）：
+**状态迁移逻辑**（源码: `migrations/migrateReplBridgeEnabledToRemoteControlAtStartup.ts`）：
 
 ```javascript
-// 旧版迁移：replBridgeEnabled → remoteControlAtStartup
+// 源码: migrations/migrateReplBridgeEnabledToRemoteControlAtStartup.ts
 function migrateBridgeConfig(state) {
   if (state.replBridgeEnabled === undefined) return state;
   if (state.remoteControlAtStartup !== undefined) return state;
@@ -468,10 +468,10 @@ function migrateBridgeConfig(state) {
 
 ### 8.13.2 Polling 配置参数（服务端可调 / GrowthBook 动态下发）
 
-服务端下发 polling 配置，客户端通过 Zod schema 校验后使用。以下为反编译提取的默认值和校验规则：
+服务端下发 polling 配置，客户端通过 Zod schema 校验后使用。以下为源码中的默认值和校验规则（源码: `bridge/pollConfigDefaults.ts` + `bridge/pollConfig.ts`）：
 
 ```javascript
-// v2.1.87 二进制反编译：默认 polling 配置
+// 源码: bridge/pollConfigDefaults.ts — 默认 polling 配置
 const DEFAULT_POLL_CONFIG = {
   poll_interval_ms_not_at_capacity: 2000,           // 未满容量时：2 秒轮询
   poll_interval_ms_at_capacity: 600000,              // 满容量时：10 分钟心跳（或 0=禁用）
@@ -658,7 +658,7 @@ async function updatePidFile(updates) {
 
 ### 8.13.8 Bridge 会话注册 Schema
 
-反编译提取的 Zod schema（`pN9`），用于注册桥接会话：
+源码提取的 Zod schema（源码: `bridge/createSession.ts`），用于注册桥接会话：
 
 ```javascript
 // 会话注册请求体 schema
@@ -671,7 +671,7 @@ const bridgeSessionSchema = z.object({
 
 ### 8.13.9 CLI 完整参数（remote-control 子命令）
 
-反编译提取的 `claude remote-control` 完整参数列表：
+源码提取的 `claude remote-control` 完整参数列表（源码: `bridge/bridgeMain.ts`）：
 
 ```
 claude remote-control [options]
@@ -690,7 +690,7 @@ claude remote-control [options]
 
 **新增发现**（相比官方文档）：
 
-| 参数 | 官方文档 | 反编译发现 |
+| 参数 | 官方文档 | 源码发现 |
 |------|----------|-----------|
 | `--spawn session` | 未提及 | 第三种 spawn 模式 |
 | `--create-session-in-dir` | 未提及 | 在指定目录创建会话 |
@@ -700,7 +700,7 @@ claude remote-control [options]
 
 ### 8.13.10 遥测事件
 
-Remote Control 相关的遥测事件前缀为 `tengu_bridge_*`，反编译提取到以下事件名：
+Remote Control 相关的遥测事件前缀为 `tengu_bridge_*`，源码提取到以下事件名（源码: `bridge/bridgeMain.ts`）：
 
 | 事件名 | 用途 |
 |--------|------|
@@ -711,7 +711,7 @@ Remote Control 相关的遥测事件前缀为 `tengu_bridge_*`，反编译提取
 
 ### 8.13.11 客户端类型检测
 
-反编译提取的客户端类型判定逻辑：
+源码提取的客户端类型判定逻辑（源码: `utils/sessionIngressAuth.ts` + `bridge/replBridge.ts`）：
 
 ```javascript
 // 客户端类型检测
@@ -729,10 +729,10 @@ function detectClientType() {
 
 | 变量 | 说明 | 来源 |
 |------|------|------|
-| `CLAUDE_CODE_SESSION_ACCESS_TOKEN` | 存在时标记为 "remote" 客户端类型 | 反编译 |
-| `CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR` | 存在时标记为 "remote" 客户端类型（文件描述符方式传递 WebSocket 认证） | 反编译 |
-| `CLAUDE_CODE_ENTRYPOINT` | 值为 `"remote"` 时标记为远程入口 | 反编译 |
-| `CLAUDE_CODE_REMOTE` | 存在时影响 auto-memory 行为；传递给 teammate spawn 环境 | 反编译 |
+| `CLAUDE_CODE_SESSION_ACCESS_TOKEN` | 存在时标记为 "remote" 客户端类型 | 源码: `utils/sessionIngressAuth.ts` |
+| `CLAUDE_CODE_WEBSOCKET_AUTH_FILE_DESCRIPTOR` | 存在时标记为 "remote" 客户端类型（文件描述符方式传递 WebSocket 认证） | 源码: `utils/sessionIngressAuth.ts` |
+| `CLAUDE_CODE_ENTRYPOINT` | 值为 `"remote"` 时标记为远程入口 | 源码: `utils/concurrentSessions.ts` |
+| `CLAUDE_CODE_REMOTE` | 存在时影响 auto-memory 行为；传递给 teammate spawn 环境 | 源码: `bridge/replBridge.ts` |
 
 ### 8.13.12 实现建议：架构模式总结
 
