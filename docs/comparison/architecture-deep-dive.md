@@ -101,7 +101,7 @@ graph TD
 消息 → LLM → function calling → 工具执行 → 结果 → 重复
 ```
 
-**使用者**：Claude Code、Gemini CLI、Qwen Code、Codex CLI、OpenCode、Cline、Goose、Copilot CLI、Kimi CLI、Qoder CLI、Cursor、Warp、Continue
+**使用者**：Claude Code、Gemini CLI、Qwen Code、Codex CLI、OpenCode、Cline、Goose、Copilot CLI、Kimi CLI
 
 - Claude Code 使用 Anthropic `tool_use` API，20+ 内置工具
 - Gemini CLI/Qwen Code 使用 `@google/genai` function calling，`CoreToolScheduler`（1790 行）调度工具
@@ -109,9 +109,12 @@ graph TD
 - OpenCode 使用 Vercel AI SDK v5 统一接口，19+ 工具
 - Cline 在 VS Code 内执行，24+ 工具，每步自动 Git Checkpoint
 - Goose 通过 MCP 协议统一工具接口（所有工具走 MCP）
-- Copilot CLI 使用 YAML 定义的代理 + 67 工具
+- Copilot CLI 使用 YAML 定义的代理，`tool_choice` 列出现在模型配置矩阵
+- Kimi CLI "工具调用解析" + `ToolCall`/`ToolResult` Wire 事件，多提供商
 
-> **注**：所有工具调用 Agent 内部都遵循 ReAct 模式（思考→行动→观察→重复），差异在于通过结构化 API 返回 tool calls。
+> **注 1**：所有工具调用 Agent 内部都遵循 ReAct 模式（思考→行动→观察→重复），差异在于通过结构化 API 返回 tool calls。
+>
+> **注 2**：Cursor、Warp、Continue、Qoder CLI 等闭源/IDE 嵌入式 Agent 具有工具系统能力（多支持 MCP），但本仓库现有证据不足以确认其使用原生 API function calling，暂不列入。Oh My OpenAgent 基于 OpenCode Harness 层，继承工具调用架构但不直接调用 LLM API。
 
 ### 混合 ReAct 循环
 
@@ -373,10 +376,12 @@ Tree-sitter AST 解析（30+ 语言）
 
 - **编辑优先**（Aider）：LLM 直接输出代码修改，需文本解析，工具是辅助
 - **工具调用**（Claude Code、Gemini CLI、Qwen Code、Codex CLI、OpenCode、Cline、Goose、Copilot CLI、Kimi CLI）：LLM 通过结构化 function calling 操作环境，是主流模式
-- **混合 ReAct**（SWE-agent）：兼容 function calling（默认）与文本动作解析，文本解析是其鲜明特征
+- **混合 ReAct**（SWE-agent、mini-swe-agent）：兼容 function calling（默认）与文本动作解析，文本解析是其鲜明特征
 - **事件驱动**（OpenHands）：完全解耦的事件总线，最灵活但最复杂
 
-> **关键认知**："工具调用"与"ReAct 循环"并非互斥。所有 Agent 内部都遵循 ReAct 模式，差异在于**动作表达方式**：结构化 API（function calling）还是文本解析。Cursor、Warp、Continue、Qoder CLI 等闭源/IDE 嵌入式 Agent 暂因证据不足未列入「工具调用」流派。
+> **关键认知**："工具调用"与"ReAct 循环"并非互斥。所有 Agent 内部都遵循 ReAct 模式，差异在于**动作表达方式**：结构化 API（function calling）还是文本解析。
+>
+> **未列入的 Agent**：Cursor、Warp、Continue、Qoder CLI 等闭源/IDE 嵌入式 Agent 暂因证据不足未列入「工具调用」流派。Oh My OpenAgent 基于 OpenCode Harness 层，继承工具调用架构但不直接调用 LLM API，视为「工具调用」的间接成员。
 
 ### 2. Gemini CLI 是事实上的"开源 Claude Code 模板"
 
