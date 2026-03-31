@@ -86,49 +86,134 @@ claude --remote-control "My Project" # 带名称
 
 在 Claude Code 中运行 `/config` → 将 **"Enable Remote Control for all sessions"** 设为 `true`。此后每个交互式进程自动注册一个远程会话。如需一个进程中多个并发会话，使用 **Server 模式** 加 `--spawn`。
 
-## 连接与安全架构
+## 技术架构
 
-### 网络拓扑
+> 以下综合 [Anthropic 官方文档](https://docs.anthropic.com/en/docs/claude-code/remote-control)、v2.1.81 二进制反编译（[EVIDENCE.md](./EVIDENCE.md)）、GitHub Issues 社区反馈和 Anthropic 工程博客分析。
+
+### 三方中继架构
+
+Remote Control 采用 **三方中继**（Three-Party Relay）架构，Anthropic API 充当消息代理：
 
 ```
-┌─────────────┐         出站 HTTPS          ┌──────────────────┐
-│  本地终端    │ ──────────────────────────→  │  Anthropic API   │
-│ (Claude Code)│ ←────────────────────────── │  (消息中继)       │
-└─────────────┘         流式响应              └───────┬──────────┘
-                                                      │
-                                              出站 HTTPS │
-                                                      │
-                                              ┌───────▼──────────┐
-                                              │  浏览器/手机 App   │
-                                              │ (claude.ai/code)  │
-                                              └──────────────────┘
+┌──────────────┐     ① 出站 HTTPS (polling)    ┌───────────────────────┐
+│   本地终端    │ ────────────────────────────→   │    Anthropic API      │
+│  (Claude Code)│ ←──────────────────────────── │    (消息中继/代理)     │
+│              │     ② 流式响应 (streaming)      │                       │
+└──────────────┘                                │  claude.ai/code       │
+                                                │  会话注册 + 消息路由    │
+                                                └───────────┬───────────┘
+                                                            │
+                                                 ③ WebSocket/HTTPS │
+                                                            │
+                                                ┌───────────▼───────────┐
+                                                │  浏览器 / 手机 App     │
+                                                │  (claude.ai/code)     │
+                                                └───────────────────────┘
 ```
+
+**数据流**：
+1. **本地 → Anthropic API**：本地进程启动时用 full-scope OAuth token 注册会话，随后以 polling 方式持续获取待处理消息
+2. **Anthropic API → 本地**：服务器有消息时通过 streaming connection 下发（长轮询或 SSE over HTTPS）
+3. **Anthropic API ↔ 浏览器/手机**：远程客户端通过 WebSocket 连接到 Anthropic 基础设施（GitHub Issues 中观察到 stale WebSocket 连接行为）
 
 | 方面 | 细节 |
 |------|------|
-| **网络方向** | 仅出站 HTTPS——**本地不开放入站端口** |
-| **通信机制** | 本地进程向 Anthropic API 注册并**轮询获取工作**（polling） |
-| **消息路由** | Anthropic 服务器在 Web/Mobile 客户端和本地会话之间通过**流式连接**中继消息 |
-| **传输安全** | 所有流量经 Anthropic API 传输，全程 **TLS** 加密（与普通 Claude Code 会话相同） |
-| **凭证** | 使用**多个短期凭证**，每个凭证限定单一用途且独立过期 |
+| **本地→服务器** | 出站 HTTPS polling（非 WebSocket）。本地不开放入站端口 |
+| **远程客户端→服务器** | WebSocket 连接到 Anthropic 基础设施（`WEBSOCKET_AUTH_*` 凭证认证） |
+| **消息路由** | Anthropic 服务器在远程客户端和本地会话之间双向中继 |
+| **传输安全** | 全程 TLS 加密，与普通 Claude Code 会话相同 |
+| **凭证体系** | 多个短期凭证，每个限定单一用途，独立过期 |
 
-> **注意**：并非直接向本地机器建立 WebSocket 连接。本地进程通过 polling Anthropic API 获取消息，消息经由 Anthropic 基础设施中继。
+### 会话生命周期
+
+```
+┌─────────┐     ┌───────────┐     ┌──────────┐     ┌───────────┐     ┌──────────┐
+│ 注册     │ ──→ │ 等待连接   │ ──→ │ 活跃     │ ──→ │ 空闲/断连  │ ──→ │ 过期/退出  │
+│Register  │     │ Waiting   │     │ Active   │     │ Idle      │     │ Expired  │
+└─────────┘     └───────────┘     └──────────┘     └───────────┘     └──────────┘
+  - OAuth认证      - 显示URL/QR      - 双向消息同步     - 自动重连尝试     - 进程退出
+  - API注册        - 轮询等待客户端    - 工具调用可远程审批  - ~10min网络断连   - 清理会话文件
+                  - Server模式可                                    后超时
+                    接受多个客户端
+```
+
+**各阶段详情**：
+
+| 阶段 | 触发 | 行为 |
+|------|------|------|
+| **注册** | 启动 `claude remote-control` 或 `/rc` | 使用 full-scope OAuth token 向 Anthropic API 注册会话，获取 `SESSION_ACCESS_TOKEN` |
+| **等待连接** | 注册成功后 | 终端显示会话 URL 和 QR 码。本地进程持续 polling 等待远程客户端 |
+| **活跃** | 远程客户端连接 | 双向消息同步：远程发送的指令路由到本地执行，本地输出实时推送到远程 |
+| **空闲/断连** | 网络中断、笔记本睡眠 | 自动尝试重连。若网络断连超过 ~10 分钟，会话超时 |
+| **过期/退出** | 超时或进程终止 | 清理会话文件。Server 端约 20+ 分钟无活动后关闭连接（观察到 `CLOSE_WAIT` TCP 状态） |
+
+### 会话文件与本地存储
+
+| 路径 | 内容 | 来源 |
+|------|------|------|
+| `~/.claude/sessions/{pid}.json` | 会话元数据：`name`、`status`、`updatedAt`、`bridgeSessionId`、`messagingSocketPath` | GitHub Issues |
+| `/tmp/cc-socks/*.sock` | 本地进程间通信的 Unix domain socket | GitHub Issues |
+| `~/.claude/projects/<project-hash>/` | 会话对话历史（`.jsonl` 格式），`cleanupPeriodDays`（默认 30 天）后自动清理 | [EVIDENCE.md](./EVIDENCE.md) |
+
+### `--spawn` 多会话架构
+
+Server 模式支持通过 `--spawn` 参数管理多个并发远程会话：
+
+| 模式 | 行为 | 适用场景 |
+|------|------|----------|
+| `same-dir`（默认） | 所有会话共享当前工作目录 | 多人远程操控同一项目不同任务 |
+| `worktree` | 每个按需会话获得独立 Git worktree | 需要文件隔离的并行开发任务 |
+
+**运行时切换**：在 Server 模式中按 `w` 键可动态切换 spawn 模式。
+
+**容量控制**：`--capacity <N>` 限制最大并发会话数（默认 32），防止资源耗尽。
+
+> **与 CCR（Claude Code Remote）的区别**：`--spawn` 创建的是**本地多会话**（通过 worktree 隔离），而 `/schedule` 使用的 `RemoteTrigger` 工具创建的是**云端隔离会话**（CCR），在 Anthropic 基础设施上独立运行（[命令详解](./02-commands.md)）。
+
+### 安全模型纵深
+
+Remote Control 的安全架构采用多层防护：
+
+| 层级 | 机制 | 说明 |
+|------|------|------|
+| **1. 认证门槛** | claude.ai OAuth full-scope token | API Key、`setup-token`、Bedrock/Vertex/Foundry 均被拒绝 |
+| **2. 管理员门控** | `claude.ai/admin-settings/claude-code` 开关 | Team/Enterprise 默认关闭；合规配置可阻止启用 |
+| **3. 凭证隔离** | 多短期凭证、单用途作用域、独立过期 | 防止凭证泄露后横向移动 |
+| **4. 网络隔离** | 仅出站 HTTPS，零入站端口 | 本地机器不暴露任何攻击面 |
+| **5. 传输加密** | 全程 TLS | 与普通 Claude Code 会话相同 |
+| **6. 可选沙箱** | `--sandbox` 启用文件系统+网络隔离 | 默认关闭，Server 模式可启用 |
+| **7. 安全分类器** | auto mode 双层防御（服务端 probe + 客户端分类器） | [工程博客](https://anthropic.com/engineering/claude-code-auto-mode)，Sonnet 4.6 驱动 |
+
+**遥测耦合问题**：`DISABLE_TELEMETRY=1` 会阻止 Remote Control 注册（[GitHub #41189](https://github.com/anthropics/claude-code/issues/41189)），因为资格检查依赖遥测通道。这是一个已知的架构耦合问题。
+
+### 相关 API 端点（反编译提取）
+
+| 端点 | 用途 | 来源 |
+|------|------|------|
+| `claude.ai/api/claude_code/settings` | 远程设置获取 | [EVIDENCE.md](./EVIDENCE.md) |
+| `claude.ai/api/claude_code/policy_limits` | 策略限制查询 | [EVIDENCE.md](./EVIDENCE.md) |
+| `claude.ai/api/oauth/authorize` | OAuth 认证 | [EVIDENCE.md](./EVIDENCE.md) |
+| `api.anthropic.com/api/claude_code/metrics` | 遥测上报（资格检查依赖此通道） | [EVIDENCE.md](./EVIDENCE.md) |
+| `claude.ai/api/ws/speech_to_text/voice_stream` | 语音转文字（非 Remote Control，但共用 WebSocket 基础设施） | [EVIDENCE.md](./EVIDENCE.md) |
+
+> **注意**：Remote Control 专用的会话注册和消息中继端点 URL 未在 v2.1.81 二进制的 `--help` 输出或 rodata 段中明文暴露。上述端点为反编译中确认的基础设施端点，可能被 Remote Control 复用。
 
 ### 相关环境变量
 
-前 6 项来自 [Anthropic 官方文档](https://docs.anthropic.com/en/docs/claude-code/remote-control)；后 2 项为反编译提取的变量名（[EVIDENCE.md](./EVIDENCE.md)），具体用途为推断。
+前 6 项来自 [Anthropic 官方文档](https://docs.anthropic.com/en/docs/claude-code/remote-control)；后 4 项为反编译提取的变量名（[EVIDENCE.md](./EVIDENCE.md)），具体用途为推断。
 
 | 变量 | 影响 | 来源 |
 |------|------|------|
 | `ANTHROPIC_API_KEY` | 阻止 Remote Control；需清除并使用 OAuth 登录 | 官方文档 |
 | `CLAUDE_CODE_OAUTH_TOKEN` | 提供有限范围 token；与 Remote Control 不兼容 | 官方文档 |
 | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | 可能破坏资格检查 | 官方文档 |
-| `DISABLE_TELEMETRY` | 可能破坏资格检查 | 官方文档 |
+| `DISABLE_TELEMETRY` | 阻止 Remote Control 注册（架构耦合 bug） | 官方文档 + GitHub #41189 |
 | `CLAUDE_CODE_USE_BEDROCK` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
 | `CLAUDE_CODE_USE_VERTEX` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
 | `CLAUDE_CODE_USE_FOUNDRY` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
-| `SESSION_ACCESS_TOKEN` | 认证相关凭证（反编译提取） | EVIDENCE.md |
-| `WEBSOCKET_AUTH_*` | 认证相关凭证（反编译提取） | EVIDENCE.md |
+| `SESSION_ACCESS_TOKEN` | 会话访问凭证（反编译提取） | EVIDENCE.md |
+| `WEBSOCKET_AUTH_*` | WebSocket 认证凭证（反编译提取） | EVIDENCE.md |
+| `SSE_PORT` | SSE 本地端口（反编译提取，可能用于 Remote Control 或 MCP SSE 传输） | EVIDENCE.md |
 
 ## Remote Control vs Claude Code on the Web
 
@@ -166,6 +251,21 @@ Claude Code 提供了多种跨设备工作方式，各有侧重：
 | **网络超时** | 若机器在线但网络不可达持续约 10 分钟，会话超时并退出进程 |
 | **不支持 API Key** | 必须使用 claude.ai OAuth 认证 |
 | **不支持第三方提供商** | Bedrock / Vertex / Foundry 用户无法使用 |
+
+## 已知架构问题（社区反馈）
+
+以下问题来自 GitHub Issues，反映了 Remote Control 当前实现的架构缺陷：
+
+| 问题 | 根因 | 影响 | 来源 |
+|------|------|------|------|
+| **Pidfile 竞态** | `concurrentSessions.ts` 中 `updatePidFile()` 非原子 read-modify-write（缺少 tmp+rename） | 并发会话时 JSON 文件损坏，Bun `fallocate` 可产生 null 字节截断 | [#41195](https://github.com/anthropics/claude-code/issues/41195) |
+| **遥测耦合** | `DISABLE_TELEMETRY=1` 阻止 RC 注册（资格检查走遥测通道） | RC 失败但报错信息误导为"未启用" | [#41189](https://github.com/anthropics/claude-code/issues/41189) |
+| **僵尸进程** | 无 TCP read timeout、无 `CLOSE_WAIT` 检测、无空闲看门狗 | 服务端关闭连接后客户端进程不退出，占用 1+ GB 内存无限期 | [#41024](https://github.com/anthropics/claude-code/issues/41024) |
+| **连接循环** | Connecting/Disconnected 循环，可能与凭证刷新或网络代理有关 | 远程客户端无法稳定连接 | [#41324](https://github.com/anthropics/claude-code/issues/41324) |
+| **移动端 stale 连接** | Mobile App 复用过期的 WebSocket/session token | 空闲会话在移动端不可恢复，但 CLI 端正常 | [#41128](https://github.com/anthropics/claude-code/issues/41128) |
+| **VS Code 配置缺口** | 扩展未读取 `remoteControlAtStartup` 设置 | `/config` 全局启用在 VS Code 扩展中不生效 | [#41036](https://github.com/anthropics/claude-code/issues/41036) |
+| **Windows MCP 兼容** | Cloud MCP + RC 在 Windows 上加载失败 | Windows 用户无法同时使用 MCP 和 Remote Control | [#41044](https://github.com/anthropics/claude-code/issues/41044) |
+| **活跃 turn 丢消息** | Agent 正在执行 turn 时，stdin 消息可能丢失 | 远程发送的指令在 agent 忙碌时可能不被处理 | [#41230](https://github.com/anthropics/claude-code/issues/41230) |
 
 ## 故障排查
 
