@@ -1,7 +1,7 @@
 # Aider 源码深度分析证据
 
 ## 基本信息
-- 仓库: Aider-AI/aider, GPL-3.0, Python, 42k+ stars
+- 仓库: Aider-AI/aider, GPL-3.0, Python, 43k+ stars
 - 版本: latest (源码分析 commands.py 1712 行)
 
 ## 遥测系统（源码: aider/analytics.py）

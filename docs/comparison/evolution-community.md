@@ -1,20 +1,27 @@
 # 13. 版本迭代与社区数据
 
-> 采集时间: 2026-03-25。数据来源: GitHub API (`gh api repos/X`)。
+> 采集时间: 2026-03-31。数据来源: GitHub API (`gh api repos/X`)。
 
 ## 项目概览
 
 | Agent | Stars | Forks | 贡献者 | 创建时间 | 语言 | 许可证 |
 |------|-------|-------|--------|---------|------|--------|
-| **Gemini CLI** | 99,025 | 12,601 | 447 | 2025-04 | TypeScript | Apache-2.0 |
-| **Claude Code** | 82,456 | 6,901 | 47 | 2025-02 | Shell/Bun | 专有 |
-| **Codex CLI** | 67,475 | 9,029 | 386 | 2025-04 | Rust | Apache-2.0 |
-| **Aider** | 42,362 | 4,065 | 170 | 2023-05 | Python | Apache-2.0 |
-| **Goose** | 33,552 | 3,124 | 398 | 2024-08 | Rust | Apache-2.0 |
-| **Qwen Code** | 21,039 | 1,877 | 350 | 2025-06 | TypeScript | Apache-2.0 |
-| **OpenCode** | 11,578 | — | — | 2025-03 | Go | MIT |
-| **Copilot CLI** | 9,559 | 1,298 | 19 | 2023-01 | Shell | 专有 |
-| **Kimi CLI** | 7,364 | 760 | 53 | 2025-10 | Python | Apache-2.0 |
+| **Gemini CLI** | 99,571 | 12,601 | 447 | 2025-04 | TypeScript | Apache-2.0 |
+| **Claude Code** | 84,642 | 6,901 | 47 | 2025-02 | Shell/Bun | 专有 |
+| **OpenHands** | 70,225 | — | — | — | Python | MIT |
+| **Codex CLI** | 68,455 | 9,029 | 386 | 2025-04 | Rust | Apache-2.0 |
+| **Cline** | 59,676 | — | — | — | TypeScript | Apache-2.0 |
+| **Oh My OpenAgent** | 44,992 | — | — | — | TypeScript | SUL-1.0 |
+| **Aider** | 42,575 | 4,065 | 170 | 2023-05 | Python | Apache-2.0 |
+| **Goose** | 33,771 | 3,124 | 398 | 2024-08 | Rust | Apache-2.0 |
+| **Cursor** | 32,532 | — | — | — | TypeScript | 专有 |
+| **Continue** | 32,175 | — | — | — | TypeScript | Apache-2.0 |
+| **Warp** | 26,267 | — | — | — | Rust | 专有 |
+| **Qwen Code** | 21,360 | 1,877 | 350 | 2025-06 | TypeScript | Apache-2.0 |
+| **SWE-agent** | 18,888 | — | — | — | Python | MIT |
+| **OpenCode** | 11,670 | — | — | 2025-03 | TypeScript（Bun） | MIT |
+| **Copilot CLI** | 9,673 | 1,298 | 19 | 2023-01 | Shell | 专有 |
+| **Kimi CLI** | 7,455 | 760 | 53 | 2025-10 | Python | Apache-2.0 |
 
 ## 发布节奏
 

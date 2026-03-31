@@ -4,7 +4,7 @@
 **许可证：** MIT
 **仓库：** [github.com/anomalyco/opencode](https://github.com/anomalyco/opencode)（npm: `opencode-ai`）
 **网站：** [opencode.ai](https://opencode.ai/)
-**Stars：** ~132k
+**Stars：** ~12k
 **最后更新：** 2026-03
 
 ## 概述

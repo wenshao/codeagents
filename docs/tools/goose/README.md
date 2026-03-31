@@ -11,4 +11,4 @@
 | [EVIDENCE.md](./EVIDENCE.md) | 源码分析证据（PostHog、SecurityManager、MCP） |
 
 **仓库：** [github.com/block/goose](https://github.com/block/goose)
-**Stars：** 33k+ | **许可证：** Apache-2.0 | **语言：** Rust
+**Stars：** 34k | **许可证：** Apache-2.0 | **语言：** Rust

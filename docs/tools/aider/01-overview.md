@@ -4,7 +4,7 @@
 **许可证：** GPL-3.0
 **仓库：** [github.com/Aider-AI/aider](https://github.com/Aider-AI/aider)
 **文档：** [aider.chat/docs](https://aider.chat/docs/)
-**Stars：** 约 40k+
+**Stars：** 约 43k
 **最后更新：** 2026-03
 
 ## 概述
@@ -99,7 +99,7 @@ aider --auto-commit --auto-test --test-cmd "pytest tests/"
 2. **编辑格式丰富**：14 种格式适配不同模型特点
 3. **仓库映射**：AST 级别的智能上下文选择
 4. **反思循环**：自动修复 lint/测试失败
-5. **实战验证**：每天数千开发者使用，40k+ Stars
+5. **实战验证**：每天数千开发者使用，43k+ Stars
 6. **Prompt 缓存**：Anthropic 缓存优化，降低成本
 
 ## 劣势

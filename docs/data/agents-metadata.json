@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "last_updated": "2026-03-30",
+  "last_updated": "2026-03-31",
   "maintainer_note": "Dynamic metrics should be updated from official APIs or clearly labeled estimates. Static architecture facts should be sourced from repository analysis or EVIDENCE.md.",
   "agents": [
     {
@@ -12,7 +12,7 @@
       "implementation_language": "Rust",
       "runtime": "Bun（内嵌）/ 原生二进制",
       "package_ecosystem": "npm",
-      "stars": "83k",
+      "stars": "85k",
       "downloads": {
         "type": "npm_weekly",
         "value": "1020万",
@@ -84,7 +84,7 @@
       "implementation_language": "TypeScript",
       "runtime": "Node.js >= 20",
       "package_ecosystem": "npm",
-      "stars": "99k",
+      "stars": "100k",
       "downloads": {
         "type": "npm_weekly",
         "value": "74万",
@@ -132,7 +132,7 @@
       "implementation_language": "Python",
       "runtime": "Python >= 3.10",
       "package_ecosystem": "pypi",
-      "stars": "42k",
+      "stars": "43k",
       "downloads": {
         "type": "pypi_monthly",
         "value": "78万",
@@ -180,7 +180,7 @@
       "implementation_language": "TypeScript（v1.0+）",
       "runtime": "Bun 1.3+",
       "package_ecosystem": "none",
-      "stars": "130k",
+      "stars": "12k",
       "downloads": {
         "type": "none",
         "value": "—",
@@ -252,7 +252,7 @@
       "implementation_language": "TypeScript",
       "runtime": "OpenCode Harness / Node.js",
       "package_ecosystem": "npm",
-      "stars": "~44k",
+      "stars": "~45k",
       "downloads": {
         "type": "unknown",
         "value": "—",
@@ -276,7 +276,7 @@
       "implementation_language": "TypeScript",
       "runtime": "VS Code 扩展",
       "package_ecosystem": "vscode-marketplace",
-      "stars": "59k",
+      "stars": "60k",
       "downloads": {
         "type": "unknown",
         "value": "—",
@@ -324,7 +324,7 @@
       "implementation_language": "TypeScript",
       "runtime": "IDE / Desktop",
       "package_ecosystem": "desktop",
-      "stars": "-",
+      "stars": "~33k",
       "downloads": {
         "type": "unknown",
         "value": "—",

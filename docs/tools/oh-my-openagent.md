@@ -4,14 +4,14 @@
 **许可证：** SUL-1.0（Sustainable Use License）
 **仓库：** [github.com/code-yeongyu/oh-my-openagent](https://github.com/code-yeongyu/oh-my-openagent)
 **官网：** [ohmyopenagent.com](https://ohmyopenagent.com/)
-**Stars：** ~44K（2026-03）
+**Stars：** ~45k（2026-03）
 **语言：** TypeScript
 **基座：** 基于 OpenCode 的 Harness/扩展层
 **最后更新：** 2026-03-28（多次日更）
 
 ## 概述
 
-Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harness 层**，不是独立的 Agent——它在 OpenCode 之上添加了多代理编排、多模型路由和增强工具链。自称 "the best agent harness"，~44K Stars（2025-12 创建至 2026-03，基于 GitHub 数据）。
+Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harness 层**，不是独立的 Agent——它在 OpenCode 之上添加了多代理编排、多模型路由和增强工具链。自称 "the best agent harness"，~45k Stars（2025-12 创建至 2026-03，基于 GitHub 数据）。
 
 与本项目收录的其他 Agent 的关键区别：**它不是从零构建的 Agent，而是 Harness Engineering 的实践案例**——在成品 Agent（OpenCode）之上设计环境、编排和反馈循环。
 
@@ -76,7 +76,7 @@ Oh My OpenAgent（原 oh-my-opencode）是一个基于 OpenCode 的 **Agent Harn
 | **多代理** | 7~10 Discipline Agent | Teammates | 实验性 | 无 |
 | **模型路由** | 按任务类别自动路由 | 手动选择 | 无 | 手动选择 |
 | **编辑精度** | Hash-Anchored（LINE#ID） | Edit/MultiEdit | apply_patch | 继承 |
-| **Stars** | ~44k | N/A（闭源） | ~68k | ~132k |
+| **Stars** | ~45k | N/A（闭源） | ~68k | ~12k |
 | **许可证** | SUL-1.0 | 专有 | Apache-2.0 | MIT |
 
 ## Harness Engineering 视角
@@ -106,7 +106,7 @@ bunx oh-my-opencode install
 1. **多代理编排**——7~10 个 Discipline Agent 按职能自动分工，Sisyphus 统一调度
 2. **多模型路由**——按任务类别自动选择最优模型（visual/deep/quick/ultrabrain）
 3. **Hash-Anchored Edit**——内容哈希验证编辑精确性，防止行号偏移
-4. **快速迭代**——多次日更，社区活跃（~44K Stars，4 个月）
+4. **快速迭代**——多次日更，社区活跃（~45k Stars，4 个月）
 5. **Claude Code 兼容**——兼容 Claude Code hooks/commands/skills/MCPs/plugins
 
 ## 劣势

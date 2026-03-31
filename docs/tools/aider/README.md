@@ -5,7 +5,7 @@
 **开发者：** Paul Gauthier
 **许可证：** GPL-3.0
 **仓库：** [github.com/Aider-AI/aider](https://github.com/Aider-AI/aider)
-**Stars：** 约 40k+
+**Stars：** 约 43k
 
 ## 目录
 

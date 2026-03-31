@@ -4,12 +4,12 @@
 **许可证：** Apache-2.0
 **仓库：** [github.com/google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)（npm: `@google/gemini-cli`）
 **文档：** [geminicli.com](https://geminicli.com)
-**Stars：** ~99k（100+ 贡献者，12.5k Forks）
+**Stars：** ~100k（100+ 贡献者，12.5k Forks）
 **最后更新：** 2026-03
 
 ## 概述
 
-Gemini CLI 是 Google 官方的开源 AI 编程代理，运行在终端中，基于 TypeScript + Ink/React 19 构建。采用 ReAct 模式驱动代理循环，主循环最多 100 轮对话，子代理默认 30 轮/10 分钟。项目于 2025 年 6 月 25 日首次公开发布（v0.1.0），当前稳定版为 v0.34.0（2026-03-17），采用每周二稳定/预览/夜间三通道发布模式。整体代码量约 22 万行 TypeScript（不含测试，含测试约 53 万行），是 GitHub 上增长最快的开源项目之一（不到一年从 0 到 ~99k Stars）。它也是 Qwen Code 的上游项目，其架构被广泛借鉴。
+Gemini CLI 是 Google 官方的开源 AI 编程代理，运行在终端中，基于 TypeScript + Ink/React 19 构建。采用 ReAct 模式驱动代理循环，主循环最多 100 轮对话，子代理默认 30 轮/10 分钟。项目于 2025 年 6 月 25 日首次公开发布（v0.1.0），当前稳定版为 v0.34.0（2026-03-17），采用每周二稳定/预览/夜间三通道发布模式。整体代码量约 22 万行 TypeScript（不含测试，含测试约 53 万行），是 GitHub 上增长最快的开源项目之一（不到一年从 0 到 ~100k Stars）。它也是 Qwen Code 的上游项目，其架构被广泛借鉴。
 
 ## 核心功能
 
@@ -110,7 +110,7 @@ gemini
 6. **多代理架构**：5 个内置代理 + 自定义代理 + 远程 A2A 代理
 7. **丰富沙箱**：7 种沙箱后端（Seatbelt/Bubblewrap/Docker/Podman/gVisor/LXC/Windows Sandbox）
 8. **检查点 & 回退**：基于 Git 快照的安全网，`Esc Esc` 即时回退
-9. **开源**：Apache-2.0 许可，~99k Stars，代码质量高
+9. **开源**：Apache-2.0 许可，~100k Stars，代码质量高
 10. **生态影响力大**：Qwen Code 基于此分叉，众多社区衍生项目
 
 ## 劣势
@@ -168,7 +168,7 @@ gemini
 | **v0.34.0** | 2026-03-17 | Plan Mode 默认启用，原生 gVisor + LXC 沙箱 |
 | v0.36.0-preview | 2026-03-24 | 最新预览版（Linux Bubblewrap/Seccomp 沙箱等） |
 
-不到一年发布 **36 个主要版本**，从零开始成长为 ~99k Stars 的顶级开源项目。
+不到一年发布 **36 个主要版本**，从零开始成长为 ~100k Stars 的顶级开源项目。
 
 ### 开发节奏
 - **总提交数**：8,910+

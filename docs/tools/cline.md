@@ -3,7 +3,7 @@
 **开发者：** Cline
 **许可证：** Apache-2.0
 **仓库：** [github.com/cline/cline](https://github.com/cline/cline)
-**Stars：** 约 59k+
+**Stars：** 约 60k
 **最后更新：** 2026-03
 
 ## 概述
@@ -128,7 +128,7 @@ Anthropic, OpenRouter, OpenAI, Google Gemini, AWS Bedrock, Azure, GCP Vertex, SA
 2. **Checkpoint 回滚**：Git 快照保证安全
 3. **提供商丰富**：43+ 提供商支持
 4. **Plan/Act 模式**：规划和执行分离
-5. **社区庞大**：59k+ Stars，5M+ 用户，活跃开发
+5. **社区庞大**：60k+ Stars，5M+ 用户，活跃开发
 6. **MCP + Hook**：强大的扩展能力
 
 ## 劣势

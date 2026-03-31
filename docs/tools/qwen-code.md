@@ -4,7 +4,7 @@
 **许可证：** Apache-2.0
 **仓库：** [github.com/QwenLM/qwen-code](https://github.com/QwenLM/qwen-code)
 **文档：** [qwenlm.github.io/qwen-code-docs](https://qwenlm.github.io/qwen-code-docs/zh/)
-**Stars：** 约 20k+
+**Stars：** 约 21k
 **最后更新：** 2026-03
 
 ## 概述

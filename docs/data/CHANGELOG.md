@@ -16,6 +16,9 @@
 
 | 日期 | 文件 | 更新范围 | 数据来源 | 备注 |
 |------|------|---------|---------|------|
+| 2026-03-31 | `agents-metadata.json` | Stars 全量更新（GitHub API） | GitHub REST API（17 个 repo） | OpenCode 修正 130k→12k；新增 Cursor/Cline/Oh My OpenAgent/OpenHands/SWE-agent/Warp Stars |
+| 2026-03-31 | `README.md` | 快速对比表增加 Stars 列，数据同步 | `agents-metadata.json` | 按 Stars 降序重排 |
+| 2026-03-31 | `evolution-community.md` | 项目概览 Stars 更新，新增 7 个 Agent | GitHub REST API | 采集时间更新为 2026-03-31 |
 | 2026-03-30 | `agents-metadata.json` | 初始化统一数据层；补充 Agent 元数据、免费层、证据状态、最后验证日期 | npm Registry API / PyPI Stats / `gh api` / 各 Agent 文档与 EVIDENCE.md | 首次建立 `docs/data/` |
 | 2026-03-30 | `README.md`, `docs/SUMMARY.md` | 收敛高频变化的 Stars / 下载量 / 免费层引用，改为指向数据层 | `docs/data/agents-metadata.json` | 降低重复维护 |
 | 2026-03-30 | `scripts/check_stale_data.py`, `scripts/check_all.py` | 新增动态数据漂移检查与统一检查入口 | 本仓库维护脚本 | 用于提交前校验 |

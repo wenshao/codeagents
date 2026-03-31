@@ -8,7 +8,7 @@
 |------|-------|-------|
 | **开发者** | Paul Gauthier | Block（原 Square） |
 | **许可证** | GPL-3.0 | Apache-2.0 |
-| **Stars** | ~42k | ~33k |
+| **Stars** | ~43k | ~34k |
 | **语言** | Python | Rust |
 | **核心代码量** | base_coder.py 2485 行 + 模块 | ~55k 行 Rust |
 | **模型支持** | 100+ 模型（LiteLLM） | 58+ 提供商 |
