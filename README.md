@@ -126,7 +126,7 @@
 <details><summary><b>Agent 详情（源码级）— 8 个专题</b></summary>
 
 - **[Agent 索引](./docs/tools/)** — 18 个 Agent 的详细分析
-- **[Claude Code](./docs/tools/claude-code/)** — 7 篇（79 命令/架构/Skill+13 插件/24 Hook/会话）
+- **[Claude Code](./docs/tools/claude-code/)** — 8 篇（79 命令/架构/Skill+13 插件/24 Hook/会话/Remote Control）
 - **[Copilot CLI](./docs/tools/copilot-cli/)** — 3 篇（34 命令 + 67 工具 + 3 代理）
 - **[Codex CLI](./docs/tools/codex-cli/)** — 3 篇（28 命令 + 三平台沙箱）
 - **[Gemini CLI](./docs/tools/gemini-cli/)** — 5 篇（39 命令/8 策略路由/策略引擎）
