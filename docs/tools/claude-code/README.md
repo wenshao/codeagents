@@ -12,3 +12,4 @@
 | [06-设置与安全](./06-settings.md) | 5 层设置、权限、沙箱、24 种 Hook 事件 |
 | [07-会话与记忆](./07-session.md) | 会话存储、上下文压缩（5 层）、CLAUDE.md 记忆、团队同步、Worktree、文件检查点、MCP |
 | [08-Remote Control](./08-remote-control.md) | 远程控制架构、会话生命周期、安全纵深、评价优缺点、7 款竞品对比 |
+| [09-多代理系统](./09-multi-agent.md) | Leader-Worker 协作、Swarm 三后端、Agent 定义、邮箱通信、任务管理、协调模式、远程传送 |
