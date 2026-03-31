@@ -111,18 +111,18 @@ Remote Control 采用 **三方中继**（Three-Party Relay）架构，Anthropic 
                                                 └───────────────────────┘
 ```
 
-**数据流**：
-1. **本地 → Anthropic API**：本地进程启动时用 full-scope OAuth token 注册会话，随后以 polling 方式持续获取待处理消息
-2. **Anthropic API → 本地**：服务器有消息时通过 streaming connection 下发（长轮询或 SSE over HTTPS）
-3. **Anthropic API ↔ 浏览器/手机**：远程客户端通过 WebSocket 连接到 Anthropic 基础设施（GitHub Issues 中观察到 stale WebSocket 连接行为）
+**数据流**（官方确认部分）：
+1. **本地 → Anthropic API**：本地进程启动时用 full-scope OAuth token 注册会话，随后以 polling 方式持续获取待处理消息 ✅ 官方确认
+2. **Anthropic API → 本地**：服务器有消息时通过 streaming connection 下发 ✅ 官方确认
+3. **Anthropic API ↔ 浏览器/手机**：远程客户端连接到 Anthropic 基础设施（具体传输协议未公开确认） ⚠️ 社区观察到 stale WebSocket 连接行为
 
-| 方面 | 细节 |
-|------|------|
-| **本地→服务器** | 出站 HTTPS polling（非 WebSocket）。本地不开放入站端口 |
-| **远程客户端→服务器** | WebSocket 连接到 Anthropic 基础设施（`WEBSOCKET_AUTH_*` 凭证认证） |
-| **消息路由** | Anthropic 服务器在远程客户端和本地会话之间双向中继 |
-| **传输安全** | 全程 TLS 加密，与普通 Claude Code 会话相同 |
-| **凭证体系** | 多个短期凭证，每个限定单一用途，独立过期 |
+| 方面 | 细节 | 确认度 |
+|------|------|--------|
+| **本地→服务器** | 出站 HTTPS polling。本地不开放入站端口 | ✅ 官方确认 |
+| **远程客户端→服务器** | 推测为 WebSocket 或 HTTPS 长连接（`WEBSOCKET_AUTH_*` 变量名暗示 WebSocket 使用） | ⚠️ 推断 |
+| **消息路由** | Anthropic 服务器在远程客户端和本地会话之间双向中继 | ✅ 官方确认 |
+| **传输安全** | 全程 TLS 加密，与普通 Claude Code 会话相同 | ✅ 官方确认 |
+| **凭证体系** | 多个短期凭证，每个限定单一用途，独立过期 | ✅ 官方确认 |
 
 ### 会话生命周期
 
@@ -179,12 +179,12 @@ Remote Control 的安全架构采用多层防护：
 | **1. 认证门槛** | claude.ai OAuth full-scope token | API Key、`setup-token`、Bedrock/Vertex/Foundry 均被拒绝 |
 | **2. 管理员门控** | `claude.ai/admin-settings/claude-code` 开关 | Team/Enterprise 默认关闭；合规配置可阻止启用 |
 | **3. 凭证隔离** | 多短期凭证、单用途作用域、独立过期 | 防止凭证泄露后横向移动 |
-| **4. 网络隔离** | 仅出站 HTTPS，零入站端口 | 本地机器不暴露任何攻击面 |
+| **4. 网络隔离** | 仅出站 HTTPS，零入站端口 | 显著降低网络暴露面（本地 IPC、会话文件、OAuth flow 仍属攻击面） |
 | **5. 传输加密** | 全程 TLS | 与普通 Claude Code 会话相同 |
 | **6. 可选沙箱** | `--sandbox` 启用文件系统+网络隔离 | 默认关闭，Server 模式可启用 |
 | **7. 安全分类器** | auto mode 双层防御（服务端 probe + 客户端分类器） | [工程博客](https://anthropic.com/engineering/claude-code-auto-mode)，Sonnet 4.6 驱动 |
 
-**遥测耦合问题**：`DISABLE_TELEMETRY=1` 会阻止 Remote Control 注册（[GitHub #41189](https://github.com/anthropics/claude-code/issues/41189)），因为资格检查依赖遥测通道。这是一个已知的架构耦合问题。
+**遥测耦合现象**：设置 `DISABLE_TELEMETRY=1` 后 Remote Control 注册失败（[GitHub #41189](https://github.com/anthropics/claude-code/issues/41189)），表现为 eligibility check 不通过。当前证据不足以确认根因是"资格检查走遥测通道"，标记为**疑似实现耦合**。
 
 ### 相关 API 端点（反编译提取）
 
@@ -207,7 +207,7 @@ Remote Control 的安全架构采用多层防护：
 | `ANTHROPIC_API_KEY` | 阻止 Remote Control；需清除并使用 OAuth 登录 | 官方文档 |
 | `CLAUDE_CODE_OAUTH_TOKEN` | 提供有限范围 token；与 Remote Control 不兼容 | 官方文档 |
 | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | 可能破坏资格检查 | 官方文档 |
-| `DISABLE_TELEMETRY` | 阻止 Remote Control 注册（架构耦合 bug） | 官方文档 + GitHub #41189 |
+| `DISABLE_TELEMETRY` | 阻止 Remote Control 注册（疑似实现耦合，[GitHub #41189](https://github.com/anthropics/claude-code/issues/41189)） | 官方文档 + 社区观察 |
 | `CLAUDE_CODE_USE_BEDROCK` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
 | `CLAUDE_CODE_USE_VERTEX` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
 | `CLAUDE_CODE_USE_FOUNDRY` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
@@ -252,15 +252,15 @@ Claude Code 提供了多种跨设备工作方式，各有侧重：
 | **不支持 API Key** | 必须使用 claude.ai OAuth 认证 |
 | **不支持第三方提供商** | Bedrock / Vertex / Foundry 用户无法使用 |
 
-## 已知架构问题（社区反馈）
+## 已知问题（社区反馈）
 
-以下问题来自 GitHub Issues，反映了 Remote Control 当前实现的架构缺陷：
+以下问题来自 GitHub Issues，为社区观察到的现象，**根因未经官方确认**：
 
-| 问题 | 根因 | 影响 | 来源 |
+| 问题 | 观察到的现象 / 推测原因 | 影响 | 来源 |
 |------|------|------|------|
 | **Pidfile 竞态** | `concurrentSessions.ts` 中 `updatePidFile()` 非原子 read-modify-write（缺少 tmp+rename） | 并发会话时 JSON 文件损坏，Bun `fallocate` 可产生 null 字节截断 | [#41195](https://github.com/anthropics/claude-code/issues/41195) |
-| **遥测耦合** | `DISABLE_TELEMETRY=1` 阻止 RC 注册（资格检查走遥测通道） | RC 失败但报错信息误导为"未启用" | [#41189](https://github.com/anthropics/claude-code/issues/41189) |
-| **僵尸进程** | 无 TCP read timeout、无 `CLOSE_WAIT` 检测、无空闲看门狗 | 服务端关闭连接后客户端进程不退出，占用 1+ GB 内存无限期 | [#41024](https://github.com/anthropics/claude-code/issues/41024) |
+| **遥测耦合** | 设置 `DISABLE_TELEMETRY=1` 后 RC 注册失败（疑似 eligibility check 与遥测共享代码路径） | RC 失败但报错信息误导为"未启用" | [#41189](https://github.com/anthropics/claude-code/issues/41189) |
+| **僵尸进程** | 服务端关闭连接后客户端进程不退出（观察到 `CLOSE_WAIT` TCP 状态，推测可能缺少 TCP read timeout 或 `CLOSE_WAIT` 检测） | 服务端关闭后客户端仍占用 1+ GB 内存，无自动退出 | [#41024](https://github.com/anthropics/claude-code/issues/41024) |
 | **连接循环** | Connecting/Disconnected 循环，可能与凭证刷新或网络代理有关 | 远程客户端无法稳定连接 | [#41324](https://github.com/anthropics/claude-code/issues/41324) |
 | **移动端 stale 连接** | Mobile App 复用过期的 WebSocket/session token | 空闲会话在移动端不可恢复，但 CLI 端正常 | [#41128](https://github.com/anthropics/claude-code/issues/41128) |
 | **VS Code 配置缺口** | 扩展未读取 `remoteControlAtStartup` 设置 | `/config` 全局启用在 VS Code 扩展中不生效 | [#41036](https://github.com/anthropics/claude-code/issues/41036) |
