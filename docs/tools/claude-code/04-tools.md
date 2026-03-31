@@ -1010,27 +1010,9 @@ MCPTool 是模板/桩：`z.object({}).passthrough()` 接受任意输入，`z.str
 
 ### 4.9.1 权限系统
 
-> 权限系统的完整描述见 4.6 节。以下为跨工具安全视角的摘要。
+> 权限系统的完整描述见 **4.6 节**（6 种 PermissionMode、10 步检查管道、3 层 Auto 分类器、Circuit Breaker、6 层规则来源优先级）。以下为跨工具安全视角的摘要。
 
-**PermissionMode 枚举**（完整 6 种见 4.6.2）：
-
-| 模式 | 行为 |
-|------|------|
-| `default` | 每次操作需用户确认 |
-| `acceptEdits` | 文件编辑自动允许，其他需确认 |
-| `plan` | 只读 + 计划文件写入 |
-| `auto` | 基于分类器的自动允许（circuit breaker 保护） |
-| `bypassPermissions` | 跳过所有权限检查（需 `--dangerously-skip-permissions`） |
-| `dontAsk` | 将 ask 转为 deny（静默拒绝） |
-
-**权限规则来源**（完整 6 层优先级见 4.6.5）：
-
-1. CLI 参数（`--allowed-tools`）
-2. 用户设置（`~/.claude/settings.json`）
-3. 项目设置（`.claude/settings.json`）
-4. 本地设置（`.claude/settings.local.json`）
-5. 企业策略
-6. 会话规则（用户交互生成）
+核心原则：**bypass-immune**（步骤 1a-1g，包括 `.git/`/`.claude/` 路径保护）在所有权限模式下均强制执行；`checkPermissions` 由各工具自行实现（如 Bash 的 23 层验证器、Edit 的 mtime 临界区）。CLI 参数为 `--allowed-tools`（kebab-case）。
 
 ### 4.9.2 Read-Before-Write 保护
 
@@ -1113,7 +1095,7 @@ Edit、Write、TodoWrite 在内容中检测 Team Memory 机密（error code 0）
 
 > **总计**：39 个显式工具 + MCP 动态工具（∞）。其中 TaskStop 含 KillShell 别名；Edit 工具同时处理单次编辑和 replace_all 批量编辑（无需独立 MultiEdit 工具）。
 >
-> **注**：`tools/` 目录实际有 40 个子目录，但 `WorkflowTool` 受 `feature('WORKFLOW_SCRIPTS')` 门控且源码未随当前版本发布，不计入 39；其余 39 个目录对应本文列出的 39 个工具 + 1 个 `shared/` 工具集。
+> **注**：`tools/` 目录实际有 40 个子目录，但 `WorkflowTool` 受 `feature('WORKFLOW_SCRIPTS')` 门控且源码未随当前版本发布，不计入 39；其余 39 个目录对应本文列出的 39 个工具 + 1 个 `shared/` 工具集。此前版本记为 38 是遗漏了 `AskUserQuestion`（源码有 `shouldDefer: true`，应计入延迟工具而非被忽略）。
 >
 > **交叉文档同步 TODO**：本 PR 仅更新本文档。`docs/comparison/features.md`（内置工具数 20+）、`docs/comparison/architecture-deep-dive.md`（工具分类）、`docs/tools/claude-code/01-overview.md` 中的相关数据将在后续 PR 中同步更新。
 
