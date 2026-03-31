@@ -655,10 +655,56 @@ Perpetual mode: does NOT send result or stopWork on teardown; backend TTL (300s)
 
 ### GrowthBook Feature Flags (from source)
 
-- `tengu_bridge_poll_interval_config` — dynamic polling parameter tuning
+- `tengu_bridge_poll_interval_config` — dynamic polling parameter tuning (5-minute refresh, Zod validation, falls back to defaults on malformed config)
 - `tengu_bridge_initial_history_cap` — initial history flush cap (default 200)
 - `tengu_ccr_bridge_multi_session` — multi-session per environment gate
 - `tengu_ccr_bundle_seed_enabled` — git bundle fallback for Teleport
+
+### Eligibility Check (from `services/api/adminRequests.ts` + `bridge/bridgeEnabled.ts`)
+
+Remote Control eligibility is checked via:
+```
+GET /api/oauth/organizations/${orgUUID}/admin_requests/eligibility?request_type=${requestType}
+```
+Uses OAuth headers with `x-organization-uuid`.
+
+`bridge/bridgeEnabled.ts:79`: org UUID check — "Unable to determine your organization for Remote Control eligibility. Run `claude auth login` to refresh your account information."
+
+Related eligibility functions in other subsystems:
+- `checkRemoteAgentEligibility()` — before remote agent/ultraplan/review sessions (`tasks/RemoteAgentTask/RemoteAgentTask.tsx`)
+- `checkBackgroundRemoteSessionEligibility()` — before background remote sessions (`utils/background/remote/remoteSession.ts`)
+- `isRemoteManagedSettingsEligible()` — for remote managed settings sync (`services/remoteManagedSettings/index.ts`)
+
+### Polling Config Schema (from `bridge/pollConfig.ts` + `bridge/pollConfigDefaults.ts`)
+
+Complete Zod schema for `tengu_bridge_poll_interval_config`:
+
+| Field | Type | Default | Constraint | Purpose |
+|-------|------|---------|------------|---------|
+| `poll_interval_ms_not_at_capacity` | `int` | 2,000 | min 100 | Idle polling interval |
+| `poll_interval_ms_at_capacity` | `int` | 0 | 0 or ≥100 | At-capacity polling (0 = disabled) |
+| `non_exclusive_heartbeat_interval_ms` | `int` | 0 | min 0 | Heartbeat alongside at-capacity poll |
+| `multisession_poll_interval_ms_not_at_capacity` | `int` | 2,000 | min 100 | Multi-session idle |
+| `multisession_poll_interval_ms_partial_capacity` | `int` | 2,000 | min 100 | Multi-session partial |
+| `multisession_poll_interval_ms_at_capacity` | `int` | 0 | 0 or ≥100 | Multi-session at-capacity |
+| `reclaim_older_than_ms` | `int` | 5,000 | min 1 | Server-side work item reclaim threshold |
+| `session_keepalive_interval_v2_ms` | `int` | **120,000** | min 0 | **WebSocket keep-alive interval (0 = disabled). Pushes silent `{type:'keep_alive'}` to session-ingress. Fixes Envoy idle timeout on bridge-topology sessions (#21931).** |
+
+Object-level refinements:
+1. At-capacity liveness requires `non_exclusive_heartbeat_interval_ms > 0` OR `poll_interval_ms_at_capacity > 0`
+2. Multi-session at-capacity liveness requires `non_exclusive_heartbeat_interval_ms > 0` OR `multisession_poll_interval_ms_at_capacity > 0`
+
+Usage (from `bridge/replBridge.ts:1533-1546`):
+```typescript
+const keepAliveIntervalMs = getPollIntervalConfig().session_keepalive_interval_v2_ms
+const keepAliveTimer = keepAliveIntervalMs > 0
+  ? setInterval(() => {
+      void transport.write({ type: 'keep_alive' })
+    }, keepAliveIntervalMs)
+  : null
+```
+
+Same pattern in `cli/remoteIO.ts:180-194` with `this.isBridge` guard.
 
 ### Teleport (from `utils/teleport.tsx`)
 
