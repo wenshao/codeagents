@@ -12,9 +12,11 @@
 | **Qwen Code** | QWEN.md + AGENTS.md | 继承 Gemini | ✓（save_memory 工具） | ✗（无 memory_manager 子代理） | ✓（`~/.qwen/QWEN.md`） | ✗ |
 | **Kimi CLI** | AGENTS.md | 1 层 | ✗（一次性） | ✗ | ✗ | ✗ |
 | **Codex CLI** | AGENTS.md | 多层递归 | **✓**（generate_memories） | **✓**（extract_model + consolidation_model） | ✓ | ✗ |
-| **Aider** | .aider.conf.yml | 2 层 | ✗ | ✗ | ✓ | ✗ |
-| **Goose** | config.yaml | 1 层 | ✗ | ✗ | ✓ | ✗ |
+| **Qoder CLI** | AGENTS.md + CLAUDE.md | 双层（用户级+项目级） | **✓**（Session Memory Update） | **✓**（LLM 驱动记忆更新） | ✓ | **✓（读 CLAUDE.md）** |
+| **Goose** | .goosehints + AGENTS.md | 多层 + JIT 子目录 | ✗ | ✗ | ✓ | **✓（可配置读 CLAUDE.md）** |
 | **OpenCode** | AGENTS.md + CLAUDE.md + CONTEXT.md | 3 文件 | ✗ | ✗ | ✓ | **✓（读 3 种文件）** |
+| **Cursor** | .cursor/rules/*.mdc | 4 种规则类型 | ✗ | ✗ | ✓ | ✗ |
+| **Aider** | .aider.conf.yml | 2 层 | ✗ | ✗ | ✓ | ✗ |
 | **Cline** | .cline/instructions | 1 层 | ✗ | ✗ | ✗ | ✗ |
 
 ---
@@ -189,22 +191,112 @@ async def init(soul, args):
 
 ---
 
-## 五、Codex CLI：AGENTS.md 子目录递归
+## 五、Codex CLI：两阶段记忆提取 + 合并（最接近 MemGPT）
 
 > 来源：Rust 二进制 strings 分析（43 处 AGENTS.md 引用，0 处 CODEX.md 引用）
 
+### 两阶段记忆工作流
+
 ```
-AGENTS.md（项目根）          ← 主指令文件（子目录递归）
-SKILL.md                    ← 技能级指令（最高优先级）
+Stage 1: 提取（extract_model）
+  ├── 从 assistant messages 中提取"durable memory"
+  └── 输出：原始记忆条目
+
+Stage 2: 合并（consolidation_model，后台子代理）
+  ├── 合并原始记忆与 rollout 摘要
+  ├── thread_id 追踪去重
+  ├── 引用合并：将新信号路由到 MEMORY.md 已有 block 或创建新 block
+  └── 更新 memory_summary.md（最后写入，信号密度最高）
 ```
 
-二进制中的作用域逻辑：*"Each AGENTS.md governs the entire directory that contains it and every child directory. Deeper overrides higher-level."*
+### 记忆存储结构
 
-> **注意**：`CODEX.md` 在最新版二进制中引用数为 0，AGENTS.md 已成为 Codex CLI 的主要指令文件。
+```
+.codex/
+  ├── MEMORY.md              ← 可搜索的记忆注册表（主查询文件）
+  ├── memory_summary.md      ← 概要摘要（避免重复打开 MEMORY.md）
+  ├── rollout_summaries/     ← 每个 rollout 的回顾和证据片段
+  ├── skills/<skill-name>/   ← 技能级指令
+  └── codex.db               ← SQLite（thread 元数据 + rollout 路径）
+```
+
+MEMORY.md 格式：
+```xml
+## My request for Codex:
+<rollout_ids>...</rollout_ids>
+<thread_ids>...</thread_ids>
+<citation_entries>...</citation_entries>
+```
+
+### 配置键（`~/.codex/config.toml` `[persistence]` 段）
+
+| 配置键 | 说明 |
+|--------|------|
+| `generate_memories` | 是否启用记忆生成 |
+| `use_memories` | 是否在会话中使用已有记忆 |
+| `max_raw_memories_for_consolidation` | 单次合并的最大原始记忆数 |
+| `max_unused_days` | 记忆最大未使用天数（过期清理） |
+| `extract_model` | Stage-1 提取模型 |
+| `consolidation_model` | Stage-2 合并模型 |
+
+### 触发与去重
+
+- 会话结束时自动触发（`drop_memories` / `update_memories` API）
+- `memory_consolidation` 作为 `SubAgentSource` 变体，后台子代理执行合并
+- 启动时根据 `max_rollouts_per_startup` 处理历史 rollout
+- 去重：维护 thread_id 追踪，对新增/移除的 thread_id 做"外科手术式"删除或重写
+
+### 与 Claude Code 的互操作性
+
+二进制中检测到 `~/.claude` 和 `~/.codex` 路径并存的逻辑：*"If true, include detection under the user's home (~/.claude, ~/.codex, etc.)"*——支持从 Claude Code 导入外部代理配置。
 
 ---
 
-## 六、Aider：配置文件 + --read
+## 六、Goose：.goosehints + MOIM 持久化指令 + MCP Memory 服务器
+
+> 来源：`crates/goose/src/hints/`、`crates/goose-mcp/src/memory/`
+
+### .goosehints 层级加载
+
+```
+~/.config/goose/.goosehints      ← 全局
+<project-root>/.goosehints       ← 项目级（git 仓库内层级加载）
+<subdirectory>/.goosehints       ← JIT 子目录加载（SubdirectoryHintTracker）
+```
+
+Goose 默认查找 `["AGENTS.md", ".goosehints"]`，可通过 `CONTEXT_FILE_NAMES` 环境变量配置（如加入 `CLAUDE.md`）。hints 文件中可用 `@filename.md` 自动内联其他文件。
+
+### MOIM（Model-Observed Internal Memory）
+
+每轮对话注入的持久化指令，无需重启 session 即可生效：
+
+| 环境变量 | 说明 | 限制 |
+|---------|------|------|
+| `GOOSE_MOIM_MESSAGE_TEXT` | 直接注入文本 | 64KB |
+| `GOOSE_MOIM_MESSAGE_FILE` | 注入文件内容 | 64KB |
+
+### MCP Memory 服务器
+
+Goose 内置 MCP Memory 服务器（Rust 实现，758 行），提供 4 个工具：
+
+| 工具 | 参数 | 说明 |
+|------|------|------|
+| `remember_memory` | category, data, tags?, is_global | 追加记忆到分类文件 |
+| `retrieve_memories` | category（`"*"` 全部）, is_global | 检索记忆 |
+| `remove_memory_category` | category（`"*"` 全部）, is_global | 删除整个分类 |
+| `remove_specific_memory` | category, memory_content, is_global | 删除指定条目 |
+
+**存储后端**：纯文件系统（无 SQLite）。每个分类一个 `.txt` 文件：
+- 全局：`~/.config/goose/memory/<category>.txt`
+- 本地：`<project-root>/.goose/memory/<category>.txt`
+
+条目以 `\n\n` 分隔，可选标签行 `# tag1 tag2`。`remember()` 使用 append 模式，**无自动去重**。
+
+**会话加载**：服务器初始化时自动加载所有全局记忆并注入到 system instructions 中。
+
+---
+
+## 六-B、Aider：.aider.conf.yml（无自动记忆）
 
 > 来源：01-overview.md
 
@@ -240,6 +332,65 @@ files.push(path.join(Global.Path.config, "AGENTS.md"));
 
 ---
 
+## 八、Qoder CLI：双层记忆 + 会话内实时更新
+
+> 来源：Go 二进制 strings 分析（43MB）
+
+### 双层记忆架构
+
+Qoder CLI 实现了**两套独立的记忆系统**：
+
+**A. 持久化记忆（state/memory 包）**
+
+| 函数 | 说明 |
+|------|------|
+| `GetProjectMemoryFilePath()` | 项目级记忆文件路径 |
+| `GetUserMemoryFilePath()` | 用户级记忆文件路径 |
+| `AppendMemory()` | 追加记忆条目 |
+| `appendRuleMemory()` | 追加规则型记忆 |
+
+- 使用 ACP SDK（`acp-sdk-go/api.MemoryReference`）与外部平台集成
+- 系统提示中明确引用 `CLAUDE.md`：*"Consider any project-specific context from CLAUDE.md files"*
+
+**B. 会话内记忆（state/session_memory 包）**
+
+会话记忆在每个 turn 结束时通过 LLM 驱动更新：
+
+```
+Turn 完成
+  → TriggerUpdate() / WaitForUpdate()
+  → SessionMemoryUpdatePrompt（LLM 生成更新）
+  → FormatSessionMemoryForCompact()
+  → 压缩超限部分："Truncate compact history until tokens below capacity"
+```
+
+使用 `<user-memory-input>` XML 标签包裹用户输入。会话记忆还提供 `memory_overview`（摘要）和 `search_memory`（检索额外记忆）两种访问方式。
+
+**TUI 交互**：`MemoryCommand` / `MemorySelector` 支持键盘交互选择记忆。
+
+---
+
+## 九、Cursor：Rules 文件系统（无自动记忆）
+
+> 来源：docs/tools/cursor-cli.md
+
+### .cursor/rules/*.mdc 规则
+
+Cursor 通过 `.cursor/rules/` 目录下的 `.mdc` 文件管理项目指令，每条规则包含 YAML frontmatter（`description`、`globs`、`alwaysApply`）：
+
+| 规则类型 | 触发方式 | 说明 |
+|---------|---------|------|
+| **Always** | 每次对话自动加载 | 等效于 CLAUDE.md |
+| **Auto Attached** | 基于 glob 模式匹配 | 文件路径匹配时自动附加 |
+| **Agent Requested** | AI 自主决定是否使用 | AI 根据描述判断相关性 |
+| **Manual** | 用户 `@rules` 手动引用 | 显式选择 |
+
+> **注意**：`.cursorrules`（旧格式）已废弃，被 `.cursor/rules/*.mdc` 取代。
+
+**本质差异**：Cursor 没有自动记忆提取功能。所有"记忆"依赖用户手动创建和维护 Rules 文件，AI 不会将对话中的信息自动保存为记忆。这与 Codex CLI、Goose MCP Memory、Qoder CLI 的自动记忆形成鲜明对比。
+
+---
+
 ## 项目指令文件生态图
 
 ```
@@ -258,6 +409,9 @@ files.push(path.join(Global.Path.config, "AGENTS.md"));
 独立文件：
   Aider    → .aider.conf.yml
   Cline    → .cline/instructions
+  Cursor   → .cursor/rules/*.mdc
+  Goose    → .goosehints + AGENTS.md
+  Qoder CLI → AGENTS.md + CLAUDE.md
 ```
 
 ---
@@ -266,19 +420,21 @@ files.push(path.join(Global.Path.config, "AGENTS.md"));
 
 ### 第一代：静态配置
 
-**代表**：Aider、Cline、Goose
+**代表**：Aider、Cline
 
 - 用户手动编写配置文件
 - 不会自动学习或更新
 - 需要用户主动维护
 
-### 第二代：LLM 生成 + 手动维护
+### 第二代：LLM 生成 + 手动维护 / MCP 工具调用
 
-**代表**：Kimi CLI、Qwen Code（/init）、OpenCode
+**代表**：Kimi CLI（/init）、OpenCode、Goose（MCP Memory 服务器）、Qoder CLI（Session Memory Update）
 
 - `/init` 命令 LLM 分析项目，生成指令文件（AGENTS.md）
 - OpenCode 同时读取 3 种文件格式（AGENTS.md + CLAUDE.md + CONTEXT.md）
-- 生成后不自动更新，项目变化需手动重新生成
+- Goose 提供 MCP Memory 服务器（4 工具），LLM 可调用但无 AI 自动管理
+- Qoder CLI 在每个 turn 结束时通过 LLM 更新会话记忆（Session Memory Update）
+- 生成后大多不自动更新，项目变化需手动重新生成
 
 ### 第三代：AI 自动学习 + 持续更新
 
