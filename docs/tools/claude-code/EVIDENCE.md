@@ -744,3 +744,232 @@ const keepAliveIntervalMs = getPollIntervalConfig().session_keepalive_interval_v
 ```
 
 GrowthBook flag: `tengu_bridge_poll_interval_config` controls the entire config object with 5-minute refresh.
+
+---
+
+## SOURCE CODE ANALYSIS: Tool System
+
+> 以下数据来自 Claude Code `tools/` 目录源码分析（~163 文件、~50,000 行 TypeScript）。这与上文 Remote Control/Bridge 分析（`bridge/`、`remote/`、`utils/`、`entrypoints/`，约 35,000 行）是**独立的分析范围**。两个范围的差异来自不同目录覆盖：工具系统分析专注于 `tools/` 及其直接依赖。
+
+### Tool Base Architecture (from `Tool.ts`)
+
+Core interface `Tool<Input, Output, P>` with methods:
+- `call()` — execute, returns `ToolResult<T>`
+- `isEnabled()` — feature gate (default: `true`)
+- `isReadOnly()` — read classification (default: `false`, fail-closed)
+- `isConcurrencySafe()` — parallel execution (default: `false`, fail-closed)
+- `isDestructive()` — irreversible ops (default: `false`)
+- `validateInput()` — pre-permission validation
+- `checkPermissions()` — permission rule matching
+- `interruptBehavior()` — `'cancel'` or `'block'` on new user input
+- `preparePermissionMatcher()` — hook pattern matching
+
+`buildTool()` factory fills safe defaults (fail-closed: concurrency=false, readonly=false).
+
+`ToolResult<T>` = `{ data, newMessages?, contextModifier?, mcpMeta? }`
+`ToolUseContext` = `{ options: { tools, mcpClients, agentDefinitions }, abortController, messages, getAppState/setAppState, readFileState, agentId? }`
+
+### BashTool (from `tools/BashTool/`, 18 files, 12,411 LOC)
+
+Input schema: `command` (string), `timeout` (number, optional), `description` (string, optional), `run_in_background` (boolean, optional), `dangerouslyDisableSandbox` (boolean, optional).
+
+Key constants:
+- `PROGRESS_THRESHOLD_MS = 2000`
+- `ASSISTANT_BLOCKING_BUDGET_MS = 15,000` (Kairos auto-background)
+- `maxResultSizeChars = 30,000`
+- `MAX_PERSISTED_SIZE = 64 MB`
+
+Command classification sets: BASH_SEARCH_COMMANDS (find/grep/rg/ag), BASH_READ_COMMANDS (cat/head/tail/jq), BASH_SILENT_COMMANDS (mv/cp/rm/mkdir).
+
+Security pipeline (`bashSecurity.ts`, 2,593 lines): 23 validators covering injection, misparsing, obfuscation, IFS, Zsh dangerous commands, brace expansion, Unicode whitespace, etc.
+
+Permission model (`bashPermissions.ts`, 2,622 lines): 41 SAFE_ENV_VARS whitelist (Go/Rust/Node/Python/Locale). 19 BARE_SHELL_PREFIXES blocked from rule suggestions (sh/bash/sudo/env). `MAX_SUBCOMMANDS_FOR_SECURITY_CHECK = 50`.
+
+### FileEditTool (from `tools/FileEditTool/`, 6 files, 1,812 LOC)
+
+Input schema: `file_path`, `old_string`, `new_string`, `replace_all` (default false).
+
+Matching pipeline: exact match → curly-quote normalization → XML desanitization. No fuzzy matching.
+
+10 error codes: team memory secret (0), no-op (1), path denied (2), file exists (3), file not found (4), ipynb (5), not read (6), stale (7), not found (8), multiple matches (9).
+
+Write safety: synchronous mtime critical section between check and write. `MAX_EDIT_FILE_SIZE = 1 GiB`.
+
+### FileReadTool (from `tools/FileReadTool/`, 5 files, 1,602 LOC)
+
+Input schema: `file_path`, `offset` (1-based), `limit`, `pages` (PDF range).
+
+Supported types: text (2000 lines max), images (sharp pipeline), PDF (inline/extract), notebooks (.ipynb), binary (rejected).
+
+Limits: `maxSizeBytes = 256 KB`, `maxTokens = 25,000`, `MAX_LINES_TO_READ = 2000`.
+
+Blocked device paths: `/dev/zero`, `/dev/random`, `/dev/urandom`, `/dev/full`, `/dev/stdin`, `/dev/tty`, `/dev/fd/0-2`, `/proc/*/fd/0-2`.
+
+### FileWriteTool (from `tools/FileWriteTool/`, 3 files, 856 LOC)
+
+Input schema: `file_path`, `content`. Atomic write: mkdir + history backup (async) → readFileSync + mtime check + write (sync critical section). Always LF line endings. New files skip read-first requirement.
+
+### AgentTool (from `tools/AgentTool/`, 14 files, 6,782 LOC)
+
+Input schema: `description`, `prompt`, `subagent_type?`, `model?` (sonnet/opus/haiku), `run_in_background?`, `name?`, `team_name?`, `mode?`, `isolation?`, `cwd?`.
+
+Four spawn modes (priority): Teammate → Remote (Ant-only) → Fork (inherits full context, max cache hit) → Subagent (independent context).
+
+Fork guard: scan for `<fork_boilerplate>` tag or `querySource === 'agent:builtin:fork'`. Fork rules: no re-fork, no conversation, 500-word limit, structured output format.
+
+Tool filtering: MCP always allowed → ALL_AGENT_DISALLOWED_TOOLS → CUSTOM_AGENT_DISALLOWED_TOOLS → ASYNC_AGENT_ALLOWED_TOOLS.
+
+Agent definitions from 3 sources: built-in → plugin → user/project (`.claude/agents/*.md`).
+
+### GrepTool (from `tools/GrepTool/`, 3 files, 795 LOC)
+
+Input schema: `pattern`, `path?`, `glob?`, `output_mode?` (default: files_with_matches), `-i?`, `type?`, `head_limit?` (default: 250), `multiline?`.
+
+Ripgrep invocation: `--hidden`, exclude VCS dirs (`.git/.svn/.hg/.bzr/.jj/.sl`), `--max-columns 500`. `files_with_matches` sorted by mtime.
+
+### ToolSearchTool (from `tools/ToolSearchTool/`, 3 files, 593 LOC)
+
+Input schema: `query` (string), `max_results` (default 5). Scoring: exact name match +10, partial +5, searchHint +4, description +2. MCP prefix matches weighted higher (+12/+6). `select:ToolName` for direct selection.
+
+### PowerShellTool (from `tools/PowerShellTool/`, 14 files, 8,959 LOC)
+
+Windows-only equivalent of BashTool. Separate security and permission validation pipeline.
+
+### Remaining Tools Summary
+
+| Tool | LOC | Key Schema Fields |
+|------|-----|-------------------|
+| WebFetch | 1,131 | `url`, `prompt` |
+| WebSearch | 569 | `query`, `allowed_domains?`, `blocked_domains?` |
+| NotebookEdit | 587 | `notebook_path`, `cell_id?`, `new_source`, `edit_mode?` |
+| TaskCreate | 195 | `subject`, `description`, `activeForm?` |
+| TaskGet | 153 | `taskId` |
+| TaskUpdate | 484 | `taskId`, `status?`, `addBlocks?`, `metadata?` |
+| CronCreate | 543 | `cron`, `prompt`, `recurring?`, `durable?` |
+| TeamCreate | 359 | `team_name`, `description?` |
+| SendMessage | 997 | `to`, `message`, `summary?` |
+| Brief | 610 | `message`, `attachments?`, `status` |
+| AskUserQuestion | 309 | `questions` (1-4), `metadata?` |
+| LSP | 2,005 | `operation` (9 types), `filePath`, `line`, `character` |
+| RemoteTrigger | 192 | `action`, `trigger_id?`, `body?` |
+| Skill | 1,477 | `skill`, `args?` |
+| Config | 809 | `setting`, `value?` |
+| EnterPlanMode | 329 | (empty) |
+| ExitPlanMode | 605 | `allowedPrompts?` |
+| EnterWorktree | 177 | `name?` |
+| ExitWorktree | 386 | `action` (keep/remove), `discard_changes?` |
+
+### GlobTool (from `tools/GlobTool/`)
+
+Input schema: `pattern` (string), `path?` (string). Output: `{ durationMs, numFiles, filenames, truncated }`. `isConcurrencySafe=true`, `isReadOnly=true`, `maxResultSizeChars=100_000`.
+
+### TaskStopTool (from `tools/TaskStopTool/`)
+
+Input schema: `task_id?` (string), `shell_id?` (string). **Aliases: `['KillShell']`** — KillShell is NOT a separate tool, it is a deprecated alias for TaskStopTool. `shell_id` kept for backward compatibility.
+
+### TaskOutputTool (from `tools/TaskOutputTool/`)
+
+Input schema: `task_id` (string), `block` (boolean, default true), `timeout` (number, 0-600000, default 30000). Output: `{ retrieval_status: 'success'|'timeout'|'not_ready', task }`.
+
+### TaskListTool (from `tools/TaskListTool/`)
+
+Input schema: empty (`z.strictObject({})`). Output: `{ tasks: [{ id, subject, status, owner?, blockedBy }] }`. Gate: `isTodoV2Enabled()`.
+
+### TeamDeleteTool (from `tools/TeamDeleteTool/`)
+
+Input schema: empty. Output: `{ success, message, team_name? }`. Gate: `isAgentSwarmsEnabled()`.
+
+### StructuredOutputTool (from `tools/SyntheticOutputTool/`)
+
+Tool name: `'StructuredOutput'` (NOT "SyntheticOutput"). Input: `z.object({}).passthrough()`, output: `z.string()`. Gate: `isNonInteractiveSession` only (SDK/CLI use). Must be called exactly once at end of response.
+
+### REPLTool (from `tools/REPLTool/`)
+
+Tool name: `'REPL'`. Gate: `isReplModeEnabled()` — default on for Ant + CLI entrypoint; opt out `CLAUDE_CODE_REPL=0`; force on `CLAUDE_REPL_MODE=1`. REPL_ONLY_TOOLS: `FileRead, FileWrite, FileEdit, Glob, Grep, Bash, NotebookEdit, Agent`.
+
+### SleepTool (from `tools/SleepTool/`)
+
+Tool name: `'Sleep'`. Gate: `feature('PROACTIVE') || feature('KAIROS')`. Periodic check-ins via `<tick>` prompts; no shell process; interruptible.
+
+### McpAuthTool (from `tools/McpAuthTool/`)
+
+Input: empty. Tool name: dynamically generated as `buildMcpToolName(serverName, 'authenticate')` (e.g. `mcp__myserver__authenticate`). Pseudo-tool for unauthenticated MCP servers; starts OAuth flow; auto-removed when real tools available.
+
+### ReadMcpResourceTool (from `tools/ReadMcpResourceTool/`)
+
+Input: `server` (string), `uri` (string). Output: `{ contents: [{ uri, mimeType?, text?, blobSavedTo? }] }`.
+
+### ListMcpResourcesTool (from `tools/ListMcpResourcesTool/`)
+
+Input: `server?` (string). Output: `z.array({ uri, name, mimeType?, description?, server })`.
+
+### Key Identifiers
+
+| Identifier | Value | Source |
+|------------|-------|--------|
+| `MAX_JOBS` | `50` | `tools/ScheduleCronTool/CronCreateTool.ts` |
+| `MAX_LSP_FILE_SIZE_BYTES` | `10_000_000` (10 MB) | `tools/LSPTool/LSPTool.ts` |
+| `max_uses` (WebSearch) | `8` | `tools/WebSearchTool/WebSearchTool.ts` |
+| `DEFAULT_HEAD_LIMIT` | `250` | `tools/GrepTool/GrepTool.ts` |
+| `SAFE_SKILL_PROPERTIES` | Set of 25 property names | `tools/SkillTool/SkillTool.ts` |
+| `CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS` | Env var override; default 25000 | `tools/FileReadTool/limits.ts` |
+| `web_search_20250305` | Anthropic beta tool type | `tools/WebSearchTool/WebSearchTool.ts` |
+| `isLspConnected()` | Checks LSP server manager | `services/lsp/manager.ts` |
+| `isAgentSwarmsEnabled()` | Ant=always; External=`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` or `--agent-teams` + GB gate `tengu_amber_flint` | `utils/agentSwarmsEnabled.ts` |
+| `isTodoV2Enabled()` | `CLAUDE_CODE_ENABLE_TASKS` env or `!isNonInteractiveSession()` | `utils/tasks.ts` |
+| `getFileReadIgnorePatterns()` | Returns `Map<root, string[]>` from deny-read rules | `utils/permissions/filesystem.ts` |
+| `interpretCommandResult()` | `(command, exitCode, stdout, stderr) => { isError, message? }` | `tools/BashTool/commandSemantics.ts` |
+
+### MultiEditTool — Not a Separate Tool
+
+Source code confirms: `MultiEdit` is only a UI verb mapping in `bridge/sessionRunner.ts:74` (`MultiEdit: 'Editing'`). The actual implementation is FileEditTool with `replace_all: boolean` in its schema. There is NO separate MultiEditTool file in `tools/`.
+
+## Tool System Deep-Dive Evidence (4.4-4.6)
+
+### BashTool Security Pipeline (Section 4.4)
+
+**Source**: `tools/BashTool/bashSecurity.ts` (2,593 LOC)
+
+- `BASH_SECURITY_CHECK_IDS`: numeric IDs 1-23 for validators
+- Pre-validator gates: `CONTROL_CHAR_RE` blocks `\x00-\x08,\x0B,\x0C,\x0E-\x1F,\x7F`; `hasShellQuoteSingleQuoteBug()` detects `'\''`
+- Early validators (can return allow): `validateEmpty`, `validateIncompleteCommands` (ID 1), `validateSafeCommandSubstitution` (ID 8), `validateGitCommit` (ID 12)
+- Main validators: `validateJqCommand` (2/3), `validateObfuscatedFlags` (4), `validateShellMetacharacters` (5), `validateDangerousVariables` (6), `validateCommentQuoteDesync` (22), `validateQuotedNewline` (23), `validateNewlines` (7), `validateIFSInjection` (11), `validateProcEnvironAccess` (13), `validateDangerousPatterns` (8), `validateRedirections` (9/10), `validateBackslashEscapedWhitespace` (15), `validateBackslashEscapedOperators` (21), `validateUnicodeWhitespace` (18), `validateMidWordHash` (19), `validateBraceExpansion` (16), `validateZshDangerousCommands` (20), `validateMalformedTokenInjection` (14)
+- `nonMisparsingValidators`: `validateNewlines`, `validateRedirections` — their ask results are deferred
+
+**Command semantics**: `tools/BashTool/commandSemantics.ts` — `COMMAND_SEMANTICS` Map with entries for grep/rg/diff/test/find. `interpretCommandResult(command, exitCode, stdout, stderr) → { isError, message? }`.
+
+**Safe env vars**: `tools/BashTool/bashPermissions.ts` — `SAFE_ENV_VARS` array (41 entries), `ANT_ONLY_SAFE_ENV_VARS` (28 entries). Forbidden: PATH, LD_PRELOAD, LD_LIBRARY_PATH, DYLD_*, PYTHONPATH, NODE_PATH, etc.
+
+**Timeouts**: `utils/timeouts.ts` — `DEFAULT_TIMEOUT_MS = 120_000`, `MAX_TIMEOUT_MS = 600_000`. Env overrides: `BASH_DEFAULT_TIMEOUT_MS`, `BASH_MAX_TIMEOUT_MS`.
+
+**Sandbox**: `utils/sandbox/sandbox-adapter.ts` — `SandboxManager.wrapWithSandbox()`. Uses `@anthropic-ai/sandbox-runtime` (bubblewrap/bwrap on Linux, macOS sandbox profile). Filesystem: allowWrite `['.', getClaudeTempDir()]`, denyWrite settings/bare git files.
+
+**Background**: `COMMON_BACKGROUND_COMMANDS` list (npm, node, python, cargo, make, docker, webpack, vite, jest, pytest, etc.). `ASSISTANT_BLOCKING_BUDGET_MS = 15_000`. `MAX_TASK_OUTPUT_BYTES = 5 * 1024 * 1024 * 1024` (5 GB).
+
+### Query Loop (Section 4.5)
+
+**Source**: `query.ts` (1,730 LOC), `QueryEngine.ts` (1,296 LOC), `services/tools/toolExecution.ts` (1,746 LOC), `services/tools/StreamingToolExecutor.ts` (366 LOC)
+
+- `queryLoop()` is `async function*` yielding `StreamEvent | RequestStartEvent | Message`
+- State object: `{ messages, toolUseContext, autoCompactTracking, maxOutputTokensRecoveryCount, turnCount, transition }`
+- Streaming tool execution gated by `tengu_streaming_tool_execution2` feature flag
+- `StreamingToolExecutor.addTool()` called per streamed `tool_use` block; `getCompletedResults()` polled during stream
+- Concurrency: safe tools parallel, non-safe serial; `siblingAbortController` cancels siblings on Bash error
+- `MAX_OUTPUT_TOKENS_RECOVERY_LIMIT = 3` retries
+- ToolResult type in `Tool.ts` lines 321-341: `{ data, newMessages?, contextModifier?, mcpMeta? }`
+- Attachments: `utils/attachments.ts` (3,998 LOC), ~60 attachment types, rendered via `createAttachmentMessage()` as `<system-reminder>` XML
+
+### Permission System (Section 4.6)
+
+**Source**: `utils/permissions/permissions.ts`, `utils/permissions/permissionRuleParser.ts`, `utils/permissions/PermissionMode.ts`
+
+- Entry point: `hasPermissionsToUseTool()` → `hasPermissionsToUseToolInner()` (Phase 1) + post-processing (Phase 2)
+- Steps: 1a (deny rules) → 1b (ask rules) → 1c (tool.checkPermissions) → 1d (deny) → 1e (user interaction) → 1f (content ask) → 1g (safety check, bypass-immune) → 2a (bypass) → 2b (always allow) → 3 (passthrough→ask)
+- PermissionMode enum: default, acceptEdits, plan, bypassPermissions, dontAsk, auto, bubble
+- Auto mode classifier: `classifyYoloAction()` in `yoloClassifier.ts` — two-stage XML classification
+- Safe tool allowlist: `SAFE_YOLO_ALLOWLISTED_TOOLS` in `classifierDecision.ts` (~25 tools)
+- Circuit breaker: `tengu_auto_mode_config.enabled` GrowthBook gate (enabled/disabled/opt-in)
+- Denial limits: consecutive ≥3 or total ≥20 → fallback to user prompt
+- Permission rule format: `ToolName`, `ToolName(content)`, `ToolName(prefix:*)`
+- Rule sources (8): userSettings, projectSettings, localSettings, flagSettings, policySettings, cliArg, command, session
+- `ToolPermissionContext` accessed via `context.getAppState().toolPermissionContext` — always reads latest state
