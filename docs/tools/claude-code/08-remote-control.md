@@ -304,4 +304,113 @@ Claude Code 提供了多种跨设备工作方式，各有侧重：
 | **Kimi CLI** | ❌ 无（有 Wire 协议但未实现远程控制） |
 | **其他 Agent** | ❌ 无 |
 
+## 评价与优缺点分析
+
+### 核心优势
+
+**1. 唯一实现"终端会话远程操控"的 Agent**
+
+Claude Code 的 Remote Control 在所有 18 款 Agent 中独树一帜——它不是简单的 Web UI 或 API 暴露，而是将一个**正在运行的终端交互会话**双向桥接到浏览器/手机。这意味着远程端可以完整使用本地文件系统、MCP 服务器、项目配置，实现真正的"离开工位不中断工作"。
+
+**2. 安全架构设计审慎**
+
+- 仅出站 HTTPS，零入站端口——企业防火墙友好
+- 强制 claude.ai OAuth full-scope token——排除 API Key / 第三方提供商
+- Team/Enterprise 管理员门控——组织级管控
+- 多短期凭证隔离——防止凭证泄露横向移动
+
+**3. 多模式灵活适配**
+
+三种启动方式（Server 模式 / 交互式 / 会话内）覆盖不同场景：长时间无人值守用 Server 模式，日常开发用交互式，临时需要用会话内。`--spawn worktree` 支持多会话文件隔离，`--capacity` 防止资源耗尽。
+
+**4. 跨设备生态完整**
+
+Remote Control 不是孤立功能，而是 Claude Code 跨设备矩阵的一部分——配合 `--remote`（推到 Web）、`/teleport`（拉回终端）、Dispatch（手机委派）、Channels（Telegram/Discord 推送）、`/schedule`（定时任务），形成从"实时远程操控"到"异步事件驱动"的完整工作流覆盖。
+
+### 核心短板
+
+**1. 强绑定 claude.ai 生态**
+
+- 不支持 API Key、Bedrock、Vertex、Foundry——企业私有化部署场景被排除
+- `DISABLE_TELEMETRY` 会意外阻止注册——隐私敏感用户被迫在遥测和远程控制之间二选一
+- Team/Enterprise 默认关闭，部分合规配置不可覆盖
+
+**2. 稳定性问题**
+
+截至 v2.1.81，社区反馈了 8 个已知问题（见上文），其中几个影响实际使用：
+- 僵尸进程：服务端关闭后客户端不退出，内存不释放
+- 连接循环：Connecting/Disconnected 反复，无法稳定工作
+- 移动端 stale 连接：WebSocket/session token 过期后不可恢复
+- VS Code 扩展忽略 `remoteControlAtStartup` 配置
+
+**3. 本地进程强依赖**
+
+- 终端必须保持打开，关闭即断
+- 网络断连 ~10 分钟后超时退出
+- 不如 `/schedule`（CCR 云端执行）那样能"关机后继续跑"
+
+**4. 闭源且证据有限**
+
+通信协议细节（polling 间隔、消息格式、端点 URL）未公开，二进制反编译也未完整暴露 Remote Control 专用端点。安全审计只能基于官方文档描述，无法独立验证实现。
+
+### 设计权衡总结
+
+| 设计决策 | 收益 | 代价 |
+|----------|------|------|
+| 本地执行 + 远程操控 | 完整本地环境可用 | 终端必须在线 |
+| HTTPS polling 中继 | 零入站端口，企业友好 | 延迟高于直连 WebSocket |
+| claude.ai OAuth 强绑定 | 统一认证、管理员管控 | 排除 API Key / 第三方用户 |
+| 多短期凭证 | 凭证泄露影响面小 | 增加注册失败点 |
+| 遥测与资格检查耦合 | 可能简化实现 | 隐私用户被意外阻断 |
+
+## 竞品对比：远程访问能力全景
+
+Claude Code Remote Control 在"跨设备远程操控终端会话"维度上独有，但"远程访问"本身在其他 Agent 中有不同形态的实现：
+
+### 功能对比矩阵
+
+| 能力 | Claude Code | Kimi CLI | OpenCode | Goose | Codex CLI | Copilot CLI | Aider |
+|------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| **终端会话远程操控** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **Web UI** | ❌ | ✅ FastAPI+React | ✅ SolidJS（实验） | ✅ via Axum HTTP | ❌ | ❌ | ❌ |
+| **多客户端（TUI+Web+Desktop）** | ❌ | ✅ Wire 四客户端 | ✅ TUI+Web+Desktop | ✅ CLI+Desktop | ❌ | ❌ | ❌ |
+| **移动端 App** | ✅ iOS/Android | ❌（Web 可访问） | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **LAN/公网暴露** | ❌（仅通过 Anthropic 中继） | ✅ `--public` | ✅ MDNS | ✅ Axum HTTP | ❌ | ❌ | ❌ |
+| **远程 IDE 集成** | ✅ VS Code | ✅ ACP | ❌ | ❌ | ✅ app-server | ✅ 原生 | ❌ |
+| **零入站端口** | ✅ | ❌（开端口） | ❌（开端口） | ❌（开端口） | ❌ | N/A | N/A |
+| **协议** | HTTPS polling + 中继 | Wire v1.6 (WS) | Hono HTTP+WS+SSE | REST (Axum) | JSON-RPC (WS) | CLI only | CLI only |
+
+### 竞品关键差异
+
+**Kimi CLI**（最完整的 Web UI）：
+- `kimi web` 启动 FastAPI + React Web UI（默认 `localhost:5494`），支持多会话管理、实时 diff 预览、审批对话框、数学公式渲染
+- Wire v1.6 协议统一 TUI / Web / IDE / 自定义 UI 四种客户端，所有事件广播到所有连接
+- 支持 `--network`、`--lan-only`、`--public` 三种网络模式，token 认证
+- **劣势**：需要在本地开放端口（不像 Claude Code 的 outbound-only），无原生移动 App
+
+**OpenCode**（最雄心勃勃的多客户端）：
+- TUI + Web Console（SolidJS）+ Desktop（Tauri v2 / Electron）三客户端共享 Hono HTTP 后端
+- MDNS 本地网络设备发现
+- 社区项目 Remote-OpenCode 支持 Discord 控制
+- **劣势**：远程 workspace 仍为实验性功能，稳定性待验证
+
+**Goose**（REST API 驱动）：
+- `goose-server`（Axum HTTP）提供 REST API，Electron Desktop App 作为 GUI 客户端
+- `ComputerController` 扩展提供 `web_scrape`、`computer_control` 浏览器自动化
+- **劣势**：无 Web UI、无移动端、REST API 不如 WebSocket 实时
+
+**Codex CLI**（IDE 集成导向）：
+- `codex app-server` 提供 JSON-RPC 2.0 over stdio/WebSocket（90+ 方法）
+- `--remote` 连接远程 app-server 实例
+- **劣势**：面向 IDE 插件设计，非通用远程访问
+
+### 为什么没有其他 Agent 复制 Remote Control？
+
+| 壁垒 | 说明 |
+|------|------|
+| **需要云基础设施** | Anthropic 的中继服务器和 claude.ai/code 平台是 Remote Control 的必要前提。开源 Agent 缺乏同等规模的云中继设施 |
+| **认证体系强绑定** | 强制 OAuth + 短期凭证 + 管理员门控依赖中心化身份系统，自托管 Agent 难以复制 |
+| **产品定位差异** | Claude Code 定位"企业级 AI 编程平台"（含 Web/Desktop/Mobile 多端），大多数 Agent 定位"开发者本地工具" |
+| **替代方案更简单** | Kimi CLI/OpenCode 用本地 Web UI + 开端口的方式实现了 80% 的远程需求，开发成本低得多 |
+
 > **免责声明**：以上数据基于 2026 年 Q1 源码分析和官方文档，可能已过时。Qwen Code 的 Remote Control 功能缺口已被标记为 P2 优先级。
