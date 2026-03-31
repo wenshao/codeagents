@@ -1,6 +1,6 @@
 # 4. Claude Code 工具系统：架构与实现参考
 
-> 工具系统是 Claude Code 与外部世界交互的核心接口。本文基于源码分析（`Tool.ts` 基类 + `tools/` 目录 163 文件、~50,000 行 TypeScript），覆盖全部 42 个工具的架构设计、权限模型、安全机制和实现细节。
+> 工具系统是 Claude Code 与外部世界交互的核心接口。本文基于源码分析（`Tool.ts` 基类 + `tools/` 目录 ~163 文件、~50,000 行 TypeScript），覆盖 38 个显式工具 + MCP 动态工具的架构设计、权限模型、安全机制和实现细节。
 >
 > **适用场景**：其他 Code Agent 开发者设计工具系统时，可将本文作为架构参考。每个工具的 Zod schema、执行流程、安全检查都经过生产验证。
 
@@ -10,12 +10,11 @@
 
 | 类别 | 工具数 | 加载方式 | 说明 |
 |------|--------|----------|------|
-| **核心工具** | 9 | 始终加载（`alwaysLoad`） | Read, Write, Edit, MultiEdit, Bash, Glob, Grep, Agent, TodoWrite |
-| **延迟工具** | 21 | ToolSearch 按需加载（`shouldDefer`） | WebFetch, WebSearch, NotebookEdit, Task\*, Cron\*, Worktree\*, RemoteTrigger, Brief, AskUserQuestion, Skill, PlanMode\*, LSP, MCP 相关 |
-| **内部工具** | 3 | 始终加载 | KillShell, REPLTool, SleepTool |
+| **核心工具** | 10 | 始终加载（`alwaysLoad`） | Read, Write, Edit, Bash, Glob, Grep, Agent, TodoWrite, ToolSearch, StructuredOutput |
+| **延迟工具** | 24 | ToolSearch 按需加载（`shouldDefer`） | WebFetch, WebSearch, NotebookEdit, Task\*, Cron\*, Worktree\*, RemoteTrigger, Brief, AskUserQuestion, Skill, PlanMode\*, LSP, MCP 相关, Config |
+| **内部工具** | 3 | 始终加载 | REPLTool, SleepTool, TaskStop（含 KillShell 别名） |
+| **条件工具** | 1 | 仅 Windows | PowerShell |
 | **MCP 工具** | ∞ | 动态注册 | `mcp__serverName__toolName` 格式，由 MCP 服务器提供 schema |
-| **任务工具（V2）** | 4 | Feature gate（`isTodoV2Enabled`） | TaskCreate, TaskGet, TaskUpdate, TaskStop |
-| **团队工具** | 2 | Feature gate（`isAgentSwarmsEnabled`） | TeamCreate, TeamDelete |
 
 ### 4.1.2 工具生命周期
 
@@ -29,7 +28,7 @@
 └──────────────┘     └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-**注册**：`buildTool()` 工厂函数填充安全默认值。所有 ~60 个工具通过此工厂创建。
+**注册**：`buildTool()` 工厂函数填充安全默认值。所有 40+ 工具通过此工厂创建（核心 + 延迟 + 内部 + 条件，不含 MCP 动态工具）。
 
 **权限检查顺序**：
 1. `isEnabled()` — Feature gate 检查
@@ -726,9 +725,9 @@ Edit、Write、TodoWrite 在内容中检测 Team Memory 机密（error code 0）
 | 5 | **Grep** | 795 | 核心 | ✓ | ✓ | — |
 | 6 | **Glob** | — | 核心 | ✓ | ✓ | — |
 | 7 | **Agent** | 6,072 | 核心 | ✗ | ✗ | — |
-| 8 | **MultiEdit** | — | 核心 | ✗ | ✗ | — |
-| 9 | **TodoWrite** | 300 | 核心 | ✗ | ✗ | `!isTodoV2Enabled` |
-| 10 | **ToolSearch** | 593 | 核心 | ✓ | ✓ | — |
+| 8 | **TodoWrite** | 300 | 核心 | ✗ | ✗ | `!isTodoV2Enabled` |
+| 9 | **ToolSearch** | 593 | 核心 | ✓ | ✓ | — |
+| 10 | **StructuredOutput** | 163 | 核心 | ✗ | ✗ | `isNonInteractiveSession` |
 | 11 | **PowerShell** | 8,959 | 条件 | ✗ | ✗ | Windows |
 | 12 | **LSP** | 2,005 | 延迟 | ✓ | ✓ | `isLspConnected` |
 | 13 | **Skill** | 1,477 | 延迟 | ✗ | ✗ | — |
@@ -752,17 +751,15 @@ Edit、Write、TodoWrite 在内容中检测 Team Memory 机密（error code 0）
 | 31 | **TeamDelete** | 175 | 延迟 | ✗ | ✗ | `isAgentSwarmsEnabled` |
 | 32 | **TaskList** | 166 | 延迟 | ✓ | ✓ | `isTodoV2Enabled` |
 | 33 | **TaskGet** | 153 | 延迟 | ✓ | ✓ | `isTodoV2Enabled` |
-| 34 | **TaskStop** | 179 | 延迟 | ✗ | ✗ | `isTodoV2Enabled` |
-| 35 | **RemoteTrigger** | 192 | 延迟 | varies | ✗ | `tengu_surreal_dali` + policy |
-| 36 | **EnterWorktree** | 177 | 延迟 | ✗ | ✗ | — |
-| 37 | **TaskCreate** | 195 | 延迟 | ✗ | ✗ | `isTodoV2Enabled` |
+| 34 | **TaskStop** | 179 | 内部 | ✗ | ✗ | — |
+| 35 | **TaskCreate** | 195 | 延迟 | ✗ | ✗ | `isTodoV2Enabled` |
+| 36 | **RemoteTrigger** | 192 | 延迟 | varies | ✗ | `tengu_surreal_dali` + policy |
+| 37 | **EnterWorktree** | 177 | 延迟 | ✗ | ✗ | — |
 | 38 | **Config** | 809 | 延迟 | varies | ✗ | — |
-| 39 | **KillShell** | — | 内部 | ✗ | ✗ | — |
-| 40 | **REPLTool** | 85 | 内部 | ✗ | ✗ | — |
-| 41 | **SleepTool** | 17 | 内部 | ✓ | ✓ | — |
-| 42 | **SyntheticOutput** | 163 | 内部 | ✗ | ✗ | — |
+| 39 | **REPLTool** | 85 | 内部 | ✗ | ✗ | `isReplModeEnabled` |
+| 40 | **SleepTool** | 17 | 内部 | ✓ | ✓ | PROACTIVE/KAIROS |
 
-> **总计**：~50,000 行 TypeScript 横跨 163 个文件。
+> **总计**：38 个显式工具 + MCP 动态工具（∞）。其中 TaskStop 含 KillShell 别名；Edit 工具同时处理单次编辑和 replace_all 批量编辑（无需独立 MultiEdit 工具）。
 
 ---
 

@@ -856,3 +856,68 @@ Windows-only equivalent of BashTool. Separate security and permission validation
 | ExitPlanMode | 605 | `allowedPrompts?` |
 | EnterWorktree | 177 | `name?` |
 | ExitWorktree | 386 | `action` (keep/remove), `discard_changes?` |
+
+### GlobTool (from `tools/GlobTool/`)
+
+Input schema: `pattern` (string), `path?` (string). Output: `{ durationMs, numFiles, filenames, truncated }`. `isConcurrencySafe=true`, `isReadOnly=true`, `maxResultSizeChars=100_000`.
+
+### TaskStopTool (from `tools/TaskStopTool/`)
+
+Input schema: `task_id?` (string), `shell_id?` (string). **Aliases: `['KillShell']`** — KillShell is NOT a separate tool, it is a deprecated alias for TaskStopTool. `shell_id` kept for backward compatibility.
+
+### TaskOutputTool (from `tools/TaskOutputTool/`)
+
+Input schema: `task_id` (string), `block` (boolean, default true), `timeout` (number, 0-600000, default 30000). Output: `{ retrieval_status: 'success'|'timeout'|'not_ready', task }`.
+
+### TaskListTool (from `tools/TaskListTool/`)
+
+Input schema: empty (`z.strictObject({})`). Output: `{ tasks: [{ id, subject, status, owner?, blockedBy }] }`. Gate: `isTodoV2Enabled()`.
+
+### TeamDeleteTool (from `tools/TeamDeleteTool/`)
+
+Input schema: empty. Output: `{ success, message, team_name? }`. Gate: `isAgentSwarmsEnabled()`.
+
+### StructuredOutputTool (from `tools/SyntheticOutputTool/`)
+
+Tool name: `'StructuredOutput'` (NOT "SyntheticOutput"). Input: `z.object({}).passthrough()`, output: `z.string()`. Gate: `isNonInteractiveSession` only (SDK/CLI use). Must be called exactly once at end of response.
+
+### REPLTool (from `tools/REPLTool/`)
+
+Tool name: `'REPL'`. Gate: `isReplModeEnabled()` — default on for Ant + CLI entrypoint; opt out `CLAUDE_CODE_REPL=0`; force on `CLAUDE_REPL_MODE=1`. REPL_ONLY_TOOLS: `FileRead, FileWrite, FileEdit, Glob, Grep, Bash, NotebookEdit, Agent`.
+
+### SleepTool (from `tools/SleepTool/`)
+
+Tool name: `'Sleep'`. Gate: `feature('PROACTIVE') || feature('KAIROS')`. Periodic check-ins via `<tick>` prompts; no shell process; interruptible.
+
+### McpAuthTool (from `tools/McpAuthTool/`)
+
+Input: empty. Tool name: dynamically generated as `buildMcpToolName(serverName, 'authenticate')` (e.g. `mcp__myserver__authenticate`). Pseudo-tool for unauthenticated MCP servers; starts OAuth flow; auto-removed when real tools available.
+
+### ReadMcpResourceTool (from `tools/ReadMcpResourceTool/`)
+
+Input: `server` (string), `uri` (string). Output: `{ contents: [{ uri, mimeType?, text?, blobSavedTo? }] }`.
+
+### ListMcpResourcesTool (from `tools/ListMcpResourcesTool/`)
+
+Input: `server?` (string). Output: `z.array({ uri, name, mimeType?, description?, server })`.
+
+### Key Identifiers
+
+| Identifier | Value | Source |
+|------------|-------|--------|
+| `MAX_JOBS` | `50` | `tools/ScheduleCronTool/CronCreateTool.ts` |
+| `MAX_LSP_FILE_SIZE_BYTES` | `10_000_000` (10 MB) | `tools/LSPTool/LSPTool.ts` |
+| `max_uses` (WebSearch) | `8` | `tools/WebSearchTool/WebSearchTool.ts` |
+| `DEFAULT_HEAD_LIMIT` | `250` | `tools/GrepTool/GrepTool.ts` |
+| `SAFE_SKILL_PROPERTIES` | Set of 25 property names | `tools/SkillTool/SkillTool.ts` |
+| `CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS` | Env var override; default 25000 | `tools/FileReadTool/limits.ts` |
+| `web_search_20250305` | Anthropic beta tool type | `tools/WebSearchTool/WebSearchTool.ts` |
+| `isLspConnected()` | Checks LSP server manager | `services/lsp/manager.ts` |
+| `isAgentSwarmsEnabled()` | Ant=always; External=`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` or `--agent-teams` + GB gate `tengu_amber_flint` | `utils/agentSwarmsEnabled.ts` |
+| `isTodoV2Enabled()` | `CLAUDE_CODE_ENABLE_TASKS` env or `!isNonInteractiveSession()` | `utils/tasks.ts` |
+| `getFileReadIgnorePatterns()` | Returns `Map<root, string[]>` from deny-read rules | `utils/permissions/filesystem.ts` |
+| `interpretCommandResult()` | `(command, exitCode, stdout, stderr) => { isError, message? }` | `tools/BashTool/commandSemantics.ts` |
+
+### MultiEditTool — Not a Separate Tool
+
+Source code confirms: `MultiEdit` is only a UI verb mapping in `bridge/sessionRunner.ts:74` (`MultiEdit: 'Editing'`). The actual implementation is FileEditTool with `replace_all: boolean` in its schema. There is NO separate MultiEditTool file in `tools/`.
