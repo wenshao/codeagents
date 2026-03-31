@@ -78,7 +78,7 @@
 | [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | TypeScript | 60k | 48+ | VS Code 原生，Git Checkpoint |
 | [Aider](./docs/tools/aider/) | Paul Gauthier | GPL-3.0 | Python | 43k | 100+ | 14 编辑格式，三槽位模型，/undo |
 | [Goose](./docs/tools/goose/) | Block | Apache-2.0 | Rust | 34k | 58+ | MCP 原生，11 Platform Extension，Recipe + Cron 调度 |
-| [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | TypeScript | 32k | 60+ | PR Checks CI 审查，语义索引 |
+| [Continue](./docs/tools/continue.md) | Continue | Apache-2.0 | TypeScript | 32k | 68+ | PR Checks CI 审查，语义索引 |
 | [Cursor](./docs/tools/cursor-cli.md) | Cursor | 专有 | TypeScript | ~33k | 多种 | AI 原生 IDE，Background Agent |
 | [Warp](./docs/tools/warp.md) | Warp | 专有 | Rust | 26k | 多种 | GPU 渲染终端，块结构输出 |
 | [Qwen Code](./docs/tools/qwen-code/) | 阿里云 | Apache-2.0 | TypeScript | 21k | 6+ | 免费 1000 次/天，Arena 多模型竞争，41 命令 |

@@ -19,7 +19,7 @@ AGENTS.md 声明：*"This project is based on Google Gemini CLI with adaptations
 - **Gemini CLI 分叉**：继承 Gemini CLI 核心架构，新增 Arena/扩展系统/多提供商等能力
 - **免费 OAuth 额度**：通义账号每天 1000 次免费请求，零门槛入门
 - **16 个内置工具**：文件编辑、Shell 执行、Grep 搜索、Web 抓取/搜索、LSP 等
-- **40+ 斜杠命令**：覆盖会话管理、Arena 模式、扩展管理、多语言切换等
+- **41 斜杠命令**：覆盖会话管理、Arena 模式、扩展管理、多语言切换等
 - **多提供商**：Qwen OAuth（免费）、DashScope、ModelScope、Anthropic、Gemini、Vertex AI、自定义
 - **完整 SDK**：TypeScript SDK + Java SDK，支持编程式集成
 - **扩展兼容**：可转换 Claude Code 插件和 Gemini CLI 扩展格式

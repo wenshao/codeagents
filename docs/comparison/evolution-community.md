@@ -12,7 +12,7 @@
 | **Codex CLI** | 68,455 | 9,029 | 386 | 2025-04 | Rust | Apache-2.0 |
 | **Cline** | 59,676 | — | — | — | TypeScript | Apache-2.0 |
 | **Oh My OpenAgent** | 44,992 | — | — | — | TypeScript | SUL-1.0 |
-| **Aider** | 42,575 | 4,065 | 170 | 2023-05 | Python | Apache-2.0 |
+| **Aider** | 42,575 | 4,065 | 170 | 2023-05 | Python | GPL-3.0 |
 | **Goose** | 33,771 | 3,124 | 398 | 2024-08 | Rust | Apache-2.0 |
 | **Cursor** | 32,532 | — | — | — | TypeScript | 专有 |
 | **Continue** | 32,175 | — | — | — | TypeScript | Apache-2.0 |
