@@ -10,5 +10,5 @@
 | [04-工具系统](./04-tools.md) | 42 工具架构设计、Zod Schema、权限模型、安全机制、实现者 Checklist |
 | [05-Skill 系统](./05-skills.md) | Skill 定义、加载、内置 Skill |
 | [06-设置与安全](./06-settings.md) | 5 层设置、权限、沙箱、24 种 Hook 事件 |
-| [07-会话与记忆](./07-session.md) | 会话管理、记忆系统、MCP |
+| [07-会话与记忆](./07-session.md) | 会话存储、上下文压缩（5 层）、CLAUDE.md 记忆、团队同步、Worktree、文件检查点、MCP |
 | [08-Remote Control](./08-remote-control.md) | 远程控制架构、会话生命周期、安全纵深、评价优缺点、7 款竞品对比 |

@@ -10,19 +10,21 @@
 
 ### 7.1.1 子系统全景
 
-| 子系统 | 源码规模 | 核心文件 | 职责 |
-|--------|----------|----------|------|
-| **会话存储** | ~9,938 LOC | `utils/sessionStorage.ts` | JSONL 持久化、会话恢复、并发管理 |
-| **上下文压缩** | ~3,960 LOC | `services/compact/compact.ts` | 5 层递增压缩策略 |
-| **Token 管理** | ~3,327 LOC | `utils/analyzeContext.ts`, `utils/tokens.ts` | 预算分配、用量估算、阈值告警 |
-| **CLAUDE.md 记忆** | ~1,876 LOC | `utils/claudemd.ts` | 6 层发现、`@include` 指令、条件加载 |
-| **Memdir 系统** | ~1,736 LOC | `memdir/memdir.ts`, `memdir/paths.ts` | 记忆目录管理、路径解析 |
-| **自动记忆提取** | ~769 LOC | `services/extractMemories/extractMemories.ts` | 对话结束后后台提取记忆 |
-| **SessionMemory** | ~1,026 LOC | `services/SessionMemory/sessionMemory.ts` | 轻量级会话内记忆缓存 |
-| **autoDream** | ~550 LOC | `services/autoDream/autoDream.ts` | 后台记忆整合（24h + 5 会话门控） |
-| **团队记忆同步** | ~2,167 LOC | `services/teamMemorySync/index.ts` | 本地↔云端双向同步 |
-| **Worktree** | ~2,888 LOC | `utils/worktree.ts` | Git worktree 隔离会话 |
-| **文件检查点** | ~1,116 LOC | `utils/fileHistory.ts` | 文件级快照/回退 |
+| 子系统 | 目录总规模 | 核心文件（单文件 LOC） | 职责 |
+|--------|-----------|----------------------|------|
+| **会话存储** | ~9,938 LOC | `utils/sessionStorage.ts` (5,105) | JSONL 持久化、会话恢复、并发管理 |
+| **上下文压缩** | ~3,960 LOC | `services/compact/compact.ts` (1,706) | 5 层递增压缩策略 |
+| **Token 管理** | ~3,327 LOC | `utils/analyzeContext.ts` (1,382) | 预算分配、用量估算、阈值告警 |
+| **CLAUDE.md 记忆** | ~1,876 LOC | `utils/claudemd.ts` (1,480) | 6 层发现、`@include` 指令、条件加载 |
+| **Memdir 系统** | ~1,736 LOC | `memdir/memdir.ts` (507) | 记忆目录管理、路径解析 |
+| **自动记忆提取** | ~769 LOC | `services/extractMemories/extractMemories.ts` (616) | 对话结束后后台提取记忆 |
+| **SessionMemory** | ~1,026 LOC | `services/SessionMemory/sessionMemory.ts` (496) | 轻量级会话内记忆缓存 |
+| **autoDream** | ~550 LOC | `services/autoDream/autoDream.ts` (325) | 后台记忆整合（24h + 5 会话门控） |
+| **团队记忆同步** | ~2,167 LOC | `services/teamMemorySync/index.ts` (1,257) | 本地↔云端双向同步 |
+| **Worktree** | ~2,888 LOC | `utils/worktree.ts` (1,519) | Git worktree 隔离会话 |
+| **文件检查点** | ~1,116 LOC | `utils/fileHistory.ts` (1,116) | 文件级快照/回退 |
+
+> **计数说明**：「目录总规模」是该子系统所有文件的 LOC 合计（含辅助文件、类型定义、UI 组件等）。「核心文件」是其中最大的单一文件，括号内为其精确 LOC。
 
 ### 7.1.2 会话生命周期
 

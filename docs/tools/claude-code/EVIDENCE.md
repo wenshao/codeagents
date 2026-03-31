@@ -1035,7 +1035,7 @@ Source code confirms: `MultiEdit` is only a UI verb mapping in `bridge/sessionRu
 - Brief mode: `SendUserMessage` tool results are terminal (not interrupted)
 - Worktree tri-state: `undefined` (never touched) | `null` (exited) | `object` (active)
 
-### CLAUDE.md Discovery (from `utils/claudemd.ts`, 1,480 LOC)
+### CLAUDE.md Discovery (from `utils/claudemd.ts`, 1,479 LOC)
 
 - 6 layers: Managed → User → Project/Local → AutoMem → TeamMem
 - Loading priority: LATER = HIGHER (reverse of intuition, matches LLM attention)
