@@ -717,3 +717,30 @@ Session creation: `POST /v1/sessions` with `anthropic-beta: ccr-byoc-2025-07-29`
 Title/branch generation: Claude Haiku generates `{title, branch}`, branch prefix `claude/`.
 Polling: `GET /v1/sessions/{id}/events` cursor-based, max 50 pages.
 Archive: `POST /v1/sessions/{id}/archive`, 409 = already archived (success).
+
+### Admin Requests Eligibility (from `services/api/adminRequests.ts`)
+
+API endpoints:
+- `POST /api/oauth/organizations/${orgUUID}/admin_requests` — creates admin request
+- `GET /api/oauth/organizations/${orgUUID}/admin_requests/me?request_type=${requestType}` — gets user's existing admin requests
+- `GET /api/oauth/organizations/${orgUUID}/admin_requests/eligibility?request_type=${requestType}` — checks eligibility
+
+Error message from `bridge/bridgeEnabled.ts`:
+> `Unable to determine your organization for Remote Control eligibility. Run \`claude auth login\` to refresh your account information.`
+
+### session_keepalive_interval_v2_ms (from `bridge/pollConfig.ts`)
+
+Zod schema definition:
+```typescript
+session_keepalive_interval_v2_ms: z.number().int().min(0).default(120_000),
+```
+
+Default: `120_000` (2 minutes). Comment from `pollConfigDefaults.ts`:
+> "0 = disabled. When > 0, push a silent {type:'keep_alive'} frame to session-ingress at this interval so upstream proxies don't GC an idle remote-control session. 2 min is the default. _v2: bridge-only gate (pre-v2 clients read the old key, new clients ignore it)."
+
+Used in `bridge/replBridge.ts` and `cli/remoteIO.ts`:
+```typescript
+const keepAliveIntervalMs = getPollIntervalConfig().session_keepalive_interval_v2_ms
+```
+
+GrowthBook flag: `tengu_bridge_poll_interval_config` controls the entire config object with 5-minute refresh.
