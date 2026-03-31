@@ -1108,7 +1108,174 @@ Edit、Write、TodoWrite 在内容中检测 Team Memory 机密（error code 0）
 
 ---
 
-## 4.11 实现者 Checklist
+## 4.11 设计哲学与架构权衡
+
+> 本节分析 Claude Code 工具系统的设计决策背后的思考逻辑。每个决策点对比两种常见方案，说明 Claude Code 的选择及其工程理由。信息来源为源码注释和代码结构推断（⚠️ 推断部分已标注）。
+
+### 4.11.1 Fail-Closed 安全默认值：为什么 `buildTool()` 工厂是必需的
+
+**设计选择**：`buildTool()` 工厂函数集中管理安全默认值，而非由各工具自行实现。
+
+**源码依据**：`Tool.ts:753-767` 中 `TOOL_DEFAULTS` 显式标注注释：
+
+> Defaults (fail-closed where it matters):
+> - `isConcurrencySafe` -> `false` (**assume not safe**)
+> - `isReadOnly` -> `false` (**assume writes**)
+
+**对比分析**：
+
+| 方案 | 优点 | 缺点 |
+|------|------|------|
+| **A: 集中工厂 + fail-closed**（Claude Code 选择） | 新增工具不会遗漏安全方法；`isConcurrencySafe`/`isReadOnly` 默认最保守 | 需维护 `TOOL_DEFAULTS` 与 `Tool` 类型同步 |
+| **B: 各工具自行声明** | 灵活度高 | 新工具作者可能遗忘 `isReadOnly()`，导致工具被错误标记为"安全"并发执行 |
+| **C: `Object.assign` 手动展开** | 无额外抽象层 | 无类型级保证；不同工具可能使用不同的 defaults 对象导致不一致 |
+
+⚠️ 推断：Claude Code 选择方案 A 的关键动因是**工具数量多**（38 个显式 + MCP 动态），手动管理不可靠。`buildTool` 注释（`Tool.ts:778`）明确写道：
+
+> The type semantics are proven by the 0-error typecheck across all 60+ tools.
+
+### 4.11.2 延迟加载 + ToolSearch：Token 经济学
+
+**设计选择**：~10 个核心工具始终加载，其余 28+ 个延迟加载，由 ToolSearch 按需发现。
+
+**源码依据**：`utils/toolSearch.ts` 定义三种模式（`tst` / `tst-auto` / `standard`），`tst-auto` 的阈值为上下文窗口的 **10%**（`DEFAULT_AUTO_TOOL_SEARCH_PERCENTAGE = 10`）。
+
+**对比分析**：
+
+| 方案 | Token 开销 | 延迟 | 复杂度 |
+|------|-----------|------|--------|
+| **A: 延迟加载 + 搜索引擎**（Claude Code 选择） | ~10 工具 schema 始终在 prompt；MCP 工具仅列名称 | 首次使用需 ToolSearch 调用（~1 轮 API） | 高（需 ToolSearchTool + 评分算法 + 6 级权重） |
+| **B: 全量加载** | 所有工具 schema 占用 prompt token（MCP 可能数十个工具） | 零延迟 | 低 |
+| **C: 按场景预加载** | 中等 | 低 | 中（需维护场景→工具映射） |
+
+⚠️ 推断：方案 A 的核心动机是** MCP 生态的不可预测性**。一个项目可能配置 3 个 MCP 服务器（提供 50+ 工具），全量加载会消耗大量上下文窗口。`tst-auto` 模式的 10% 阈值是一个经验平衡点。
+
+ToolSearch 评分算法（源码: `ToolSearchTool.ts:155-260`）使用 6 级权重（+12/+10/+6/+5/+4/+3/+2），MCP 工具名匹配得分高于原生工具名（+12 vs +10），这反映了 MCP 工具名称包含服务器前缀（如 `mcp__github`），信号强度更高。
+
+### 4.11.3 Fork vs Subagent：Prompt Cache 驱动的架构
+
+**设计选择**：Agent 工具支持两种子代理模式——Fork（共享上下文）和 Subagent（独立上下文）。
+
+**源码依据**：`utils/forkedAgent.ts` 的 JSDoc 显式说明设计动机：
+
+> Parameters that must be identical between the fork and parent API requests to share the parent's prompt cache. The Anthropic API cache key is composed of: system prompt, tools, model, messages (prefix), and thinking config.
+
+**对比分析**：
+
+| 维度 | Fork（共享上下文） | Subagent（独立上下文） |
+|------|-------------------|----------------------|
+| **Prompt cache** | ✅ 共享父级缓存（API 请求前缀完全一致） | ❌ 独立请求，无缓存共享 |
+| **上下文** | 克隆父级完整对话历史 | 空白对话开始 |
+| **工具集** | 使用父级精确工具池（`useExactTools: true`） | 重新组装（可能不同权限模式） |
+| **System prompt** | 直接传递已渲染字节（不重新生成） | 调用 agent 的 `getSystemPrompt()` |
+| **权限** | `'bubble'` 模式（提示回传到父终端） | Agent 自定义或隔离 |
+| **Token 开销** | 低（共享前缀 ≈ 免费重放） | 高（完整 system prompt + CLAUDE.md + gitStatus） |
+| **隔离性** | 低（子代理可看到父级对话） | 高（完全隔离） |
+
+⚠️ 推断：Fork 模式的所有设计细节——threaded rendered bytes（避免 GrowthBook 冷→热状态变化）、`useExactTools`（避免工具序列化差异）、继承 thinking config（避免缓存 key 变化）——都是为了实现**字节级一致的 API 请求前缀**。这不仅是优化，而是将 Anthropic prompt cache 机制作为架构约束来设计。
+
+源码注释（`forkSubagent.ts`）写道：
+
+> Reconstructing by re-calling getSystemPrompt() can diverge (GrowthBook cold→warm) and bust the prompt cache; threading the rendered bytes is byte-exact.
+
+递归防护采用**双层守卫**：`querySource` 标记（存活于 autocompact）+ `<fork-boilerplate>` 标签扫描（存活于消息历史），确保即使 autocompact 重写消息也不会丢失防护。
+
+### 4.11.4 三阶段权限管道：为什么验证和权限必须分离
+
+**设计选择**：`hasPermissionsToUseTool` 分为 10 步，核心分为三阶段：`validate`（步骤 1a-1g，不可旁路）→ `check`（步骤 2a-2b，可旁路）→ `call`。
+
+**源码依据**：步骤 1a-1g 的注释（`permissions.ts`）：
+
+> Safety checks (.git/, .claude/, .vscode/, shell configs) are bypass-immune — they must prompt even in bypassPermissions mode.
+
+**对比分析**：
+
+| 方案 | 安全性 | 灵活性 | 复杂度 |
+|------|--------|--------|--------|
+| **A: 统一管道** | 低（bypass 模式可能跳过关键安全检查） | 高 | 低 |
+| **B: 分离管道（Claude Code 选择）** | 高（bypass-immune 检查始终执行） | 中 | 高（需维护两个独立的 hook 路径） |
+
+Claude Code 选择方案 B 的关键原因是 `bypassPermissions` 模式的存在。如果所有检查在同一个管道中执行，`--dangerously-skip-permissions` 会跳过所有安全检查，包括对 `.git/` 目录的保护。分离管道确保**即使 bypass 模式也无法绕过核心安全规则**。
+
+`checkRuleBasedPermissions` 函数（用于 PreToolUse hooks）只复制步骤 1a-1g，不走步骤 2a-2b，进一步说明这种分离是有意为之的。
+
+### 4.11.5 Auto 模式三层分类器：延迟 vs 安全的平衡
+
+**设计选择**：Auto 模式（`--dangerously-skip-permissions`）使用 3 层级联决策：acceptEdits 快速路径 → 安全工具白名单 → AI 分类器。
+
+**源码依据**：
+
+- **Layer 1** 注释（`permissions.ts`）：> This avoids expensive classifier API calls for safe operations like file edits in the working directory.
+
+- **Layer 2** 注释（`classifierDecision.ts`）：> Does NOT include write/edit tools — those are handled by the acceptEdits fast path.
+
+- **Layer 3** 防护：只发送 `tool_use` 块给分类器，不发送 assistant 文本——> assistant text is model-authored and could be crafted to influence the classifier's decision.
+
+**对比分析**：
+
+| 方案 | 延迟/次 | 安全覆盖 | Token 开销/次 |
+|------|---------|----------|--------------|
+| **A: 全量 AI 分类** | ~500ms | 高 | ~200 tokens |
+| **B: 静态白名单** | <1ms | 中（无法判断语义安全） | 0 |
+| **C: 三层级联**（Claude Code 选择） | ~50ms（平均） | 高（AI 分类器兜底） | ~50 tokens（平均） |
+
+⚠️ 推断：三层级联是一个**延迟优化**——大多数文件编辑操作被 Layer 1 拦截（acceptEdits 判断是同步的），只读操作被 Layer 2 拦截（白名单匹配），只有真正不确定的操作才进入 Layer 3 的 AI 分类器。
+
+**Circuit Breaker**（3 次连续拒绝或 20 次总拒绝 → 回退到交互模式）是额外的安全网。对 headless agent，超限直接抛出 `AbortError`，防止自动模式陷入"拒绝→重试"循环。
+
+### 4.11.6 Bash 23 层验证器：防御 Shell 解析差异
+
+**设计选择**：Bash 安全管道使用 23 层验证器，而非白名单或沙箱唯一防御。
+
+**源码依据**：每个验证器都防御一种特定的攻击模式，核心设计原则来自 `bashSecurity.ts` 的注释：
+
+> This is an EARLY-ALLOW path: returning `true` causes bashCommandIsSafe to return `passthrough`, bypassing ALL subsequent validators. Given this authority, the check must be PROVABLY safe, not "probably safe".
+
+验证器 #13（回车符注入）注释解释了根本原因：
+
+> Parser differential: shell-quote's BAREWORD regex uses `[^\s...]` — JS `\s` INCLUDES `\r`, so shell-quote treats CR as a token boundary. bash's default IFS = `$' \t\n'` — CR is NOT in IFS. bash sees `TZ=UTC\recho` as ONE word.
+
+**对比分析**：
+
+| 方案 | 防御范围 | 误报率 | 维护成本 |
+|------|----------|--------|----------|
+| **A: 命令白名单** | 窄（只能允许已知安全命令） | 高（任何新命令都需要审查） | 低 |
+| **B: 沙箱唯一防御** | 宽（内核级隔离） | 低 | 中（沙箱逃逸风险） |
+| **C: 多层验证 + 沙箱**（Claude Code 选择） | 最广（覆盖解析差异 + 沙箱兜底） | 中 | 高（23 层验证器 + 4 个沙箱后端） |
+
+⚠️ 推断：Claude Code 选择方案 C 的根本原因是 **JavaScript `shell-quote` 库与 bash/zsh 解析器之间的语义差异**。这不是已知攻击模式的防御问题，而是两个解析器对同一字符串产生不同分词结果的问题。白名单无法防御"在 JS 看来安全但 bash 看来不同"的命令。
+
+验证器 #4（混淆标志）的注释（~300 行代码）记录了最复杂的攻击面：
+
+> In bash, `"""-f"` = empty string + string `"-f"` = `-f`. This bypass works for ANY dangerous-flag check with a matching prefix permission.
+
+防御原则（`bashSecurity.ts`）：> Defense in depth: Block PowerShell comment syntax even though we don't execute in PowerShell. Added as protection against future changes that might introduce PowerShell execution.
+
+### 4.11.7 mtime 临界区：为什么 TOCTOU 防护必须是同步的
+
+**设计选择**：FileEditTool 的"读取→检查→写入"必须在同步临界区内完成，不允许 async yield。
+
+**源码依据**：`FileEditTool.ts` 的注释：
+
+> Please avoid async operations between here and writing to disk to preserve atomicity
+
+**对比分析**：
+
+| 方案 | 并发安全 | 性能 | 实现复杂度 |
+|------|----------|------|-----------|
+| **A: 文件锁** | 安全 | 阻塞其他进程 | 高（需跨平台锁机制） |
+| **B: 乐观并发 + 异步 mtime 检查** | 不安全（TOCTOU 窗口） | 高 | 低 |
+| **C: 同步临界区 + mtime**（Claude Code 选择） | 安全（无 yield 窗口） | 中（阻塞 Node 事件循环 ~ms 级） | 中 |
+
+TOCTOU（Time-of-Check-Time-of-Use）漏洞的根本原因：如果 `readFile` 和 `writeFile` 之间有 async yield，另一个工具调用（或并发 agent）可能在 yield 期间修改文件，导致写入基于过期内容。
+
+Claude Code 选择方案 C 的理由（⚠️ 推断）：文件锁（方案 A）在跨平台（Windows/macOS/Linux）和跨进程（agent 子进程）场景下实现复杂。同步临界区虽然阻塞事件循环，但文件编辑操作本身是 CPU-bound 的字符串匹配 + 文件写入，耗时在 ms 级别，对用户体验影响可忽略。
+
+Windows 特殊处理：由于云同步和杀毒软件会改变文件 mtime 但不改变内容，对完整读取的文件使用**内容比较**作为二级检查，避免误报。
+
+---
+
+## 4.12 实现者 Checklist
 
 > 其他 Code Agent 开发者设计工具系统时的关键决策参考。
 
