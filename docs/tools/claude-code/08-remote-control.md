@@ -124,6 +124,43 @@ Remote Control 采用 **三方中继**（Three-Party Relay）架构，Anthropic 
 | **传输安全** | 全程 TLS 加密，与普通 Claude Code 会话相同 | ✅ 官方确认 |
 | **凭证体系** | 多个短期凭证，每个限定单一用途，独立过期 | ✅ 官方确认 |
 
+#### 三层架构拆分：控制面 / 数据面 / 本地状态面
+
+从实现者视角，Remote Control 可拆分为三个职责清晰的子系统：
+
+**控制面（Control Plane）**——会话注册、资格检查、凭证管理、策略执行：
+
+| 组件 | 职责 | 证据来源 |
+|------|------|----------|
+| 会话注册 | 用 full-scope OAuth token 向中继服务器注册会话，获取 `SESSION_ACCESS_TOKEN` | 官方文档 + 反编译 |
+| 资格检查 | `admin_requests/eligibility` 端点判定用户是否可使用 RC（受订阅类型、管理员策略、组织策略影响） | v2.1.87 反编译 |
+| 凭证刷新 | JWT expiry 驱动的定时刷新（过期前 5 分钟触发，最多失败 3 次） | v2.1.87 反编译 |
+| 策略执行 | `policy_limits` 端点查询组织级 RC 开关；Team/Enterprise 管理员门控 | EVIDENCE.md |
+| 配置下发 | `tengu_bridge_poll_interval_config` 动态下发 polling 参数（TTL 5 分钟） | v2.1.87 反编译 |
+| PID 文件管理 | `~/.claude/sessions/{pid}.json` 跟踪并发会话 | v2.1.87 反编译 |
+
+**数据面（Data Plane）**——消息传输、双向同步、流式响应：
+
+| 组件 | 职责 | 证据来源 |
+|------|------|----------|
+| 出站轮询 | 2s（未满容量）或 10min（满容量）HTTPS poll 获取待处理消息 | 官方文档 + 反编译 |
+| 流式响应 | 服务端通过 streaming connection 下发 agent 输出到远程客户端 | 官方文档 |
+| 消息协议 | JSON-lines 格式，8+ 消息类型（`user`/`assistant`/`control_request`/`keep_alive` 等） | v2.1.87 反编译 |
+| 本地 IPC | Unix domain socket (`/tmp/cc-socks/*.sock`) 用于进程内消息传递 | GitHub Issues |
+| 对话持久化 | `~/.claude/projects/<hash>/*.jsonl` 存储完整对话流 | EVIDENCE.md |
+| WebSocket ping/pong | `session_keepalive_interval_v2_ms: 120000`（2 分钟）维持连接活性 | v2.1.87 反编译 |
+
+**本地状态面（Local State Plane）**——Redux 状态机、环境变量、运行时状态：
+
+| 组件 | 职责 | 证据来源 |
+|------|------|----------|
+| Redux 状态机 | 13 个 `replBridge*` 字段管理桥接生命周期（enabled/connected/active/reconnecting 等） | v2.1.87 反编译 |
+| 客户端类型检测 | `CLAUDE_CODE_SESSION_ACCESS_TOKEN` / `WEBSOCKET_AUTH_FILE_DESCRIPTOR` / `ENTRYPOINT` 判定客户端类型 | v2.1.87 反编译 |
+| 环境变量配置 | 14+ 环境变量控制 RC 行为（认证模式、网络代理、沙箱、远程环境等） | 官方文档 + 反编译 |
+| initReplBridge | 核心桥接层，通过 7 个回调函数连接远程端和本地会话 | v2.1.87 反编译 |
+
+> **设计启示**：三层分离使得**控制面变更不影响消息传输**（如修改 polling 策略无需改消息格式），**本地状态面独立于网络**（进程崩溃后可从 PID 文件和对话历史重建部分状态）。实现者可参考此拆分设计自己的子系统边界。
+
 ### 会话生命周期
 
 ```
@@ -149,11 +186,16 @@ Remote Control 采用 **三方中继**（Three-Party Relay）架构，Anthropic 
 
 ### 会话文件与本地存储
 
-| 路径 | 内容 | 来源 |
-|------|------|------|
-| `~/.claude/sessions/{pid}.json` | 会话元数据：`name`、`status`、`updatedAt`、`bridgeSessionId`、`messagingSocketPath` | GitHub Issues |
-| `/tmp/cc-socks/*.sock` | 本地进程间通信的 Unix domain socket | GitHub Issues |
-| `~/.claude/projects/<project-hash>/` | 会话对话历史（`.jsonl` 格式），`cleanupPeriodDays`（默认 30 天）后自动清理 | [EVIDENCE.md](./EVIDENCE.md) |
+| 路径 | 内容 | 所属面 | 生命周期 | 可恢复性 | 来源 |
+|------|------|--------|----------|----------|------|
+| `~/.claude/sessions/{pid}.json` | 会话元数据：`pid`、`sessionId`、`cwd`、`startedAt`、`kind`、`entrypoint`、`name`、`status`、`updatedAt`、`bridgeSessionId`、`messagingSocketPath` | 控制面 + 本地状态面 | 每个 interactive process 一个文件；进程退出后残留但无意义 | ⚠️ 推断：进程退出后文件残留，但 `reclaim_older_than_ms: 5000` 意味着服务端 5 秒后即视为废弃。**进程重启不会自动恢复** | GitHub Issues + v2.1.87 反编译 |
+| `/tmp/cc-socks/*.sock` | Unix domain socket，用于本地进程间消息传递（如 UI bridge、多客户端复用） | 数据面（本地 IPC） | 随进程创建/销毁；进程退出即失效 | ❌ 不可恢复：Unix socket 文件随进程退出失效，重新连接需建立新 socket | GitHub Issues |
+| `~/.claude/projects/<project-hash>/` | 会话对话历史（`.jsonl` 格式），包含完整对话流；`cleanupPeriodDays`（默认 30 天）后自动清理 | 数据面（持久化） | 独立于 Remote Control 生命周期；与普通会话共享存储 | ✅ 可恢复：对话历史在磁盘上持久化，可用于 `/continue` 或 `/teleport` 恢复上下文 | [EVIDENCE.md](./EVIDENCE.md) |
+
+> **实现者注意事项**：
+> - PID 文件命名（`{pid}.json`）意味着**每个 OS 进程一个远程会话**，而非每个 bridge session 一个 state file。Server 模式 `--spawn` 创建的子进程各自有独立的 PID 文件
+> - `messagingSocketPath` 字段存储在 PID 文件中，表明 Unix socket 路径是**服务端/客户端协商结果**，而非硬编码
+> - `bridgeSessionId` 与 `sessionId` 是不同概念：`sessionId` 是本地会话 ID，`bridgeSessionId` 是中继服务器分配的桥接 ID
 
 ### `--spawn` 多会话架构
 
@@ -223,6 +265,21 @@ Remote Control 的安全架构采用多层防护：
 | `CLAUDE_CODE_ENVIRONMENT_KIND` | 值为 `"bridge"` 时标识为桥接子进程 | v2.1.87 反编译 |
 | `CLAUDE_CODE_POST_FOR_SESSION_INGRESS_V2` | 值为 `"1"` 时启用 V2 会话入口协议 | v2.1.87 反编译 |
 | `SSE_PORT` | SSE 本地端口（反编译提取，可能用于 Remote Control 或 MCP SSE 传输） | EVIDENCE.md |
+
+### 实现者 Checklist：设计决策表
+
+> 以下清单提炼自反编译分析和官方文档。每个条目对应实现一个 Remote Control 类功能时**必须做出的设计决策**，Claude Code 的选择作为参考标注。
+
+| # | 设计决策 | Claude Code 的选择 | 实现考量 |
+|---|----------|-------------------|----------|
+| **1** | **本地与云端谁持有会话状态（source of truth）？** | **云端是控制面 source of truth**（资格检查、策略执行、配置下发均在服务端）；本地持有数据面状态（对话历史 `.jsonl`、PID 文件） | 云端控制面允许运行时调整（如 poll 间隔）无需客户端升级；但需要网络可用才能启动 |
+| **2** | **资格检查是否复用遥测通道？** | **疑似耦合**：`DISABLE_TELEMETRY=1` 阻止 RC 注册（[#41189](https://github.com/anthropics/claude-code/issues/41189)），根因未确认 | 解耦更安全——遥测开关不应影响功能可用性；但共享通道可简化实现 |
+| **3** | **多客户端鉴权是共享 token 还是分 scope token？** | **分 scope token**：`SESSION_ACCESS_TOKEN`（会话访问）、`WEBSOCKET_AUTH_FILE_DESCRIPTOR`（WebSocket 认证），各独立过期 | 多 token 增加管理复杂度，但降低凭证泄露影响面 |
+| **4** | **Poll 间隔是硬编码还是服务端可调？** | **服务端下发，Zod schema 校验**，TTL 5 分钟缓存 | 服务端可调允许根据负载动态调整（满容量时从 2s 切到 10min），但需考虑配置服务可用性 |
+| **5** | **网络/代理环境是否一等公民支持？** | **部分支持**：`HOST_HTTP_PROXY_PORT`、`HOST_SOCKS_PROXY_PORT` 存在于二进制中，但 RC 在代理环境下的连接问题仍被报告（[#41324](https://github.com/anthropics/claude-code/issues/41324)） | 企业代理是常见障碍；出站 HTTPS 需正确处理 CONNECT 方法、证书链、认证代理 |
+| **6** | **进程崩溃后状态可恢复吗？** | **部分可恢复**：对话历史 `.jsonl` 可通过 `/continue` 恢复；但桥接状态（`replBridge*`）纯内存，进程退出即丢失；PID 文件残留但服务端 5s 后视为废弃 | 需区分「对话上下文恢复」（容易）和「桥接会话恢复」（需要云端配合） |
+| **7** | **并发会话如何隔离？** | `--spawn same-dir`（共享 CWD）或 `--spawn worktree`（独立 Git worktree），`--capacity` 上限 32 | 文件隔离是基本需求；worktree 方案允许并行修改不同分支但增加磁盘占用 |
+| **8** | **诊断日志写到哪里？** | `--debug-file <path>` 参数指定调试输出文件；`--verbose` 控制连接/会话日志详细度 | 生产环境中需要可开关的详细日志，用于排查连接循环、凭证刷新失败等问题 |
 
 ## Remote Control vs Claude Code on the Web
 
@@ -770,7 +827,7 @@ Claude Code Remote Control 在"跨设备远程操控终端会话"维度上独有
 | 能力 | Claude Code | Kimi CLI | OpenCode | Goose | Codex CLI | Copilot CLI | Aider |
 |------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 | **终端会话远程操控** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **Web/浏览器 UI** | ❌ | ✅ FastAPI+React | ✅ SolidJS（实验） | ❌（仅 Desktop App） | ❌ | ❌ | ❌ |
+| **Web/浏览器 UI** | ❌ | ✅ FastAPI+React | ✅ SolidJS（实验） | ❌（仅 Desktop App，见 [说明](../goose.md)） | ❌ | ❌ | ❌ |
 | **多客户端同时连接** | ✅ TUI+浏览器+Mobile | ✅ Wire 四客户端 | ✅ TUI+Web+Desktop | ✅ CLI+Desktop | ❌ | ❌ | ❌ |
 | **原生移动端 App** | ✅ iOS/Android | ❌（移动浏览器可访问 Web UI） | ❌ | ❌ | ❌ | ❌ | ❌ |
 | **零入站端口** | ✅（outbound-only 中继） | ❌（开端口） | ❌（开端口） | ❌（开端口） | ❌ | N/A | N/A |
@@ -796,7 +853,8 @@ Claude Code Remote Control 在"跨设备远程操控终端会话"维度上独有
 **Goose**（REST API 驱动）：
 - `goose-server`（Axum HTTP）提供 REST API，Electron Desktop App 作为 GUI 客户端
   （来源：[Goose 架构文档](../goose/03-architecture.md)、[EVIDENCE](../goose/EVIDENCE.md)）
-- **劣势**：无浏览器 Web UI、无移动端
+- 仓库文档宣称支持 CLI/Web/Desktop 三种客户端（[Goose 概述](../goose.md)），但实际源码中仅有 CLI (`goose-cli`) 和 Desktop (`ui/desktop/`) 两个具体客户端实现；"Web" 标签指 `goose-server` 的 HTTP API 可供 Web 客户端连接，但无独立浏览器前端
+- **劣势**：无独立浏览器 Web UI（仅有 HTTP API）、无移动端
 
 **Codex CLI**（IDE 集成导向）：
 - `codex app-server` 提供 JSON-RPC 2.0 over stdio/WebSocket，`--remote` 连接远程实例
