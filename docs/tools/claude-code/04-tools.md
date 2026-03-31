@@ -291,6 +291,8 @@ writeTextContent(filePath, newContent)  // 原子写入
 - 行尾始终写 LF（保留 CRLF 曾导致跨平台损坏）
 - 最大文件：1 GiB（`MAX_EDIT_FILE_SIZE`）
 
+> **注**：源码中无独立 MultiEditTool。`MultiEdit` 仅是 `bridge/sessionRunner.ts:74` 中的 UI verb 映射，实际实现为 Edit 工具的 `replace_all: true` 参数（源码: `tools/FileEditTool/`）。
+
 ---
 
 ### 4.3.3 Read 工具（源码: `tools/FileReadTool/`，1,602 LOC）
@@ -850,6 +852,7 @@ ToolName(prefix:*)            # 前缀规则（如 "Bash(git commit:*)"）
 | **TaskList** | — | 列出所有任务 |
 
 - Feature gate：`isTodoV2Enabled()`
+- **与 TodoWrite 互斥**：当 `isTodoV2Enabled()` 为 true（交互式 CLI 会话）时，TodoWrite 被禁用，TaskCreate/TaskGet/TaskUpdate/TaskList 启用。非交互模式（SDK）下相反。两者不可共存（源码: `tools.ts` + 各工具 `isEnabled()` 守卫）。
 - **验证提醒**：主线程完成 3+ 任务后，自动建议生成验证代理
 - 团队集成：teammate 标记 `in_progress` 时自动设置 owner；owner 变更通知
 
@@ -1043,12 +1046,12 @@ Edit、Write、TodoWrite 在内容中检测 Team Memory 机密（error code 0）
 | 3 | **Read** | 1,602 | 核心 | ✓ | ✓ | — |
 | 4 | **Write** | 856 | 核心 | ✗ | ✗ | — |
 | 5 | **Grep** | 795 | 核心 | ✓ | ✓ | — |
-| 6 | **Glob** | — | 核心 | ✓ | ✓ | — |
+| 6 | **Glob** | 267 | 核心 | ✓ | ✓ | — |
 | 7 | **Agent** | 6,072 | 核心 | ✗ | ✗ | — |
 | 8 | **TodoWrite** | 300 | 核心 | ✗ | ✗ | `!isTodoV2Enabled` |
 | 9 | **ToolSearch** | 593 | 核心 | ✓ | ✓ | — |
-| 10 | **StructuredOutput** | 163 | 核心 | ✗ | ✗ | `isNonInteractiveSession` |
-| 11 | **PowerShell** | 8,959 | 条件 | ✗ | ✗ | Windows |
+| 10 | **StructuredOutput** | 163 | 核心 | ✗ | ✗ | `isNonInteractiveSession`；仅非交互模式，每次响应末尾调用一次 |
+| 11 | **PowerShell** | 8,959 | 条件 | ✗ | ✗ | Windows；独立安全验证管道（与 BashTool 同等级别） |
 | 12 | **LSP** | 2,005 | 延迟 | ✓ | ✓ | `isLspConnected` |
 | 13 | **Skill** | 1,477 | 延迟 | ✗ | ✗ | — |
 | 14 | **MCPTool** | 1,086 | 动态 | varies | varies | — |
@@ -1080,6 +1083,8 @@ Edit、Write、TodoWrite 在内容中检测 Team Memory 机密（error code 0）
 | 40 | **SleepTool** | 17 | 内部 | ✓ | ✓ | PROACTIVE/KAIROS |
 
 > **总计**：38 个显式工具 + MCP 动态工具（∞）。其中 TaskStop 含 KillShell 别名；Edit 工具同时处理单次编辑和 replace_all 批量编辑（无需独立 MultiEdit 工具）。
+>
+> **交叉文档同步 TODO**：本 PR 仅更新本文档。`docs/comparison/features.md`（内置工具数 20+）、`docs/comparison/architecture-deep-dive.md`（工具分类）、`docs/tools/claude-code/01-overview.md` 中的相关数据将在后续 PR 中同步更新。
 
 ---
 

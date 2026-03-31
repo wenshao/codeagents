@@ -749,6 +749,8 @@ GrowthBook flag: `tengu_bridge_poll_interval_config` controls the entire config 
 
 ## SOURCE CODE ANALYSIS: Tool System
 
+> 以下数据来自 Claude Code `tools/` 目录源码分析（~163 文件、~50,000 行 TypeScript）。这与上文 Remote Control/Bridge 分析（`bridge/`、`remote/`、`utils/`、`entrypoints/`，约 35,000 行）是**独立的分析范围**。两个范围的差异来自不同目录覆盖：工具系统分析专注于 `tools/` 及其直接依赖。
+
 ### Tool Base Architecture (from `Tool.ts`)
 
 Core interface `Tool<Input, Output, P>` with methods:
