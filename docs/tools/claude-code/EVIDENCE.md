@@ -921,3 +921,53 @@ Input: `server?` (string). Output: `z.array({ uri, name, mimeType?, description?
 ### MultiEditTool — Not a Separate Tool
 
 Source code confirms: `MultiEdit` is only a UI verb mapping in `bridge/sessionRunner.ts:74` (`MultiEdit: 'Editing'`). The actual implementation is FileEditTool with `replace_all: boolean` in its schema. There is NO separate MultiEditTool file in `tools/`.
+
+## Tool System Deep-Dive Evidence (4.4-4.6)
+
+### BashTool Security Pipeline (Section 4.4)
+
+**Source**: `tools/BashTool/bashSecurity.ts` (2,593 LOC)
+
+- `BASH_SECURITY_CHECK_IDS`: numeric IDs 1-23 for validators
+- Pre-validator gates: `CONTROL_CHAR_RE` blocks `\x00-\x08,\x0B,\x0C,\x0E-\x1F,\x7F`; `hasShellQuoteSingleQuoteBug()` detects `'\''`
+- Early validators (can return allow): `validateEmpty`, `validateIncompleteCommands` (ID 1), `validateSafeCommandSubstitution` (ID 8), `validateGitCommit` (ID 12)
+- Main validators: `validateJqCommand` (2/3), `validateObfuscatedFlags` (4), `validateShellMetacharacters` (5), `validateDangerousVariables` (6), `validateCommentQuoteDesync` (22), `validateQuotedNewline` (23), `validateNewlines` (7), `validateIFSInjection` (11), `validateProcEnvironAccess` (13), `validateDangerousPatterns` (8), `validateRedirections` (9/10), `validateBackslashEscapedWhitespace` (15), `validateBackslashEscapedOperators` (21), `validateUnicodeWhitespace` (18), `validateMidWordHash` (19), `validateBraceExpansion` (16), `validateZshDangerousCommands` (20), `validateMalformedTokenInjection` (14)
+- `nonMisparsingValidators`: `validateNewlines`, `validateRedirections` — their ask results are deferred
+
+**Command semantics**: `tools/BashTool/commandSemantics.ts` — `COMMAND_SEMANTICS` Map with entries for grep/rg/diff/test/find. `interpretCommandResult(command, exitCode, stdout, stderr) → { isError, message? }`.
+
+**Safe env vars**: `tools/BashTool/bashPermissions.ts` — `SAFE_ENV_VARS` array (41 entries), `ANT_ONLY_SAFE_ENV_VARS` (28 entries). Forbidden: PATH, LD_PRELOAD, LD_LIBRARY_PATH, DYLD_*, PYTHONPATH, NODE_PATH, etc.
+
+**Timeouts**: `utils/timeouts.ts` — `DEFAULT_TIMEOUT_MS = 120_000`, `MAX_TIMEOUT_MS = 600_000`. Env overrides: `BASH_DEFAULT_TIMEOUT_MS`, `BASH_MAX_TIMEOUT_MS`.
+
+**Sandbox**: `utils/sandbox/sandbox-adapter.ts` — `SandboxManager.wrapWithSandbox()`. Uses `@anthropic-ai/sandbox-runtime` (bubblewrap/bwrap on Linux, macOS sandbox profile). Filesystem: allowWrite `['.', getClaudeTempDir()]`, denyWrite settings/bare git files.
+
+**Background**: `COMMON_BACKGROUND_COMMANDS` list (npm, node, python, cargo, make, docker, webpack, vite, jest, pytest, etc.). `ASSISTANT_BLOCKING_BUDGET_MS = 15_000`. `MAX_TASK_OUTPUT_BYTES = 5 * 1024 * 1024 * 1024` (5 GB).
+
+### Query Loop (Section 4.5)
+
+**Source**: `query.ts` (1,730 LOC), `QueryEngine.ts` (1,296 LOC), `services/tools/toolExecution.ts` (1,746 LOC), `services/tools/StreamingToolExecutor.ts` (366 LOC)
+
+- `queryLoop()` is `async function*` yielding `StreamEvent | RequestStartEvent | Message`
+- State object: `{ messages, toolUseContext, autoCompactTracking, maxOutputTokensRecoveryCount, turnCount, transition }`
+- Streaming tool execution gated by `tengu_streaming_tool_execution2` feature flag
+- `StreamingToolExecutor.addTool()` called per streamed `tool_use` block; `getCompletedResults()` polled during stream
+- Concurrency: safe tools parallel, non-safe serial; `siblingAbortController` cancels siblings on Bash error
+- `MAX_OUTPUT_TOKENS_RECOVERY_LIMIT = 3` retries
+- ToolResult type in `Tool.ts` lines 321-341: `{ data, newMessages?, contextModifier?, mcpMeta? }`
+- Attachments: `utils/attachments.ts` (3,998 LOC), ~60 attachment types, rendered via `createAttachmentMessage()` as `<system-reminder>` XML
+
+### Permission System (Section 4.6)
+
+**Source**: `utils/permissions/permissions.ts`, `utils/permissions/permissionRuleParser.ts`, `utils/permissions/PermissionMode.ts`
+
+- Entry point: `hasPermissionsToUseTool()` → `hasPermissionsToUseToolInner()` (Phase 1) + post-processing (Phase 2)
+- Steps: 1a (deny rules) → 1b (ask rules) → 1c (tool.checkPermissions) → 1d (deny) → 1e (user interaction) → 1f (content ask) → 1g (safety check, bypass-immune) → 2a (bypass) → 2b (always allow) → 3 (passthrough→ask)
+- PermissionMode enum: default, acceptEdits, plan, bypassPermissions, dontAsk, auto, bubble
+- Auto mode classifier: `classifyYoloAction()` in `yoloClassifier.ts` — two-stage XML classification
+- Safe tool allowlist: `SAFE_YOLO_ALLOWLISTED_TOOLS` in `classifierDecision.ts` (~25 tools)
+- Circuit breaker: `tengu_auto_mode_config.enabled` GrowthBook gate (enabled/disabled/opt-in)
+- Denial limits: consecutive ≥3 or total ≥20 → fallback to user prompt
+- Permission rule format: `ToolName`, `ToolName(content)`, `ToolName(prefix:*)`
+- Rule sources (8): userSettings, projectSettings, localSettings, flagSettings, policySettings, cliArg, command, session
+- `ToolPermissionContext` accessed via `context.getAppState().toolPermissionContext` — always reads latest state
