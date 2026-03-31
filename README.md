@@ -104,7 +104,7 @@
 | **混合 ReAct** | SWE-agent, mini-swe-agent | 兼容 function calling（默认）与文本动作解析，文本解析是其鲜明特征 |
 | **事件驱动** | OpenHands | EventStream 发布/订阅，Action/Observation 完全解耦 |
 
-> **注 1**："工具调用"和"ReAct 循环"并非互斥——所有 Agent 内部都遵循 ReAct 模式（思考→行动→观察→重复）。上表按**动作表达方式**区分：是否通过结构化 API（function calling）还是文本解析来表达动作。
+> **注 1**：许多交互式 coding agent 都可以理解为 ReAct-like 循环（reasoning → acting → observation → repeat）。上表为了可操作地分类，主要按**动作表达/编排机制**区分：function calling、文本解析、编辑格式、事件流等。
 >
 > **注 2**：以下 Agent 未列入上表，原因各异：
 > - **Cursor、Warp、Continue、Qoder CLI**：闭源/IDE 嵌入式 Agent，具有工具系统能力（多支持 MCP），但本仓库现有证据不足以确认其使用原生 API function calling

@@ -112,7 +112,7 @@ graph TD
 - Copilot CLI 使用 YAML 定义的代理，`tool_choice` 列出现在模型配置矩阵
 - Kimi CLI "工具调用解析" + `ToolCall`/`ToolResult` Wire 事件，多提供商
 
-> **注 1**：所有工具调用 Agent 内部都遵循 ReAct 模式（思考→行动→观察→重复），差异在于通过结构化 API 返回 tool calls。
+> **注 1**：许多交互式 coding agent 都可以理解为 ReAct-like 循环（reasoning → acting → observation → repeat）。差异主要在于**动作表达/编排机制**：function calling、文本解析、编辑格式、事件流等。
 >
 > **注 2**：Cursor、Warp、Continue、Qoder CLI 等闭源/IDE 嵌入式 Agent 具有工具系统能力（多支持 MCP），但本仓库现有证据不足以确认其使用原生 API function calling，暂不列入。Oh My OpenAgent 基于 OpenCode Harness 层，继承工具调用架构但不直接调用 LLM API。
 
@@ -379,7 +379,7 @@ Tree-sitter AST 解析（30+ 语言）
 - **混合 ReAct**（SWE-agent、mini-swe-agent）：兼容 function calling（默认）与文本动作解析，文本解析是其鲜明特征
 - **事件驱动**（OpenHands）：完全解耦的事件总线，最灵活但最复杂
 
-> **关键认知**："工具调用"与"ReAct 循环"并非互斥。所有 Agent 内部都遵循 ReAct 模式，差异在于**动作表达方式**：结构化 API（function calling）还是文本解析。
+> **关键认知**：许多交互式 coding agent 都可以理解为 ReAct-like 循环（reasoning → acting → observation → repeat）。本文为了可操作地分类，主要按**动作表达/编排机制**区分：function calling、文本解析、编辑格式、事件流等。ReAct 原论文的核心是 reasoning + acting + observation 的交错交互模式，不强制要求动作用纯文本表达。
 >
 > **未列入的 Agent**：Cursor、Warp、Continue、Qoder CLI 等闭源/IDE 嵌入式 Agent 暂因证据不足未列入「工具调用」流派。Oh My OpenAgent 基于 OpenCode Harness 层，继承工具调用架构但不直接调用 LLM API，视为「工具调用」的间接成员。
 
