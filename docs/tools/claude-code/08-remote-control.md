@@ -1,10 +1,12 @@
 # 8. Claude Code Remote Control（远程控制）
 
-> Remote Control 允许从手机、平板或任意浏览器远程操控本地运行的 Claude Code 终端会话。会话**始终在本地执行**，远程端仅作为交互窗口。基于 Anthropic 官方文档（2026-03）和 v2.1.81 二进制反编译分析。
+> Remote Control 允许从手机、平板或任意浏览器远程操控本地运行的 Claude Code 终端会话。会话**始终在本地执行**，远程端仅作为交互窗口。
+>
+> **数据来源**：CLI 子命令/参数（`claude remote-control`、`--remote-control`/`--rc`、`--spawn`、`--capacity`）和故障排查指南来自 [Anthropic 官方文档](https://docs.anthropic.com/en/docs/claude-code/remote-control)（2026-03）；`/remote-control` 斜杠命令类型来自 v2.1.81 二进制反编译；环境变量名来自 [EVIDENCE.md](./EVIDENCE.md) 反编译提取。
 
 ## 概述
 
-Remote Control 是 Claude Code 的跨设备会话桥接功能，在 18 款主流 AI 编程 Agent 中**为 Claude Code 独有**（源码: `docs/comparison/features.md`）。它解决了开发者的一个核心痛点：启动了一个长时间的终端代理任务后，需要离开工位继续监控或干预。
+Remote Control 是 Claude Code 的跨设备会话桥接功能，在 18 款主流 AI 编程 Agent 中**为 Claude Code 独有**（[功能矩阵](../../comparison/features.md)）。它解决了开发者的一个核心痛点：启动了一个长时间的终端代理任务后，需要离开工位继续监控或干预。
 
 核心特性：
 
@@ -62,7 +64,7 @@ claude --remote-control "My Project" # 带名称
 
 在当前对话中启用 Remote Control。此方式不支持 `--verbose`、`--sandbox`、`--no-sandbox` 参数。
 
-> **源码位置**：`/remote-control` 命令类型为 `local-jsx`（反编译提取，`源码: docs/tools/claude-code/02-commands.md`），渲染远程控制配置 UI 并启动到 claude.ai/code 的连接。
+> **命令类型**：`/remote-control` 斜杠命令类型为 `local-jsx`（[命令详解](./02-commands.md)），渲染远程控制配置 UI 并启动到 claude.ai/code 的连接。
 
 ## 从其他设备连接
 
@@ -112,19 +114,21 @@ claude --remote-control "My Project" # 带名称
 
 > **注意**：并非直接向本地机器建立 WebSocket 连接。本地进程通过 polling Anthropic API 获取消息，消息经由 Anthropic 基础设施中继。
 
-### 相关环境变量（反编译提取）
+### 相关环境变量
 
-| 变量 | 影响 |
-|------|------|
-| `ANTHROPIC_API_KEY` | 阻止 Remote Control；需清除并使用 OAuth 登录 |
-| `CLAUDE_CODE_OAUTH_TOKEN` | 提供有限范围 token；与 Remote Control 不兼容 |
-| `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | 可能破坏资格检查 |
-| `DISABLE_TELEMETRY` | 可能破坏资格检查 |
-| `CLAUDE_CODE_USE_BEDROCK` | 不兼容——Remote Control 要求 claude.ai 认证 |
-| `CLAUDE_CODE_USE_VERTEX` | 不兼容——Remote Control 要求 claude.ai 认证 |
-| `CLAUDE_CODE_USE_FOUNDRY` | 不兼容——Remote Control 要求 claude.ai 认证 |
-| `SESSION_ACCESS_TOKEN` | 会话访问凭证（反编译提取，`源码: EVIDENCE.md`） |
-| `WEBSOCKET_AUTH_*` | WebSocket 认证相关凭证（反编译提取） |
+前 6 项来自 [Anthropic 官方文档](https://docs.anthropic.com/en/docs/claude-code/remote-control)；后 2 项为反编译提取的变量名（[EVIDENCE.md](./EVIDENCE.md)），具体用途为推断。
+
+| 变量 | 影响 | 来源 |
+|------|------|------|
+| `ANTHROPIC_API_KEY` | 阻止 Remote Control；需清除并使用 OAuth 登录 | 官方文档 |
+| `CLAUDE_CODE_OAUTH_TOKEN` | 提供有限范围 token；与 Remote Control 不兼容 | 官方文档 |
+| `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | 可能破坏资格检查 | 官方文档 |
+| `DISABLE_TELEMETRY` | 可能破坏资格检查 | 官方文档 |
+| `CLAUDE_CODE_USE_BEDROCK` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
+| `CLAUDE_CODE_USE_VERTEX` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
+| `CLAUDE_CODE_USE_FOUNDRY` | 不兼容——Remote Control 要求 claude.ai 认证 | 官方文档 |
+| `SESSION_ACCESS_TOKEN` | 认证相关凭证（反编译提取） | EVIDENCE.md |
+| `WEBSOCKET_AUTH_*` | 认证相关凭证（反编译提取） | EVIDENCE.md |
 
 ## Remote Control vs Claude Code on the Web
 
@@ -151,7 +155,7 @@ Claude Code 提供了多种跨设备工作方式，各有侧重：
 | **Slack** | 团队频道中 `@Claude` 提及 | Anthropic 云端 | 从团队聊天处理 PR/审查 |
 | **Scheduled Tasks** | 设置定时计划 | CLI / Desktop / 云端 | 周期性自动化 |
 | **`--remote`** | CLI 推送任务到 Web | Anthropic 云端 | 启动 Web 会话 |
-| **`--teleport`** | CLI 拉回 Web 会话 | 本地机器 | 将云端会话拉到本地继续 |
+| **`/teleport`** | 在 Web 端启动长任务后拉入终端 | 本地机器 | 将云端会话拉到本地继续（CLI 等价：`claude --teleport`） |
 
 ## 限制
 
@@ -196,7 +200,7 @@ Claude Code 提供了多种跨设备工作方式，各有侧重：
 | **Copilot CLI** | ❌ 无（有 VS Code 集成但无终端远程操控） |
 | **Codex CLI** | ❌ 无 |
 | **Gemini CLI** | ❌ 无 |
-| **Qwen Code** | ❌ 无（`源码: docs/comparison/qwen-code-feature-gaps.md`，需从零构建） |
+| **Qwen Code** | ❌ 无（[功能缺口分析](../../comparison/qwen-code-feature-gaps.md)，需从零构建） |
 | **Kimi CLI** | ❌ 无（有 Wire 协议但未实现远程控制） |
 | **其他 Agent** | ❌ 无 |
 
