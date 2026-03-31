@@ -117,41 +117,66 @@ interface PluginAgentDefinition extends BaseAgentDefinition {
 
 源码：`tools/AgentTool/builtInAgents.ts` (72 LOC)
 
-| Agent | 类型 | 工具集 | 模型 | 用途 |
-|-------|------|--------|------|------|
-| **general-purpose** | 通用 | 全部 | 继承 | 研究分析、代码实现 |
-| **explore** | 搜索 | Glob/Grep/Read/Bash（只读） | Haiku（外部用户） | 快速代码搜索 |
-| **plan** | 规划 | 同 explore | 继承 | 输出实现计划 |
-| **verification** | 验证 | 全部 | 继承 | 测试/类型检查/调查失败 |
-| **statusline-setup** | 配置 | 全部 | 继承 | 终端状态栏集成 |
-| **claude-code-guide** | 指南 | 全部 | 继承 | Claude Code 使用问答 |
+| Agent | 类型 | 工具集 | 模型 | 启用条件 |
+|-------|------|--------|------|---------|
+| **general-purpose** | 通用 | 全部 | 默认 | 始终启用 |
+| **statusline-setup** | 配置 | Read, Edit | Sonnet | 始终启用 |
+| **explore** | 搜索 | Glob/Grep/Read/Bash（只读） | Haiku（外部）/ Inherit（内部） | `BUILTIN_EXPLORE_PLAN_AGENTS` 编译标志 + `tengu_amber_stoat` GrowthBook（默认开） |
+| **plan** | 规划 | 同 explore | Inherit | 同 explore |
+| **claude-code-guide** | 指南 | Glob/Grep/Read/WebFetch/WebSearch | Haiku | 非 SDK 入口点（排除 sdk-ts/sdk-py/sdk-cli） |
+| **verification** | 验证 | 全部（禁止编辑/写入） | Inherit | `VERIFICATION_AGENT` 编译标志 + `tengu_hive_evidence` GrowthBook（默认关） |
 
-**Feature gate**：`verification` 需要 `tengu_hive_evidence` GrowthBook flag。
+**Coordinator agents**：当 `COORDINATOR_MODE` 启用时，`getBuiltInAgents()` 替换为 `getCoordinatorAgents()`（来自 `coordinator/workerAgent.js`），上述 6 个 Agent 均不加载。
+
+**SDK 覆盖**：`CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS=1` 可在非交互模式下禁用所有内置 Agent。
+
+**Feature flag 类型**：
+
+| Flag | 类型 | 默认值 | 影响范围 |
+|------|------|--------|---------|
+| `BUILTIN_EXPLORE_PLAN_AGENTS` | 编译时 (`bun:bundle`) | 视构建 | explore / plan |
+| `VERIFICATION_AGENT` | 编译时 (`bun:bundle`) | 视构建 | verification |
+| `COORDINATOR_MODE` | 编译时 (`bun:bundle`) | 视构建 | coordinator 全套 |
+| `tengu_amber_stoat` | 运行时 (GrowthBook) | `true` | explore / plan |
+| `tengu_hive_evidence` | 运行时 (GrowthBook) | `false` | verification |
 
 ### 9.2.3 自定义 Agent 加载
 
-Agent 定义从 4 个位置加载（优先级从高到低）：
+源码：`tools/AgentTool/loadAgentsDir.ts` (755 LOC) + `utils/markdownConfigLoader.ts`
 
-| 来源 | 路径 | 说明 |
-|------|------|------|
-| **Policy** | 管理员配置目录 | 企业策略强制 |
-| **用户** | `~/.claude/agents/*.md` | 私人全局 |
-| **项目** | `.claude/agents/*.md` | 团队共享（提交到 Git） |
-| **插件** | 插件目录 | 第三方扩展 |
+Agent 定义从 4 个文件系统位置加载 `.md` 文件，外加 1 个 CLI 注入路径（优先级从低到高）：
+
+| 来源 | 路径 | SettingSource | 说明 |
+|------|------|---------------|------|
+| **内置** | `builtInAgents.ts` | `builtIn` | 硬编码，最低优先级 |
+| **插件** | 插件目录 | `plugin` | 第三方扩展 |
+| **用户** | `~/.claude/agents/*.md` | `userSettings` | 私人全局 |
+| **项目** | `.claude/agents/*.md` | `projectSettings` | 团队共享（提交到 Git） |
+| **CLI 注入** | `--agents` 参数（JSON） | `flagSettings` | 程序化注入 |
+| **Policy** | 管理员配置目录 | `policySettings` | 企业策略强制（最高优先级） |
+
+**文件加载机制**：`loadMarkdownFilesForSubdir('agents', cwd)` 扫描上述目录中的 `.md` 文件。同 `agentType` 名称的高优先级条目覆盖低优先级（`Map.set()`）。
+
+**CLI 注入路径**：`parseAgentsFromJson()` 解析 JSON 格式的 Agent 定义（`--agents` 参数），字段与 frontmatter 镜像。
 
 每个 `.md` 文件使用 frontmatter 格式定义 Agent：
 
 ```markdown
 ---
-agentType: my-custom-agent
-whenToUse: When you need to perform custom analysis
+name: my-custom-agent
+description: When you need to perform custom analysis
 tools: [Glob, Grep, Read, Bash]
 model: sonnet
 maxTurns: 10
+memory: project
 ---
 
 You are a custom analysis agent. Focus on...
 ```
+
+**必需字段**：`name`（成为 `agentType`）、`description`（成为 `whenToUse`）。frontmatter 之后的正文内容成为系统提示。缺少 `name` 字段的文件会被静默跳过（视为参考文档）。
+
+**可选字段**：`tools`、`disallowedTools`、`model`、`effort`、`permissionMode`、`maxTurns`、`color`、`background`、`memory`、`isolation`、`mcpServers`、`hooks`、`skills`、`initialPrompt`。
 
 ## 9.3 Agent 工具（3 种执行路径）
 
@@ -590,6 +615,8 @@ getTaskListId() 优先级:
 
 ### 9.7.3 四阶段工作流
 
+> **注意**：以下四阶段是协调者系统提示中的建议工作流，非正式的代码级架构模式。源码中的相关描述仅为 prompt 注释中的非正式提及（如 "research, implementation, or verification"）。
+
 ```
 ┌───────────────────┐     ┌───────────────────┐
 │ 1. 研究阶段        │     │ 2. 综合阶段        │
@@ -614,20 +641,24 @@ getTaskListId() 优先级:
                           └───────────────────┘
 ```
 
-**核心原则**："并行是超能力"——研究阶段启动多个并行 Worker 可大幅提升效率。
+**核心原则**（源码 prompt 原文）："Parallelism is a superpower"——研究阶段启动多个并行 Worker 可大幅提升效率。
 
 ### 9.7.4 Continue vs Spawn 决策矩阵
 
+源码：`coordinator/coordinatorMode.ts` — Section 5 "Choose continue vs. spawn by context overlap"
+
 协调者系统提示内置 6 种场景的决策表：
 
-| 场景 | 决策 | 理由 |
+| 场景（源码原文） | 决策 | 理由 |
 |------|------|------|
-| Worker 需要基于自身发现继续 | **Continue** | 高上下文重叠 |
-| Worker 陷入困境 | **Spawn fresh** | 需要全新视角 |
-| 新子任务与当前 Worker 低重叠 | **Spawn fresh** | 需要干净上下文 |
-| Worker 完成但需要扩展 | **Continue** | 保留有用上下文 |
-| 错误修复需要不同方法 | **Spawn fresh** | 避免重复错误路径 |
-| Worker 请求帮助 | **Continue** | 保持上下文连贯 |
+| Research explored exactly the files that need editing | **Continue** | Worker already has the files in context AND now gets a clear plan |
+| Research was broad but implementation is narrow | **Spawn fresh** | Avoid dragging along exploration noise; focused context is cleaner |
+| Correcting a failure or extending recent work | **Continue** | Worker has the error context and knows what it just tried |
+| Verifying code a different worker just wrote | **Spawn fresh** | Verifier should see the code with fresh eyes, not carry implementation assumptions |
+| First implementation attempt used the wrong approach entirely | **Spawn fresh** | Wrong-approach context pollutes the retry; clean slate avoids anchoring |
+| Completely unrelated task | **Spawn fresh** | No useful context to reuse |
+
+**核心原则**（源码原文）："There is no universal default. Think about how much of the worker's context overlaps with the next task. High overlap → continue. Low overlap → spawn fresh."
 
 **关键规则**：Worker 无法看到协调者的对话。每个 prompt 必须**自包含**——不能说"基于你之前的发现"，而要包含所有必要上下文。
 
@@ -814,6 +845,8 @@ resumeFromTeleport():
 
 ## 9.13 设计哲学与架构权衡
 
+### 9.13.1 核心权衡矩阵
+
 | 决策 | 选择 | 替代方案 | 权衡 |
 |------|------|----------|------|
 | 通信方式 | 文件邮箱 | 消息队列 / 共享内存 | 无需额外依赖、跨进程安全；延迟略高 |
@@ -825,3 +858,53 @@ resumeFromTeleport():
 | 权限委托 | Leader UI 桥接 | 自动审批 | 安全性高；增加用户交互 |
 | Agent Memory | 3-scope 文件存储 | 全局 KV 存储 | 代码级隔离清晰；文件粒度较粗 |
 | 上下文隔离 | AsyncLocalStorage | 独立进程 | 共享 API/MCP 资源；实现复杂 |
+
+### 9.13.2 文件邮箱 vs 消息队列
+
+源码：`utils/teammateMailbox.ts`
+
+Claude Code 选择基于文件的邮箱而非 IPC 消息队列（如 Unix socket、gRPC）：
+
+- **优势**：零额外依赖；tmux/iTerm2 后端天然无法共享内存；JSON 格式便于调试（直接 `cat` 邮箱文件）；进程崩溃后消息不丢失
+- **代价**：文件锁（`proper-lockfile`）引入 10-30 次重试的并发开销；写入延迟受文件系统影响（通常 <1ms）；高频消息场景下性能瓶颈
+
+### 9.13.3 三后端兼容性策略
+
+源码：`utils/swarm/backends/registry.ts` (464 LOC)
+
+后端检测优先级（tmux 嵌套 > iTerm2 原生 > tmux 外部 > in-process fallback）体现了"最大兼容性"原则：
+
+- **In-process**：最低门槛，但共享进程资源
+- **Split-pane**：最佳体验（可视多面板），但依赖 tmux/iTerm2
+- **Separate-window**：旧模式，保持向后兼容
+
+实现复杂度的代价：`spawnMultiAgent.ts` (1,093 LOC) 是多代理子系统第二大的文件，主要因为需要同时处理 3 种后端的差异化逻辑。
+
+### 9.13.4 Fork 子代理的 Prompt Cache 优化
+
+源码：`tools/AgentTool/forkSubagent.ts` (210 LOC)
+
+Fork 子代理是 Claude Code 多代理系统中最精细的成本优化设计：
+
+- **原理**：`buildForkedMessages()` 构建与父级完全相同的消息前缀，使 Anthropic API 的 prompt cache 命中率最大化
+- **约束**：Fork Agent 的系统提示要求"500 词以内回复"，避免过长输出抵消 cache 节省
+- **⚠️ 推断**：这个设计暗示 Anthropic API 的 prompt cache 按**前缀匹配**计费，前缀越长 cache 节省越大
+
+### 9.13.5 确定性 ID 的崩溃恢复语义
+
+源码：`utils/agentId.ts` (99 LOC)
+
+`agentName@teamName` 格式不是随意选择——它使得会话恢复时无需持久化 ID 映射：
+
+- **恢复流程**：进程崩溃后，重启的 teammate 通过相同的 `agentName + teamName` 重新生成 agentId，自动匹配到 `~/.claude/teams/{team}/inboxes/{agentName}.json` 中未读消息
+- **代价**：名称冲突需要去重逻辑（追加 -2, -3 后缀），但这是一次性成本
+
+### 9.13.6 纯协调者 vs 可编辑半协调者
+
+源码：`coordinator/coordinatorMode.ts` (369 LOC)
+
+协调者模式选择"永不编辑代码"而非"可以介入编辑"：
+
+- **优势**：避免协调者与 Worker 之间的职责模糊；协调者专注于编排，所有代码修改可追踪到具体 Worker
+- **代价**：简单任务（如改一个配置值）也需要生成 Worker，增加 token 成本和延迟
+- **设计信号**：决策矩阵的 6 个场景中有 4 个选择 Spawn fresh，反映"干净上下文 > 上下文复用"的偏好

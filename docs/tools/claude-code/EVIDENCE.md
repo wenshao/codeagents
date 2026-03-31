@@ -1152,6 +1152,11 @@ Source code confirms: `MultiEdit` is only a UI verb mapping in `bridge/sessionRu
 - `built-in/planAgent.ts` (92 LOC): read-only architecture planner
 - `built-in/exploreAgent.ts` (83 LOC): read-only search specialist (uses Haiku for external users)
 - `builtInAgents.ts` (72 LOC): registry returning agents based on feature gates
+  - general-purpose + statusline-setup: always enabled
+  - explore + plan: gated by `BUILTIN_EXPLORE_PLAN_AGENTS` (build-time) + `tengu_amber_stoat` (GrowthBook, default true)
+  - claude-code-guide: excluded for SDK entrypoints (sdk-ts/sdk-py/sdk-cli)
+  - verification: gated by `VERIFICATION_AGENT` (build-time) + `tengu_hive_evidence` (GrowthBook, default false)
+  - When COORDINATOR_MODE active: replaced by `getCoordinatorAgents()` from coordinator/workerAgent.js
 - `agentColorManager.ts` (66 LOC): 8-color palette with per-agent assignment
 - `constants.ts` (12 LOC): AGENT_TOOL_NAME = 'Agent', LEGACY_AGENT_TOOL_NAME = 'Task'
 
@@ -1180,8 +1185,15 @@ Source code confirms: `MultiEdit` is only a UI verb mapping in `bridge/sessionRu
 
 - Gated: `feature('COORDINATOR_MODE')` AND `CLAUDE_CODE_COORDINATOR_MODE=1`
 - System prompt (~200 lines): pure orchestrator, never edits code
-- 4-phase workflow: Research → Synthesis → Implementation → Verification
-- Continue vs Spawn 6-scenario decision matrix
+- 4-phase workflow suggested in prompt: Research → Synthesis → Implementation → Verification (⚠️ informal, not formal architecture)
+- Continue vs Spawn 6-scenario decision matrix (exact source text):
+  1. "Research explored exactly the files that need editing" → Continue
+  2. "Research was broad but implementation is narrow" → Spawn fresh
+  3. "Correcting a failure or extending recent work" → Continue
+  4. "Verifying code a different worker just wrote" → Spawn fresh
+  5. "First implementation attempt used the wrong approach entirely" → Spawn fresh
+  6. "Completely unrelated task" → Spawn fresh
+- Core principle: "There is no universal default. Think about how much of the worker's context overlaps with the next task. High overlap → continue. Low overlap → spawn fresh."
 
 ### Spawn Engine (from `tools/shared/spawnMultiAgent.ts`, 1,093 LOC)
 
