@@ -9,7 +9,7 @@ CHECKS = [
     ('data schema', str(SCRIPTS / 'check_data_schema.py')),
     ('repository consistency', str(SCRIPTS / 'check_repo_consistency.py')),
     ('stale data', str(SCRIPTS / 'check_stale_data.py')),
-    ('repo URL (schema-only)', str(SCRIPTS / 'check_repo_url.py') + ' --no-api'),
+    ('repo URL + Stars verification', str(SCRIPTS / 'check_repo_url.py')),
 ]
 
 

@@ -19,7 +19,7 @@
 | **Warp** | 26,267 | — | — | — | Rust | 专有 |
 | **Qwen Code** | 21,360 | 1,877 | 350 | 2025-06 | TypeScript | Apache-2.0 |
 | **SWE-agent** | 18,888 | — | — | — | Python | MIT |
-| **OpenCode** | 11,670 | — | — | 2025-03 | TypeScript（Bun） | MIT |
+| **OpenCode** | 132,999 | — | — | 2025-03 | TypeScript | MIT |
 | **Copilot CLI** | 9,673 | 1,298 | 19 | 2023-01 | Shell | 专有 |
 | **Kimi CLI** | 7,455 | 760 | 53 | 2025-10 | Python | Apache-2.0 |
 
