@@ -1129,7 +1129,7 @@ Edit、Write、TodoWrite 在内容中检测 Team Memory 机密（error code 0）
 
 ### 4.11.2 延迟加载 + ToolSearch：Token 经济学
 
-**设计选择**：~10 个核心工具始终加载，其余 28+ 个延迟加载，由 ToolSearch 按需发现。
+**设计选择**：~10 个核心工具始终加载，其余 25 个延迟加载（按目录计数；展开子工具后约 28+，详见 4.1.1 公式），由 ToolSearch 按需发现。
 
 **源码依据**：`utils/toolSearch.ts` 定义三种模式（`tst` / `tst-auto` / `standard`），`tst-auto` 的阈值为上下文窗口的 **10%**（`DEFAULT_AUTO_TOOL_SEARCH_PERCENTAGE = 10`）。
 

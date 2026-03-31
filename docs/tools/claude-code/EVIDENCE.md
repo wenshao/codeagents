@@ -809,7 +809,7 @@ Blocked device paths: `/dev/zero`, `/dev/random`, `/dev/urandom`, `/dev/full`, `
 
 Input schema: `file_path`, `content`. Atomic write: mkdir + history backup (async) → readFileSync + mtime check + write (sync critical section). Always LF line endings. New files skip read-first requirement.
 
-### AgentTool (from `tools/AgentTool/`, 14 files, 6,072 LOC)
+### AgentTool (from `tools/AgentTool/`, 14 files, 6,782 LOC)
 
 Input schema: `description`, `prompt`, `subagent_type?`, `model?` (sonnet/opus/haiku), `run_in_background?`, `name?`, `team_name?`, `mode?`, `isolation?`, `cwd?`.
 
