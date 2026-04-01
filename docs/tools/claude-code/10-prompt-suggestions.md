@@ -1,6 +1,8 @@
 # 10. Prompt Suggestions（下一步提示预测）
 
-> 本文基于源码分析（`services/PromptSuggestion/promptSuggestion.ts` 524 LOC + `services/PromptSuggestion/speculation.ts` 992 LOC + `hooks/usePromptSuggestion.ts` 178 LOC 等共 ~1,700 行），覆盖 suggestion 生成、过滤、交互、遥测和 Speculation 推测执行。
+> 本文基于 Claude Code v2.1.89 源码分析（`services/PromptSuggestion/promptSuggestion.ts` 524 LOC + `services/PromptSuggestion/speculation.ts` 992 LOC + `hooks/usePromptSuggestion.ts` 178 LOC 等共 ~1,700 行），覆盖 suggestion 生成、过滤、交互、遥测和 Speculation 推测执行。
+>
+> **数据来源**：文中所有源码路径和行号均引用自 Claude Code 应用源码（非本仓库文件），通过反编译 SEA 二进制获得。源码行数基于 TypeScript 文件的 `wc -l` 统计。
 >
 > **功能内部代号**：`tengu_chomp_inflection`（GrowthBook feature flag 名称）。
 
@@ -56,7 +58,7 @@ if (!isEnvDefinedFalsy(process.env.CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION)) {
 }
 ```
 
-`--bare` 模式（`-p` 脚本调用的简化模式）跳过 suggestion 生成。
+`--bare` 模式（最小化模式，跳过 hooks、LSP、插件同步等）和 `-p`（非交互管道模式）均跳过 suggestion 生成。
 
 ### API 调用方式
 
@@ -69,7 +71,7 @@ if (!isEnvDefinedFalsy(process.env.CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION)) {
 - **不写 transcript**：`skipTranscript: true, skipCacheWrite: true`
 - **禁止工具**：所有工具调用通过 `canUseTool` 回调拒绝（`behavior: "deny"`），模型只能返回纯文本
 
-> **历史教训**：PR #18143 尝试设置 `effort:'low'` 降低 suggestion 成本，结果导致 cache 命中率从 92.7% 暴跌至 61%（45x cache write spike）。billing cache key 包含的参数比文档描述的更多，任何差异都会 bust cache。（源码注释: `promptSuggestion.ts#L308-318`）
+> **历史教训**：据源码注释（`promptSuggestion.ts#L308-318`），Anthropic 内部曾尝试设置 `effort:'low'` 降低 suggestion 成本，结果导致 cache 命中率从 92.7% 暴跌至 61%（45x cache write spike）。billing cache key 包含的参数比文档描述的更多，任何差异都会 bust cache。
 
 ### Suggestion Prompt
 
