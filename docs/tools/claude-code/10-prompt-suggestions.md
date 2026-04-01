@@ -210,7 +210,7 @@ promptSuggestion: {
 | AbortController 已中止 | `aborted` |
 | assistant 回复不足 2 轮 | `early_conversation` |
 | 上一条回复是 API 错误 | `last_response_error` |
-| 上一条回复未缓存 token 数 > 10,000 | `cache_cold` |
+| 父消息总 token 数（`input_tokens + cache_creation_input_tokens + output_tokens`）> 10,000 | `cache_cold` |
 
 ## 配置方式
 
@@ -313,9 +313,11 @@ const SAFE_READ_ONLY_TOOLS = new Set([
 | 边界类型 | 触发条件 | 行为 |
 |----------|----------|------|
 | `complete` | agent 自然完成 | 记录 `outputTokens` |
-| `bash` | 非只读 Bash 命令 | 中止推测 |
+| `bash` | 非只读 Bash 命令（只读命令如 `ls`/`grep`/`cat` 允许执行） | 中止推测 |
 | `edit` | 文件编辑但权限不足（非 `acceptEdits`/`bypassPermissions` 模式） | 中止推测 |
-| `denied_tool` | 不在允许列表中的工具 | 中止推测 |
+| `denied_tool` | 不在允许列表中的工具（记录 `detail`: URL/路径/命令，截取前 200 字符） | 中止推测 |
+
+Speculation 通过 `onMessage` 回调实时追踪消息数量，达到 `MAX_SPECULATION_MESSAGES`（100）时自动中止，防止 speculation 无限运行（源码: `speculation.ts#L637-641`）。
 
 ### Pipeline 机制
 
@@ -330,6 +332,49 @@ const SAFE_READ_ONLY_TOOLS = new Set([
       → 用户接受 A → 提升 B 为当前 suggestion → 开始 speculation B
         → ...
 ```
+
+Speculation 使用独立的 fork 标签：`querySource: 'speculation'`、`forkLabel: 'speculation'`（源码: `speculation.ts#L633-634`），与 suggestion 生成的 `querySource: 'prompt_suggestion'` 区分。
+
+### 接受后处理
+
+用户接受 suggestion 后，`handleSpeculationAccept()`（源码: `speculation.ts#L835-991`）执行以下步骤：
+
+1. **消息清洗**（`prepareMessagesForInjection`，源码: `speculation.ts#L203-271`）：
+   - 过滤 `thinking` 和 `redacted_thinking` 块
+   - 移除未成功完成的 `tool_use`/`tool_result` 对
+   - 移除中断消息（`INTERRUPT_MESSAGE`）
+   - 过滤全空白文本消息（避免 API 400 错误）
+   - 若 speculation 未完成，丢弃尾部 assistant 消息（不支持 prefill 的模型拒绝以 assistant turn 结尾）
+
+2. **文件状态合并**：将 speculation 读取的文件状态缓存合并到主对话，避免重复读取（源码: `speculation.ts#L910-917`）
+
+3. **Overlay 回写**：将 overlay 目录中修改的文件复制回主目录
+
+4. **反馈消息注入**（仅 `USER_TYPE === 'ant'`，源码: `speculation.ts#L273-308`）：
+   ```
+   [ANT-ONLY] Speculated 3 tool uses · 1,234 tokens · +2.1s saved (5.3s this session)
+   ```
+
+5. **Transcript 记录**：写入 `speculation-accept` 条目到 JSONL transcript（源码: `speculation.ts#L784-794`），用于统计会话累计节省时间
+
+### Speculation 遥测
+
+事件名: `tengu_speculation`（源码: `speculation.ts#L124-153`）
+
+| 字段 | 说明 |
+|------|------|
+| `speculation_id` | 推测会话 UUID（前 8 位） |
+| `outcome` | `accepted` / `aborted` / `error` |
+| `duration_ms` | 推测执行耗时 |
+| `suggestion_length` | suggestion 文本长度 |
+| `tools_executed` | 成功执行的工具调用数 |
+| `completed` | 是否到达边界（`boundary !== null`） |
+| `boundary_type` | `complete` / `bash` / `edit` / `denied_tool` |
+| `boundary_tool` | 触发边界的工具名 |
+| `boundary_detail` | 触发边界的命令/路径（截取前 200 字符） |
+| `message_count` | 推测消息总数（仅 accepted 时） |
+| `time_saved_ms` | 节省的毫秒数（仅 accepted 时） |
+| `is_pipelined` | 是否为 pipeline 产生的推测 |
 
 ## 源码文件索引
 
