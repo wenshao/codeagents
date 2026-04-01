@@ -14,3 +14,4 @@
 | [08-Remote Control](./08-remote-control.md) | 远程控制架构、会话生命周期、安全纵深、评价优缺点、7 款竞品对比 |
 | [09-多代理系统](./09-multi-agent.md) | Leader-Worker 协作、Swarm 三后端、Agent 定义、邮箱通信、任务管理、协调模式、远程传送 |
 | [10-Prompt Suggestions](./10-prompt-suggestions.md) | 下一步提示预测：生成流程、Prompt 模板、12 条过滤规则、Speculation 推测执行 |
+| [11-终端渲染](./11-terminal-rendering.md) | 防闪烁：DEC 2026 同步输出、差分渲染、双缓冲、DECSTBM 硬件滚动、缓存池化、60fps 节流 |
