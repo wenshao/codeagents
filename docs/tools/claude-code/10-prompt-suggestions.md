@@ -1,14 +1,14 @@
-# 8. Prompt Suggestions（下一步提示预测）
+# 10. Prompt Suggestions（下一步提示预测）
 
 > 本文基于源码分析（`services/PromptSuggestion/promptSuggestion.ts` 524 LOC + `services/PromptSuggestion/speculation.ts` 992 LOC + `hooks/usePromptSuggestion.ts` 178 LOC 等共 ~1,700 行），覆盖 suggestion 生成、过滤、交互、遥测和 Speculation 推测执行。
 >
 > **功能内部代号**：`tengu_chomp_inflection`（GrowthBook feature flag 名称）。
 
-## 8.1 功能概述
+## 功能概述
 
 Claude Code 在每轮 assistant 回复完成后，自动预测用户下一步可能输入的内容，以蓝紫色提示文本显示在输入框中。用户可通过 Tab/Enter 接受，或直接输入覆盖。
 
-## 8.2 架构概览
+## 架构概览
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -43,9 +43,9 @@ Claude Code 在每轮 assistant 回复完成后，自动预测用户下一步可
 └──────────────────────┘
 ```
 
-## 8.3 生成流程
+## 生成流程
 
-### 8.3.1 触发入口
+### 触发入口
 
 每轮 assistant 回复完成后，在 stop hooks 阶段以 fire-and-forget 方式异步发起：
 
@@ -58,7 +58,7 @@ if (!isEnvDefinedFalsy(process.env.CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION)) {
 
 `--bare` 模式（`-p` 脚本调用的简化模式）跳过 suggestion 生成。
 
-### 8.3.2 API 调用方式
+### API 调用方式
 
 源码: `services/PromptSuggestion/promptSuggestion.ts#L294-352`
 
@@ -71,7 +71,7 @@ if (!isEnvDefinedFalsy(process.env.CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION)) {
 
 > **历史教训**：PR #18143 尝试设置 `effort:'low'` 降低 suggestion 成本，结果导致 cache 命中率从 92.7% 暴跌至 61%（45x cache write spike）。billing cache key 包含的参数比文档描述的更多，任何差异都会 bust cache。（源码注释: `promptSuggestion.ts#L308-318`）
 
-### 8.3.3 Suggestion Prompt
+### Suggestion Prompt
 
 源码: `services/PromptSuggestion/promptSuggestion.ts#L258-287`，常量 `SUGGESTION_PROMPT`
 
@@ -110,7 +110,7 @@ Reply with ONLY the suggestion, no quotes or explanation.
 
 Prompt 通过 `PromptVariant` 类型索引（源码: `promptSuggestion.ts#L31-35`），当前仅有 `'user_intent'` 和 `'stated_intent'` 两个变体，均映射到同一模板。
 
-## 8.4 过滤机制
+## 过滤机制
 
 源码: `services/PromptSuggestion/promptSuggestion.ts#L354-456`，函数 `shouldFilterSuggestion`
 
@@ -139,7 +139,7 @@ Prompt 通过 `PromptVariant` 类型索引（源码: `promptSuggestion.ts#L31-35
 | 动作词 | push, commit, deploy, stop, continue, check, exit, quit |
 | 否定词 | no |
 
-## 8.5 交互方式
+## 交互方式
 
 | 操作 | 效果 | 遥测 `acceptMethod` |
 |------|------|---------------------|
@@ -153,7 +153,7 @@ Prompt 通过 `PromptVariant` 类型索引（源码: `promptSuggestion.ts#L31-35
 - Tab 按下：`acceptedAt > shownAt`
 - 或：用户最终提交内容 === suggestion 文本（空 Enter 场景）
 
-## 8.6 状态数据结构
+## 状态数据结构
 
 源码: `state/AppStateStore.ts#L385-393`
 
@@ -167,9 +167,9 @@ promptSuggestion: {
 }
 ```
 
-## 8.7 抑制条件（三层守卫）
+## 抑制条件（三层守卫）
 
-### 8.7.1 初始化守卫
+### 初始化守卫
 
 源码: `promptSuggestion.ts#L37-94`，函数 `shouldEnablePromptSuggestion`
 
@@ -182,7 +182,7 @@ promptSuggestion: {
 | 5 | Swarm teammate（非 leader） | 禁用 |
 | 6 | `settings.promptSuggestionEnabled !== false` | 按设置值 |
 
-### 8.7.2 运行时守卫
+### 运行时守卫
 
 源码: `promptSuggestion.ts#L107-119`，函数 `getSuggestionSuppressReason`
 
@@ -194,7 +194,7 @@ promptSuggestion: {
 | Plan mode 激活 | `plan_mode` |
 | 外部用户且速率限制触发 | `rate_limit` |
 
-### 8.7.3 生成前守卫
+### 生成前守卫
 
 源码: `promptSuggestion.ts#L125-182`，函数 `tryGenerateSuggestion`
 
@@ -205,7 +205,7 @@ promptSuggestion: {
 | 上一条回复是 API 错误 | `last_response_error` |
 | 上一条回复未缓存 token 数 > 10,000 | `cache_cold` |
 
-## 8.8 配置方式
+## 配置方式
 
 | 方式 | 说明 |
 |------|------|
@@ -215,7 +215,7 @@ promptSuggestion: {
 | 环境变量 `CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=1` | 强制开启（优先级最高） |
 | GrowthBook feature flag `tengu_chomp_inflection` | 服务端灰度发布控制 |
 
-## 8.9 UI 样式
+## UI 样式
 
 suggestion 文本使用主题中的 `suggestion` 颜色渲染：
 
@@ -226,9 +226,9 @@ suggestion 文本使用主题中的 `suggestion` 颜色渲染：
 | ANSI Light | `ansi:blue` |
 | ANSI Dark | `ansi:blueBright` |
 
-## 8.10 遥测事件
+## 遥测事件
 
-### 8.10.1 初始化事件
+### 初始化事件
 
 事件名: `tengu_prompt_suggestion_init`（源码: `promptSuggestion.ts#L41-92`）
 
@@ -237,7 +237,7 @@ suggestion 文本使用主题中的 `suggestion` 颜色渲染：
 | `enabled` | 是否启用 |
 | `source` | 决策来源：`env` / `growthbook` / `non_interactive` / `swarm_teammate` / `setting` |
 
-### 8.10.2 结果事件
+### 结果事件
 
 事件名: `tengu_prompt_suggestion`（源码: `hooks/usePromptSuggestion.ts#L120-157`、`promptSuggestion.ts#L462-523`）
 
@@ -256,11 +256,11 @@ suggestion 文本使用主题中的 `suggestion` 颜色渲染：
 
 > Anthropic 内部用户（`USER_TYPE === 'ant'`）额外记录 `suggestion` 和 `userInput` 原文，用于 RL 数据集训练。
 
-## 8.11 Speculation（推测执行）
+## Speculation（推测执行）
 
 Prompt Suggestions 是更深层 **Speculation** 系统的触发器。当 suggestion 生成后，系统立即使用该 suggestion 作为假设的用户输入，预执行一轮 agent 响应。
 
-### 8.11.1 启用条件
+### 启用条件
 
 源码: `speculation.ts#L337-343`
 
@@ -275,7 +275,7 @@ export function isSpeculationEnabled(): boolean {
 
 > **注意**：Speculation 仅对 Anthropic 内部用户启用（`USER_TYPE === 'ant'`），外部用户仅使用 Prompt Suggestions 文本预测功能。
 
-### 8.11.2 核心参数
+### 核心参数
 
 源码: `services/PromptSuggestion/speculation.ts#L58-70`
 
@@ -290,7 +290,7 @@ const SAFE_READ_ONLY_TOOLS = new Set([
 ])
 ```
 
-### 8.11.3 文件隔离机制（Copy-on-Write Overlay）
+### 文件隔离机制（Copy-on-Write Overlay）
 
 源码: `speculation.ts#L80-81, #L402-715`
 
@@ -299,7 +299,7 @@ const SAFE_READ_ONLY_TOOLS = new Set([
 - CWD 外的写操作被拒绝
 - 接受时：overlay 文件复制回主目录（`copyOverlayToMain`）；中止时：overlay 直接删除（`safeRemoveOverlay`）
 
-### 8.11.4 边界检测
+### 边界检测
 
 `CompletionBoundary` 类型（源码: `state/AppStateStore.ts#L41-50`）：
 
@@ -310,7 +310,7 @@ const SAFE_READ_ONLY_TOOLS = new Set([
 | `edit` | 文件编辑但权限不足（非 `acceptEdits`/`bypassPermissions` 模式） | 中止推测 |
 | `denied_tool` | 不在允许列表中的工具 | 中止推测 |
 
-### 8.11.5 Pipeline 机制
+### Pipeline 机制
 
 源码: `speculation.ts#L345-400`，函数 `generatePipelinedSuggestion`
 
@@ -324,7 +324,7 @@ const SAFE_READ_ONLY_TOOLS = new Set([
         → ...
 ```
 
-## 8.12 源码文件索引
+## 源码文件索引
 
 | 文件 | LOC | 职责 |
 |------|-----|------|
