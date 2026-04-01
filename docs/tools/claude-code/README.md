@@ -13,3 +13,4 @@
 | [07-会话与记忆](./07-session.md) | 会话存储、上下文压缩（5 层）、CLAUDE.md 记忆、团队同步、Worktree、文件检查点、MCP |
 | [08-Remote Control](./08-remote-control.md) | 远程控制架构、会话生命周期、安全纵深、评价优缺点、7 款竞品对比 |
 | [09-多代理系统](./09-multi-agent.md) | Leader-Worker 协作、Swarm 三后端、Agent 定义、邮箱通信、任务管理、协调模式、远程传送 |
+| [10-Prompt Suggestions](./10-prompt-suggestions.md) | 下一步提示预测：生成流程、Prompt 模板、12 条过滤规则、Speculation 推测执行 |
