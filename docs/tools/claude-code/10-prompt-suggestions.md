@@ -161,13 +161,15 @@ Prompt 通过 `PromptVariant` 类型索引（源码: `promptSuggestion.ts#L31-35
 
 ```typescript
 promptSuggestion: {
-  text: string | null           // suggestion 文本内容
-  promptId: 'user_intent' | 'stated_intent' | null  // prompt 变体标识
-  shownAt: number               // 首次渲染时间戳（用于计算 timeToAcceptMs）
-  acceptedAt: number            // Tab 接受时间戳
+  text: string | null           // suggestion 文本内容，无 suggestion 时为 null
+  promptId: 'user_intent' | 'stated_intent' | null  // prompt 变体标识，无 suggestion 时为 null
+  shownAt: number               // 首次渲染时间戳（Date.now() ms），未显示时为 0
+  acceptedAt: number            // Tab 接受时间戳（Date.now() ms），未接受时为 0
   generationRequestId: string | null  // 关联的 API 请求 ID（用于 RL 数据集关联）
 }
 ```
+
+> **默认值语义**：`shownAt` 和 `acceptedAt` 均为 `number` 类型，以 `0` 表示「未触发」。时间戳单位为 `Date.now()` 返回的毫秒（ms since Unix epoch）。接受判定使用 `acceptedAt > shownAt`（源码: `usePromptSuggestion.ts#L116`），因此 `0 > 0` 为 false 即表示未接受。每次新 suggestion 写入时，两个字段均重置为 `0`。
 
 ## 抑制条件（三层守卫）
 
@@ -177,12 +179,15 @@ promptSuggestion: {
 
 | 检查顺序 | 条件 | 结果 |
 |----------|------|------|
-| 1 | 环境变量 `CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION` 为 falsy | 禁用 |
-| 2 | 环境变量 `CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION` 为 truthy | 启用 |
-| 3 | GrowthBook flag `tengu_chomp_inflection` 为 false | 禁用 |
-| 4 | 非交互模式（`-p`、管道输入、SDK） | 禁用 |
-| 5 | Swarm teammate（非 leader） | 禁用 |
-| 6 | `settings.promptSuggestionEnabled !== false` | 按设置值 |
+| 1 | 环境变量显式为 falsy（`0`/`false`/`no`/`off`） | 强制禁用 |
+| 2 | 环境变量显式为 truthy（`1`/`true`/`yes`/`on`） | 强制启用 |
+| 3 | 环境变量未设置或空字符串 → 进入后续判定 | — |
+| 4 | GrowthBook flag `tengu_chomp_inflection` 为 false | 禁用 |
+| 5 | 非交互模式（`-p`、管道输入、SDK） | 禁用 |
+| 6 | Swarm teammate（非 leader） | 禁用 |
+| 7 | `settings.promptSuggestionEnabled !== false` | 按设置值 |
+
+> **环境变量解析**（源码: `utils/envUtils.ts#L32-47`）：`isEnvDefinedFalsy()` 仅在变量已设置且值为 `0`/`false`/`no`/`off`（不区分大小写）时返回 true；`isEnvTruthy()` 仅在值为 `1`/`true`/`yes`/`on` 时返回 true。变量未设置（`undefined`）或空字符串时两者均返回 false，继续进入 GrowthBook 等后续判定。
 
 ### 运行时守卫
 
