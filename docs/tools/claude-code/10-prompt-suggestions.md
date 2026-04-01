@@ -110,7 +110,7 @@ Format: 2-12 words, match the user's style. Or nothing.
 Reply with ONLY the suggestion, no quotes or explanation.
 ```
 
-Prompt 通过 `PromptVariant` 类型索引（源码: `promptSuggestion.ts#L31-35`），当前仅有 `'user_intent'` 和 `'stated_intent'` 两个变体，均映射到同一模板。
+Prompt 通过 `PromptVariant` 类型索引（源码: `promptSuggestion.ts#L31-35`），定义了 `'user_intent'` 和 `'stated_intent'` 两个变体，均映射到同一模板。`getPromptVariant()` 当前始终硬编码返回 `'user_intent'`，`'stated_intent'` 为预留变体，未被使用。
 
 ## 过滤机制
 
@@ -230,6 +230,8 @@ suggestion 文本使用主题中的 `suggestion` 颜色渲染：
 |------|------|
 | Light | `rgb(87, 105, 247)`（蓝紫色） |
 | Dark | `rgb(177, 185, 249)`（浅蓝紫色） |
+| High Contrast Light | `rgb(51, 102, 255)` |
+| High Contrast Dark | `rgb(153, 204, 255)` |
 | ANSI Light | `ansi:blue` |
 | ANSI Dark | `ansi:blueBright` |
 
@@ -323,7 +325,7 @@ Speculation 通过 `onMessage` 回调实时追踪消息数量，达到 `MAX_SPEC
 
 源码: `speculation.ts#L345-400`，函数 `generatePipelinedSuggestion`
 
-推测执行完成后，如果用户尚未做出响应，会立即生成下一轮 suggestion。当用户接受当前 suggestion 时，pipelined suggestion 被提升为新的 suggestion 显示，并启动新一轮 speculation，形成连续的预测→预执行→预测链。
+推测执行完成后，如果用户尚未做出响应，会立即生成下一轮 suggestion。当用户接受当前 suggestion 时，**仅在 speculation 自然完成（`boundary.type === 'complete'`）时**，pipelined suggestion 才会被提升为新的 suggestion 显示并启动新一轮 speculation；若 speculation 因 bash/edit/denied_tool 边界中止，pipelined suggestion 会被丢弃（源码: `speculation.ts#L928-929`）。
 
 ```
 用户发送消息 → Claude 回复
@@ -337,7 +339,13 @@ Speculation 使用独立的 fork 标签：`querySource: 'speculation'`、`forkLa
 
 ### 接受后处理
 
-用户接受 suggestion 后，`handleSpeculationAccept()`（源码: `speculation.ts#L835-991`）执行以下步骤：
+用户接受 suggestion 后，接受流程由两个函数协作完成：
+- `handleSpeculationAccept()`（源码: `speculation.ts#L835-991`）：React 层，负责状态更新、消息注入、pipeline promotion
+- `acceptSpeculation()`（源码: `speculation.ts#L717-800`）：底层，负责 overlay 回写、transcript 记录、`timeSavedMs` 计算
+
+执行步骤：
+
+0. **用户消息优先注入**：立即将用户输入显示在 UI 中，确保即时视觉反馈（源码: `speculation.ts#L875-876`）
 
 1. **消息清洗**（`prepareMessagesForInjection`，源码: `speculation.ts#L203-271`）：
    - 过滤 `thinking` 和 `redacted_thinking` 块
@@ -367,13 +375,13 @@ Speculation 使用独立的 fork 标签：`querySource: 'speculation'`、`forkLa
 | `outcome` | `accepted` / `aborted` / `error` |
 | `duration_ms` | 推测执行耗时 |
 | `suggestion_length` | suggestion 文本长度 |
-| `tools_executed` | 成功执行的工具调用数 |
+| `tools_executed` | 成功返回结果的工具调用数（计数 `tool_result && !is_error`） |
 | `completed` | 是否到达边界（`boundary !== null`） |
 | `boundary_type` | `complete` / `bash` / `edit` / `denied_tool` |
 | `boundary_tool` | 触发边界的工具名 |
 | `boundary_detail` | 触发边界的命令/路径（截取前 200 字符） |
 | `message_count` | 推测消息总数（仅 accepted 时） |
-| `time_saved_ms` | 节省的毫秒数（仅 accepted 时） |
+| `time_saved_ms` | 从 speculation 开始到 `min(接受时间, 边界完成时间)` 的毫秒数（仅 accepted 时） |
 | `is_pipelined` | 是否为 pipeline 产生的推测 |
 
 ## 源码文件索引
