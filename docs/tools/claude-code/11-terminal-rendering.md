@@ -71,7 +71,7 @@ CSI ?2026l   ← ESU: 一次性刷新到屏幕
 
 ### 终端检测
 
-`isSynchronizedOutputSupported()` 在模块加载时计算一次（能力不会中途变化）：
+`isSynchronizedOutputSupported()` 在模块加载时计算一次（能力不会中途变化）。DEC 2026 检测**不做版本检查**——只匹配终端名称/环境变量（版本检查存在于 `isProgressReportingAvailable()` 函数中，用于 OSC 9;4 进度报告，是独立功能）：
 
 | 终端 | 检测方式 |
 |------|----------|
@@ -139,6 +139,10 @@ terminal.stdout.write(buffer)  // 单次写入
 
 全量重绘通过 `fullResetSequence_CAUSES_FLICKER()` 执行——函数名本身就是对开发者的警告。
 
+### diff 后优化
+
+diff 产生的补丁数组在写入终端前经过 `optimize()` 后处理（源码: `ink.tsx#L621`），合并相邻光标移动、消除冗余样式序列、将多个小补丁拼接为更少的写入单元，进一步减少输出字节数。
+
 ## 机制 3：DECSTBM 硬件滚动
 
 源码: `ink/log-update.ts#L149-185`
@@ -172,7 +176,7 @@ private backFrame: Frame;    // 上一帧（复用为渲染目标）
 
 每帧 diff 后交换：`backFrame = frontFrame; frontFrame = frame`。
 
-**`prevFrameContaminated` 标志**（源码: `ink.tsx#L739-743`）：当选区覆盖（selection overlay）在 screen buffer 上原地修改了 cell styleId 时，上一帧被"污染"——下一帧必须强制全量 diff，避免 blit 出反色的陈旧 cell。
+**`prevFrameContaminated` 标志**（源码: `ink.tsx#L739-743`）：当选区覆盖（selection overlay）或搜索高亮（search highlight）在 screen buffer 上原地修改了 cell styleId 时，上一帧被"污染"（`selActive || hlActive`）——下一帧必须强制全量 diff，避免 blit 出反色/高亮的陈旧 cell。
 
 ## 机制 5：损伤追踪（Damage Tracking）
 
@@ -229,13 +233,14 @@ this.scheduleRender = throttle(deferredRender, FRAME_INTERVAL_MS, {
 
 - **微任务延迟**：`queueMicrotask` 确保 React `useLayoutEffect`（如 `useDeclaredCursor`）先提交，光标位置不会滞后一帧
 - **同一事件循环**：不影响吞吐量
-- **ScrollBox 加速**：滚动时降至 `FRAME_INTERVAL_MS >> 2`（4ms，~250fps），因为硬件滚动帧非常廉价
+- **ScrollBox drain timer**：硬件滚动后，以 `FRAME_INTERVAL_MS >> 2`（4ms）间隔快速排空积压帧（源码: `ink.tsx#L756-758`），而非持续高帧率渲染
 
 ## 机制 8：光标隐藏与定位
 
 源码: `ink/renderer.ts#L170-175`, `ink/ink.tsx#L653-734`
 
-- Alt-screen 模式下 `cursor.visible = false`，避免光标在输出流式更新时闪烁跳动
+- **初始光标状态**：非 TTY 模式或屏幕高度为 0 时隐藏（源码: `renderer.ts#L173`）
+- **渲染期间隐藏**：alt-screen TTY 模式下，通过 BSU 内 `HIDE_CURSOR`/`SHOW_CURSOR` 包裹渲染过程，防止光标在帧更新时闪烁
 - `useDeclaredCursor()` 将终端光标停放在输入框位置，支持 IME 预编辑内联渲染
 - 每帧开头 `CSI H` 锚定光标到 (0,0)——自愈 tmux 状态栏、pane 刷新等造成的光标漂移
 - 每帧结尾停放光标到 prompt 行——防止 iTerm2 cursor guide 随光标位置逐帧跳动
@@ -255,18 +260,18 @@ this.scheduleRender = throttle(deferredRender, FRAME_INTERVAL_MS, {
 
 检测到宽度不匹配时，发送 CHA（Cursor Horizontal Absolute）跳过补偿列。正确终端上 emoji glyph 自然覆写；旧终端上填充间隙。
 
-## 机制 10：流式文本批量写入
+## 机制 10：批量写入（BufferedWriter）
 
 源码: `utils/bufferedWriter.ts`（100 行）
 
-Assistant 回复按 chunk 到达，`BufferedWriter` 批量化写入：
+`BufferedWriter` 用于错误日志（`errorLogSink.ts`）、asciicast 录像（`asciicast.ts`）和调试日志（`debug.ts`）的批量写入，避免高频小写入阻塞磁盘 I/O：
 
 - 缓冲上限：100 条目
 - 定时刷新：1000ms 间隔
 - 溢出处理：`setImmediate` 延迟（不阻塞按键输入）
 - 保序写入：即使溢出也保持顺序
 
-每个 chunk 写入 screen buffer → damage 标记变化行 → 下一帧 diff 只更新新增/变化的行。
+> **注意**：Assistant 回复的流式渲染不经过 `BufferedWriter`，而是通过 React → Ink → screen buffer → diff → `writeDiffToTerminal()` 的渲染管线完成。每个 chunk 写入 screen buffer 后，damage 标记变化行，下一帧 diff 只更新新增/变化的行。
 
 ## 机制 11：Alt-Screen 特化
 
@@ -314,7 +319,7 @@ if (isDebugRepaintsEnabled() && patch.debug) {
 
 Windows conhost 的 `SetConsoleCursorPosition` 在流式输出中会将视口拉回滚动缓冲区（viewport yank bug），通过 `process.platform === 'win32'` 或 `WT_SESSION` 检测。
 
-此外，CHANGELOG v2.1.81 记录：**禁用了 Windows（含 WSL in Windows Terminal）的逐行流式渲染**，因为渲染问题导致视觉异常。
+此外，据官方 CHANGELOG（外部来源: [github.com/anthropics/claude-code/CHANGELOG.md](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) v2.1.81 条目），v2.1.81 禁用了 Windows（含 WSL in Windows Terminal）的逐行流式渲染，因为渲染问题导致视觉异常。
 
 ## 设计权衡
 
