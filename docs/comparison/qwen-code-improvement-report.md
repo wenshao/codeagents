@@ -3,7 +3,7 @@
 > 基于对 Claude Code（源码分析，56 个顶层模块，~1800 文件）与 Qwen Code（开源源码，~500 文件）的系统性源码对比分析。
 >
 > 如需查阅源码，可参考本地仓库（不在本文档库中）：
-> - Claude Code: `../claude-code-leaked/`
+> - Claude Code: `../claude-code/`（源码快照）
 > - Qwen Code: `../qwen-code/`
 
 ## 一、Claude Code 功能模块清单
