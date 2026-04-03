@@ -149,27 +149,71 @@ done_messages ──→ 总 token > max_tokens (1024)?
 
 ---
 
-## 三、Claude Code：三层压缩体系
+## 三、Claude Code：三层压缩体系（源码验证）
 
-> 来源：本仓库现有 Claude Code 文档对 compact 相关接口的记载 + 二进制分析上下文；补充见 `docs/tools/claude-code/02-commands.md` 与 `docs/tools/claude-code/EVIDENCE.md`
->
-> 注：本仓库 `Claude Code` 证据页目前未系统收录压缩实现细节；`compact-2026-01-12` 这一标识符目前主要出现在仓库内部文档整理中，尚未建立稳定的外部公开文档溯源。因此，以下若涉及阈值、小版本行为、接口标识或 prompt 细节，应理解为“基于仓库现有文档与二进制分析上下文的整理”，而非完整源码级钉证。
+> 来源：v2.1.89 反编译源码分析（`services/compact/` 目录，~2,600 行）
 
 ### 三层设计
 
-| 层 | 名称 | 触发条件 | 作用 |
-|---|------|---------|------|
-| 1 | **微压缩** | 工具输出过长时 | 截断/摘要长工具输出，不等对话膨胀 |
-| 2 | **自动压缩** | ~95% 容量 | 整个对话历史发送给 LLM 生成摘要 |
-| 3 | **手动压缩** | `/compact [指令]` | 用户在任务边界主动执行 |
+| 层 | 名称 | 触发条件 | 作用 | 源码 |
+|---|------|---------|------|------|
+| 1 | **MicroCompact** | 每次 API 调用前检查 | 选择性清除旧 turn 工具结果内容，保留对话结构 | `microCompact.ts` (531 行) |
+| 2 | **API Context Management** | input_tokens > 180K | 服务端原生策略（`clear_tool_uses` / `clear_thinking`） | `apiMicrocompact.ts` (154 行) |
+| 3 | **Full Compaction** | ~93% 上下文窗口 | 整个对话摘要为 9 章节结构化文本 | `compact.ts` (1,396 行) |
 
-### 摘要 Prompt
+**MicroCompact 两种变体**：
+
+| 变体 | 条件 | 机制 |
+|------|------|------|
+| Cached MicroCompact | Prompt cache 有效（<60 分钟） | `cache_edits` API 删除工具结果，**不破坏缓存前缀** |
+| Time-Based MicroCompact | 空闲 >60 分钟 | 直接清除内容（缓存已过 TTL） |
+
+**可清除的工具类型**（源码: `microCompact.ts#L40-L50`）：Read、Bash、PowerShell、Grep、Glob、WebSearch、WebFetch、Edit、Write。不在此列表的工具（Agent、Skill、MCP）结果不会被清除。被清除的内容替换为 `'[Old tool result content cleared]'` 标记。
+
+### 自动触发阈值（源码验证）
+
+```typescript
+// 源码: services/compact/autoCompact.ts#L72-L91
+AUTOCOMPACT_BUFFER_TOKENS = 13_000       // 距上限 13K 触发
+WARNING_THRESHOLD_BUFFER_TOKENS = 20_000  // 警告缓冲区
+POST_COMPACT_TOKEN_BUDGET = 50_000        // 压缩后文件附件预算
+```
+
+以 200K 上下文为例：有效窗口 180K，自动触发 = 180K - 13K = **167K tokens（~93%）**。
+
+### 摘要 Prompt（9 章节，源码验证）
 
 ```
-"请编写对话摘要。目的是提供连续性，使你能在未来上下文中继续推进任务……
-写下任何有帮助的信息，包括状态、下一步、经验教训等。
-必须包裹在 <summary></summary> 标签中。"
+// 源码: services/compact/prompt.ts#L19-L26
+CRITICAL: Respond with TEXT ONLY. Do NOT call any tools.
+Tool calls will be REJECTED and will waste your only turn.
 ```
+
+摘要输出必须包含 9 个章节（源码: `prompt.ts#L66-L127`）：
+
+1. Primary Request and Intent — 用户原始意图
+2. Key Technical Concepts — 技术概念
+3. Files and Code Sections — 文件和代码片段（含 snippets）
+4. Errors and fixes — 错误和修复
+5. Problem Solving — 问题解决过程
+6. All user messages — 所有用户消息（非工具结果）
+7. Pending Tasks — 未完成任务
+8. Current Work — 当前工作（详细）
+9. Optional Next Step — 可选的下一步（含直接引用）
+
+Thinking 关闭，`max_output_tokens = 20,000`（`COMPACT_MAX_OUTPUT_TOKENS`）。
+
+### 压缩后恢复（源码验证）
+
+压缩不仅是摘要——还自动重注入关键上下文（源码: `compact.ts#L541-L585`）：
+
+| 恢复项 | 预算 | 单项限制 |
+|--------|------|----------|
+| 最近读取文件 | 50,000 tokens | 5 个文件，每个 ≤5,000 tokens |
+| 已调用 Skill | 25,000 tokens | 每个 ≤5,000 tokens |
+| 活跃 Plan 文件 | 无限制 | — |
+| 工具/指令 delta | — | — |
+| Agent 列表（MCP 等） | — | — |
 
 ### 自定义焦点
 
@@ -177,9 +221,10 @@ done_messages ──→ 总 token > max_tokens (1024)?
 /compact 保留数据库迁移相关讨论
 ```
 
-按本仓库现有 API 文档与二进制分析整理，当前资料将其描述为非阻塞体验。
+### 缓存优化
 
-除三层压缩外，Claude Code 还通过 Prompt Caching 降低系统提示与稳定前缀的重复开销。这意味着 Claude 的长会话续航不能仅归因于“~95% 晚触发”，还应把缓存视为压缩之外的重要减载手段。
+- **Forked Agent 路径**（`compact.ts#L1179-L1248`）：摘要复用主对话的 prompt cache 前缀
+- **缓存断裂检测**（`microCompact.ts#L362-L367`）：有意删除时标记，防止误报 cache miss
 
 ---
 
@@ -261,26 +306,59 @@ done_messages ──→ 总 token > max_tokens (1024)?
 
 ---
 
-## 六、Qwen Code：分叉继承 Gemini 压缩框架，但常量细节待统一
+## 六、Qwen Code：单层手动压缩（源码验证）
 
-> 来源：`docs/tools/qwen-code/EVIDENCE.md`（确认基于 Gemini CLI 分叉）+ 本仓库其他对比分档
+> 来源：v0.15.0 开源源码分析（`packages/core/src/services/chatCompressionService.ts`，368 行）
 
-Qwen Code 的上下文压缩框架总体上沿袭 Gemini CLI：包括 `ChatCompressionService`、Hook 事件里的 `PreCompact`、以及整体的权限 / 沙箱 / telemetry 基础设施继承关系。
+### 压缩阈值（源码验证）
 
-但就“当前默认阈值”与“早期资料中的继承表述”而言，本仓库现有证据需要分层处理：
+```typescript
+// 源码: chatCompressionService.ts#L24-L30
+COMPRESSION_TOKEN_THRESHOLD = 0.7        // 70% 上下文时允许压缩
+COMPRESSION_PRESERVE_THRESHOLD = 0.3     // 保留最后 30% 历史
+MIN_COMPRESSION_FRACTION = 0.05          // 至少 5% 可压缩才执行
+```
 
-- `docs/tools/qwen-code/05-settings.md` 已将 `model.chatCompression.contextPercentageThreshold` 的默认值写为 **0.7（70%）**
-- 多篇更早的对比文档仍把其概括为 **50%（沿袭 Gemini 默认阈值）**
-- `docs/comparison/qwen-code-feature-gaps.md` 还记录了一个更具体的失败处理线索：`hasFailedCompressionAttempt` 布尔断路器——一次压缩失败后，后续非强制压缩会跳过
+**无自动触发**。仅当用户执行 `/compress` 且满足 70% 阈值时执行。
 
-因此，更稳妥的结论是：
+### 分割算法
 
-- **架构层面**：Qwen Code 继承了 Gemini 的压缩框架
-- **当前设置层面**：项目内可直接引用的设置文档默认值为 **70%**；“50%”更适合视为早期继承关系或旧文档表述
-- **实现细节层面**：失败断路器等内部分析线索仍未统一汇总到 `docs/tools/qwen-code/EVIDENCE.md` 主证据页，仍应以分叉源码逐项复核
-- **系统治理层面**：Qwen 并非只靠压缩管理长会话；`LoopDetectionService` 与 `PreCompact` Hook 说明它把压缩放在更大的 loop / session 管理栈里
+基于**字符数**（非 token 数）计算分割点（源码: `chatCompressionService.ts#L45-L92`）：
+- 累计字符数找到 70% 位置
+- 向后搜索到安全分割点（user 消息边界）
+- 不在工具调用序列中间切断
 
-这也是本文在总览表中将 Qwen Code 写为“框架继承 + 当前设置默认值 70%”而非简单复写 Gemini 数值的原因。
+### 摘要 Prompt（XML 结构）
+
+```xml
+<!-- 源码: qwen-code/packages/core/src/core/prompts.ts#L358-L416 -->
+<state_snapshot>
+  <overall_goal>单句目标</overall_goal>
+  <key_knowledge>关键事实（bullet points）</key_knowledge>
+  <file_system_state>文件状态：READ/MODIFIED/CREATED/DELETED</file_system_state>
+  <recent_actions>最近操作和结果</recent_actions>
+  <current_plan>步骤计划 [DONE]/[IN PROGRESS]/[TODO]</current_plan>
+</state_snapshot>
+```
+
+Thinking **开启**（未禁用），无最大输出 token 限制。
+
+### 压缩后恢复
+
+```typescript
+// 源码: chatCompressionService.ts#L263-L274
+extraHistory = [
+  { role: 'user', parts: [{ text: summary }] },            // 摘要作为 user 消息
+  { role: 'model', parts: [{ text: 'Got it. Thanks...' }] }, // 确认响应
+  ...historyToKeep,                                         // 最后 30% 历史
+]
+```
+
+**无文件/Skill/Plan 重注入**。压缩后需重新 Read 文件。
+
+### 与 Gemini CLI 的继承关系
+
+Qwen Code 继承了 Gemini CLI 的 `ChatCompressionService` 框架，但当前默认阈值为 **70%**（Gemini CLI 为 50%）。`hasFailedCompressionAttempt` 断路器、`LoopDetectionService` 和 `PreCompact` Hook 均继承自上游。
 
 ---
 
@@ -290,7 +368,7 @@ Qwen Code 的上下文压缩框架总体上沿袭 Gemini CLI：包括 `ChatCompr
 
 | Agent | 已证实控制面 | 已证实生命周期/骨架 | 仍未知 |
 |------|-------------|-------------------|------|
-| **Claude Code** | `/compact [指令]`、`PreCompact` / `PostCompact`、仓库内部文档记载的 compact 接口标识 | 三层压缩体系、`<summary>` 输出约束 | 精确阈值常量、完整 compact prompt、接口标识的稳定外部公开溯源、微压缩算法细节 |
+| **Claude Code** | `/compact [指令]`、`PreCompact` / `PostCompact`、三层压缩（MicroCompact/API/Full）、9 章节摘要 Prompt、`cache_edits` API、后压缩 5 文件重注入 | 三层压缩体系、自动触发 ~93%、`COMPACT_MAX_OUTPUT_TOKENS=20,000` | 已通过 v2.1.89 反编译源码验证，见本文"三、Claude Code"节 |
 | **Copilot CLI** | `/compact`、`infiniteSessions.backgroundCompactionThreshold`、`bufferExhaustionThreshold` | infinite sessions、checkpoint titles 作为会话骨架 | 默认阈值数值、手动与后台 compact 是否共用同一实现 |
 | **Codex CLI** | `/compact`、`compact_prompt`、`model_auto_compact_token_limit`、`model_context_window` | `thread/compact/start`、`thread/compacted` 事件 | 默认 compact prompt、默认阈值、`enable_request_compression` 与摘要 compact 的准确关系 |
 
