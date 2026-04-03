@@ -42,9 +42,9 @@
 | **P0** | [Fork 子代理](./fork-subagent-deep-dive.md)（隐式 fork + 上下文继承 + prompt cache 共享） | 仅预定义 subagent_type | 中 | — |
 | **P1** | [Speculation](../tools/claude-code/10-prompt-suggestions.md) 默认启用 | v0.15.0 已实现，默认关闭 | 小 | PR [#2525](https://github.com/QwenLM/qwen-code/pull/2525) merged |
 | **P1** | [会话记忆](./memory-system-deep-dive.md)（SessionMemory + memdir 跨 session 检索） | 仅简单笔记工具 | 大 | — |
-| **P1** | Auto Dream（自动记忆整理，24h + 5 session 门控） | 缺失 | 中 | — |
-| **P1** | 上下文折叠（History Snip，span 级摘要） | 缺失 | 大 | — |
-| **P1** | 工具动态发现（ToolSearchTool，延迟加载 + 搜索） | 缺失 | 小 | — |
+| **P1** | [Auto Dream](./memory-system-deep-dive.md)（自动记忆整理，24h + 5 session 门控） | 缺失 | 中 | — |
+| **P1** | [上下文折叠](./context-compression-deep-dive.md)（History Snip，span 级摘要，scaffolding 阶段） | 缺失 | 大 | — |
+| **P1** | [工具动态发现](./tool-search-deep-dive.md)（ToolSearchTool，延迟加载 + 搜索） | 缺失 | 小 | — |
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md)（Kind-based Batching，默认 10 并发） | Agent 并发 / 其他顺序 | 小 | PR [#2864](https://github.com/QwenLM/qwen-code/pull/2864) open |
 | **P1** | [启动优化](./startup-optimization-deep-dive.md)（API Preconnect + Early Input Capture） | 完全缺失 | 小 | — |
 | **P1** | [指令条件规则](./instruction-loading-deep-dive.md)（frontmatter `paths:` + 惰加载） | 无 frontmatter / 条件加载 | 中 | — |
@@ -65,8 +65,8 @@
 | **P2** | [Git Diff 统计](./git-workflow-session-deep-dive.md)（工具编辑后结构化 diff + 按文件统计） | 无 git-aware diff stats | 小 | — |
 | **P2** | [文件历史快照](./git-workflow-session-deep-dive.md)（per-file SHA256 备份 + 按消息恢复） | checkpoint 模式（git 级） | 中 | — |
 | **P2** | Session Ingress Auth（远程会话 bearer token 认证） | 缺失 | 中 | — |
-| **P2** | Computer Use（macOS 桌面自动化：截图 + 鼠标/键盘 + 剪贴板） | 缺失 | 大 | — |
-| **P2** | Deep Link 协议（`claude-cli://` URI scheme，IDE/浏览器集成） | 缺失 | 中 | — |
+| **P2** | [Computer Use](./computer-use-deep-dive.md)（macOS 桌面自动化：截图 + 鼠标/键盘 + 剪贴板） | 缺失 | 大 | — |
+| **P2** | [Deep Link 协议](./deep-link-protocol-deep-dive.md)（`claude-cli://` URI scheme，IDE/浏览器集成） | 缺失 | 中 | — |
 | **P2** | Notebook Edit（Jupyter cell 编辑 + 自动 cell ID 追踪） | 缺失 | 中 | — |
 | **P2** | Team Memory Sync（组织级记忆同步 + gitleaks 密钥扫描） | 缺失 | 大 | — |
 | **P2** | 自定义快捷键（multi-chord + 平台适配 + `keybindings.json`） | 缺失 | 中 | — |
@@ -354,7 +354,7 @@
 
 ### 10. 上下文折叠 History Snip（P1）
 
-**Claude Code 实现**：`services/contextCollapse/` 实现 span 级上下文摘要 + staging（feature-gated）。对早期对话 span 进行选择性摘要，保留关键信息。
+**Claude Code 实现**：`feature('HISTORY_SNIP')` 门控，目前为 **scaffolding 阶段**（SnipTool 仅有 lazy require 占位，无完整实现）。已有的相关能力是 `utils/collapseReadSearch.ts` 的 UI 级消息折叠（连续 read/search 操作合并显示）和 MicroCompact 的工具结果清除。
 
 **Qwen Code 现状**：缺失。
 
@@ -557,6 +557,9 @@
 | MCP 集成 | [MCP 集成](./mcp-integration-deep-dive.md) |
 | 成本与 Fast Mode | [成本追踪与 Fast Mode](./cost-fastmode-deep-dive.md) |
 | Git 工作流与会话 | [Git 工作流与会话管理](./git-workflow-session-deep-dive.md) |
+| 工具动态发现 | [工具搜索与延迟加载](./tool-search-deep-dive.md) |
+| Computer Use | [桌面自动化](./computer-use-deep-dive.md) |
+| Deep Link | [协议处理与终端启动](./deep-link-protocol-deep-dive.md) |
 | 功能矩阵 | [功能对比矩阵](./features.md) |
 
 ### Claude Code 源码文档
