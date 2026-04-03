@@ -37,23 +37,23 @@
 
 | 优先级 | 改进点 | Qwen Code 现状 | 难度 | 进展 |
 |:------:|--------|----------------|:----:|------|
-| **P0** | Mid-Turn Queue Drain（工具批次间注入用户输入） | 推理循环内无队列检查 | 中 | PR [#2854](https://github.com/QwenLM/qwen-code/pull/2854) open |
-| **P0** | 多层上下文压缩（4 层 vs 单一 70% 阈值） | 仅 ChatCompressionService | 中 | — |
-| **P0** | Fork 子代理（隐式 fork + 上下文继承 + prompt cache 共享） | 仅预定义 subagent_type | 中 | — |
-| **P1** | Speculation 默认启用 | v0.15.0 已实现，默认关闭 | 小 | PR [#2525](https://github.com/QwenLM/qwen-code/pull/2525) merged |
-| **P1** | 会话记忆（SessionMemory + memdir 跨 session 检索） | 仅简单笔记工具 | 大 | — |
+| **P0** | [Mid-Turn Queue Drain](./input-queue-deep-dive.md)（工具批次间注入用户输入） | 推理循环内无队列检查 | 中 | PR [#2854](https://github.com/QwenLM/qwen-code/pull/2854) open |
+| **P0** | [多层上下文压缩](./context-compression-deep-dive.md)（4 层 vs 单一 70% 阈值） | 仅 ChatCompressionService | 中 | — |
+| **P0** | [Fork 子代理](./fork-subagent-deep-dive.md)（隐式 fork + 上下文继承 + prompt cache 共享） | 仅预定义 subagent_type | 中 | — |
+| **P1** | [Speculation](../tools/claude-code/10-prompt-suggestions.md) 默认启用 | v0.15.0 已实现，默认关闭 | 小 | PR [#2525](https://github.com/QwenLM/qwen-code/pull/2525) merged |
+| **P1** | [会话记忆](./memory-system-deep-dive.md)（SessionMemory + memdir 跨 session 检索） | 仅简单笔记工具 | 大 | — |
 | **P1** | Auto Dream（自动记忆整理，24h + 5 session 门控） | 缺失 | 中 | — |
 | **P1** | 上下文折叠（History Snip，span 级摘要） | 缺失 | 大 | — |
 | **P1** | 工具动态发现（ToolSearchTool，延迟加载 + 搜索） | 缺失 | 小 | — |
-| **P1** | 智能工具并行（Kind-based Batching，默认 10 并发） | Agent 并发 / 其他顺序 | 小 | PR [#2864](https://github.com/QwenLM/qwen-code/pull/2864) open |
-| **P1** | 启动优化（API Preconnect + Early Input Capture） | 完全缺失 | 小 | — |
-| **P1** | 指令条件规则（frontmatter `paths:` + 惰加载） | 无 frontmatter / 条件加载 | 中 | — |
-| **P2** | Shell 安全增强（25+ 检查 vs AST-only 读写分类） | 不覆盖 IFS/Unicode/Zsh | 中 | — |
-| **P2** | MDM 企业策略（plist + Registry + 远程 API） | 无 OS 级策略 | 大 | — |
-| **P2** | API 实时 Token 计数（vs 静态 82 模式匹配） | 静态模式匹配 | 中 | — |
+| **P1** | [智能工具并行](./tool-parallelism-deep-dive.md)（Kind-based Batching，默认 10 并发） | Agent 并发 / 其他顺序 | 小 | PR [#2864](https://github.com/QwenLM/qwen-code/pull/2864) open |
+| **P1** | [启动优化](./startup-optimization-deep-dive.md)（API Preconnect + Early Input Capture） | 完全缺失 | 小 | — |
+| **P1** | [指令条件规则](./instruction-loading-deep-dive.md)（frontmatter `paths:` + 惰加载） | 无 frontmatter / 条件加载 | 中 | — |
+| **P2** | [Shell 安全增强](./shell-security-deep-dive.md)（25+ 检查 vs AST-only 读写分类） | 不覆盖 IFS/Unicode/Zsh | 中 | — |
+| **P2** | [MDM 企业策略](./mdm-enterprise-deep-dive.md)（plist + Registry + 远程 API） | 无 OS 级策略 | 大 | — |
+| **P2** | [API 实时 Token 计数](./token-estimation-deep-dive.md)（vs 静态 82 模式匹配） | 静态模式匹配 | 中 | — |
 | **P2** | Plan 模式 Interview Phase | 无 interview 阶段 | 中 | — |
 | **P2** | BriefTool（异步消息 + 附件） | 缺失 | 中 | — |
-| **P2** | SendMessageTool（多代理通信） | 缺失 | 中 | — |
+| **P2** | [SendMessageTool](./multi-agent-deep-dive.md)（多代理通信） | 缺失 | 中 | — |
 | **P2** | FileIndex（fzf 风格模糊搜索） | 依赖 rg/glob | 中 | — |
 | **P2** | ConfigTool（工具化设置读写） | 仅 /settings 命令 | 小 | — |
 | **P2** | 自动后台化 Agent（超时转后台） | 需显式指定 | 小 | — |
@@ -62,7 +62,7 @@
 | **P3** | Advisor 顾问模型 | 缺失 | 中 | — |
 | **P3** | Vim 完整实现（motions/operators/textObjects） | 基础 vim.ts | 中 | — |
 | **P3** | 语音模式 | 缺失 | 大 | — |
-| **P3** | 插件市场 | 缺失 | 大 | — |
+| **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) | 缺失 | 大 | — |
 
 > 详细的 Claude Code 实现机制和建议方案见下文 Top 5 详细说明及各 [Deep-Dive 文章](#五相关-deep-dive-文章)。
 
@@ -247,6 +247,8 @@
 
 ## 五、相关 Deep-Dive 文章
 
+### 对比分析（Claude Code vs Qwen Code）
+
 | 改进领域 | 文章 |
 |----------|------|
 | Mid-Turn Queue Drain | [输入队列与中断机制](./input-queue-deep-dive.md) |
@@ -259,5 +261,20 @@
 | MDM 企业配置 | [MDM 企业配置管理](./mdm-enterprise-deep-dive.md) |
 | 遥测架构 | [遥测架构](./telemetry-architecture-deep-dive.md) |
 | Token 估算 | [Token 估算与 Thinking](./token-estimation-deep-dive.md) |
-| Speculation | [Prompt Suggestions](../tools/claude-code/10-prompt-suggestions.md) |
 | 会话记忆 | [记忆系统](./memory-system-deep-dive.md) |
+| 多代理通信 | [多代理系统](./multi-agent-deep-dive.md) |
+| 插件/Hook 扩展 | [Hook 与插件扩展](./hook-plugin-extension-deep-dive.md) |
+| MCP 集成 | [MCP 集成](./mcp-integration-deep-dive.md) |
+| 功能矩阵 | [功能对比矩阵](./features.md) |
+
+### Claude Code 源码文档
+
+| 领域 | 文章 |
+|------|------|
+| 架构总览 | [技术架构（22 节）](../tools/claude-code/03-architecture.md) |
+| 工具系统 | [工具系统](../tools/claude-code/04-tools.md) |
+| 多代理 / Swarm | [多代理系统](../tools/claude-code/09-multi-agent.md) |
+| Prompt Suggestions | [Prompt Suggestions + Speculation](../tools/claude-code/10-prompt-suggestions.md) |
+| 终端渲染 | [终端渲染与防闪烁](../tools/claude-code/11-terminal-rendering.md) |
+| 设置与安全 | [设置与安全](../tools/claude-code/06-settings.md) |
+| 会话与记忆 | [会话与记忆](../tools/claude-code/07-session.md) |
