@@ -6,7 +6,7 @@
 |------|------|
 | [01-概述](./01-overview.md) | 核心功能、安装、模型、定价 |
 | [02-命令详解](./02-commands.md) | 79 命令完整说明 |
-| [03-技术架构](./03-architecture.md) | 运行时、API、遥测、消息类型 |
+| [03-技术架构](./03-architecture.md) | Bun 运行时、22 个 feature flag DCE、Bootstrap 启动链、模块架构、QueryEngine 循环、状态管理、API 四 Provider 通信、Advisor 服务端审查、Extended Thinking、上下文窗口、Prompt 缓存、重试退避（529 降级）、成本追踪、系统提示构建、消息类型、39 工具注册、23 项 Bash 安全校验、权限模型、命令系统、24 种 Hook 事件、插件系统、自动更新、遥测系统 |
 | [04-工具系统](./04-tools.md) | 42 工具架构设计、Zod Schema、权限模型、安全机制、实现者 Checklist |
 | [05-Skill 系统](./05-skills.md) | Skill 定义、加载、内置 Skill |
 | [06-设置与安全](./06-settings.md) | 5 层设置、权限、沙箱、24 种 Hook 事件 |
