@@ -84,13 +84,12 @@
 | **P2** | /batch 并行操作 — 编排大规模并行变更（多文件/多任务）[↓](#item-56) | 缺失 | 中 | — |
 | **P2** | Chrome Extension — 调试 live web 应用（读 DOM/Console/Network）[↓](#item-57) | 缺失 | 中 | — |
 | **P1** | Structured Output — `--json-schema` 强制 JSON Schema 验证输出 [↓](#item-58) | 缺失 | 小 | — |
-| **P1** | Agent SDK — Python/TypeScript 编程式 SDK，支持流式回调和工具审批 [↓](#item-59) | 缺失 | 大 | — |
+| **P1** | Agent SDK 增强 — Python SDK + 流式回调 + 工具审批回调（Qwen 仅 TS SDK）[↓](#item-59) | 仅 TypeScript SDK | 中 | — |
 | **P1** | Bare Mode — `--bare` 跳过所有自动发现，CI/脚本最快启动 [↓](#item-60) | 缺失 | 小 | — |
 | **P1** | Remote Control Bridge — 从手机/浏览器驱动本地终端 session [↓](#item-61) | 缺失 | 大 | — |
 | **P1** | /teleport — Web session → 终端 session 双向迁移 [↓](#item-62) | 缺失 | 大 | — |
 | **P1** | GitLab CI/CD — 官方 GitLab pipeline 集成 [↓](#item-63) | 缺失 | 中 | — |
 | **P2** | /effort — 设置模型 effort 级别（○ 低 / ◐ 中 / ● 高）[↓](#item-64) | 缺失 | 小 | — |
-| **P2** | /context — 上下文优化建议（检测臃肿工具/记忆膨胀）[↓](#item-65) | 缺失 | 小 | — |
 | **P2** | Status Line 自定义 — shell 脚本在状态栏展示自定义信息 [↓](#item-66) | 缺失 | 小 | — |
 | **P2** | Fullscreen Rendering — alt-screen 无闪烁渲染 + 虚拟滚动缓冲 [↓](#item-67) | 缺失 | 中 | — |
 | **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](#item-68) | 缺失 | 小 | — |
@@ -1047,15 +1046,15 @@
 
 <a id="item-59"></a>
 
-### 59. Agent SDK Python/TypeScript（P1）
+### 59. Agent SDK 增强（P1）
 
-**Claude Code**：`entrypoints/sdk/` 提供编程式 SDK，支持流式回调、工具审批回调、消息对象访问。Python 和 TypeScript 两种语言。
+**Claude Code**：`entrypoints/sdk/` 提供 Python + TypeScript 双语言 SDK，支持流式回调、工具审批回调、消息对象访问。
 
-**Qwen Code**：仅 CLI 和 MCP Server 两种接入方式，无原生 SDK。
+**Qwen Code**：已有 `@qwen-code/sdk`（TypeScript），但无 Python SDK。
 
-**缺失后果**：开发者构建自定义 Agent 工作流需通过 shell 调用 CLI——不优雅且难以处理流式输出。
+**缺失后果**：Python 生态开发者（数据科学、后端）无法原生集成——需通过 shell 调用 CLI。
 
-**改进收益**：`from qwen_code import Agent; agent.send("fix bug")` — 原生编程接口，支持流式 + 回调。
+**改进收益**：补充 Python SDK — `from qwen_code import Agent` 原生接口，覆盖 Python 生态。
 
 ---
 
@@ -1123,17 +1122,6 @@
 
 ---
 
-<a id="item-65"></a>
-
-### 65. /context 上下文优化建议（P2）
-
-**Claude Code**：`commands/context/context.tsx`。分析当前上下文使用情况，识别臃肿工具 schema、记忆膨胀、可优化项，给出具体建议。
-
-**Qwen Code**：缺失。
-
-**改进收益**：用户可一键诊断"为什么 token 用这么快"——针对性优化。
-
----
 
 <a id="item-66"></a>
 
