@@ -422,11 +422,11 @@ abort(): void {                        // 3. 立即终止
 
 | 维度 | Claude Code | Qwen Code |
 |------|------------|-----------|
-| Turn 内 queue drain | ✅ 每个 step 之间排水 | ❌ 无 |
-| 排水位置 | `query.ts#L1550-L1643` | — |
+| Turn 内 queue drain | ✅ 每个 step 之间 drain | ❌ 无 |
+| Drain 位置 | `query.ts#L1550-L1643` | — |
 | 注入方式 | `getAttachmentMessages()` → `toolResults` | — |
 | 用户输入何时被模型看到 | **当前 turn 的下一个 step** | **整个 round 结束后的新 round** |
-| 排水过滤 | 斜杠命令排除，按 agentId 隔离 | — |
+| Drain 过滤 | 斜杠命令排除，按 agentId 隔离 | — |
 
 ### 4.6 预测与预执行
 
@@ -439,13 +439,13 @@ abort(): void {                        // 3. 立即终止
 
 ---
 
-## 5. 核心差异：Turn 内队列排水 vs Turn 间队列排水
+## 5. 核心差异：Mid-Turn Queue Drain vs Between-Round Queue Drain
 
 **这是两者最根本的架构差异。**
 
 ### 5.1 Claude Code：Turn 内 Mid-Turn Queue Drain
 
-在 Claude Code 中，一个 "turn" 包含多个 "step"（API 调用 → 工具执行 → 结果收集 → 下一次 API 调用）。**在每个 step 之间**，`query.ts` 主动排水命令队列，将用户输入注入当前 turn：
+在 Claude Code 中，一个 "turn" 包含多个 "step"（API 调用 → 工具执行 → 结果收集 → 下一次 API 调用）。**在每个 step 之间**，`query.ts` 主动 drain 命令队列，将用户输入注入当前 turn：
 
 ```
 Step 1: API 调用 → 模型返回 tool_use → 执行工具 → 收集 toolResults
@@ -468,10 +468,10 @@ Step 2: API 调用（toolResults 中包含用户新输入） → 模型同时处
 
 ```typescript
 // 源码: query.ts#L1550-L1643
-// 工具执行完成后，下一次 API 调用前——排水命令队列
+// 工具执行完成后，下一次 API 调用前——drain 命令队列
 const sleepRan = toolUseBlocks.some(b => b.name === SLEEP_TOOL_NAME)
 const queuedCommandsSnapshot = getCommandsByMaxPriority(
-  sleepRan ? 'later' : 'next',     // SleepTool 时排水更多级别
+  sleepRan ? 'later' : 'next',     // SleepTool 时drain 更多级别
 ).filter(cmd => {
   if (isSlashCommand(cmd)) return false        // 斜杠命令不在 turn 内处理
   if (isMainThread) return cmd.agentId === undefined  // 主线程只取用户输入
@@ -500,9 +500,9 @@ if (consumedCommands.length > 0) {
 
 **效果**：用户在工具执行期间输入的消息，会在**当前 turn 的下一个 step** 被模型看到。模型可以根据新输入调整后续行为——无需等整个 turn 结束。
 
-**排水优先级规则**：
+**Drain 优先级规则**：
 
-| 条件 | 排水级别 | 排水内容 |
+| 条件 | Drain 级别 | Drain 内容 |
 |------|----------|----------|
 | 普通工具执行后 | `'next'` | 用户输入（mode: 'prompt'） |
 | SleepTool 执行后 | `'later'` | 用户输入 + 任务通知 |
@@ -541,7 +541,7 @@ while (message !== null) {
 ```
 Claude Code (Mid-Turn Drain):
 ═══════════════════════════════════════════════════════════
-Turn 开始 → [Step1: API→工具] → 队列排水 → [Step2: API(含用户输入)→工具] → ... → end_turn
+Turn 开始 → [Step1: API→工具] → queue drain → [Step2: API(含用户输入)→工具] → ... → end_turn
                                     ↑
                               用户在此期间输入
                               → 被注入到 Step2
@@ -560,7 +560,7 @@ Round 开始 → [API→工具→API→工具→...→完成] → dequeue → Ro
 |------|------------|-----------|
 | Agent 正在执行 5 个文件修改，用户发现方向错误 | 用户输入 "停，先改 config.json" → 第 2 个文件修改完后模型就看到新指令 → 调整方向 | 用户输入相同内容 → 5 个文件全部修改完 → 新消息才被处理 → 需撤销已完成的错误修改 |
 | Agent 在运行长命令，用户想补充上下文 | 用户输入 "注意 port 要用 8080" → 下一个工具执行前模型已知 | 同上，round 完成后才能看到 |
-| 后台任务完成通知 | SleepTool 执行后自动排水 task-notification | 无法 mid-turn 感知任务完成 |
+| 后台任务完成通知 | SleepTool 执行后自动 drain task-notification | 无法 mid-turn 感知任务完成 |
 
 ---
 
