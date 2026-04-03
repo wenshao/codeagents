@@ -85,9 +85,9 @@
 | **P3** | 语音模式 | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) | 缺失 | 大 | — |
 
-> 详细的 Claude Code 实现机制和建议方案见下文 Top 5 详细说明及各 [Deep-Dive 文章](#五相关-deep-dive-文章)。
+> 详细的 Claude Code 实现机制和建议方案见下文 Top 20 详细说明及各 [Deep-Dive 文章](#五相关-deep-dive-文章)。
 
-## 三、Top 5 改进点详细说明
+## 三、Top 20 改进点详细说明
 
 ### 1. 多层上下文压缩 (Context Compression) 策略（P0）
 
@@ -291,6 +291,214 @@
 3. 当门控触发时，fork 一个只读 agent 执行记忆整理
 4. 实现 ConsolidationLock：使用文件锁防止并发整理
 5. 整理结果写入 `.qwen/dream/` 目录，供后续 session 检索
+
+---
+
+### 6. Mid-Turn Queue Drain（P0）
+
+**Claude Code 实现**：`query.ts#L1550-L1643` 在每个工具批次执行完成后、下一次 API 调用前，drain 命令队列，将用户输入作为 attachment 注入 `toolResults`，使模型在**当前 turn 的下一个 step** 即可看到新输入。
+
+**Qwen Code 现状**：`agent-core.ts` 的 `runReasoningLoop` 内无队列检查。用户输入仅在整个 round 结束后通过外层 `runLoop` 的 `dequeue()` 处理。
+
+**缺失后果**：Agent 执行 5 步修改时用户发现方向错误，必须等全部完成后才能纠正——已完成的错误修改需要撤销。
+
+**改进收益**：用户可在 Agent 执行中途发送指令（如"停，先改 config"），模型在下一个 step 的 API 调用中立即看到——避免无用工作。
+
+**相关文章**：[输入队列与中断机制](./input-queue-deep-dive.md)
+
+**进展**：PR [QwenLM/qwen-code#2854](https://github.com/QwenLM/qwen-code/pull/2854)（open）
+
+---
+
+### 7. 智能工具并行 Kind-based Batching（P1）
+
+**Claude Code 实现**：`services/tools/toolOrchestration.ts` 通过 `isConcurrencySafe()` 判断工具是否可并行，连续只读工具合并为并行批次（最大 10 并发），写工具独立串行。
+
+**Qwen Code 现状**：Agent 工具并发，其他所有工具顺序执行。
+
+**缺失后果**：代码探索场景（多个 Glob + Grep + Read）延迟 7× vs 1×（7 个只读工具串行 vs 并行）。
+
+**改进收益**：I/O 密集型任务速度提升 5-10×。上下文修改队列化防止并行竞态。
+
+**相关文章**：[工具并行执行](./tool-parallelism-deep-dive.md)
+
+**进展**：PR [QwenLM/qwen-code#2864](https://github.com/QwenLM/qwen-code/pull/2864)（open）
+
+---
+
+### 8. 启动优化 API Preconnect + Early Input（P1）
+
+**Claude Code 实现**：`utils/apiPreconnect.ts`（71 行）fire-and-forget HEAD 请求预热 TCP+TLS 连接；`utils/earlyInput.ts`（191 行）启动期间 raw mode 捕获键盘输入，REPL 就绪后预填充。
+
+**Qwen Code 现状**：完全缺失。首次 API 需完整握手（+100-200ms），启动期间键入丢失。
+
+**缺失后果**：用户输入 `qwen-code` 后立即打字的内容全部丢失；首次 API 调用多 100-200ms。
+
+**改进收益**：首次交互延迟改善 ~150ms + 打字不丢失——启动体验更流畅。
+
+**相关文章**：[启动阶段优化](./startup-optimization-deep-dive.md)
+
+---
+
+### 9. 指令条件规则 frontmatter `paths:` + 惰加载（P1）
+
+**Claude Code 实现**：`.claude/rules/*.md` 支持 `paths:` frontmatter glob 模式。有 `paths:` 的规则仅在操作匹配文件时惰加载；无 `paths:` 的规则急加载。支持 HTML 注释剥离。
+
+**Qwen Code 现状**：无 frontmatter、无条件加载、无 HTML 注释剥离。所有指令文件急加载。
+
+**缺失后果**：`src/`、`tests/`、`docs/` 的不同编码规范必须全部写在一个 QWEN.md 中——系统提示膨胀。
+
+**改进收益**：按文件路径匹配加载规则——TypeScript 文件操作时只注入 TS 规范，节省 token 且规则更精准。
+
+**相关文章**：[指令文件加载](./instruction-loading-deep-dive.md)
+
+---
+
+### 10. 上下文折叠 History Snip（P1）
+
+**Claude Code 实现**：`services/contextCollapse/` 实现 span 级上下文摘要 + staging（feature-gated）。对早期对话 span 进行选择性摘要，保留关键信息。
+
+**Qwen Code 现状**：缺失。
+
+**缺失后果**：长对话中早期 turn 始终占满上下文——即使内容已被后续 turn 覆盖。
+
+**改进收益**：选择性压缩早期 span 而非全量摘要——比 full compact 更精细，信息损失更小。
+
+---
+
+### 11. 工具动态发现 ToolSearchTool（P1）
+
+**Claude Code 实现**：`tools/ToolSearchTool/ToolSearchTool.ts` 支持关键词搜索和 `select:` 直接选择 deferred 工具。延迟加载的工具不占系统提示 token，需要时按需加载。
+
+**Qwen Code 现状**：缺失。所有工具始终加载到系统提示中。
+
+**缺失后果**：39+ 工具的 schema 全部注入系统提示——占用大量 token 预算。
+
+**改进收益**：仅加载核心工具（~10 个），其余按需——系统提示 token 减少 50%+。
+
+---
+
+### 12. Commit Attribution Co-Authored-By（P1）
+
+**Claude Code 实现**：`utils/commitAttribution.ts`（961 行）跟踪每个文件的 AI vs 人类字符贡献比例，`Co-Authored-By` 注入 commit 消息，attribution 元数据存储在 git notes 中。
+
+**Qwen Code 现状**：缺失。
+
+**缺失后果**：git 历史中无法区分 AI 生成代码和人类代码——开源合规和审计困难。
+
+**改进收益**：透明的 AI 代码归因——满足开源项目 AI 贡献披露要求。
+
+**相关文章**：[Git 工作流与会话管理](./git-workflow-session-deep-dive.md)
+
+---
+
+### 13. 会话分支 /branch（P1）
+
+**Claude Code 实现**：`commands/branch/branch.ts`（296 行）fork 当前 transcript 为新 session，保留 `forkedFrom: { sessionId, messageUuid }` 溯源，自动命名 "(Branch)"。
+
+**Qwen Code 现状**：缺失。
+
+**缺失后果**：探索替代方案时必须丢弃当前进度，或手动复制/粘贴上下文。
+
+**改进收益**：从任意节点创建分支——A/B 对比架构决策，原始 session 可随时 `--resume`。
+
+**相关文章**：[Git 工作流与会话管理](./git-workflow-session-deep-dive.md)
+
+---
+
+### 14. 成本追踪 USD + cache 效率（P1）
+
+**Claude Code 实现**：`cost-tracker.ts`（323 行）按模型分项累计 USD 成本（含 cache read/write），`/cost` 命令显示金额、API 时间、代码变更行数。成本跨 `--resume` 持久化。
+
+**Qwen Code 现状**：`/stats` 显示 token 计数和 cache 效率百分比，但无 USD 金额计算。
+
+**缺失后果**：用户不知道实际花费多少钱——无法优化模型选择或 cache 使用。
+
+**改进收益**：实时 USD 可见性——用户可识别高消耗操作并调整策略。
+
+**相关文章**：[成本追踪与 Fast Mode](./cost-fastmode-deep-dive.md)
+
+---
+
+### 15. Shell 安全增强（P2）
+
+**Claude Code 实现**：`tools/BashTool/bashSecurity.ts`（2,592 行）25+ 安全检查管线 + tree-sitter AST 辅助消除误报。覆盖 IFS 注入、Unicode 空白、Zsh 命令、花括号展开等。
+
+**Qwen Code 现状**：AST-only 读写分类（`shellAstParser.ts` 1,248 行）。不覆盖 IFS、Unicode、Zsh 等维度。
+
+**缺失后果**：IFS 注入、Unicode 空白字符等边缘攻击可能绕过只读检测。
+
+**改进收益**：AST 主路径（精确）+ 专项检查补充（IFS/Unicode/Zsh）——覆盖面与精确度兼得。
+
+**相关文章**：[Shell 安全模型](./shell-security-deep-dive.md)
+
+---
+
+### 16. MDM 企业配置（P2）
+
+**Claude Code 实现**：macOS plist（`com.anthropic.claudecode`）+ Windows Registry（`HKLM\SOFTWARE\Policies\ClaudeCode`）+ `managed-settings.d/` drop-in 目录 + 远程 API 策略。5 级 First-Source-Wins 优先级。
+
+**Qwen Code 现状**：无 OS 级策略管理，仅文件配置。
+
+**缺失后果**：企业 IT 无法通过 Jamf/Intune/SCCM 集中管控 AI Agent 配置。
+
+**改进收益**：管理员可锁定权限模式、限制模型选择、强制遥测——满足 SOC 2 / HIPAA 合规。
+
+**相关文章**：[MDM 企业配置管理](./mdm-enterprise-deep-dive.md)
+
+---
+
+### 17. API 实时 Token 计数（P2）
+
+**Claude Code 实现**：`services/tokenEstimation.ts`（495 行）3 层回退：`countTokensWithAPI()` → Haiku fallback → 粗估（4 bytes/token）。支持 4 Provider（Direct/Bedrock/Vertex/Foundry）。VCR fixture 缓存避免重复计数。
+
+**Qwen Code 现状**：静态模式匹配（`tokenLimits.ts` 82 种模型模式）。配置时确定，非运行时计数。
+
+**缺失后果**：上下文窗口占用率估算不准确——可能过早或过晚触发压缩。
+
+**改进收益**：精确 token 计数——压缩触发更准确，避免不必要的压缩或溢出。
+
+**相关文章**：[Token 估算与 Thinking](./token-estimation-deep-dive.md)
+
+---
+
+### 18. Output Styles Learning / Explanatory（P2）
+
+**Claude Code 实现**：`constants/outputStyles.ts`（216 行）内置 Explanatory（"Insight" 教育块）和 Learning（暂停要求用户写代码，`TODO(human)` 占位符）两种模式。
+
+**Qwen Code 现状**：缺失。
+
+**缺失后果**：无法为教学/培训场景定制输出——新人无法通过动手实践学习。
+
+**改进收益**：Learning 模式让 Agent 成为教练——暂停、出题、等待用户实现——适合编程教学。
+
+**相关文章**：[Git 工作流与会话管理](./git-workflow-session-deep-dive.md)
+
+---
+
+### 19. Fast Mode 速度/成本分级（P2）
+
+**Claude Code 实现**：`utils/fastMode.ts`（532 行）同一模型（Opus 4.6）的标准/快速切换。快速模式 $30/$150/Mtok（标准 $5/$25），含冷却机制和重试集成。
+
+**Qwen Code 现状**：`/model --fast` 指定备用快速模型（不是同模型速度切换）。
+
+**缺失后果**：无法在同一模型上灵活切换延迟/成本——时间敏感任务仍用标准速度。
+
+**改进收益**：一键切换推理速度——紧急任务用 Fast，日常用 Standard，两者共享同一上下文。
+
+**相关文章**：[成本追踪与 Fast Mode](./cost-fastmode-deep-dive.md)
+
+---
+
+### 20. Computer Use 桌面自动化（P2）
+
+**Claude Code 实现**：macOS-native Swift 实现（NSWorkspace + TCC + SCContentFilter），支持截图捕获、鼠标/键盘控制、前台应用检测、剪贴板操作。通过 MCP 协议桥接。
+
+**Qwen Code 现状**：缺失。
+
+**缺失后果**：无法跨应用自动化——Agent 只能操作文件和终端，不能操作浏览器/IDE/桌面应用。
+
+**改进收益**：解锁跨应用工作流——如自动在浏览器中验证 UI、从 Figma 提取设计规范、操作数据库 GUI。
 
 ---
 
