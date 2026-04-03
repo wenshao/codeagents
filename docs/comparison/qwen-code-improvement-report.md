@@ -74,6 +74,15 @@
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](#item-20) | 缺失 | 小 | — |
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](#item-36) | 缺失 | 小 | — |
 | **P2** | 状态栏紧凑布局 — 固定高度不伸缩，最大化终端内容区域 [↓](#item-48) | Footer 占用偏高 | 小 | — |
+| **P1** | Channels — Telegram/Discord/iMessage/webhook 推送消息到运行中 session [↓](#item-49) | 缺失 | 中 | — |
+| **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](#item-50) | 缺失 | 中 | — |
+| **P1** | GitHub Code Review — 多代理自动 PR review + inline 评论 [↓](#item-51) | 缺失 | 大 | — |
+| **P1** | HTTP Hooks — Hook 可 POST JSON 到 URL 并接收响应（不仅 shell 命令）[↓](#item-52) | 仅 shell 命令 | 小 | — |
+| **P2** | Conditional Hooks — Hook `if` 字段用权限规则语法按工具/路径过滤 [↓](#item-53) | 缺失 | 小 | — |
+| **P2** | Transcript Search — 按 `/` 搜索会话记录，`n`/`N` 导航匹配项 [↓](#item-54) | 缺失 | 小 | — |
+| **P2** | Bash File Watcher — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](#item-55) | 缺失 | 小 | — |
+| **P2** | /batch 并行操作 — 编排大规模并行变更（多文件/多任务）[↓](#item-56) | 缺失 | 中 | — |
+| **P2** | Chrome Extension — 调试 live web 应用（读 DOM/Console/Network）[↓](#item-57) | 缺失 | 中 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](#item-37) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](#item-38) | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](#item-39) | 缺失 | 中 | — |
@@ -885,6 +894,126 @@
 **缺失后果**：终端高度有限时（如笔记本 + 分屏），Footer 挤压内容区域——Agent 输出和用户输入可见行数减少。
 
 **改进收益**：紧凑 Footer 最大化内容区域——在小终端上也能舒适工作。
+
+---
+
+<a id="item-49"></a>
+
+### 49. Channels 消息推送系统（P1）
+
+**Claude Code**：通过 MCP 协议支持从 Telegram、Discord、iMessage 或自定义 webhook 推送消息到运行中的 session。用户可在聊天应用中发消息，Agent 实时接收并响应。
+
+**Qwen Code**：缺失。
+
+**缺失后果**：用户只能在终端/IDE 中与 Agent 交互——无法从手机聊天应用远程发送补充信息。
+
+**改进收益**：用户外出时可通过 Telegram/Discord 向 Agent 发送指令或补充上下文——真正的"随时随地"协作。
+
+---
+
+<a id="item-50"></a>
+
+### 50. GitHub Actions CI 集成（P1）
+
+**Claude Code**：官方 `anthropics/claude-code-action` GitHub Action，支持自动 PR 审查、issue 分类、代码修复。支持 AWS Bedrock 和 Google Vertex AI 后端。
+
+**Qwen Code**：缺失。
+
+**缺失后果**：用户需手动运行 Agent 审查 PR——无法在 CI 中自动化。
+
+**改进收益**：每次 PR 自动触发 Agent 审查 + 提出修改建议——减少人工审查负担。类似功能可通过 `qwen-code -p` headless 模式实现。
+
+---
+
+<a id="item-51"></a>
+
+### 51. GitHub Code Review 多代理自动审查（P1）
+
+**Claude Code**：多代理自动 PR review——多个 Agent 并行审查不同文件，生成 inline 评论。Team/Enterprise 功能。
+
+**Qwen Code**：已有 `/review` Skill，但为单代理、手动触发。
+
+**缺失后果**：大 PR 审查慢——单 Agent 逐文件审查。
+
+**改进收益**：多代理并行审查 + 自动 inline 评论——大 PR 审查时间从 N 分钟缩短到 ~1 分钟。
+
+---
+
+<a id="item-52"></a>
+
+### 52. HTTP Hooks（P1）
+
+**Claude Code**：Hooks 支持 `type: "http"`——POST JSON 到 URL 并接收 JSON 响应，而非仅执行 shell 命令。适合与外部服务（CI、审批系统、消息平台）集成。
+
+**Qwen Code**：Hooks 仅支持 shell 命令执行。
+
+**缺失后果**：与外部服务集成需通过 shell 中的 `curl` 间接实现——脆弱且难以处理 JSON 响应。
+
+**改进收益**：Hook 原生 HTTP 支持——直接与 webhook/API 交互，响应可结构化解析并影响 Agent 决策。
+
+---
+
+<a id="item-53"></a>
+
+### 53. Conditional Hooks（P2）
+
+**Claude Code**：Hooks 支持 `if` 字段，使用权限规则语法（如 `Bash(git:*)` 或 `Edit(src/**)`）过滤何时执行。
+
+**Qwen Code**：Hooks 无条件过滤——注册后所有匹配事件都触发。
+
+**改进收益**：精细控制 Hook 触发范围——如"仅在 git 命令时运行 pre-commit 检查"。
+
+---
+
+<a id="item-54"></a>
+
+### 54. Transcript Search（P2）
+
+**Claude Code**：按 `/` 进入搜索模式，`n`/`N` 在匹配项间导航。支持 transcript 模式下的会话内搜索。
+
+**Qwen Code**：缺失。
+
+**改进收益**：长会话中快速定位之前的讨论——"刚才说的那个 API 端点是什么来着？"
+
+---
+
+<a id="item-55"></a>
+
+### 55. Bash File Watcher（P2）
+
+**Claude Code**：检测 formatter/linter 在 Agent 读取文件后修改了该文件（如 prettier 自动格式化），发出警告防止 stale-edit 错误。
+
+**Qwen Code**：缺失。
+
+**缺失后果**：Agent 读取文件后 formatter 自动修改 → Agent 基于旧内容编辑 → 冲突或丢失格式化。
+
+**改进收益**：自动检测文件被外部修改 → 提醒 Agent 重新读取——避免 stale-edit 导致的编辑冲突。
+
+---
+
+<a id="item-56"></a>
+
+### 56. /batch 并行操作（P2）
+
+**Claude Code**：`/batch` bundled 命令，编排大规模并行变更——多文件/多任务同时处理。
+
+**Qwen Code**：缺失。
+
+**改进收益**：批量重构场景（如 "将所有 class 组件迁移到 hooks"）可并行处理——速度倍增。
+
+---
+
+<a id="item-57"></a>
+
+### 57. Chrome Extension 浏览器调试（P2）
+
+**Claude Code**：Chrome 扩展通过 MCP 协议桥接，提供 `read_page`（DOM）、`read_console_messages`（Console）、`read_network_requests`（Network）、`navigate`、`switch_browser` 等工具。通过 `/web-setup` 配置。
+
+**Qwen Code**：缺失。
+
+**缺失后果**：前端调试时 Agent 无法"看到"浏览器中的实际渲染结果/错误日志。
+
+**改进收益**：Agent 可直接读取浏览器 DOM 和控制台错误——前端调试效率大幅提升。
 
 ---
 
