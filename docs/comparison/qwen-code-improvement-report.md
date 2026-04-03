@@ -72,6 +72,7 @@
 | **P2** | 终端主题检测 — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 | 缺失 | 小 | — |
 | **P2** | 自动后台化 Agent — 超过阈值自动转后台执行，不阻塞用户交互 | 需显式指定 | 小 | — |
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 | 缺失 | 小 | — |
+| **P3** | 动态状态栏 — 模型/工具可实时更新状态文本（如"正在分析 5 个文件..."） | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 | 缺失 | 中 | — |
 | **P3** | Feature Gates — GrowthBook 远程特性开关 + A/B 测试 + 按事件动态采样 | 缺失 | 中 | — |
