@@ -35,34 +35,36 @@
 
 ## 二、Qwen Code 改进建议矩阵
 
-| 优先级 | 改进点 | Claude Code 实现 | Qwen Code 现状 | 实现难度 | 用户价值 | 建议方案 |
-|--------|--------|------------------|----------------|----------|----------|----------|
-| **P0** | Mid-Turn Queue Drain | `query.ts#L1550-L1643` 在工具批次之间 drain 命令队列，用户输入注入当前 turn 的下一个 step | 推理循环内无队列检查，用户输入仅在 round 结束后处理 | 中 | 高 | 已提 PR [QwenLM/qwen-code#2854](https://github.com/QwenLM/qwen-code/pull/2854)（open） |
-| **P0** | 多层上下文压缩 (Context Compression) 策略 | 4 层：microCompact, apiMicrocompact, autoCompact, sessionMemoryCompact | 仅单一 ChatCompressionService，基于固定 token 阈值 | 中 | 高 | 引入 micro-compact（turn 级）+ session-memory compact 分层策略 |
-| **P0** | Fork 子代理 (Subagent)（继承上下文） | forkSubagent.ts 支持隐式 fork，子代理 (Subagent) 继承父对话上下文 + 系统 prompt | Agent 工具仅支持预定义的 subagent_type，无法 fork 当前会话上下文 | 中 | 高 | 实现 forkSubagent 机制，支持 `subagent_type` 可选时的上下文继承 |
-| **P1** | 投机执行 (Speculation) 系统 | speculation.ts（991 行）实现 overlay-fs + copy-on-write，在用户确认前预执行只读工具 | v0.15.0 已实现完整系统（563 行 speculation.ts + overlayFs + speculationToolGate），但默认关闭（`enableSpeculation: false`） | 小 | 高 | 默认启用 speculation，优化 speculationToolGate 的工具分类覆盖度 |
-| **P1** | 会话记忆 (Session Memory) 系统 | SessionMemory 服务 + memdir 实现跨 session 记忆 (Memory) 提取与检索 | 仅有 memoryTool.ts 的简单笔记功能，无跨 session 记忆 (Memory) | 大 | 高 | 实现 SessionMemory 服务 + 记忆 (Memory) 提取 hook + 记忆 (Memory) 检索工具 |
-| **P1** | Auto Dream（自动记忆 (Memory) 整理） | autoDream.ts 基于时间门控 + session 数量门控触发 forked agent 整理 | 无对应功能 | 中 | 高 | 实现基于 GrowthBook 门控的自动记忆 (Memory) 整理，后台 fork agent 执行 |
-| **P1** | 上下文折叠 (Context Collapse / History Snip) | contextCollapse 服务实现 span 级上下文摘要 + staging，feature-gated | 无对应功能 | 大 | 中 | 引入 History Snip 机制，对早期对话 span 进行摘要压缩 |
-| **P1** | 工具池动态发现（Tool Search） | ToolSearchTool 支持关键词搜索和 `select:` 直接选择 deferred 工具 | 无对应工具，工具选择完全依赖模型 | 小 | 中 | 实现 ToolSearchTool，支持 deferred 工具的延迟加载和搜索 |
-| **P1** | 智能工具并行（Kind-based Batching） | 最大并发度可配置（默认 10），基于 `isConcurrencySafe` 分区，连续只读工具合并为并行批次 | 已有 Agent 工具并发，其他工具顺序执行 | 小 | 高 | 已提 PR [QwenLM/qwen-code#2864](https://github.com/QwenLM/qwen-code/pull/2864)（open） |
-| **P1** | 启动优化（API Preconnect + Early Input） | `apiPreconnect.ts` fire-and-forget TCP+TLS 预连接 + `earlyInput.ts` 启动期间 raw mode 键盘捕获 | 完全缺失，首次 API 需完整握手，启动期间键入丢失 | 小 | 高 | 详见 [启动优化 Deep-Dive](./startup-optimization-deep-dive.md) |
-| **P1** | CLAUDE.md 条件规则（frontmatter `paths:` + 惰加载） | `.claude/rules/*.md` + `paths:` glob 模式，仅在操作匹配文件时加载 | 无 frontmatter、无条件加载、无 HTML 注释剥离 | 中 | 高 | 详见 [指令文件加载 Deep-Dive](./instruction-loading-deep-dive.md) |
-| **P2** | Shell 安全增强（IFS/Unicode/Zsh 专项检查） | 25+ 安全检查管线 + tree-sitter AST 辅助 | AST-only 读写分类，不覆盖 IFS 注入、Unicode 空白、Zsh 命令 | 中 | 中 | 详见 [Shell 安全 Deep-Dive](./shell-security-deep-dive.md) |
-| **P2** | MDM 企业配置（macOS plist / Windows Registry） | 5 级策略体系 + 远程 API + drop-in 目录 | 无 OS 级策略管理，仅文件配置 | 大 | 中 | 详见 [MDM 企业 Deep-Dive](./mdm-enterprise-deep-dive.md) |
-| **P2** | API 实时 Token 计数 | `countTokensWithAPI()` 实时计数 + Haiku 回退 + 粗估 | 静态模式匹配（82 种模型模式） | 中 | 中 | 详见 [Token 估算 Deep-Dive](./token-estimation-deep-dive.md) |
-| **P2** | 计划模式 Interview Phase | EnterPlanMode 支持 interview 阶段，分离探索和规划 | exitPlanMode 工具存在，但无 interview 阶段 | 中 | 中 | 实现 plan_mode 附件系统，支持 interview 阶段的详细工作流 |
-| **P2** | Brief 工具（异步消息） | BriefTool 支持向用户发送异步消息（含附件），proactive status | 无对应工具，Agent 只能通过工具结果与用户通信 | 中 | 中 | 实现 BriefTool，支持 agent 向用户发送带附件的异步消息 |
-| **P2** | SendMessage 工具（多代理通信） | SendMessageTool 支持队友间通信、shutdown 请求、plan approval | 无跨代理通信机制 | 中 | 中 | 实现代理间消息传递机制，支持 arena 模式下的通信 |
-| **P2** | 文件索引（File Index） | FileIndex 实现 fzf 风格模糊文件搜索，支持异步增量索引 | 依赖 rg/glob，无模糊搜索能力 | 中 | 中 | 实现纯 TS 文件索引器（nucleo 风格），提供模糊文件搜索工具 |
-| **P2** | 配置工具（Config Tool） | ConfigTool 支持 get/set 设置（主题、模型、权限等），带 schema 验证 | 设置通过 /settings 命令，无工具化访问 | 小 | 中 | 实现 ConfigTool，支持模型通过工具读写设置 |
-| **P2** | 自动后台化 Agent | getAutoBackgroundMs() 基于 GrowthBook 门控自动后台化长时 agent | agent 的 run_in_background 需显式指定 | 小 | 中 | 增加自动后台化阈值，超时自动转后台 |
-| **P3** | 安全审查命令（/security-review） | 基于 frontmatter 模板的安全审查命令，聚焦漏洞检测 | 无对应命令 | 小 | 低 | 实现 /security-review 命令，基于 git diff 的安全扫描 |
-| **P3** | Ultraplan（远程计划探索） | /ultraplan 启动远程 CCR 会话，使用更强模型进行深度规划 | 无对应功能 | 大 | 低 | 依赖远程执行基础设施，暂不推荐 |
-| **P3** | 顾问模型（Advisor Model） | /advisor 命令配置副模型提供建议 | 无对应功能 | 中 | 低 | 需多模型同时调用能力，架构改动大 |
-| **P3** | Vim 模式完整实现 | motions.ts, operators.ts, textObjects.ts, transitions.ts 完整实现 | 已有 vim.ts 基础实现 | 中 | 低 | 完善 Vim keybinding，补充 text objects 和 operators |
-| **P3** | 语音模式 | voice/ 目录 + voice hooks + STT 流式处理 | 无对应功能 | 大 | 低 | 需音频采集 + STT 基础设施 |
-| **P3** | 插件 (Plugin) 市场 | thinkback 等插件 (Plugin) 可从市场安装，带前端 UI | 无插件 (Plugin) 市场 | 大 | 低 | 需插件 (Plugin) 发现、安装、版本管理基础设施 |
+| 优先级 | 改进点 | Qwen Code 现状 | 难度 | 进展 |
+|:------:|--------|----------------|:----:|------|
+| **P0** | Mid-Turn Queue Drain（工具批次间注入用户输入） | 推理循环内无队列检查 | 中 | PR [#2854](https://github.com/QwenLM/qwen-code/pull/2854) open |
+| **P0** | 多层上下文压缩（4 层 vs 单一 70% 阈值） | 仅 ChatCompressionService | 中 | — |
+| **P0** | Fork 子代理（隐式 fork + 上下文继承 + prompt cache 共享） | 仅预定义 subagent_type | 中 | — |
+| **P1** | Speculation 默认启用 | v0.15.0 已实现，默认关闭 | 小 | PR [#2525](https://github.com/QwenLM/qwen-code/pull/2525) merged |
+| **P1** | 会话记忆（SessionMemory + memdir 跨 session 检索） | 仅简单笔记工具 | 大 | — |
+| **P1** | Auto Dream（自动记忆整理，24h + 5 session 门控） | 缺失 | 中 | — |
+| **P1** | 上下文折叠（History Snip，span 级摘要） | 缺失 | 大 | — |
+| **P1** | 工具动态发现（ToolSearchTool，延迟加载 + 搜索） | 缺失 | 小 | — |
+| **P1** | 智能工具并行（Kind-based Batching，默认 10 并发） | Agent 并发 / 其他顺序 | 小 | PR [#2864](https://github.com/QwenLM/qwen-code/pull/2864) open |
+| **P1** | 启动优化（API Preconnect + Early Input Capture） | 完全缺失 | 小 | — |
+| **P1** | 指令条件规则（frontmatter `paths:` + 惰加载） | 无 frontmatter / 条件加载 | 中 | — |
+| **P2** | Shell 安全增强（25+ 检查 vs AST-only 读写分类） | 不覆盖 IFS/Unicode/Zsh | 中 | — |
+| **P2** | MDM 企业策略（plist + Registry + 远程 API） | 无 OS 级策略 | 大 | — |
+| **P2** | API 实时 Token 计数（vs 静态 82 模式匹配） | 静态模式匹配 | 中 | — |
+| **P2** | Plan 模式 Interview Phase | 无 interview 阶段 | 中 | — |
+| **P2** | BriefTool（异步消息 + 附件） | 缺失 | 中 | — |
+| **P2** | SendMessageTool（多代理通信） | 缺失 | 中 | — |
+| **P2** | FileIndex（fzf 风格模糊搜索） | 依赖 rg/glob | 中 | — |
+| **P2** | ConfigTool（工具化设置读写） | 仅 /settings 命令 | 小 | — |
+| **P2** | 自动后台化 Agent（超时转后台） | 需显式指定 | 小 | — |
+| **P3** | /security-review 安全审查命令 | 缺失 | 小 | — |
+| **P3** | Ultraplan 远程计划探索 | 缺失 | 大 | — |
+| **P3** | Advisor 顾问模型 | 缺失 | 中 | — |
+| **P3** | Vim 完整实现（motions/operators/textObjects） | 基础 vim.ts | 中 | — |
+| **P3** | 语音模式 | 缺失 | 大 | — |
+| **P3** | 插件市场 | 缺失 | 大 | — |
+
+> 详细的 Claude Code 实现机制和建议方案见下文 Top 5 详细说明及各 [Deep-Dive 文章](#相关-deep-dive-文章)。
 
 ## 三、Top 5 改进点详细说明
 
@@ -242,3 +244,20 @@
 | 工具发现 | ToolSearchTool | 无 | 缺失 | — |
 | 多代理通信 | SendMessageTool | 无 | 缺失 | — |
 | 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | — |
+
+## 五、相关 Deep-Dive 文章
+
+| 改进领域 | 文章 |
+|----------|------|
+| Mid-Turn Queue Drain | [输入队列与中断机制](./input-queue-deep-dive.md) |
+| 上下文压缩 | [上下文压缩算法](./context-compression-deep-dive.md) |
+| Fork 子代理 | [Fork 子代理](./fork-subagent-deep-dive.md) |
+| 智能工具并行 | [工具并行执行](./tool-parallelism-deep-dive.md) |
+| Shell 安全 | [Shell 安全模型](./shell-security-deep-dive.md) |
+| 启动优化 | [启动阶段优化](./startup-optimization-deep-dive.md) |
+| 指令文件加载 | [指令文件加载](./instruction-loading-deep-dive.md) |
+| MDM 企业配置 | [MDM 企业配置管理](./mdm-enterprise-deep-dive.md) |
+| 遥测架构 | [遥测架构](./telemetry-architecture-deep-dive.md) |
+| Token 估算 | [Token 估算与 Thinking](./token-estimation-deep-dive.md) |
+| Speculation | [Prompt Suggestions](../tools/claude-code/10-prompt-suggestions.md) |
+| 会话记忆 | [记忆系统](./memory-system-deep-dive.md) |
