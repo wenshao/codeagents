@@ -57,14 +57,14 @@
 | **P2** | FileIndex（fzf 风格模糊搜索） | 依赖 rg/glob | 中 | — |
 | **P2** | ConfigTool（工具化设置读写） | 仅 /settings 命令 | 小 | — |
 | **P2** | 自动后台化 Agent（超时转后台） | 需显式指定 | 小 | — |
-| **P1** | Commit Attribution（Co-Authored-By 追踪） | 缺失 | 小 | — |
-| **P1** | 会话分支（/branch 对话分叉） | 缺失 | 中 | — |
-| **P1** | 成本追踪（USD + cache 效率 + 按模型分项） | 仅基础 token/请求计数 | 中 | — |
-| **P2** | Output Styles（Learning 教学模式 / Explanatory 解释模式） | 缺失 | 中 | — |
-| **P2** | Fast Mode（速度/成本分级推理） | 缺失 | 小 | — |
-| **P2** | 并发 Session 管理（多终端 PID 追踪 + 后台 Agent 脱附） | 缺失 | 中 | — |
-| **P2** | Git Diff 统计（工具编辑后结构化 diff + 按文件统计） | 无 git-aware diff stats | 小 | — |
-| **P2** | 文件历史快照（per-file SHA256 备份 + 按消息恢复） | checkpoint 模式（git 级） | 中 | — |
+| **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md)（Co-Authored-By 追踪） | 缺失 | 小 | — |
+| **P1** | [会话分支](./git-workflow-session-deep-dive.md)（/branch 对话分叉） | 缺失 | 中 | — |
+| **P1** | [成本追踪](./cost-fastmode-deep-dive.md)（USD + cache 效率 + 按模型分项） | 仅基础 token/请求计数 | 中 | — |
+| **P2** | [Output Styles](./git-workflow-session-deep-dive.md)（Learning 教学模式 / Explanatory 解释模式） | 缺失 | 中 | — |
+| **P2** | [Fast Mode](./cost-fastmode-deep-dive.md)（速度/成本分级推理） | 缺失 | 小 | — |
+| **P2** | [并发 Session](./cost-fastmode-deep-dive.md) 管理（多终端 PID 追踪 + 后台 Agent 脱附） | 缺失 | 中 | — |
+| **P2** | [Git Diff 统计](./git-workflow-session-deep-dive.md)（工具编辑后结构化 diff + 按文件统计） | 无 git-aware diff stats | 小 | — |
+| **P2** | [文件历史快照](./git-workflow-session-deep-dive.md)（per-file SHA256 备份 + 按消息恢复） | checkpoint 模式（git 级） | 中 | — |
 | **P2** | Session Ingress Auth（远程会话 bearer token 认证） | 缺失 | 中 | — |
 | **P3** | /security-review 安全审查命令 | 缺失 | 小 | — |
 | **P3** | Ultraplan 远程计划探索 | 缺失 | 大 | — |
@@ -332,6 +332,8 @@
 | 多代理通信 | [多代理系统](./multi-agent-deep-dive.md) |
 | 插件/Hook 扩展 | [Hook 与插件扩展](./hook-plugin-extension-deep-dive.md) |
 | MCP 集成 | [MCP 集成](./mcp-integration-deep-dive.md) |
+| 成本与 Fast Mode | [成本追踪与 Fast Mode](./cost-fastmode-deep-dive.md) |
+| Git 工作流与会话 | [Git 工作流与会话管理](./git-workflow-session-deep-dive.md) |
 | 功能矩阵 | [功能对比矩阵](./features.md) |
 
 ### Claude Code 源码文档
