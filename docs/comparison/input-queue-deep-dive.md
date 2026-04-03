@@ -223,18 +223,18 @@ export function popAllEditable(): { popped: QueuedCommand[]; newInput: string } 
 }
 ```
 
-### 2.8 Early Input（启动阶段输入捕获）
+### 2.8 Early Input（启动阶段输入捕获 (Early Input Capture)）
 
-用户输入 `claude` 后立即开始打字——此时 REPL 尚未初始化。Early Input 机制在启动阶段原始模式捕获 stdin，REPL 就绪后注入输入框：
+用户输入 `claude` 后立即开始打字——此时 REPL 尚未初始化。Early Input 机制在启动阶段原始模式 (Raw Mode) 捕获 stdin，REPL 就绪后注入输入框：
 
 ```typescript
 // 源码: utils/earlyInput.ts#L29-L60
 export function startCapturingEarlyInput(): void {
-  process.stdin.setRawMode(true)   // 原始模式
+  process.stdin.setRawMode(true)   // 原始模式 (Raw Mode)
   readableHandler = () => {
     let chunk = process.stdin.read()
     while (chunk !== null) {
-      processChunk(chunk)           // 逐字符处理：Ctrl+C 退出、退格删除、转义序列忽略
+      processChunk(chunk)           // 逐字符处理：Ctrl+C 退出、退格删除、转义序列 (Escape Sequence) 忽略
       chunk = process.stdin.read()
     }
   }
@@ -404,7 +404,7 @@ abort(): void {                        // 3. 立即终止
 | 场景 | Claude Code | Qwen Code |
 |------|------------|-----------|
 | Agent 执行中输入 | ✅ 输入框始终可用 | ✅ stdin 不阻塞 |
-| 输入立即可见 | ✅ 队列在 UI 中渲染 | ❌ 无队列可视化 |
+| 输入立即可见 | ✅ 队列在 UI 中渲染 (Rendering) | ❌ 无队列可视化 |
 | 可编辑已排队输入 | ✅ Esc 弹出到输入框 | ❌ 入队后不可编辑 |
 | 多条排队 | ✅ 按优先级排序 | ✅ FIFO 顺序 |
 | 自动执行下一轮 | ✅ useQueueProcessor Hook | ✅ runLoop while 循环 |
@@ -575,7 +575,7 @@ Round 开始 → [API→工具→API→工具→...→完成] → dequeue → Ro
 
 ### 6.1 可视化反馈
 
-Claude Code 的队列在 prompt 下方实时渲染，用户**看得到**自己的输入已被排队。Qwen Code 无队列可视化，用户不确定输入是否生效。
+Claude Code 的队列在 prompt 下方实时渲染 (Rendering)，用户**看得到**自己的输入已被排队。Qwen Code 无队列可视化，用户不确定输入是否生效。
 
 ### 6.2 中断恢复
 
