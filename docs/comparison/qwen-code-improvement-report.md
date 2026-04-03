@@ -33,9 +33,9 @@
 
 | 优先级 | 改进点 | Claude Code 实现 | Qwen Code 现状 | 实现难度 | 用户价值 | 建议方案 |
 |--------|--------|------------------|----------------|----------|----------|----------|
-| **P0** | 多层上下文压缩策略 | 4 层：microCompact, autoCompact, reactiveCompact, sessionMemoryCompact | 仅单一 ChatCompressionService，基于固定 token 阈值 | 中 | 高 | 引入 micro-compact（turn 级）+ session-memory compact 分层策略 |
+| **P0** | 多层上下文压缩策略 | 4 层：microCompact, apiMicrocompact, autoCompact, sessionMemoryCompact | 仅单一 ChatCompressionService，基于固定 token 阈值 | 中 | 高 | 引入 micro-compact（turn 级）+ session-memory compact 分层策略 |
 | **P0** | Fork 子代理（继承上下文） | forkSubagent.ts 支持隐式 fork，子代理继承父对话上下文 + 系统 prompt | Agent 工具仅支持预定义的 subagent_type，无法 fork 当前会话上下文 | 中 | 高 | 实现 forkSubagent 机制，支持 `subagent_type` 可选时的上下文继承 |
-| **P1** | 投机执行（Speculation）系统 | speculation.ts 实现 overlay-fs + copy-on-write，在用户确认前预执行只读工具 | 已有 speculation.ts 和 overlayFs.ts 骨架，但功能不完整，与 followup 耦合度低 | 小 | 高 | 完善 speculation 的 overlay-fs 隔离层，增加 copy-overlay-to-main 机制 |
+| **P1** | 投机执行（Speculation）系统 | speculation.ts（991 行）实现 overlay-fs + copy-on-write，在用户确认前预执行只读工具 | v0.15.0 已实现完整系统（563 行 speculation.ts + overlayFs + speculationToolGate），但默认关闭（`enableSpeculation: false`） | 小 | 高 | 默认启用 speculation，优化 speculationToolGate 的工具分类覆盖度 |
 | **P1** | 会话记忆系统（Session Memory） | SessionMemory 服务 + memdir 实现跨 session 记忆提取与检索 | 仅有 memoryTool.ts 的简单笔记功能，无跨 session 记忆 | 大 | 高 | 实现 SessionMemory 服务 + 记忆提取 hook + 记忆检索工具 |
 | **P1** | Auto Dream（自动记忆整理） | autoDream.ts 基于时间门控 + session 数量门控触发 forked agent 整理 | 无对应功能 | 中 | 高 | 实现基于 GrowthBook 门控的自动记忆整理，后台 fork agent 执行 |
 | **P1** | 上下文折叠（Context Collapse/History Snip） | contextCollapse 服务实现 span 级上下文摘要 + staging，feature-gated | 无对应功能 | 大 | 中 | 引入 History Snip 机制，对早期对话 span 进行摘要压缩 |
@@ -61,7 +61,7 @@
 **Claude Code 实现**：
 - `services/compact/microCompact.ts` — turn 级微压缩，移除冗余工具结果
 - `services/compact/autoCompact.ts` — 基于 token 阈值的自动压缩
-- `services/compact/reactiveCompact.ts` — 响应式压缩（feature-gated）
+- `services/compact/apiMicrocompact.ts` — API 原生上下文管理（`clear_tool_uses` / `clear_thinking`）
 - `services/compact/sessionMemoryCompact.ts` — 基于会话记忆的压缩，保留关键上下文
 - `services/compact/postCompactCleanup.ts` — 压缩后清理
 - `services/compact/grouping.ts` — 消息分组优化
@@ -73,7 +73,7 @@
 
 **Qwen Code 现状**：
 - 仅有 `packages/core/src/services/chatCompressionService.ts`（369 行），基于固定 token 阈值（70%）的单一压缩策略
-- 无 micro-compact、无 memory-aware compact、无 reactive compact
+- 无 micro-compact、无 memory-aware compact、无 API 原生上下文管理
 
 **建议方案**：
 1. 实现 micro-compact：在每个 turn 结束后，自动裁剪冗余的工具结果（如大文件读取的截断部分）
@@ -112,7 +112,7 @@
 ### 3. 投机执行系统完善（P1）
 
 **Claude Code 实现**：
-- `services/PromptSuggestion/speculation.ts` — 992 行完整投机执行引擎
+- `services/PromptSuggestion/speculation.ts` — 991 行完整投机执行引擎
 - 使用 overlay-fs 实现 copy-on-write 文件隔离
 - 写操作写入 overlay 目录，用户确认后 copy-overlay-to-main
 - 自动检测 write tools（Edit/Write/NotebookEdit）并拒绝投机
@@ -122,17 +122,19 @@
 - `../claude-code-leaked/services/PromptSuggestion/speculation.ts` — 投机执行引擎
 - `../claude-code-leaked/services/PromptSuggestion/promptSuggestion.ts` — 建议生成器
 
-**Qwen Code 现状**：
-- `packages/core/src/followup/speculation.ts` — 564 行，有骨架但功能不完整
-- `packages/core/src/followup/overlayFs.ts` — overlay 文件系统存在
-- `packages/core/src/followup/suggestionGenerator.ts` — 建议生成器（368 行）
-- 缺少：overlay 到主文件系统的复制机制、投机边界检测、write tool 过滤
+**Qwen Code 现状**（v0.15.0 已更新）：
+- `packages/core/src/followup/speculation.ts` — 563 行，已实现完整投机执行系统
+- `packages/core/src/followup/overlayFs.ts` — 140 行，Copy-on-Write overlay 文件系统
+- `packages/core/src/followup/speculationToolGate.ts` — 146 行，工具安全分类（safe/write/boundary/unknown）
+- `packages/core/src/followup/suggestionGenerator.ts` — 367 行，建议生成 + 12 条过滤规则
+- 已实现 `acceptSpeculation()` + `generatePipelinedSuggestion()` + 边界检测
+- **当前限制**：`enableSpeculation` 默认关闭，需用户手动开启
 
 **建议方案**：
-1. 完善 `speculation.ts` 的 write tool 过滤（SAFE_READ_ONLY_TOOLS 白名单）
-2. 实现 `acceptSpeculation()` 函数，将 overlay 变更应用到主文件系统
-3. 实现投机边界检测（遇到非安全工具或 user input 时停止）
-4. 增加投机结果的 pipelined suggestion 生成（完成后立即展示下一个建议）
+1. 将 `enableSpeculation` 默认值改为 `true`（当前为 `false`）
+2. 扩大 speculationToolGate 的 safe 工具列表覆盖度
+3. 增加 speculation 完成率的遥测追踪，评估 boundary 命中频率
+4. 优化 `MAX_SPECULATION_TURNS`（当前 20）的动态调节策略
 
 ---
 
@@ -197,7 +199,7 @@
 |------|-------------|-----------|----------|
 | 压缩策略 | 4 层分层压缩 | 单一阈值压缩 | 显著落后 |
 | 子代理 | 支持 fork + 上下文继承 | 仅预定义类型 | 显著落后 |
-| 投机执行 | 完整 overlay-fs + cow | 有骨架不完整 | 中等差距 |
+| 投机执行 | 完整 overlay-fs + cow（991 行） | v0.15.0 已完整实现（563 行），默认关闭 | 小差距（仅默认值） |
 | 会话记忆 | SessionMemory + memdir | 简单笔记工具 | 显著落后 |
 | 自动记忆整理 | Auto Dream | 无 | 缺失 |
 | 上下文折叠 | History Snip | 无 | 缺失 |
