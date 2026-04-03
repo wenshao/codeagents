@@ -10,7 +10,7 @@
 |------|------------|-----------|
 | **遥测框架** | 自定义 1P Logger + OpenTelemetry | QwenLogger（RUM）+ OpenTelemetry |
 | **上报端点** | Anthropic 内部 API + Datadog | 阿里云 RUM + OTLP（可配置） |
-| **事件数量** | ~505 个 `tengu_*` 事件 | ~50 个事件类型 |
+| **事件数量** | ~656 个 `tengu_*` 事件 | ~50 个事件类型 |
 | **采样策略** | 按事件类型动态采样（GrowthBook） | 批量刷新（1,000 条 / 60 秒） |
 | **调试追踪** | Perfetto（Chrome Trace，ant-only） | 标准 OTLP Span |
 | **PII 保护** | 元数据禁止原始字符串 | 选择性 prompt 日志控制 |
@@ -30,7 +30,7 @@
 // 批量配置通过 GrowthBook 动态控制（tengu_1p_event_batch_config）
 ```
 
-**事件类型**（~505 个 `tengu_*` 前缀）：
+**事件类型**（~656 个唯一 `tengu_*` 前缀，源码 `grep -roh` 统计；含动态构造事件名时约 782 个）：
 
 | 类别 | 示例 |
 |------|------|
