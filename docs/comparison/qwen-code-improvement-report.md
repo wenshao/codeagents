@@ -72,6 +72,7 @@
 | **P2** | 终端主题检测 — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 | 缺失 | 小 | — |
 | **P2** | 自动后台化 Agent — 超过阈值自动转后台执行，不阻塞用户交互 | 需显式指定 | 小 | — |
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 | 缺失 | 小 | — |
+| **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 | 缺失 | 小 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本（如"正在分析 5 个文件..."） | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 | 缺失 | 中 | — |
@@ -84,9 +85,9 @@
 | **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI | 缺失 | 大 | — |
 
-> 详细的 Claude Code 实现机制和建议方案见下文 Top 20 详细说明及各 [Deep-Dive 文章](#五相关-deep-dive-文章)。
+> 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
-## 三、Top 20 改进点详细说明
+## 三、全部改进点详细说明
 
 ### 1. 多层上下文压缩 (Context Compression) 策略（P0）
 
@@ -503,6 +504,278 @@
 **缺失后果**：如果自动审批模式（auto-edit/yolo）连续拒绝某类操作，用户无感知——分类器可能永久阻塞合法操作。
 
 **改进收益**：连续拒绝自动检测 → 回退到手动确认模式——用户看到被拒绝的操作并可手动批准，避免"静默失败"。
+
+---
+
+### 21. 并发 Session 管理（P2）
+
+**Claude Code**：`utils/concurrentSessions.ts` 通过 PID 文件（`~/.claude/sessions/{pid}.json`）追踪多终端会话，支持 `bg`/`daemon` 后台脱附。`countConcurrentSessions()` 扫描并过滤已退出进程。
+
+**Qwen Code**：缺失。无跨终端会话追踪。
+
+**改进收益**：用户可在多终端并行使用 Agent，追踪后台任务状态，脱附/重附会话。
+
+---
+
+### 22. Git Diff 统计（P2）
+
+**Claude Code**：`utils/gitDiff.ts` 两阶段 diff——`git diff --numstat` 快速探测 + 完整 hunks。限制：50 文件、1MB/文件、400 行/文件。merge/rebase 期间跳过。
+
+**Qwen Code**：依赖 `simple-git` npm 包，无结构化 diff 统计。
+
+**改进收益**：编辑后展示清晰的按文件行数统计——用户在 commit 前了解变更影响范围。
+
+---
+
+### 23. 文件历史快照（P2）
+
+**Claude Code**：`utils/fileHistory.ts` 编辑前自动备份（SHA256 哈希 + mtime），按消息 ID 创建快照（上限 100 个/session）。支持按消息粒度恢复。
+
+**Qwen Code**：Git worktree checkpoint（整体快照），粒度更粗。
+
+**改进收益**：比 git-level 更细粒度的恢复——可回滚到任意消息时刻，而非仅 checkpoint 时刻。
+
+---
+
+### 24. Deep Link 协议（P2）
+
+**Claude Code**：`utils/deepLink/` 实现 `claude-cli://` URI scheme，支持 `q`（prompt）、`cwd`（目录）、`repo`（GitHub slug）参数。自动检测 10+ 终端（iTerm/Ghostty/Kitty 等），3 平台协议注册。
+
+**Qwen Code**：缺失。
+
+**改进收益**：从浏览器/IDE/Slack 一键启动 Agent 并预填充 prompt——大幅降低上下文切换成本。
+
+**相关文章**：[Deep Link 协议](./deep-link-protocol-deep-dive.md)
+
+---
+
+### 25. Plan 模式 Interview（P2）
+
+**Claude Code**：`EnterPlanMode` 支持 interview 阶段——先通过提问收集需求，再制定实施计划。分离"探索"和"执行"。
+
+**Qwen Code**：有 `exitPlanMode` 工具但无 interview 阶段。
+
+**改进收益**：复杂任务前先充分理解需求——减少返工。
+
+---
+
+### 26. BriefTool（P2）
+
+**Claude Code**：`tools/BriefTool/` 允许 Agent 向用户发送异步消息（含附件），不中断工具执行。用于 proactive status 更新。
+
+**Qwen Code**：缺失。Agent 只能通过工具结果与用户通信。
+
+**改进收益**：长时间任务中用户可收到进度更新——"已完成 3/5 个文件修改"。
+
+---
+
+### 27. SendMessageTool（P2）
+
+**Claude Code**：`tools/SendMessageTool/` 支持队友间通信（单播/广播）、shutdown 请求、plan approval。路由支持 name/UDS/bridge。
+
+**Qwen Code**：缺失。Arena 模式下无跨代理通信。
+
+**改进收益**：多代理协作时可协调任务——Leader 分配工作后 Worker 通过消息报告进度。
+
+**相关文章**：[多代理系统](./multi-agent-deep-dive.md)
+
+---
+
+### 28. FileIndex（P2）
+
+**Claude Code**：`native-ts/file-index/` 实现 fzf 风格模糊文件搜索，支持异步增量索引。
+
+**Qwen Code**：依赖 `rg`/`glob`，无模糊搜索。
+
+**改进收益**：大型仓库中快速定位文件——不需要精确文件名。
+
+---
+
+### 29. Notebook Edit（P2）
+
+**Claude Code**：`tools/NotebookEditTool/` 支持 Jupyter notebook cell 编辑——插入/修改 code/markdown cell，自动追踪 cell ID，集成文件历史快照。
+
+**Qwen Code**：缺失。
+
+**改进收益**：数据科学工作流原生支持——直接操作 `.ipynb` 文件。
+
+---
+
+### 30. 自定义快捷键（P2）
+
+**Claude Code**：`keybindings/` 支持 multi-chord 组合键（如 `Ctrl+K Ctrl+S`）、平台适配（Windows VT mode 检测）、`~/.claude/keybindings.json` 自定义。
+
+**Qwen Code**：缺失。仅有 IDE keybindings.json 终端集成配置。
+
+**改进收益**：高级用户自定义操作快捷方式——提升重复操作效率。
+
+---
+
+### 31. Session Ingress Auth（P2）
+
+**Claude Code**：`utils/sessionIngressAuth.ts` 提供 bearer token 远程会话认证，支持文件描述符和 well-known 文件方式。
+
+**Qwen Code**：缺失。
+
+**改进收益**：企业多用户环境下安全的远程 Agent 访问——支持 CCR 式部署。
+
+---
+
+### 32. 企业代理支持（P2）
+
+**Claude Code**：`upstreamproxy/` 提供 CONNECT-to-WebSocket relay，CA cert 链注入，NO_PROXY 白名单（覆盖 RFC1918、Anthropic API、GitHub、包注册表）。失败时 fail-open。
+
+**Qwen Code**：缺失。
+
+**改进收益**：企业网络（代理/VPN/防火墙）环境下正常使用——无需手动配置代理。
+
+---
+
+### 33. ConfigTool（P2）
+
+**Claude Code**：`tools/ConfigTool/` 允许模型通过工具 get/set 设置（主题、模型、权限等），带 schema 验证。
+
+**Qwen Code**：设置通过 `/settings` 命令，模型无法程序化修改。
+
+**改进收益**：模型可根据任务自动调整设置——如切换到适合当前任务的模型。
+
+---
+
+### 34. 终端主题检测（P2）
+
+**Claude Code**：`utils/systemTheme.ts` 通过 OSC 11 查询终端背景色 + `$COLORFGBG` 环境变量回退，解析 `auto` 主题为具体 dark/light。
+
+**Qwen Code**：缺失。
+
+**改进收益**：终端 dark/light 模式自动适配——代码高亮和 UI 颜色与终端背景匹配。
+
+---
+
+### 35. 自动后台化 Agent（P2）
+
+**Claude Code**：`getAutoBackgroundMs()` 基于 GrowthBook 门控，超过阈值的 Agent 自动转后台执行。
+
+**Qwen Code**：需显式指定 `run_in_background`。
+
+**改进收益**：长时间 Agent 任务自动后台化——不阻塞用户交互。
+
+---
+
+### 36. 队列输入编辑（P2）
+
+**Claude Code**：`utils/messageQueueManager.ts` 的 `popAllEditable()` 允许用户按 Escape 将队列中的可编辑命令弹出到输入框重新编辑。队列在 prompt 下方实时可见。
+
+**Qwen Code**：缺失。排队输入后无法修改。
+
+**缺失后果**：用户在 Agent 执行中输入了错误指令但无法撤回——只能等 Agent 处理完错误指令后再纠正。
+
+**改进收益**：排队中的输入可重新编辑——发现输入错误时按 Escape 弹回修改，避免浪费一轮执行。
+
+**相关文章**：[输入队列与中断机制](./input-queue-deep-dive.md)
+
+---
+
+### 37. 动态状态栏（P3）
+
+**Claude Code**：`AppState.statusLineText` 允许模型/工具实时更新状态文本（如"正在分析 5 个文件..."）。
+
+**Qwen Code**：仅静态 Footer。
+
+**改进收益**：用户实时了解 Agent 当前在做什么——减少等待焦虑。
+
+---
+
+### 38. 上下文折叠 History Snip（P3）
+
+**Claude Code**：`feature('HISTORY_SNIP')` 门控，目前仅 scaffolding（SnipTool 有 lazy require 占位，无完整实现）。已有 `collapseReadSearch.ts` 的 UI 级消息折叠。
+
+**Qwen Code**：缺失。
+
+**说明**：Claude Code 自身未完整实现，列为参考方向。
+
+---
+
+### 39. 内存诊断（P3）
+
+**Claude Code**：`utils/heapDumpService.ts` 在 1.5GB 阈值触发 V8 heap snapshot，解析 Linux smaps_rollup，分析内存增长率并给出 leak 建议。
+
+**Qwen Code**：缺失。
+
+**改进收益**：长会话内存泄漏自动检测和诊断——帮助开发者定位 Agent 的内存问题。
+
+---
+
+### 40. Feature Gates（P3）
+
+**Claude Code**：`services/analytics/growthbook.ts` 集成 GrowthBook 远程特性开关 + A/B 测试 + 按事件动态采样率。
+
+**Qwen Code**：缺失。
+
+**改进收益**：新功能渐进式灰度发布——降低全量上线风险。
+
+---
+
+### 41. DXT/MCPB 插件包格式（P3）
+
+**Claude Code**：支持 `.dxt`/`.mcpb` 打包格式，含 zip bomb 防护（512MB/文件、1GB 总量、50:1 压缩比限制）。
+
+**Qwen Code**：缺失。
+
+**改进收益**：安全的插件分发——单文件安装 MCP 服务器 + 依赖。
+
+---
+
+### 42. /security-review 安全审查（P3）
+
+**Claude Code**：基于 frontmatter 模板的安全审查命令，聚焦 git diff 中的漏洞检测。
+
+**Qwen Code**：缺失。
+
+**改进收益**：代码提交前自动安全扫描——减少安全漏洞。
+
+---
+
+### 43. Ultraplan 远程计划探索（P3）
+
+**Claude Code**：`/ultraplan` 启动远程 CCR 会话，使用更强模型进行深度规划后回传结果。
+
+**Qwen Code**：缺失。依赖远程执行基础设施。
+
+---
+
+### 44. Advisor 顾问模型（P3）
+
+**Claude Code**：`/advisor` 配置副模型（如 Opus）审查主模型（如 Sonnet）输出。`server_tool_use` 方式，Backend 确定审查模型。
+
+**Qwen Code**：缺失。需多模型同时调用能力。
+
+---
+
+### 45. Vim 完整实现（P3）
+
+**Claude Code**：`keybindings/` 含 `motions.ts`、`operators.ts`、`textObjects.ts`、`transitions.ts` 完整 Vim 键绑定系统。
+
+**Qwen Code**：有基础 `vim.ts` 实现。
+
+**改进收益**：Vim 用户获得完整的 modal editing 体验。
+
+---
+
+### 46. 语音模式（P3）
+
+**Claude Code**：`commands/voice/` + push-to-talk 快捷键 + 流式 STT 转录。快捷键可通过 `keybindings.json` 重绑。
+
+**Qwen Code**：缺失。需音频捕获 + STT 基础设施。
+
+---
+
+### 47. 插件市场（P3）
+
+**Claude Code**：支持从官方 marketplace 安装插件（hooks/commands/agents/output styles/MCP），自动更新。含安装状态追踪（pending → installing → installed/failed）。
+
+**Qwen Code**：缺失。需插件发现、安装、版本管理基础设施。
+
+**相关文章**：[Hook 与插件扩展](./hook-plugin-extension-deep-dive.md)
 
 ---
 
