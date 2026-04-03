@@ -68,7 +68,6 @@
 | **P2** | Computer Use（macOS 桌面自动化：截图 + 鼠标/键盘 + 剪贴板） | 缺失 | 大 | — |
 | **P2** | LSP Tool（go-to-definition / find-references / symbol search） | 缺失 | 中 | — |
 | **P2** | Deep Link 协议（`claude-cli://` URI scheme，IDE/浏览器集成） | 缺失 | 中 | — |
-| **P2** | /btw 侧问（不中断主对话的快速提问） | 缺失 | 小 | — |
 | **P2** | Notebook Edit（Jupyter cell 编辑 + 自动 cell ID 追踪） | 缺失 | 中 | — |
 | **P2** | Team Memory Sync（组织级记忆同步 + gitleaks 密钥扫描） | 缺失 | 大 | — |
 | **P2** | 自定义快捷键（multi-chord + 平台适配 + `keybindings.json`） | 缺失 | 中 | — |
@@ -531,7 +530,6 @@
 | Computer Use | macOS 桌面自动化 | 无 | 缺失 | — |
 | LSP Tool | 代码智能导航 | 无 | 缺失 | — |
 | Deep Link | `claude-cli://` URI scheme | 无 | 缺失 | — |
-| /btw 侧问 | 不中断对话的快速提问 | 无 | 缺失 | — |
 | Notebook Edit | Jupyter cell 编辑 | 无 | 缺失 | — |
 | Team Memory | 组织级记忆同步 | 无 | 缺失 | — |
 | 自定义快捷键 | multi-chord + keybindings.json | 无 | 缺失 | — |
