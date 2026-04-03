@@ -59,7 +59,6 @@
 | **P2** | 自动后台化 Agent（超时转后台） | 需显式指定 | 小 | — |
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md)（Co-Authored-By 追踪） | 缺失 | 小 | — |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md)（/branch 对话分叉） | 缺失 | 中 | — |
-| **P1** | [成本追踪](./cost-fastmode-deep-dive.md)（USD + cache 效率 + 按模型分项） | 仅基础 token/请求计数 | 中 | — |
 | **P2** | [Output Styles](./git-workflow-session-deep-dive.md)（Learning 教学模式 / Explanatory 解释模式） | 缺失 | 中 | — |
 | **P2** | [Fast Mode](./cost-fastmode-deep-dive.md)（速度/成本分级推理） | 缺失 | 小 | — |
 | **P2** | [并发 Session](./cost-fastmode-deep-dive.md) 管理（多终端 PID 追踪 + 后台 Agent 脱附） | 缺失 | 中 | — |
@@ -85,9 +84,9 @@
 | **P3** | 语音模式 | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) | 缺失 | 大 | — |
 
-> 详细的 Claude Code 实现机制和建议方案见下文 Top 20 详细说明及各 [Deep-Dive 文章](#五相关-deep-dive-文章)。
+> 详细的 Claude Code 实现机制和建议方案见下文 Top 19 详细说明及各 [Deep-Dive 文章](#五相关-deep-dive-文章)。
 
-## 三、Top 20 改进点详细说明
+## 三、Top 19 改进点详细说明
 
 ### 1. 多层上下文压缩 (Context Compression) 策略（P0）
 
@@ -406,21 +405,7 @@
 
 ---
 
-### 14. 成本追踪 USD + cache 效率（P1）
-
-**Claude Code 实现**：`cost-tracker.ts`（323 行）按模型分项累计 USD 成本（含 cache read/write），`/cost` 命令显示金额、API 时间、代码变更行数。成本跨 `--resume` 持久化。
-
-**Qwen Code 现状**：`/stats` 显示 token 计数和 cache 效率百分比，但无 USD 金额计算。
-
-**缺失后果**：用户不知道实际花费多少钱——无法优化模型选择或 cache 使用。
-
-**改进收益**：实时 USD 可见性——用户可识别高消耗操作并调整策略。
-
-**相关文章**：[成本追踪与 Fast Mode](./cost-fastmode-deep-dive.md)
-
----
-
-### 15. Shell 安全增强（P2）
+### 14. Shell 安全增强（P2）
 
 **Claude Code 实现**：`tools/BashTool/bashSecurity.ts`（2,592 行）25+ 安全检查管线 + tree-sitter AST 辅助消除误报。覆盖 IFS 注入、Unicode 空白、Zsh 命令、花括号展开等。
 
@@ -434,7 +419,7 @@
 
 ---
 
-### 16. MDM 企业配置（P2）
+### 15. MDM 企业配置（P2）
 
 **Claude Code 实现**：macOS plist（`com.anthropic.claudecode`）+ Windows Registry（`HKLM\SOFTWARE\Policies\ClaudeCode`）+ `managed-settings.d/` drop-in 目录 + 远程 API 策略。5 级 First-Source-Wins 优先级。
 
@@ -448,7 +433,7 @@
 
 ---
 
-### 17. API 实时 Token 计数（P2）
+### 16. API 实时 Token 计数（P2）
 
 **Claude Code 实现**：`services/tokenEstimation.ts`（495 行）3 层回退：`countTokensWithAPI()` → Haiku fallback → 粗估（4 bytes/token）。支持 4 Provider（Direct/Bedrock/Vertex/Foundry）。VCR fixture 缓存避免重复计数。
 
@@ -462,7 +447,7 @@
 
 ---
 
-### 18. Output Styles Learning / Explanatory（P2）
+### 17. Output Styles Learning / Explanatory（P2）
 
 **Claude Code 实现**：`constants/outputStyles.ts`（216 行）内置 Explanatory（"Insight" 教育块）和 Learning（暂停要求用户写代码，`TODO(human)` 占位符）两种模式。
 
@@ -476,7 +461,7 @@
 
 ---
 
-### 19. Fast Mode 速度/成本分级（P2）
+### 18. Fast Mode 速度/成本分级（P2）
 
 **Claude Code 实现**：`utils/fastMode.ts`（532 行）同一模型（Opus 4.6）的标准/快速切换。快速模式 $30/$150/Mtok（标准 $5/$25），含冷却机制和重试集成。
 
@@ -490,7 +475,7 @@
 
 ---
 
-### 20. Computer Use 桌面自动化（P2）
+### 19. Computer Use 桌面自动化（P2）
 
 **Claude Code 实现**：macOS-native Swift 实现（NSWorkspace + TCC + SCContentFilter），支持截图捕获、鼠标/键盘控制、前台应用检测、剪贴板操作。通过 MCP 协议桥接。
 
@@ -524,7 +509,6 @@
 | 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | — |
 | Commit Attribution | Co-Authored-By 追踪 | 无 | 缺失 | — |
 | 会话分支 | /branch 对话分叉 | 无 | 缺失 | — |
-| 成本追踪 | USD + cache 效率 + 按模型分项 | 仅基础 token 计数 | 中等差距 | — |
 | Output Styles | Learning / Explanatory 模式 | 无 | 缺失 | — |
 | Fast Mode | 速度/成本分级推理 | 无 | 缺失 | — |
 | 并发 Session | 多终端 PID 追踪 + 后台脱附 | 无 | 缺失 | — |
