@@ -83,6 +83,21 @@
 | **P2** | Bash File Watcher — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](#item-55) | 缺失 | 小 | — |
 | **P2** | /batch 并行操作 — 编排大规模并行变更（多文件/多任务）[↓](#item-56) | 缺失 | 中 | — |
 | **P2** | Chrome Extension — 调试 live web 应用（读 DOM/Console/Network）[↓](#item-57) | 缺失 | 中 | — |
+| **P1** | Structured Output — `--json-schema` 强制 JSON Schema 验证输出 [↓](#item-58) | 缺失 | 小 | — |
+| **P1** | Agent SDK — Python/TypeScript 编程式 SDK，支持流式回调和工具审批 [↓](#item-59) | 缺失 | 大 | — |
+| **P1** | Bare Mode — `--bare` 跳过所有自动发现，CI/脚本最快启动 [↓](#item-60) | 缺失 | 小 | — |
+| **P1** | Remote Control Bridge — 从手机/浏览器驱动本地终端 session [↓](#item-61) | 缺失 | 大 | — |
+| **P1** | /teleport — Web session → 终端 session 双向迁移 [↓](#item-62) | 缺失 | 大 | — |
+| **P1** | GitLab CI/CD — 官方 GitLab pipeline 集成 [↓](#item-63) | 缺失 | 中 | — |
+| **P2** | /effort — 设置模型 effort 级别（○ 低 / ◐ 中 / ● 高）[↓](#item-64) | 缺失 | 小 | — |
+| **P2** | /context — 上下文优化建议（检测臃肿工具/记忆膨胀）[↓](#item-65) | 缺失 | 小 | — |
+| **P2** | Status Line 自定义 — shell 脚本在状态栏展示自定义信息 [↓](#item-66) | 缺失 | 小 | — |
+| **P2** | Fullscreen Rendering — alt-screen 无闪烁渲染 + 虚拟滚动缓冲 [↓](#item-67) | 缺失 | 中 | — |
+| **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](#item-68) | 缺失 | 小 | — |
+| **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](#item-69) | 缺失 | 小 | — |
+| **P2** | --max-budget-usd — headless 模式 USD 花费上限 [↓](#item-70) | 缺失 | 小 | — |
+| **P2** | Connectors — 托管式 MCP 连接（GitHub/Slack/Linear/Google Drive OAuth）[↓](#item-71) | 缺失 | 大 | — |
+| **P2** | /loop Cron 调度 — session 内定时重复执行 prompt（7 天过期 + jitter）[↓](#item-72) | 缺失 | 小 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](#item-37) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](#item-38) | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](#item-39) | 缺失 | 中 | — |
@@ -1014,6 +1029,194 @@
 **缺失后果**：前端调试时 Agent 无法"看到"浏览器中的实际渲染结果/错误日志。
 
 **改进收益**：Agent 可直接读取浏览器 DOM 和控制台错误——前端调试效率大幅提升。
+
+---
+
+<a id="item-58"></a>
+
+### 58. Structured Output --json-schema（P1）
+
+**Claude Code**：`tools/SyntheticOutputTool/SyntheticOutputTool.ts` + `--json-schema` CLI 参数。headless 模式下强制模型输出符合 JSON Schema 的结构化数据。使用 Ajv 运行时验证 + WeakMap 缓存。
+
+**Qwen Code**：`-p` 模式仅输出纯文本，无 schema 验证。
+
+**缺失后果**：CI 脚本解析 Agent 输出需自行 parse——脆弱且不可靠。
+
+**改进收益**：`--json-schema '{"type":"object",...}'` → 输出保证符合 schema——CI 集成可靠性大幅提升。
+
+---
+
+<a id="item-59"></a>
+
+### 59. Agent SDK Python/TypeScript（P1）
+
+**Claude Code**：`entrypoints/sdk/` 提供编程式 SDK，支持流式回调、工具审批回调、消息对象访问。Python 和 TypeScript 两种语言。
+
+**Qwen Code**：仅 CLI 和 MCP Server 两种接入方式，无原生 SDK。
+
+**缺失后果**：开发者构建自定义 Agent 工作流需通过 shell 调用 CLI——不优雅且难以处理流式输出。
+
+**改进收益**：`from qwen_code import Agent; agent.send("fix bug")` — 原生编程接口，支持流式 + 回调。
+
+---
+
+<a id="item-60"></a>
+
+### 60. Bare Mode --bare（P1）
+
+**Claude Code**：`entrypoints/cli.tsx#L283` + `main.tsx#L394`。跳过 hooks、LSP、plugins、auto-memory、CLAUDE.md 发现、OAuth/keychain。仅通过 CLI 参数显式传入上下文。CI 最快启动。
+
+**Qwen Code**：`-p` 模式仍加载所有配置。
+
+**缺失后果**：CI 中启动慢——加载了不需要的 hooks/plugins/memory。不同环境的 hooks 导致结果不可复现。
+
+**改进收益**：`qwen-code --bare -p "task"` — 确定性执行，每台机器同样结果。
+
+---
+
+<a id="item-61"></a>
+
+### 61. Remote Control Bridge（P1）
+
+**Claude Code**：`bridge/` 目录（bridgeMain.ts + bridgeApi.ts + bridgeConfig.ts）。通过 `claude.ai/code` 网页驱动本地终端 session。Outbound-only 模式保证安全。
+
+**Qwen Code**：缺失。
+
+**缺失后果**：离开电脑后无法继续与 Agent 交互——任务需等用户回来。
+
+**改进收益**：手机/浏览器远程驱动终端 Agent——外出时可继续审批权限、补充上下文。
+
+---
+
+<a id="item-62"></a>
+
+### 62. /teleport 跨平台迁移（P1）
+
+**Claude Code**：`utils/teleport.tsx` + `utils/teleport/`（api.ts + gitBundle.ts + environments.ts）。Web session → 终端迁移，包含分支 checkout + 完整会话历史加载。
+
+**Qwen Code**：缺失。
+
+**改进收益**：Web 上启动长任务 → 完成后 `/teleport` 到终端继续本地调试——跨平台无缝切换。
+
+---
+
+<a id="item-63"></a>
+
+### 63. GitLab CI/CD 集成（P1）
+
+**Claude Code**：官方 GitLab pipeline 集成，类似 GitHub Actions 的自动 PR 审查 + issue 分类。
+
+**Qwen Code**：仅有 GitHub 相关集成。
+
+**改进收益**：覆盖 GitLab 用户群——企业用户中 GitLab 占比显著。
+
+---
+
+<a id="item-64"></a>
+
+### 64. /effort 命令（P2）
+
+**Claude Code**：`commands/effort/effort.tsx`。设置模型 effort 级别（低 ○ / 中 ◐ / 高 ●），显示在 prompt bar 和 spinner 上。影响推理深度和 token 消耗。
+
+**Qwen Code**：缺失。用户无法动态调整推理深度。
+
+**改进收益**：简单任务用低 effort（省 token），复杂任务用高 effort——灵活控制质量/成本平衡。
+
+---
+
+<a id="item-65"></a>
+
+### 65. /context 上下文优化建议（P2）
+
+**Claude Code**：`commands/context/context.tsx`。分析当前上下文使用情况，识别臃肿工具 schema、记忆膨胀、可优化项，给出具体建议。
+
+**Qwen Code**：缺失。
+
+**改进收益**：用户可一键诊断"为什么 token 用这么快"——针对性优化。
+
+---
+
+<a id="item-66"></a>
+
+### 66. Status Line 自定义（P2）
+
+**Claude Code**：`components/StatusLine.tsx` + `settings.statusLine` 配置。用户配置 shell 脚本在状态栏展示自定义信息（如 rate limit 用量、git branch、自定义指标）。
+
+**Qwen Code**：缺失。
+
+**改进收益**：状态栏展示用户关心的信息——如"Rate limit: 45% used, resets in 2h"。
+
+---
+
+<a id="item-67"></a>
+
+### 67. Fullscreen Rendering（P2）
+
+**Claude Code**：`utils/fullscreen.ts` + `CLAUDE_CODE_NO_FLICKER=1`。Alt-screen 渲染 + 虚拟滚动缓冲区——完全消除终端闪烁。
+
+**Qwen Code**：缺失。
+
+**改进收益**：长输出不再闪烁——视觉体验提升，尤其在低性能终端上。
+
+---
+
+<a id="item-68"></a>
+
+### 68. Image [Image #N] Chips（P2）
+
+**Claude Code**：`components/PromptInput/PromptInput.tsx#L581`。粘贴图片后在输入框生成 `[Image #1]`、`[Image #2]` 位置标记，用户可通过标记在 prompt 中引用特定图片。
+
+**Qwen Code**：缺失。
+
+**改进收益**："修复 [Image #1] 中的 bug，参考 [Image #2] 的设计"——多图场景更精确。
+
+---
+
+<a id="item-69"></a>
+
+### 69. --max-turns 限制（P2）
+
+**Claude Code**：`main.tsx` CLI 参数 `--max-turns <N>`。headless 模式下限制最大 agentic turn 数——防止无限循环。
+
+**Qwen Code**：有 `maxTurnsPerMessage` 配置，但非 CLI 参数。
+
+**改进收益**：CI 脚本精确控制 Agent 执行范围——`qwen-code -p --max-turns 10 "fix bug"` 最多 10 轮。
+
+---
+
+<a id="item-70"></a>
+
+### 70. --max-budget-usd 花费上限（P2）
+
+**Claude Code**：`main.tsx` CLI 参数 `--max-budget-usd <amount>`。headless 模式下限制 USD 花费——自动停止。
+
+**Qwen Code**：缺失。
+
+**改进收益**：CI 防止意外高消耗——`--max-budget-usd 5` 限制单次运行最多 $5。
+
+---
+
+<a id="item-71"></a>
+
+### 71. Connectors 托管式 MCP（P2）
+
+**Claude Code**：`services/mcp/client.ts` 管理 OAuth 认证的 MCP 连接——GitHub、Slack、Linear、Google Drive 等。连接器处理 token 刷新和 401 重试。
+
+**Qwen Code**：MCP 仅支持手动配置。
+
+**改进收益**：一键连接 GitHub/Slack/Linear——无需手动配 token、刷新、重试。
+
+---
+
+<a id="item-72"></a>
+
+### 72. /loop Cron 调度（P2）
+
+**Claude Code**：`skills/bundled/loop.ts` + `tools/ScheduleCronTool/`。session 内定时重复执行 prompt——5 字段 cron 表达式、最大 50 任务、7 天自动过期、jitter 防同时触发。
+
+**Qwen Code**：缺失。
+
+**改进收益**：`/loop 5m check if deployment finished` — Agent 自动定期检查，用户无需手动轮询。
 
 ---
 
