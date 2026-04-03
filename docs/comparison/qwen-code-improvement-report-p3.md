@@ -21,6 +21,10 @@
 
 **Qwen Code 修改方向**：`UIStateContext` 新增 `statusText` 状态；工具执行时通过 `setUIState()` 更新；`Footer.tsx` 渲染。
 
+**意义**：用户不知道 Agent 当前在做什么——长时间执行时焦虑等待。
+**缺失后果**：仅有 spinner 无具体信息——'还要等多久？在做什么？'
+**改进收益**：动态状态文本——'正在分析 5 个文件...'——减少等待焦虑。
+
 ---
 
 <a id="item-38"></a>
@@ -36,6 +40,10 @@
 | `utils/collapseReadSearch.ts` | UI 级连续 read/search 折叠 |
 
 **Qwen Code 修改方向**：参考方向——连续工具调用的 UI 折叠显示（不改变 API 发送内容）。
+
+**意义**：早期对话占满上下文但内容已过时——比全量压缩更精细的方案。
+**缺失后果**：注意：Claude Code 自身仅 scaffolding，无完整实现。参考方向。
+**改进收益**：UI 级折叠——连续 read/search 合并显示，减少视觉噪音。
 
 ---
 
@@ -53,6 +61,10 @@
 
 **Qwen Code 修改方向**：`process.memoryUsage()` 定期检查；超限时 `v8.writeHeapSnapshot()`。
 
+**意义**：长会话可能内存泄漏——Agent 进程 OOM 导致 session 丢失。
+**缺失后果**：无内存监控——OOM 时直接崩溃，无诊断信息。
+**改进收益**：1.5GB 阈值预警 + heap snapshot——提前发现并诊断泄漏。
+
 ---
 
 <a id="item-40"></a>
@@ -69,6 +81,10 @@
 
 **Qwen Code 修改方向**：集成 GrowthBook SDK 或自建 feature flag 服务。
 
+**意义**：新功能灰度发布降低全量上线风险——A/B 测试数据驱动决策。
+**缺失后果**：新功能只能全量发布——出问题影响所有用户。
+**改进收益**：渐进式灰度——先 1% 用户验证，确认无问题后全量。
+
 ---
 
 <a id="item-41"></a>
@@ -78,6 +94,10 @@
 **思路**：`.dxt`/`.mcpb` 单文件打包 MCP 服务器 + 依赖。zip bomb 防护（512MB/文件、1GB 总量、50:1 压缩比）。
 
 **Qwen Code 修改方向**：定义包格式（zip + manifest.json）；安装时验证大小/压缩比。
+
+**意义**：MCP 插件分发需要打包依赖——避免安装环境不一致。
+**缺失后果**：松散文件分发——依赖缺失导致安装失败。
+**改进收益**：单文件安装 + zip bomb 防护——安全可靠的插件分发。
 
 ---
 
@@ -89,6 +109,10 @@
 
 **Qwen Code 修改方向**：新建 `skills/bundled/security-review/SKILL.md`，prompt 模板聚焦安全。
 
+**意义**：代码提交前的安全扫描是 DevSecOps 的基本要求。
+**缺失后果**：无内置安全审查——安全漏洞可能被合并到代码库。
+**改进收益**：基于 diff 的安全审查——聚焦新增代码的 OWASP Top 10。
+
 ---
 
 <a id="item-43"></a>
@@ -98,6 +122,10 @@
 **思路**：启动远程 CCR 会话，用更强模型深度规划后回传结果。需云端执行基础设施。
 
 **Qwen Code 修改方向**：需先有 Web 版本；`--remote` flag 创建云端 session。
+
+**意义**：复杂项目规划需要更强模型的深度推理——本地模型可能不够。
+**缺失后果**：规划仅能用当前模型——深度思考能力受限。
+**改进收益**：远程调用更强模型规划——结果回传到本地执行。
 
 ---
 
@@ -114,6 +142,10 @@
 | `utils/advisor.ts` | `isAdvisorEnabled()`、GrowthBook `tengu_sage_compass` |
 
 **Qwen Code 修改方向**：需多模型同时调用能力；response 后追加审查模型调用。
+
+**意义**：主模型输出质量不稳定——副模型审查可提升可靠性。
+**缺失后果**：无审查机制——错误输出可能被直接执行。
+**改进收益**：副模型自动审查——发现主模型遗漏的问题。
 
 ---
 
@@ -133,6 +165,10 @@
 
 **Qwen Code 修改方向**：扩展现有 `vim.ts`——补充 text objects 和 operators。
 
+**意义**：Vim 用户群体庞大——完整 modal editing 是差异化竞争力。
+**缺失后果**：基础 vim 模式缺少 text objects 和 operators——Vim 用户体验不完整。
+**改进收益**：完整 Vim 体验——motions + operators + text objects 全覆盖。
+
 ---
 
 <a id="item-46"></a>
@@ -149,6 +185,10 @@
 | keybindings: `voice:pushToTalk` | 绑定配置 |
 
 **Qwen Code 修改方向**：需音频捕获 NAPI + STT API（如阿里云 ASR）。
+
+**意义**：语音输入解放双手——适合代码审查讨论、快速口述需求。
+**缺失后果**：只能键盘输入——手不方便时无法使用。
+**改进收益**：push-to-talk 语音输入——说完自动转文字。
 
 ---
 

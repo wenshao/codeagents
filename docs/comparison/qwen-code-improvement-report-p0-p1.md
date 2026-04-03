@@ -25,6 +25,10 @@
 
 **相关文章**：[上下文压缩深度对比](./context-compression-deep-dive.md)
 
+**意义**：长会话是 AI Agent 的核心使用场景，压缩质量直接决定长会话的可用性。
+**缺失后果**：用户需手动 /compress，压缩后模型'失忆'需重新描述上下文。
+**改进收益**：长会话无限延续无需干预，压缩后自动恢复最近文件和记忆。
+
 ---
 
 <a id="item-2"></a>
@@ -46,6 +50,10 @@
 
 **相关文章**：[Fork 子代理 Deep-Dive](./fork-subagent-deep-dive.md)
 
+**意义**：大型任务需拆分给多个子代理并行处理，上下文传递效率决定成本和准确率。
+**缺失后果**：每个子代理独立上下文 = N× 完整 prompt 费用，且需重复描述背景。
+**改进收益**：N 个子代理共享一份 cache（省 80%+ token），继承完整对话零丢失。
+
 ---
 
 <a id="item-3"></a>
@@ -64,6 +72,10 @@
 **Qwen Code 修改方向**：`settingsSchema.ts` 中 `enableSpeculation` 默认值 `false` → `true`；`speculationToolGate.ts` 扩大 safe 工具列表。
 
 **相关文章**：[Prompt Suggestions](../tools/claude-code/10-prompt-suggestions.md)、[输入队列](./input-queue-deep-dive.md)
+
+**意义**：用户接受建议后的等待时间是交互体验的关键瓶颈。
+**缺失后果**：每次 Tab 接受后等 2-10 秒完整 API + 工具执行。
+**改进收益**：Tab 接受零延迟——建议展示时预执行已完成，支持连续 Tab-Tab-Tab。
 
 ---
 
@@ -86,6 +98,10 @@
 
 **相关文章**：[记忆系统深度对比](./memory-system-deep-dive.md)
 
+**意义**：开发者在同一项目上反复使用 Agent，跨 session 知识断层导致效率低下。
+**缺失后果**：每次新 session 从零开始——反复告知项目背景、编码规范、已知坑点。
+**改进收益**：新 session 自动注入相关记忆——Agent'记住'项目上下文，无需反复说明。
+
 ---
 
 <a id="item-5"></a>
@@ -106,6 +122,10 @@
 
 **相关文章**：[记忆系统深度对比](./memory-system-deep-dive.md)
 
+**意义**：记忆文件随使用膨胀，陈旧/矛盾记忆导致模型行为异常。
+**缺失后果**：记忆无限增长占满 token 预算，旧决策与新决策矛盾共存。
+**改进收益**：后台自动整理——合并重复、删除过时、解决矛盾，记忆始终精简。
+
 ---
 
 <a id="item-6"></a>
@@ -124,6 +144,10 @@
 **Qwen Code 修改方向**：在 `agent-core.ts` 的 `processFunctionCalls()` 返回后、下一轮 `while` 迭代前，调用 `queue.dequeue()` 并将消息注入到下一次 API 调用的 history 中。
 
 **相关文章**：[输入队列与中断机制](./input-queue-deep-dive.md) | **进展**：[PR#2854](https://github.com/QwenLM/qwen-code/pull/2854)
+
+**意义**：用户在 Agent 执行多步操作时发现方向错误，无法及时纠正。
+**缺失后果**：必须等所有步骤完成后才能发送新指令——已完成的错误工作需撤销。
+**改进收益**：用户输入在当前 turn 的下一个 step 即被模型看到——避免无用工作。
 
 ---
 
@@ -145,6 +169,10 @@
 
 **相关文章**：[工具并行执行](./tool-parallelism-deep-dive.md) | **进展**：[PR#2864](https://github.com/QwenLM/qwen-code/pull/2864)
 
+**意义**：代码探索场景（多个 Read + Grep + Glob）是最常见的 Agent 操作之一。
+**缺失后果**：7 个只读工具串行执行 = 7× 延迟。
+**改进收益**：只读工具并行 = 1× 延迟，I/O 密集任务快 5-10×。
+
 ---
 
 <a id="item-8"></a>
@@ -164,6 +192,10 @@
 
 **相关文章**：[启动阶段优化](./startup-optimization-deep-dive.md)
 
+**意义**：启动体验是用户对工具的第一印象。
+**缺失后果**：首次 API 需完整 TCP+TLS 握手（+100-200ms），启动打字丢失。
+**改进收益**：预连接省 150ms + 启动打字不丢失——感知启动更快。
+
 ---
 
 <a id="item-9"></a>
@@ -182,6 +214,10 @@
 **Qwen Code 修改方向**：`memoryImportProcessor.ts` 新增 frontmatter 解析；`memoryDiscovery.ts` 区分急/惰加载；文件操作时触发条件规则检查。
 
 **相关文章**：[指令文件加载](./instruction-loading-deep-dive.md)
+
+**意义**：大型项目不同目录有不同编码规范（TS/Python/Docs），全部加载浪费 token。
+**缺失后果**：所有规则塞在一个 QWEN.md 中——系统提示膨胀，规则互相干扰。
+**改进收益**：按文件路径匹配加载规则——操作 TS 文件时只注入 TS 规范，精准且省 token。
 
 ---
 
@@ -204,6 +240,10 @@
 
 **相关文章**：[Team Memory 深度对比](./team-memory-deep-dive.md)
 
+**意义**：团队协作项目中，个人发现的项目知识无法共享是效率瓶颈。
+**缺失后果**：团队成员各自维护独立记忆——项目知识孤岛，新成员从零积累。
+**改进收益**：一人学到的知识自动同步全团队 + 29 条规则防止密钥泄露。
+
 ---
 
 <a id="item-11"></a>
@@ -222,6 +262,10 @@
 **Qwen Code 修改方向**：工具注册表新增 `deferred: boolean` 属性；新建 `tools/toolSearch.ts`；`coreToolScheduler.ts` 在工具 schema 注入时过滤 deferred 工具。
 
 **相关文章**：[工具搜索与延迟加载](./tool-search-deep-dive.md)
+
+**意义**：39+ 工具 schema 全部注入系统提示占用大量 token——尤其 MCP 工具。
+**缺失后果**：系统提示 ~15K+ tokens 被工具 schema 占满，留给用户内容的空间减少。
+**改进收益**：仅加载核心工具（~10 个），其余按需搜索——系统提示 token 减少 50%+。
 
 ---
 
@@ -242,6 +286,10 @@
 
 **相关文章**：[Git 工作流与会话管理](./git-workflow-session-deep-dive.md)
 
+**意义**：AI 生成代码的透明度和可追溯性是开源社区和企业合规的核心关注。
+**缺失后果**：git 历史无法区分 AI 和人类代码——合规审计困难。
+**改进收益**：commit 自动标注 AI 贡献比例——满足开源 AI 披露和企业审计要求。
+
 ---
 
 <a id="item-13"></a>
@@ -260,6 +308,10 @@
 
 **相关文章**：[Git 工作流与会话管理](./git-workflow-session-deep-dive.md)
 
+**意义**：探索替代方案是软件开发的常见需求——A/B 对比架构决策。
+**缺失后果**：探索替代方案必须丢弃当前进度，或手动复制上下文。
+**改进收益**：从任意节点创建分支——原始 session 保留，分支独立探索。
+
 ---
 
 <a id="item-49"></a>
@@ -276,6 +328,10 @@
 | `services/mcp/client.ts` | channel 注册 + 消息路由 |
 
 **Qwen Code 修改方向**：扩展现有 MCP plugin 框架支持 `channel` 类型；新增 `--channels` CLI 参数；`AppContainer.tsx` 处理入站 channel 消息。
+
+**意义**：用户外出时需要与 Agent 交互——聊天应用是最自然的方式。
+**缺失后果**：只能在终端/IDE 中交互——离开电脑后 Agent 暂停。
+**改进收益**：Telegram/Discord 发消息 → Agent 实时响应——随时随地协作。
 
 ---
 
@@ -294,6 +350,10 @@
 
 **Qwen Code 修改方向**：创建 `qwenlm/qwen-code-action` GitHub Action；核心是调用 `qwen-code -p --allowedTools "Read,Bash" --output-format json`。
 
+**意义**：CI 自动化是开发工作流的核心——每个 PR 都应被审查。
+**缺失后果**：PR 审查需手动触发 Agent——无法自动化。
+**改进收益**：PR 创建自动触发 Agent 审查——减少人工审查负担。
+
 ---
 
 <a id="item-51"></a>
@@ -310,6 +370,10 @@
 | `code-review.md` 官方文档 | severity: 🔴 Important / 🟡 Nit / 🟣 Pre-existing |
 
 **Qwen Code 修改方向**：基于已有 `/review` Skill 扩展——fork 多个 Agent 各审查一组文件；`gh api` 发 inline 评论；新增 `REVIEW.md` 支持。
+
+**意义**：大 PR 单 Agent 逐文件审查慢——多代理并行可大幅提速。
+**缺失后果**：单 Agent 审查大 PR 需 N 分钟。
+**改进收益**：多 Agent 并行审查——大 PR 审查时间缩短到 ~1 分钟。
 
 ---
 
@@ -328,6 +392,10 @@
 
 **Qwen Code 修改方向**：`hookRunner.ts` 新增 HTTP 分支——`type === 'http'` 时 fetch POST body（hook input JSON），解析 response JSON 作为 hook output。
 
+**意义**：与外部服务（CI/审批/消息平台）集成需要 HTTP 而非 shell。
+**缺失后果**：通过 shell curl 间接集成——脆弱且难以处理 JSON 响应。
+**改进收益**：Hook 原生 HTTP——直接与 API 交互，响应结构化解析。
+
 ---
 
 <a id="item-58"></a>
@@ -344,6 +412,10 @@
 | `main.tsx` | `--json-schema` CLI 参数解析 + `--output-format json` |
 
 **Qwen Code 修改方向**：新建 `tools/structuredOutput.ts`；`nonInteractiveCli.ts` 新增 `--json-schema` 参数；headless 模式注入该工具到工具列表。
+
+**意义**：CI 脚本需要结构化输出——解析纯文本不可靠。
+**缺失后果**：CI 脚本自行 parse 纯文本——脆弱且不可靠。
+**改进收益**：--json-schema 保证输出符合 schema——CI 集成可靠。
 
 ---
 
@@ -362,6 +434,10 @@
 
 **Qwen Code 修改方向**：新建 `packages/sdk-python/`；封装 subprocess 调用 `qwen-code -p --output-format stream-json`；提供 `QwenCodeAgent` class + async generator API。
 
+**意义**：Python 生态开发者（数据科学、后端）需要原生 SDK。
+**缺失后果**：Python 开发者需通过 shell 调用 CLI——不优雅。
+**改进收益**：Python SDK `from qwen_code import Agent`——原生集成。
+
 ---
 
 <a id="item-60"></a>
@@ -378,6 +454,10 @@
 | `main.tsx` (L394) | 跳过所有 prefetch |
 
 **Qwen Code 修改方向**：`gemini.tsx` 新增 `--bare` flag；设置 `QWEN_CODE_SIMPLE=1` 环境变量；各模块在 `SIMPLE` 模式下跳过自动发现。
+
+**意义**：CI 环境需要确定性执行——不同机器的 hooks/plugins 不应影响结果。
+**缺失后果**：CI 启动慢 + 加载不需要的 hooks/plugins + 结果不可复现。
+**改进收益**：--bare 确定性执行——跳过所有自动发现，每台机器同样结果。
 
 ---
 
@@ -397,6 +477,10 @@
 
 **Qwen Code 修改方向**：新建 `packages/core/src/bridge/`；对接阿里云/自建 WebSocket 服务；`/remote-control` 命令启动桥接。
 
+**意义**：离开电脑后 Agent 需要人类审批权限——当前无法远程操作。
+**缺失后果**：需要人在电脑前审批——离开后 Agent 暂停。
+**改进收益**：手机/浏览器远程驱动——外出时继续审批和补充上下文。
+
 ---
 
 <a id="item-62"></a>
@@ -414,6 +498,10 @@
 | `utils/teleport/gitBundle.ts` | git fetch + checkout |
 
 **Qwen Code 修改方向**：需先有 Web 版本；新增 `/teleport` 命令；调用 API 获取 session 列表 → fetch branch → 加载历史。
+
+**意义**：Web 上启动的长任务完成后需要在终端继续调试。
+**缺失后果**：Web 和终端是独立的——无法衔接。
+**改进收益**：/teleport 拉取 Web session 到终端——跨平台无缝切换。
 
 ---
 
