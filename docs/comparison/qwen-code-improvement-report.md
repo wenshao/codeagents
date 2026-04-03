@@ -97,7 +97,6 @@
 | **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](#item-69) | 缺失 | 小 | — |
 | **P2** | --max-budget-usd — headless 模式 USD 花费上限 [↓](#item-70) | 缺失 | 小 | — |
 | **P2** | Connectors — 托管式 MCP 连接（GitHub/Slack/Linear/Google Drive OAuth）[↓](#item-71) | 缺失 | 大 | — |
-| **P2** | /loop Cron 调度 — session 内定时重复执行 prompt（7 天过期 + jitter）[↓](#item-72) | 缺失 | 小 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](#item-37) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](#item-38) | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](#item-39) | 缺失 | 中 | — |
@@ -1208,17 +1207,6 @@
 
 ---
 
-<a id="item-72"></a>
-
-### 72. /loop Cron 调度（P2）
-
-**Claude Code**：`skills/bundled/loop.ts` + `tools/ScheduleCronTool/`。session 内定时重复执行 prompt——5 字段 cron 表达式、最大 50 任务、7 天自动过期、jitter 防同时触发。
-
-**Qwen Code**：缺失。
-
-**改进收益**：`/loop 5m check if deployment finished` — Agent 自动定期检查，用户无需手动轮询。
-
----
 
 ## 四、架构差异总结
 
