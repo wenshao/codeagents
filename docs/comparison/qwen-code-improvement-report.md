@@ -2,7 +2,7 @@
 
 > 基于对 Claude Code（源码分析，56 个顶层模块，~1800 文件）与 Qwen Code（开源源码，~500 文件）的系统性源码对比分析。
 >
-> **本地源码路径**：
+> 如需查阅源码，可参考本地仓库（不在本文档库中）：
 > - Claude Code: `../claude-code-leaked/`
 > - Qwen Code: `../qwen-code/`
 
@@ -71,13 +71,16 @@
 - `services/compact/grouping.ts` — 消息分组优化
 
 **源码引用**：
-- [autoCompact.ts](../../claude-code-leaked/services/compact/autoCompact.ts) — 自动压缩触发逻辑
-- [sessionMemoryCompact.ts](../../claude-code-leaked/services/compact/sessionMemoryCompact.ts) — 记忆 (Memory) 感知压缩
-- [compact.ts](../../claude-code-leaked/services/compact/compact.ts) — 主压缩引擎（1706 行）
+- 源码: `services/compact/autoCompact.ts`
+- 源码: `services/compact/sessionMemoryCompact.ts`
+- 源码: `services/compact/compact.ts`（1706 行）
 
 **Qwen Code 现状**：
-- 仅有 [chatCompressionService.ts](../../qwen-code/packages/core/src/services/chatCompressionService.ts)（369 行），基于固定 token 阈值（70%）的单一压缩策略
+- 源码: `packages/core/src/services/chatCompressionService.ts`（369 行），基于固定 token 阈值（70%）的单一压缩策略
 - 无 micro-compact、无 memory-aware compact、无 reactive compact
+
+**相关文章**：
+- [上下文压缩深度对比](./context-compression-deep-dive.md)
 
 **建议方案**：
 1. 实现 micro-compact：在每个 turn 结束后，自动裁剪冗余的工具结果（如大文件读取的截断部分）
@@ -96,14 +99,17 @@
 - prompt cache 优化：所有 fork 子代理产生字节一致的 API 请求前缀
 
 **源码引用**：
-- [forkSubagent.ts](../../claude-code-leaked/tools/AgentTool/forkSubagent.ts) — fork 逻辑（211 行）
-- [AgentTool.tsx](../../claude-code-leaked/tools/AgentTool/AgentTool.tsx) — Agent 工具主逻辑（1398 行）
-- [runAgent.ts](../../claude-code-leaked/tools/AgentTool/runAgent.ts) — agent 执行（974 行）
+- 源码: `tools/AgentTool/forkSubagent.ts`（211 行）
+- 源码: `tools/AgentTool/AgentTool.tsx`（1398 行）
+- 源码: `tools/AgentTool/runAgent.ts`（974 行）
 
 **Qwen Code 现状**：
-- [agent.ts](../../qwen-code/packages/core/src/tools/agent.ts) — Agent 工具存在，但必须显式指定 `subagent_type`
-- [subagents/](../../qwen-code/packages/core/src/subagents/) — 子代理管理器，但仅支持预定义类型
+- 源码: `packages/core/src/tools/agent.ts` — Agent 工具存在，但必须显式指定 `subagent_type`
+- 源码: `packages/core/src/subagents/` — 子代理管理器，但仅支持预定义类型
 - 无法 fork 当前会话上下文，无法继承对话历史
+
+**相关文章**：
+- [Claude Code 多代理系统](../tools/claude-code/09-multi-agent.md)
 
 **建议方案**：
 1. 在 Agent 工具 schema 中将 `subagent_type` 改为可选
@@ -123,14 +129,19 @@
 - 与 PromptSuggestion 深度集成：suggestion 展示时自动启动投机
 
 **源码引用**：
-- [speculation.ts](../../claude-code-leaked/services/PromptSuggestion/speculation.ts) — 投机执行 (Speculation) 引擎
-- [promptSuggestion.ts](../../claude-code-leaked/services/PromptSuggestion/promptSuggestion.ts) — 建议生成器
+- 源码: `services/PromptSuggestion/speculation.ts`（992 行）
+- 源码: `services/PromptSuggestion/promptSuggestion.ts`
 
 **Qwen Code 现状**：
-- [speculation.ts](../../qwen-code/packages/core/src/followup/speculation.ts) — 564 行，有骨架但功能不完整
-- [overlayFs.ts](../../qwen-code/packages/core/src/followup/overlayFs.ts) — overlay 文件系统存在
-- [suggestionGenerator.ts](../../qwen-code/packages/core/src/followup/suggestionGenerator.ts) — 建议生成器（368 行）
+- 源码: `packages/core/src/followup/speculation.ts`（564 行）— 有骨架但功能不完整
+- 源码: `packages/core/src/followup/overlayFs.ts` — overlay 文件系统存在
+- 源码: `packages/core/src/followup/suggestionGenerator.ts`（368 行）
 - 缺少：overlay 到主文件系统的复制机制、投机边界检测、write tool 过滤
+
+**相关文章**：
+- [Claude Code 提示建议](../tools/claude-code/10-prompt-suggestions.md)
+- [启动阶段优化深度对比](./startup-optimization-deep-dive.md)
+- [输入队列深度对比](./input-queue-deep-dive.md)
 
 **建议方案**：
 1. 完善 `speculation.ts` 的 write tool 过滤（SAFE_READ_ONLY_TOOLS 白名单）
@@ -151,15 +162,18 @@
 - 跨 session 持久化：记忆 (Memory) 在 session 结束后自动提取并存储
 
 **源码引用**：
-- [sessionMemory.ts](../../claude-code-leaked/services/SessionMemory/sessionMemory.ts)
-- [findRelevantMemories.ts](../../claude-code-leaked/memdir/findRelevantMemories.ts)
-- [memdir.ts](../../claude-code-leaked/memdir/memdir.ts)
+- 源码: `services/SessionMemory/sessionMemory.ts`
+- 源码: `memdir/findRelevantMemories.ts`
+- 源码: `memdir/memdir.ts`
 
 **Qwen Code 现状**：
-- [memoryTool.ts](../../qwen-code/packages/core/src/tools/memoryTool.ts) — 仅支持简单的笔记读写
+- 源码: `packages/core/src/tools/memoryTool.ts` — 仅支持简单的笔记读写
 - 无跨 session 记忆 (Memory)
 - 无记忆 (Memory) 提取/检索机制
 - 无记忆 (Memory) 生命周期管理
+
+**相关文章**：
+- [记忆系统深度对比](./memory-system-deep-dive.md)
 
 **建议方案**：
 1. 实现 SessionMemoryService：管理会话记忆 (Memory) 的提取、存储和检索
@@ -179,9 +193,13 @@
 - `services/autoDream/consolidationLock.ts` — 防止多进程并发整理
 
 **源码引用**：
-- [autoDream.ts](../../claude-code-leaked/services/autoDream/autoDream.ts)
-- [consolidationPrompt.ts](../../claude-code-leaked/services/autoDream/consolidationPrompt.ts)
-- [consolidationLock.ts](../../claude-code-leaked/services/autoDream/consolidationLock.ts)
+- 源码: `services/autoDream/autoDream.ts`（325 行）
+- 源码: `services/autoDream/consolidationPrompt.ts`
+- 源码: `services/autoDream/consolidationLock.ts`
+
+**相关文章**：
+- [记忆系统深度对比](./memory-system-deep-dive.md)
+- [上下文压缩深度对比](./context-compression-deep-dive.md)
 
 **Qwen Code 现状**：
 - 完全缺失此功能
