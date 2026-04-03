@@ -72,6 +72,10 @@
 | **P2** | /btw 侧问（不中断主对话的快速提问） | 缺失 | 小 | — |
 | **P2** | Notebook Edit（Jupyter cell 编辑 + 自动 cell ID 追踪） | 缺失 | 中 | — |
 | **P2** | Team Memory Sync（组织级记忆同步 + gitleaks 密钥扫描） | 缺失 | 大 | — |
+| **P2** | 自定义快捷键（multi-chord + 平台适配 + `keybindings.json`） | 缺失 | 中 | — |
+| **P2** | 终端主题检测（OSC 11 dark/light + COLORFGBG 回退） | 缺失 | 小 | — |
+| **P2** | 企业代理支持（CONNECT relay + CA cert 注入 + NO_PROXY 白名单） | 缺失 | 大 | — |
+| **P3** | 内存诊断（V8 heap dump + 1.5GB 阈值 + leak 建议） | 缺失 | 中 | — |
 | **P3** | Feature Gates（GrowthBook 远程特性开关 + A/B 测试） | 缺失 | 中 | — |
 | **P3** | DXT/MCPB 插件包格式（zip bomb 防护 + 大小限制） | 缺失 | 中 | — |
 | **P3** | /security-review 安全审查命令 | 缺失 | 小 | — |
@@ -325,6 +329,9 @@
 | /btw 侧问 | 不中断对话的快速提问 | 无 | 缺失 | — |
 | Notebook Edit | Jupyter cell 编辑 | 无 | 缺失 | — |
 | Team Memory | 组织级记忆同步 | 无 | 缺失 | — |
+| 自定义快捷键 | multi-chord + keybindings.json | 无 | 缺失 | — |
+| 企业代理 | CONNECT relay + CA cert 注入 | 无 | 缺失 | — |
+| 终端主题 | OSC 11 dark/light 检测 | 无 | 缺失 | — |
 
 ## 五、相关 Deep-Dive 文章
 
