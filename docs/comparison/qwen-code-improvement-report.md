@@ -66,7 +66,6 @@
 | **P2** | [文件历史快照](./git-workflow-session-deep-dive.md)（per-file SHA256 备份 + 按消息恢复） | checkpoint 模式（git 级） | 中 | — |
 | **P2** | Session Ingress Auth（远程会话 bearer token 认证） | 缺失 | 中 | — |
 | **P2** | Computer Use（macOS 桌面自动化：截图 + 鼠标/键盘 + 剪贴板） | 缺失 | 大 | — |
-| **P2** | LSP Tool（go-to-definition / find-references / symbol search） | 缺失 | 中 | — |
 | **P2** | Deep Link 协议（`claude-cli://` URI scheme，IDE/浏览器集成） | 缺失 | 中 | — |
 | **P2** | Notebook Edit（Jupyter cell 编辑 + 自动 cell ID 追踪） | 缺失 | 中 | — |
 | **P2** | Team Memory Sync（组织级记忆同步 + gitleaks 密钥扫描） | 缺失 | 大 | — |
@@ -528,7 +527,6 @@
 | 文件历史快照 | per-file SHA256 + 按消息恢复 | checkpoint（git 级） | 小差距 | — |
 | Session Ingress Auth | bearer token 远程认证 | 无 | 缺失 | — |
 | Computer Use | macOS 桌面自动化 | 无 | 缺失 | — |
-| LSP Tool | 代码智能导航 | 无 | 缺失 | — |
 | Deep Link | `claude-cli://` URI scheme | 无 | 缺失 | — |
 | Notebook Edit | Jupyter cell 编辑 | 无 | 缺失 | — |
 | Team Memory | 组织级记忆同步 | 无 | 缺失 | — |
