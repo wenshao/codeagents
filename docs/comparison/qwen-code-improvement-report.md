@@ -64,7 +64,7 @@
 | **P3** | 语音模式 | 缺失 | 大 | — |
 | **P3** | 插件市场 | 缺失 | 大 | — |
 
-> 详细的 Claude Code 实现机制和建议方案见下文 Top 5 详细说明及各 [Deep-Dive 文章](#相关-deep-dive-文章)。
+> 详细的 Claude Code 实现机制和建议方案见下文 Top 5 详细说明及各 [Deep-Dive 文章](#五相关-deep-dive-文章)。
 
 ## 三、Top 5 改进点详细说明
 
@@ -81,7 +81,7 @@
 **源码引用**：
 - 源码: `services/compact/autoCompact.ts`
 - 源码: `services/compact/sessionMemoryCompact.ts`
-- 源码: `services/compact/compact.ts`（1706 行）
+- 源码: `services/compact/compact.ts`（1705 行）
 
 **Qwen Code 现状**：
 - 源码: `packages/core/src/services/chatCompressionService.ts`（369 行），基于固定 token 阈值（70%）的单一压缩策略
@@ -108,8 +108,8 @@
 
 **源码引用**：
 - 源码: `tools/AgentTool/forkSubagent.ts`（210 行）
-- 源码: `tools/AgentTool/AgentTool.tsx`（1398 行）
-- 源码: `tools/AgentTool/runAgent.ts`（974 行）
+- 源码: `tools/AgentTool/AgentTool.tsx`（1397 行）
+- 源码: `tools/AgentTool/runAgent.ts`（973 行）
 
 **Qwen Code 现状**：
 - 源码: `packages/core/src/tools/agent.ts` — Agent 工具存在，但必须显式指定 `subagent_type`
@@ -204,7 +204,7 @@
 - `services/autoDream/consolidationLock.ts` — 防止多进程并发整理
 
 **源码引用**：
-- 源码: `services/autoDream/autoDream.ts`（325 行）
+- 源码: `services/autoDream/autoDream.ts`（324 行）
 - 源码: `services/autoDream/consolidationPrompt.ts`
 - 源码: `services/autoDream/consolidationLock.ts`
 
