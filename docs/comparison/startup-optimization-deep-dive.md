@@ -137,13 +137,13 @@ Claude Code 曾有两个调用点，后来删除了一个：
 
 ```
 启动早期 → startCapturingEarlyInput()
-  ├─ process.stdin.setRawMode(true)     # 原始模式
+  ├─ process.stdin.setRawMode(true)     # 原始模式 (Raw Mode)
   ├─ 监听 'readable' 事件               # 逐字符捕获
   └─ processChunk() 逐字符处理:
       ├─ Ctrl+C (code 3) → process.exit(130)
       ├─ Ctrl+D (code 4) → 停止捕获
       ├─ Backspace (8/127) → 删除最后一个 grapheme cluster
-      ├─ ESC (27) → 跳过转义序列（方向键/功能键）
+      ├─ ESC (27) → 跳过转义序列 (Escape Sequence)（方向键/功能键）
       ├─ CR (13) → 转换为 \n
       └─ 可打印字符 → 加入 earlyInputBuffer
 
@@ -186,7 +186,7 @@ if (code === 127 || code === 8) {
 
 这确保了 emoji（如 👨‍👩‍👧‍👦 由多个 code point 组成）按**视觉字符**为单位删除，而非按 code point。
 
-#### 转义序列跳过
+#### 转义序列 (Escape Sequence) 跳过
 
 ```typescript
 // 源码: utils/earlyInput.ts#L103-L112
@@ -250,7 +250,7 @@ export function seedEarlyInput(text: string): void {
 Qwen Code 的启动流程（`gemini.tsx` 527 行分析）：
 
 ```
-[加载 settings] → [加载配置] → [初始化 App] → [渲染 REPL] → [首次API调用: 完整握手]
+[加载 settings] → [加载配置] → [初始化 App] → [渲染 (Rendering) REPL] → [首次API调用: 完整握手]
                                                               ↑
                                                     首次延迟无优化
 ```
@@ -260,7 +260,7 @@ Qwen Code 的启动流程（`gemini.tsx` 527 行分析）：
 Qwen Code **完全没有**对应机制：
 - 无 `setRawMode` 早期调用
 - 无 stdin 缓冲区
-- 用户在 REPL 渲染前的打字**全部丢失**
+- 用户在 REPL 渲染 (Rendering) 前的打字**全部丢失**
 
 现有 `packages/cli/src/utils/readStdin.ts` 仅处理 **pipe 模式**的 stdin 读取，不处理 TTY 早期输入。
 
@@ -268,9 +268,9 @@ Qwen Code **完全没有**对应机制：
 
 | 指标 | Claude Code | Qwen Code |
 |------|-------------|-----------|
-| API Preconnect | ✅ `init.ts` 中 fire-and-forget HEAD | ❌ 无 |
-| Early Input | ✅ 启动时 raw mode 捕获 | ❌ 无 |
-| 首次 API 延迟 | ~0ms（复用预连接） | 100-200ms（完整握手） |
+| API Preconnect（预连接 (Preconnect)） | ✅ `init.ts` 中 fire-and-forget HEAD | ❌ 无 |
+| Early Input（早期输入捕获 (Early Input Capture)） | ✅ 启动时 raw mode 捕获 | ❌ 无 |
+| 首次 API 延迟 | ~0ms（复用预连接 (Preconnect)） | 100-200ms（完整握手） |
 | 启动期间打字 | ✅ 捕获并预填充 | ❌ 全部丢失 |
 
 ---

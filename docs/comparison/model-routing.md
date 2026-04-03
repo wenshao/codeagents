@@ -1,6 +1,6 @@
-# 26. 模型路由与自动选择：跨 Agent 深度对比
+# 26. 模型路由 (Model Routing) 与自动选择：跨 Agent 深度对比
 
-> 模型路由是 AI 编程代理的核心基础设施——决定每次请求使用哪个模型。从"用户手动切换"到"ML 分类器自动路由"，各工具的实现跨度极大。
+> 模型路由 (Model Routing) 是 AI 编程代理的核心基础设施——决定每次请求使用哪个模型。从"用户手动切换"到"ML 分类器自动路由"，各工具的实现跨度极大。
 
 ## 总览
 
@@ -188,16 +188,16 @@ claude -p "fix the bug" --fallback-model haiku
 ```
 
 - **触发条件**：默认模型 API 过载（overloaded）
-- **遥测事件**：`tengu_api_opus_fallback_triggered`
+- **遥测 (Telemetry) 事件**：`tengu_api_opus_fallback_triggered`
 - **限制**：仅 `--print` 模式，交互模式无自动 Fallback
 - **锁定生态**：仅 Anthropic 模型，无法切换到 OpenAI/Google
 
-### 内部模型路由
+### 内部模型路由 (Model Routing)
 
 Claude Code 的 Skill 系统有隐式模型选择：
-- `/review` 插件：Haiku（前置检查）→ Sonnet（变更摘要/合规审计）→ Opus（Bug 扫描/安全分析）
-- 子代理（Agent 工具）：可指定 `model: "haiku"` 或 `"sonnet"` 或 `"opus"`
-- 但这是**插件级别的硬编码**，非通用路由系统
+- `/review` 插件 (Plugin)：Haiku（前置检查）→ Sonnet（变更摘要/合规审计）→ Opus（Bug 扫描/安全分析）
+- 子代理 (Subagent)（Agent 工具）：可指定 `model: "haiku"` 或 `"sonnet"` 或 `"opus"`
+- 但这是**插件 (Plugin) 级别的硬编码**，非通用路由系统
 
 ---
 

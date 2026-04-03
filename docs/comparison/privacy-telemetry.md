@@ -1,8 +1,8 @@
-# 3. 隐私与遥测对比
+# 3. 隐私与遥测 (Telemetry) 对比
 
 > 各 CLI Agent 的数据采集、安全监控和隐私控制对比。高频变化的验证日期和证据状态请结合 [`../data/CHANGELOG.md`](../data/CHANGELOG.md) 与 [`../evidence-index.md`](../evidence-index.md) 一起查看。
 
-## 遥测系统对比
+## 遥测 (Telemetry) 系统对比
 
 > 本表保留能力边界与采集类型。若默认状态或证据完备度发生变化，请同步更新 `docs/evidence-index.md` 与 `docs/data/CHANGELOG.md`。
 

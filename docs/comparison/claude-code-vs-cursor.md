@@ -212,9 +212,9 @@ Cursor 编辑器界面
 ```
 
 - **MCP 协议**：标准化工具扩展，支持 GitHub / Jira / 数据库等
-- **Prompt Hooks**：PreToolUse / PostToolUse / Stop 钩子，自定义工作流
+- **Prompt Hooks（钩子 (Hook)）**：PreToolUse / PostToolUse / Stop 钩子 (Hook)，自定义工作流
 - **自定义斜杠命令**：`.claude/commands/` 目录下定义项目命令
-- **13 个官方插件**：GitHub / Linear / Sentry 等
+- **13 个官方插件 (Plugin)**：GitHub / Linear / Sentry 等
 
 ### Cursor
 
@@ -346,9 +346,9 @@ $ claude "创建 PR"
 └── 网络：默认允许，可配置限制
 ```
 
-- **文件系统沙箱**：限制代理访问的目录范围
+- **文件系统沙箱 (Sandbox)**：限制代理访问的目录范围
 - **命令白名单**：精确控制可执行的 shell 命令
-- **Prompt Hooks**：PreToolUse 钩子可拦截危险操作
+- **Prompt Hooks（钩子 (Hook)）**：PreToolUse 钩子 (Hook) 可拦截危险操作
 - **网络控制**：可限制代理的网络访问范围
 
 ### Cursor

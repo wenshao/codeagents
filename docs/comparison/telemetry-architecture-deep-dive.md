@@ -1,6 +1,6 @@
-# 遥测架构 Deep-Dive
+# 遥测 (Telemetry) 架构 Deep-Dive
 
-> AI Agent 收集什么数据、如何上报、用户如何控制？本文基于 Claude Code（v2.1.89 源码分析）和 Qwen Code（v0.15.0 开源）的源码分析，对比两者在遥测架构、事件体系和隐私控制方面的差异。
+> AI Agent 收集什么数据、如何上报、用户如何控制？本文基于 Claude Code（v2.1.89 源码分析）和 Qwen Code（v0.15.0 开源）的源码分析，对比两者在遥测 (Telemetry) 架构、事件体系和隐私控制方面的差异。
 
 ---
 
@@ -71,10 +71,10 @@
 | 用户等待 | 输入等待时间 |
 | Speculation | 推测执行标记 |
 
-### 2.3 采样与降级
+### 2.3 采样 (Sampling) 与降级 (Fallback)
 
 ```typescript
-// 按事件采样: GrowthBook tengu_event_sampling_config（每事件 0-1 概率）
+// 按事件采样 (Sampling): GrowthBook tengu_event_sampling_config（每事件 0-1 概率）
 // 第三方 Provider: 自动禁用分析（Bedrock/Vertex/Foundry）
 // 测试环境: NODE_ENV === 'test' 时禁用
 // 隐私模式: isTelemetryDisabled() 检查
