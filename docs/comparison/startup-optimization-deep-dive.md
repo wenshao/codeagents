@@ -350,4 +350,4 @@ await initializeApp(config)
 | Qwen Code CLI 入口 | `packages/cli/src/gemini.tsx` (527 行) |
 | Qwen Code Stdin 读取 | `packages/cli/src/utils/readStdin.ts` |
 
-> **免责声明**: 以上分析基于 Claude Code leaked 源码和 Qwen Code 开源源码。Qwen Code 实现方案为建议，非官方实现。
+> **免责声明**: 以上分析基于 Claude Code 源码分析和 Qwen Code 开源源码。Qwen Code 实现方案为建议，非官方实现。
