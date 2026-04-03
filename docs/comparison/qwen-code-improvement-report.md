@@ -68,7 +68,7 @@
 | **P2** | [Computer Use](./computer-use-deep-dive.md)（macOS 桌面自动化：截图 + 鼠标/键盘 + 剪贴板） | 缺失 | 大 | — |
 | **P2** | [Deep Link 协议](./deep-link-protocol-deep-dive.md)（`claude-cli://` URI scheme，IDE/浏览器集成） | 缺失 | 中 | — |
 | **P2** | Notebook Edit（Jupyter cell 编辑 + 自动 cell ID 追踪） | 缺失 | 中 | — |
-| **P2** | Team Memory Sync（组织级记忆同步 + gitleaks 密钥扫描） | 缺失 | 大 | — |
+| **P2** | [Team Memory Sync](./team-memory-deep-dive.md)（组织级记忆同步 + gitleaks 密钥扫描） | 缺失 | 大 | — |
 | **P2** | 自定义快捷键（multi-chord + 平台适配 + `keybindings.json`） | 缺失 | 中 | — |
 | **P2** | 终端主题检测（OSC 11 dark/light + COLORFGBG 回退） | 缺失 | 小 | — |
 | **P2** | 企业代理支持（CONNECT relay + CA cert 注入 + NO_PROXY 白名单） | 缺失 | 大 | — |
@@ -558,6 +558,7 @@
 | 成本与 Fast Mode | [成本追踪与 Fast Mode](./cost-fastmode-deep-dive.md) |
 | Git 工作流与会话 | [Git 工作流与会话管理](./git-workflow-session-deep-dive.md) |
 | 工具动态发现 | [工具搜索与延迟加载](./tool-search-deep-dive.md) |
+| Team Memory | [组织级记忆同步](./team-memory-deep-dive.md) |
 | Computer Use | [桌面自动化](./computer-use-deep-dive.md) |
 | Deep Link | [协议处理与终端启动](./deep-link-protocol-deep-dive.md) |
 | 功能矩阵 | [功能对比矩阵](./features.md) |
