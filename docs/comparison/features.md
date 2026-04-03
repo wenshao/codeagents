@@ -164,6 +164,27 @@
 | Qwen Code | ✓ | ✓ | ✓ | 会话恢复（继承 Gemini CLI） |
 | Kimi CLI | ✓ | | | 会话保存 |
 
+### 输入队列与预测
+
+> 详见 [输入队列与中断机制 Deep-Dive](./input-queue-deep-dive.md)
+
+| 能力 | Claude Code | Gemini CLI | Qwen Code | Copilot CLI | Aider | Codex CLI | Kimi CLI | OpenCode | Goose |
+|------|------------|-----------|-----------|-------------|-------|-----------|----------|----------|-------|
+| **执行中可输入** | ✓ | ✓ | ✓ | | | | | | |
+| **输入队列** | 优先级队列（3 级） | FIFO | FIFO | — | — | — | — | — | — |
+| **Mid-Turn Queue Drain** | ✓ | | | | | | | | |
+| **Prompt Suggestion** | ✓ | | ✓ | | | | | | |
+| **Speculation 预执行** | ✓（ant-only） | | ✓（opt-in） | | | | | | |
+| **队列可视化** | ✓ | | | | | | | | |
+| **工具级中断** | ✓ | | | | | | | | |
+| **Early Input** | ✓ | | | | | | | | |
+
+**关键发现：**
+- **Claude Code** 是唯一实现 Mid-Turn Queue Drain 的 Agent——用户输入在当前 turn 的下一个 step 即可被模型看到，无需等整个 turn 结束
+- **Qwen Code** v0.15.0 新增 Prompt Suggestion + Speculation（与 Claude Code 架构高度相似），但 Speculation 默认关闭
+- **Gemini CLI / Qwen Code** 支持执行中排队输入，但仅在整个 round 完成后处理（Between-Round Drain）
+- 其他 Agent（Copilot CLI、Aider、Codex CLI 等）在 Agent 执行期间输入框不可用，需等待 turn 完成
+
 ### 成本参考（单次典型任务）
 
 > 以下为估算值，实际成本取决于任务复杂度和 token 用量
