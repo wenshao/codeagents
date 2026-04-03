@@ -53,7 +53,7 @@ Agent(prompt, subagent_type?)
 ### 2.3 FORK_AGENT 定义
 
 ```typescript
-// 源码: forkSubagent.ts#L60-L71
+// 源码: tools/AgentTool/forkSubagent.ts#L60-L71
 const FORK_AGENT = {
   agentType: 'fork',
   tools: ['*'],              // 继承父代理完整工具集
@@ -73,7 +73,7 @@ const FORK_AGENT = {
 ### 3.1 构建流程
 
 ```typescript
-// 源码: forkSubagent.ts#L107-L169
+// 源码: tools/AgentTool/forkSubagent.ts#L107-L169
 function buildForkedMessages(directive, assistantMessage): Message[] {
   // 1. 克隆完整 assistant 消息（thinking + text + 所有 tool_use）
   // 2. 为每个 tool_use 创建 tool_result，文本完全相同
@@ -99,7 +99,7 @@ Fork 子代理 API 请求:
   tools:  [tool_a, tool_b, tool_c]     ← useExactTools=true，父代理原始数组
   messages: [
     user(上下文...),                    ← 相同
-    assistant(tool_use₁, tool_use₂),   ← 相同
+    assistant(thinking, text, tool_use₁, tool_use₂),  ← 完整克隆
     user(                               ← 新 user 消息
       tool_result("Fork started — processing in background"),  ← 统一占位文本
       tool_result("Fork started — processing in background"),  ← 所有 fork 相同
@@ -175,7 +175,7 @@ if (querySource === 'agent:builtin:fork') {
 }
 
 // 层 2: 消息扫描（备份，捕获 querySource 被清理的边界 case）
-// 源码: forkSubagent.ts#L78-L89
+// 源码: tools/AgentTool/forkSubagent.ts#L78-L89
 function isInForkChild(messages): boolean {
   return messages.some(m => m.message.content.some(
     block => block.type === 'text' && block.text.includes('<fork-boilerplate>')
@@ -320,10 +320,10 @@ Fork 模型在保留完整上下文的同时，成本仅比无上下文传递高
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
-| `tools/AgentTool/forkSubagent.ts` | 211 | Fork 核心：gate/消息构建/铁律/递归防护/worktree notice |
+| `tools/AgentTool/forkSubagent.ts` | 210 | Fork 核心：gate/消息构建/铁律/递归防护/worktree notice |
 | `tools/AgentTool/AgentTool.tsx` | 1,397 | Agent 入口：fork vs 常规决策树/系统提示分支/异步执行 |
 | `tools/AgentTool/runAgent.ts` | 973 | 执行引擎：上下文组装/工具解析/Thinking 继承/查询循环 |
-| `utils/forkedAgent.ts` | 690 | CacheSafeParams 存储/子代理上下文创建/forked query 循环 |
+| `utils/forkedAgent.ts` | 689 | CacheSafeParams 存储/子代理上下文创建/forked query 循环 |
 | `tools/AgentTool/loadAgentsDir.ts` | 755 | Agent 定义加载（FORK_AGENT 不在此列——运行时合成） |
 
 ### Qwen Code
