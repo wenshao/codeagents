@@ -74,6 +74,7 @@
 | **P2** | 自定义快捷键（multi-chord + 平台适配 + `keybindings.json`） | 缺失 | 中 | — |
 | **P2** | 终端主题检测（OSC 11 dark/light + COLORFGBG 回退） | 缺失 | 小 | — |
 | **P2** | 企业代理支持（CONNECT relay + CA cert 注入 + NO_PROXY 白名单） | 缺失 | 大 | — |
+| **P2** | Denial Tracking（权限拒绝学习 + 自动回退到 prompting） | 缺失 | 小 | — |
 | **P3** | 内存诊断（V8 heap dump + 1.5GB 阈值 + leak 建议） | 缺失 | 中 | — |
 | **P3** | Feature Gates（GrowthBook 远程特性开关 + A/B 测试） | 缺失 | 中 | — |
 | **P3** | DXT/MCPB 插件包格式（zip bomb 防护 + 大小限制） | 缺失 | 中 | — |
@@ -84,9 +85,9 @@
 | **P3** | 语音模式 | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) | 缺失 | 大 | — |
 
-> 详细的 Claude Code 实现机制和建议方案见下文 Top 19 详细说明及各 [Deep-Dive 文章](#五相关-deep-dive-文章)。
+> 详细的 Claude Code 实现机制和建议方案见下文 Top 20 详细说明及各 [Deep-Dive 文章](#五相关-deep-dive-文章)。
 
-## 三、Top 19 改进点详细说明
+## 三、Top 20 改进点详细说明
 
 ### 1. 多层上下文压缩 (Context Compression) 策略（P0）
 
@@ -487,6 +488,18 @@
 
 ---
 
+### 20. Denial Tracking 权限拒绝学习（P2）
+
+**Claude Code 实现**：`utils/permissions/denialTracking.ts`（45 行）记录权限分类器的拒绝/成功次数。连续拒绝超过阈值（`DENIAL_LIMITS`）时自动回退到 prompting 模式——避免分类器陷入"全拒绝"死循环。
+
+**Qwen Code 现状**：缺失。权限拒绝后无学习机制。
+
+**缺失后果**：如果自动审批模式（auto-edit/yolo）连续拒绝某类操作，用户无感知——分类器可能永久阻塞合法操作。
+
+**改进收益**：连续拒绝自动检测 → 回退到手动确认模式——用户看到被拒绝的操作并可手动批准，避免"静默失败"。
+
+---
+
 ## 四、架构差异总结
 
 | 维度 | Claude Code | Qwen Code | 差距评估 | 进展 |
@@ -524,6 +537,7 @@
 | 自定义快捷键 | multi-chord + keybindings.json | 无 | 缺失 | — |
 | 企业代理 | CONNECT relay + CA cert 注入 | 无 | 缺失 | — |
 | 终端主题 | OSC 11 dark/light 检测 | 无 | 缺失 | — |
+| Denial Tracking | 权限拒绝学习 + 自动回退 | 无 | 缺失 | — |
 
 ## 五、相关 Deep-Dive 文章
 
