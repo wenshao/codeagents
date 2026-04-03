@@ -37,53 +37,53 @@
 
 | 优先级 | 改进点 | Qwen Code 现状 | 难度 | 进展 |
 |:------:|--------|----------------|:----:|------|
-| **P0** | [Mid-Turn Queue Drain](./input-queue-deep-dive.md) — Agent 执行中途注入用户输入，无需等整轮结束 [↓](#item-1) | 推理循环内无队列检查 | 中 | PR [#2854](https://github.com/QwenLM/qwen-code/pull/2854) open |
-| **P0** | [多层上下文压缩](./context-compression-deep-dive.md) — 自动裁剪旧工具结果 + 摘要，用户无需手动 /compress [↓](#item-2) | 仅单一 70% 手动压缩 | 中 | — |
-| **P0** | [Fork 子代理](./fork-subagent-deep-dive.md) — 子代理继承完整对话上下文，共享 prompt cache 省 80%+ 费用 [↓](#item-3) | 子代理必须从零开始 | 中 | — |
-| **P1** | [Speculation](../tools/claude-code/10-prompt-suggestions.md) — 预测用户下一步并提前执行，Tab 接受零延迟 [↓](#item-4) | 已实现但默认关闭 | 小 | PR [#2525](https://github.com/QwenLM/qwen-code/pull/2525) merged |
-| **P1** | [会话记忆](./memory-system-deep-dive.md) — 关键决策/文件结构自动提取，新 session 自动注入 [↓](#item-5) | 仅简单笔记工具 | 大 | — |
-| **P1** | [Auto Dream](./memory-system-deep-dive.md) — 后台 agent 自动合并去重过时记忆 [↓](#item-6) | 缺失 | 中 | — |
-| **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](#item-7) | 全部工具始终加载 | 小 | — |
-| **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](#item-8) | 除 Agent 外全部顺序 | 小 | PR [#2864](https://github.com/QwenLM/qwen-code/pull/2864) open |
-| **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP 预连接 + 启动期间键盘捕获不丢失 [↓](#item-9) | 完全缺失 | 小 | — |
-| **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](#item-10) | 所有指令始终加载 | 中 | — |
-| **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](#item-11) | 缺失 | 小 | — |
-| **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](#item-12) | 缺失 | 中 | — |
-| **P2** | [Shell 安全增强](./shell-security-deep-dive.md) — IFS 注入/Unicode 空白/Zsh 命令等 25+ 专项检查 [↓](#item-13) | AST-only 读写分类 | 中 | — |
-| **P2** | [MDM 企业策略](./mdm-enterprise-deep-dive.md) — macOS plist + Windows Registry + 远程 API 集中管控 [↓](#item-14) | 无 OS 级策略 | 大 | — |
-| **P2** | [API 实时 Token 计数](./token-estimation-deep-dive.md) — 每次 API 调用前精确计数，3 层回退 [↓](#item-15) | 静态 82 种模式匹配 | 中 | — |
-| **P2** | [Output Styles](./git-workflow-session-deep-dive.md) — Learning 模式暂停让用户写代码，Explanatory 添加教育洞察 [↓](#item-16) | 缺失 | 中 | — |
-| **P2** | [Fast Mode](./cost-fastmode-deep-dive.md) — 同一模型标准/快速推理切换（$5→$30/Mtok），含冷却机制 [↓](#item-17) | 仅指定备用模型 | 小 | — |
-| **P2** | [并发 Session](./cost-fastmode-deep-dive.md) — 多终端 PID 追踪 + 后台 Agent 脱附/重附 [↓](#item-18) | 缺失 | 中 | — |
-| **P2** | [Git Diff 统计](./git-workflow-session-deep-dive.md) — 编辑后 numstat + hunks 结构化 diff（50 文件/1MB 上限） [↓](#item-19) | 无 git-aware diff | 小 | — |
-| **P2** | [文件历史快照](./git-workflow-session-deep-dive.md) — per-file SHA256 备份，按消息粒度恢复（100 个/session） [↓](#item-20) | git-level checkpoint | 中 | — |
-| **P2** | [Computer Use](./computer-use-deep-dive.md) — macOS 截图 + 鼠标/键盘 + 剪贴板，通过 MCP 桥接 [↓](#item-21) | 缺失 | 大 | — |
-| **P2** | [Deep Link](./deep-link-protocol-deep-dive.md) — `claude-cli://` 一键从浏览器/IDE 启动 Agent + 预填充 prompt [↓](#item-22) | 缺失 | 中 | — |
-| **P2** | [Team Memory](./team-memory-deep-dive.md) — 团队共享项目知识 + 29 条 gitleaks 密钥扫描 + ETag 同步 [↓](#item-23) | 缺失 | 大 | — |
-| **P2** | Plan 模式 Interview — 先收集信息再制定计划，分离探索和规划阶段 [↓](#item-24) | 无 interview 阶段 | 中 | — |
-| **P2** | BriefTool — Agent 向用户发送异步消息（含附件），不中断工具执行 [↓](#item-25) | 缺失 | 中 | — |
-| **P2** | [SendMessageTool](./multi-agent-deep-dive.md) — 多代理间消息传递、shutdown 请求、plan 审批 [↓](#item-26) | 缺失 | 中 | — |
-| **P2** | FileIndex — fzf 风格模糊文件搜索 + 异步增量索引 [↓](#item-27) | 依赖 rg/glob | 中 | — |
-| **P2** | Notebook Edit — Jupyter cell 编辑 + 自动 cell ID 追踪 + 文件历史快照 [↓](#item-28) | 缺失 | 中 | — |
-| **P2** | 自定义快捷键 — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](#item-29) | 缺失 | 中 | — |
-| **P2** | Session Ingress Auth — 远程会话 bearer token 认证（企业多用户环境） [↓](#item-30) | 缺失 | 中 | — |
-| **P2** | 企业代理 — CONNECT relay + CA cert 注入 + NO_PROXY 白名单（容器环境） [↓](#item-31) | 缺失 | 大 | — |
-| **P2** | ConfigTool — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](#item-32) | 仅 /settings 命令 | 小 | — |
-| **P2** | 终端主题检测 — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](#item-33) | 缺失 | 小 | — |
-| **P2** | 自动后台化 Agent — 超过阈值自动转后台执行，不阻塞用户交互 [↓](#item-34) | 需显式指定 | 小 | — |
-| **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](#item-35) | 缺失 | 小 | — |
+| **P0** | [Mid-Turn Queue Drain](./input-queue-deep-dive.md) — Agent 执行中途注入用户输入，无需等整轮结束 [↓](#item-6) | 推理循环内无队列检查 | 中 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) |
+| **P0** | [多层上下文压缩](./context-compression-deep-dive.md) — 自动裁剪旧工具结果 + 摘要，用户无需手动 /compress [↓](#item-1) | 仅单一 70% 手动压缩 | 中 | — |
+| **P0** | [Fork 子代理](./fork-subagent-deep-dive.md) — 子代理继承完整对话上下文，共享 prompt cache 省 80%+ 费用 [↓](#item-2) | 子代理必须从零开始 | 中 | — |
+| **P1** | [Speculation](../tools/claude-code/10-prompt-suggestions.md) — 预测用户下一步并提前执行，Tab 接受零延迟 [↓](#item-3) | 已实现但默认关闭 | 小 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
+| **P1** | [会话记忆](./memory-system-deep-dive.md) — 关键决策/文件结构自动提取，新 session 自动注入 [↓](#item-4) | 仅简单笔记工具 | 大 | — |
+| **P1** | [Auto Dream](./memory-system-deep-dive.md) — 后台 agent 自动合并去重过时记忆 [↓](#item-5) | 缺失 | 中 | — |
+| **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](#item-11) | 全部工具始终加载 | 小 | — |
+| **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) |
+| **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP 预连接 + 启动期间键盘捕获不丢失 [↓](#item-8) | 完全缺失 | 小 | — |
+| **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](#item-9) | 所有指令始终加载 | 中 | — |
+| **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](#item-12) | 缺失 | 小 | — |
+| **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](#item-13) | 缺失 | 中 | — |
+| **P2** | [Shell 安全增强](./shell-security-deep-dive.md) — IFS 注入/Unicode 空白/Zsh 命令等 25+ 专项检查 [↓](#item-14) | AST-only 读写分类 | 中 | — |
+| **P2** | [MDM 企业策略](./mdm-enterprise-deep-dive.md) — macOS plist + Windows Registry + 远程 API 集中管控 [↓](#item-15) | 无 OS 级策略 | 大 | — |
+| **P2** | [API 实时 Token 计数](./token-estimation-deep-dive.md) — 每次 API 调用前精确计数，3 层回退 [↓](#item-16) | 静态 82 种模式匹配 | 中 | — |
+| **P2** | [Output Styles](./git-workflow-session-deep-dive.md) — Learning 模式暂停让用户写代码，Explanatory 添加教育洞察 [↓](#item-17) | 缺失 | 中 | — |
+| **P2** | [Fast Mode](./cost-fastmode-deep-dive.md) — 同一模型标准/快速推理切换（$5→$30/Mtok），含冷却机制 [↓](#item-18) | 仅指定备用模型 | 小 | — |
+| **P2** | [并发 Session](./cost-fastmode-deep-dive.md) — 多终端 PID 追踪 + 后台 Agent 脱附/重附 [↓](#item-21) | 缺失 | 中 | — |
+| **P2** | [Git Diff 统计](./git-workflow-session-deep-dive.md) — 编辑后 numstat + hunks 结构化 diff（50 文件/1MB 上限） [↓](#item-22) | 无 git-aware diff | 小 | — |
+| **P2** | [文件历史快照](./git-workflow-session-deep-dive.md) — per-file SHA256 备份，按消息粒度恢复（100 个/session） [↓](#item-23) | git-level checkpoint | 中 | — |
+| **P2** | [Computer Use](./computer-use-deep-dive.md) — macOS 截图 + 鼠标/键盘 + 剪贴板，通过 MCP 桥接 [↓](#item-19) | 缺失 | 大 | — |
+| **P2** | [Deep Link](./deep-link-protocol-deep-dive.md) — `claude-cli://` 一键从浏览器/IDE 启动 Agent + 预填充 prompt [↓](#item-24) | 缺失 | 中 | — |
+| **P2** | [Team Memory](./team-memory-deep-dive.md) — 团队共享项目知识 + 29 条 gitleaks 密钥扫描 + ETag 同步 [↓](#item-10) | 缺失 | 大 | — |
+| **P2** | Plan 模式 Interview — 先收集信息再制定计划，分离探索和规划阶段 [↓](#item-25) | 无 interview 阶段 | 中 | — |
+| **P2** | BriefTool — Agent 向用户发送异步消息（含附件），不中断工具执行 [↓](#item-26) | 缺失 | 中 | — |
+| **P2** | [SendMessageTool](./multi-agent-deep-dive.md) — 多代理间消息传递、shutdown 请求、plan 审批 [↓](#item-27) | 缺失 | 中 | — |
+| **P2** | FileIndex — fzf 风格模糊文件搜索 + 异步增量索引 [↓](#item-28) | 依赖 rg/glob | 中 | — |
+| **P2** | Notebook Edit — Jupyter cell 编辑 + 自动 cell ID 追踪 + 文件历史快照 [↓](#item-29) | 缺失 | 中 | — |
+| **P2** | 自定义快捷键 — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](#item-30) | 缺失 | 中 | — |
+| **P2** | Session Ingress Auth — 远程会话 bearer token 认证（企业多用户环境） [↓](#item-31) | 缺失 | 中 | — |
+| **P2** | 企业代理 — CONNECT relay + CA cert 注入 + NO_PROXY 白名单（容器环境） [↓](#item-32) | 缺失 | 大 | — |
+| **P2** | ConfigTool — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](#item-33) | 仅 /settings 命令 | 小 | — |
+| **P2** | 终端主题检测 — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](#item-34) | 缺失 | 小 | — |
+| **P2** | 自动后台化 Agent — 超过阈值自动转后台执行，不阻塞用户交互 [↓](#item-35) | 需显式指定 | 小 | — |
+| **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](#item-20) | 缺失 | 小 | — |
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](#item-36) | 缺失 | 小 | — |
 | **P2** | 状态栏紧凑布局 — 固定高度不伸缩，最大化终端内容区域 [↓](#item-48) | Footer 占用偏高 | 小 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](#item-37) | 仅静态 Footer | 小 | — |
-| **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](#item-39) | 缺失 | 大 | — |
-| **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](#item-40) | 缺失 | 中 | — |
-| **P3** | Feature Gates — GrowthBook 远程特性开关 + A/B 测试 + 按事件动态采样 [↓](#item-41) | 缺失 | 中 | — |
-| **P3** | DXT/MCPB 插件包 — zip bomb 防护（512MB/文件，1GB 总量，50:1 压缩比限制） [↓](#item-42) | 缺失 | 中 | — |
-| **P3** | /security-review — 基于 git diff 的安全审查命令，聚焦漏洞检测 [↓](#item-43) | 缺失 | 小 | — |
-| **P3** | Ultraplan — 启动远程 CCR 会话，用更强模型深度规划后回传结果 [↓](#item-44) | 缺失 | 大 | — |
-| **P3** | Advisor 顾问模型 — /advisor 配置副模型审查主模型输出，多模型协作 [↓](#item-45) | 缺失 | 中 | — |
-| **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](#item-46) | 基础 vim.ts | 中 | — |
-| **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](#item-47) | 缺失 | 大 | — |
+| **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](#item-38) | 缺失 | 大 | — |
+| **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](#item-39) | 缺失 | 中 | — |
+| **P3** | Feature Gates — GrowthBook 远程特性开关 + A/B 测试 + 按事件动态采样 [↓](#item-40) | 缺失 | 中 | — |
+| **P3** | DXT/MCPB 插件包 — zip bomb 防护（512MB/文件，1GB 总量，50:1 压缩比限制） [↓](#item-41) | 缺失 | 中 | — |
+| **P3** | /security-review — 基于 git diff 的安全审查命令，聚焦漏洞检测 [↓](#item-42) | 缺失 | 小 | — |
+| **P3** | Ultraplan — 启动远程 CCR 会话，用更强模型深度规划后回传结果 [↓](#item-43) | 缺失 | 大 | — |
+| **P3** | Advisor 顾问模型 — /advisor 配置副模型审查主模型输出，多模型协作 [↓](#item-44) | 缺失 | 中 | — |
+| **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](#item-45) | 基础 vim.ts | 中 | — |
+| **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](#item-46) | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](#item-47) | 缺失 | 大 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
@@ -892,11 +892,11 @@
 
 | 维度 | Claude Code | Qwen Code | 差距评估 | 进展 |
 |------|-------------|-----------|----------|------|
-| **Mid-Turn Queue Drain** | `query.ts` 工具批次间 drain | 无 | 显著落后 | PR [#2854](https://github.com/QwenLM/qwen-code/pull/2854) open |
+| **Mid-Turn Queue Drain** | `query.ts` 工具批次间 drain | 无 | 显著落后 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) |
 | 压缩 (Compression) 策略 | 4 层分层压缩 | 单一阈值压缩 | 显著落后 | — |
 | 子代理 (Subagent) | 支持 fork + 上下文继承 | 仅预定义类型 | 显著落后 | — |
-| **智能工具并行** | Kind-based batching（默认 10 并发） | Agent 并发 / 其他顺序 | 中等差距 | PR [#2864](https://github.com/QwenLM/qwen-code/pull/2864) open |
-| 投机执行 (Speculation) | 完整 overlay-fs + cow（991 行） | v0.15.0 已完整实现（563 行），默认关闭 | 小差距 | PR [#2525](https://github.com/QwenLM/qwen-code/pull/2525) merged |
+| **智能工具并行** | Kind-based batching（默认 10 并发） | Agent 并发 / 其他顺序 | 中等差距 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) |
+| 投机执行 (Speculation) | 完整 overlay-fs + cow（991 行） | v0.15.0 已完整实现（563 行），默认关闭 | 小差距 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | 启动优化 | API Preconnect + Early Input | 无 | 缺失 | — |
 | CLAUDE.md 条件规则 | frontmatter `paths:` + 惰加载 | 无 | 中等差距 | — |
 | 会话记忆 (Session Memory) | SessionMemory + memdir | 简单笔记工具 | 显著落后 | — |
