@@ -74,7 +74,6 @@
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](./qwen-code-improvement-report-p2.md#item-20) | 缺失 | 小 | — |
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2.md#item-36) | 缺失 | 小 | — |
 | **P2** | 状态栏紧凑布局 — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2.md#item-48) | Footer 占用偏高 | 小 | — |
-| **P1** | Channels — Telegram/Discord/iMessage/webhook 推送消息到运行中 session [↓](./qwen-code-improvement-report-p0-p1.md#item-49) | 缺失 | 中 | — |
 | **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](./qwen-code-improvement-report-p0-p1.md#item-50) | 缺失 | 中 | — |
 | **P1** | GitHub Code Review — 多代理自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1.md#item-51) | 缺失 | 大 | — |
 | **P1** | HTTP Hooks — Hook 可 POST JSON 到 URL 并接收响应（不仅 shell 命令）[↓](./qwen-code-improvement-report-p0-p1.md#item-52) | 仅 shell 命令 | 小 | — |

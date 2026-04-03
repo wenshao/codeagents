@@ -314,25 +314,6 @@
 
 ---
 
-<a id="item-49"></a>
-
-### 49. Channels 消息推送（P1）
-
-**思路**：通过 MCP 协议的 channel 插件接收外部消息（Telegram/Discord/iMessage/webhook）。channel 插件注册 `--channels` 参数，sender allowlist 控制谁能推送。双向——Claude 回复通过同一 channel 返回。
-
-**Claude Code 源码索引**：
-
-| 文件 | 关键函数/常量 |
-|------|-------------|
-| 插件: `claude-plugins-official/external_plugins/telegram/` | Telegram bot 轮询 + 配对码 + allowlist |
-| `services/mcp/client.ts` | channel 注册 + 消息路由 |
-
-**Qwen Code 修改方向**：扩展现有 MCP plugin 框架支持 `channel` 类型；新增 `--channels` CLI 参数；`AppContainer.tsx` 处理入站 channel 消息。
-
-**意义**：用户外出时需要与 Agent 交互——聊天应用是最自然的方式。
-**缺失后果**：只能在终端/IDE 中交互——离开电脑后 Agent 暂停。
-**改进收益**：Telegram/Discord 发消息 → Agent 实时响应——随时随地协作。
-
 ---
 
 <a id="item-50"></a>
