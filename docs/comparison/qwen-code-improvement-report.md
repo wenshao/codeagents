@@ -43,7 +43,7 @@
 | **P1** | [Speculation](../tools/claude-code/10-prompt-suggestions.md) 默认启用 | v0.15.0 已实现，默认关闭 | 小 | PR [#2525](https://github.com/QwenLM/qwen-code/pull/2525) merged |
 | **P1** | [会话记忆](./memory-system-deep-dive.md)（SessionMemory + memdir 跨 session 检索） | 仅简单笔记工具 | 大 | — |
 | **P1** | [Auto Dream](./memory-system-deep-dive.md)（自动记忆整理，24h + 5 session 门控） | 缺失 | 中 | — |
-| **P1** | [上下文折叠](./context-compression-deep-dive.md)（History Snip，span 级摘要，scaffolding 阶段） | 缺失 | 大 | — |
+| **P3** | [上下文折叠](./context-compression-deep-dive.md)（History Snip，scaffolding 阶段，Claude Code 自身未完整实现） | 缺失 | 大 | — |
 | **P1** | [工具动态发现](./tool-search-deep-dive.md)（ToolSearchTool，延迟加载 + 搜索） | 缺失 | 小 | — |
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md)（Kind-based Batching，默认 10 并发） | Agent 并发 / 其他顺序 | 小 | PR [#2864](https://github.com/QwenLM/qwen-code/pull/2864) open |
 | **P1** | [启动优化](./startup-optimization-deep-dive.md)（API Preconnect + Early Input Capture） | 完全缺失 | 小 | — |
@@ -352,15 +352,22 @@
 
 ---
 
-### 10. 上下文折叠 History Snip（P1）
+### 10. Team Memory Sync 组织级记忆同步（P2）
 
-**Claude Code 实现**：`feature('HISTORY_SNIP')` 门控，目前为 **scaffolding 阶段**（SnipTool 仅有 lazy require 占位，无完整实现）。已有的相关能力是 `utils/collapseReadSearch.ts` 的 UI 级消息折叠（连续 read/search 操作合并显示）和 MicroCompact 的工具结果清除。
+**Claude Code 实现**：`services/teamMemorySync/` 实现 per-repo 级别的组织记忆同步。API 端点 `/api/claude_code/team_memory`，使用 ETag + SHA256 per-key 校验和进行 delta 上传。`fs.watch` 2 秒 debounce 实时推送。29 条 gitleaks 规则在上传前扫描密钥。
 
-**Qwen Code 现状**：缺失。
+**Qwen Code 现状**：缺失。仅有用户私有的简单笔记工具。
 
-**缺失后果**：长对话中早期 turn 始终占满上下文——即使内容已被后续 turn 覆盖。
+**缺失后果**：
+- 团队成员各自维护独立记忆——项目知识无法共享，新成员需从零积累
+- 同一项目的编码规范、架构决策、已知坑点散落在各人本地——知识孤岛
 
-**改进收益**：选择性压缩早期 span 而非全量摘要——比 full compact 更精细，信息损失更小。
+**改进收益**：
+- **团队知识共享**：一人学到的项目知识自动同步给全团队——新成员 session 自动注入团队积累
+- **密钥安全**：29 条 gitleaks 规则客户端扫描——敏感凭据永不上传到服务端
+- **冲突安全**：ETag + 412 重试机制——多人同时编辑不会丢失数据
+
+**相关文章**：[Team Memory 组织级记忆同步](./team-memory-deep-dive.md)
 
 ---
 
