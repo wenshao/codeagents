@@ -87,6 +87,16 @@
 - 源码: `packages/core/src/services/chatCompressionService.ts`（369 行），基于固定 token 阈值（70%）的单一压缩策略
 - 无 micro-compact、无 memory-aware compact、无 API 原生上下文管理
 
+**缺失后果**：
+- 长会话中工具结果（大文件内容、长命令输出）持续累积，用户必须手动执行 `/compress`，否则上下文溢出报错
+- 压缩时一次性丢弃所有历史，丢失已提取的会话记忆——压缩后模型"失忆"，需重新描述上下文
+- 无 `cache_edits` API 支持——每次压缩重建整个 prompt cache，浪费 cache write tokens
+
+**改进收益**：
+- **MicroCompact**：自动在 turn 间裁剪旧工具结果，长会话可无限延续而无需手动干预
+- **Session-Memory Compact**：压缩时保留关键记忆 + 最近 5 个文件重注入——压缩后模型仍能"接着干"
+- **多级阈值**：~93% 自动触发（Claude Code 默认）vs 70% 手动触发——用户感知不到压缩发生
+
 **相关文章**：
 - [上下文压缩深度对比](./context-compression-deep-dive.md)
 
@@ -115,6 +125,16 @@
 - 源码: `packages/core/src/tools/agent.ts` — Agent 工具存在，但必须显式指定 `subagent_type`
 - 源码: `packages/core/src/subagents/` — 子代理管理器，但仅支持预定义类型
 - 无法 fork 当前会话上下文，无法继承对话历史
+
+**缺失后果**：
+- 子代理无法获得父代理的对话上下文——每次委派任务都需要在 prompt 中重复描述背景，增加 token 消耗和信息丢失风险
+- 每个子代理的 API 请求前缀完全不同——无法共享 prompt cache，5 个子代理 = 5× 完整 prompt 费用（100K context 下约 500K tokens vs fork 模式 ~105K）
+- 用户必须显式指定 `subagent_type`——模型无法自然地"分叉去做"，降低了自主性
+
+**改进收益**：
+- **上下文零成本传递**：子代理继承完整对话历史，无需重复描述——任务理解准确率提升
+- **Prompt Cache 共享**：N 个 fork 子代理共享一份缓存，成本从 N× 降为 ~1×——典型场景节省 80%+ token 费用
+- **隐式调用**：省略 `subagent_type` 即 fork——降低模型认知负担，让委派更自然
 
 **相关文章**：
 - [Fork 子代理 Deep-Dive](./fork-subagent-deep-dive.md)
@@ -148,6 +168,15 @@
 - 源码: `packages/core/src/followup/suggestionGenerator.ts`（367 行）— 建议生成 + 12 条过滤规则
 - 已实现 `acceptSpeculation()` + `generatePipelinedSuggestion()` + 边界检测
 - **当前限制**：`enableSpeculation` 默认关闭，需用户手动开启
+
+**缺失后果（默认关闭）**：
+- 用户每次按 Tab 接受建议后，仍需等待完整的 API 调用 + 工具执行——典型等待 2-10 秒
+- 无法实现"Tab-Tab-Tab"连续操作模式——每次接受后都有延迟中断
+
+**改进收益（默认开启后）**：
+- **零感知延迟**：建议展示时 speculation 已在后台预执行，Tab 接受后结果立即呈现
+- **Pipelined Suggestion**：speculation 完成后自动预生成下一个建议——用户可连续 Tab 操作
+- 预计首次交互延迟改善 2-5 秒（取决于工具执行时间）
 
 **相关文章**：
 - [Claude Code 提示建议](../tools/claude-code/10-prompt-suggestions.md)
@@ -183,6 +212,16 @@
 - 无记忆 (Memory) 提取/检索机制
 - 无记忆 (Memory) 生命周期管理
 
+**缺失后果**：
+- 每次新 session 从零开始——用户需反复告知项目背景、编码规范、已踩过的坑
+- 复杂项目中同一问题被多次排查——前次 session 的发现未持久化
+- 与 `/compact` 冲突——压缩后丢失的上下文无法从记忆中恢复
+
+**改进收益**：
+- **跨 session 连续性**：关键决策、文件结构、技术栈信息自动提取并持久化——新 session 自动注入相关记忆
+- **压缩后恢复**：记忆在 compact 时被保留（session-memory compact），模型不会因压缩而"失忆"
+- **项目级知识积累**：多人/多 session 的发现汇聚为项目知识库——团队共享学习曲线
+
 **相关文章**：
 - [记忆系统深度对比](./memory-system-deep-dive.md)
 
@@ -214,6 +253,16 @@
 
 **Qwen Code 现状**：
 - 完全缺失此功能
+
+**缺失后果**：
+- 记忆文件（QWEN.md / MEMORY.md）随使用增长无限膨胀——token 预算被陈旧记忆占满
+- 相互矛盾的记忆（旧决策 vs 新决策）共存——模型收到冲突指令
+- 用户需手动清理过时记忆——违背"AI 代理应自治"原则
+
+**改进收益**：
+- **自动整合**：后台 agent 定期合并、去重、删除过时记忆——记忆始终精简且一致
+- **门控保护**：仅在 24h + 5 session 门控同时满足时触发——避免频繁整理干扰正常使用
+- **并发安全**：文件锁防止多进程同时整理——适合多终端/CI 场景
 
 **建议方案**：
 1. 实现 DreamConfig：定义时间门控和 session 数量门控参数
