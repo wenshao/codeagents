@@ -57,6 +57,15 @@
 | **P2** | FileIndex（fzf 风格模糊搜索） | 依赖 rg/glob | 中 | — |
 | **P2** | ConfigTool（工具化设置读写） | 仅 /settings 命令 | 小 | — |
 | **P2** | 自动后台化 Agent（超时转后台） | 需显式指定 | 小 | — |
+| **P1** | Commit Attribution（Co-Authored-By 追踪） | 缺失 | 小 | — |
+| **P1** | 会话分支（/branch 对话分叉） | 缺失 | 中 | — |
+| **P1** | 成本追踪（USD + cache 效率 + 按模型分项） | 仅基础 token/请求计数 | 中 | — |
+| **P2** | Output Styles（Learning 教学模式 / Explanatory 解释模式） | 缺失 | 中 | — |
+| **P2** | Fast Mode（速度/成本分级推理） | 缺失 | 小 | — |
+| **P2** | 并发 Session 管理（多终端 PID 追踪 + 后台 Agent 脱附） | 缺失 | 中 | — |
+| **P2** | Git Diff 统计（工具编辑后结构化 diff + 按文件统计） | 无 git-aware diff stats | 小 | — |
+| **P2** | 文件历史快照（per-file SHA256 备份 + 按消息恢复） | checkpoint 模式（git 级） | 中 | — |
+| **P2** | Session Ingress Auth（远程会话 bearer token 认证） | 缺失 | 中 | — |
 | **P3** | /security-review 安全审查命令 | 缺失 | 小 | — |
 | **P3** | Ultraplan 远程计划探索 | 缺失 | 大 | — |
 | **P3** | Advisor 顾问模型 | 缺失 | 中 | — |
@@ -293,6 +302,15 @@
 | 工具发现 | ToolSearchTool | 无 | 缺失 | — |
 | 多代理通信 | SendMessageTool | 无 | 缺失 | — |
 | 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | — |
+| Commit Attribution | Co-Authored-By 追踪 | 无 | 缺失 | — |
+| 会话分支 | /branch 对话分叉 | 无 | 缺失 | — |
+| 成本追踪 | USD + cache 效率 + 按模型分项 | 仅基础 token 计数 | 中等差距 | — |
+| Output Styles | Learning / Explanatory 模式 | 无 | 缺失 | — |
+| Fast Mode | 速度/成本分级推理 | 无 | 缺失 | — |
+| 并发 Session | 多终端 PID 追踪 + 后台脱附 | 无 | 缺失 | — |
+| Git Diff 统计 | 结构化 diff + 按文件统计 | 无 git-aware stats | 中等差距 | — |
+| 文件历史快照 | per-file SHA256 + 按消息恢复 | checkpoint（git 级） | 小差距 | — |
+| Session Ingress Auth | bearer token 远程认证 | 无 | 缺失 | — |
 
 ## 五、相关 Deep-Dive 文章
 
