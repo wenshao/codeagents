@@ -2422,9 +2422,9 @@
 
 ---
 
-<a id="item-172"></a>
+<a id="item-161"></a>
 
-### 172. Unicode 净化与 ASCII 走私防御（P2）
+### 161. Unicode 净化与 ASCII 走私防御（P2）
 
 **思路**：对所有外部输入（MCP 工具结果、文件内容、URL 参数）进行 Unicode 净化——① NFKC 规范化；② 移除 Cf/Co/Cn 类别字符；③ 剥离零宽空格、RTL/LTR 标记、BOM。递归处理嵌套数据结构（最大 10 轮防止无限循环）。防御 ASCII Smuggling 和隐藏提示注入。
 
@@ -2442,9 +2442,9 @@
 
 ---
 
-<a id="item-173"></a>
+<a id="item-162"></a>
 
-### 173. 沙箱运行时集成（P2）
+### 162. 沙箱运行时集成（P2）
 
 **思路**：Shell 命令在沙箱中执行——限制文件系统访问（路径模式）、网络访问（域名白名单）、进程能力。3 种后端：macOS seatbelt、Linux bubblewrap、Docker。沙箱策略可配置，特定命令可排除（如 `npm install` 需要网络）。
 
@@ -2463,9 +2463,9 @@
 
 ---
 
-<a id="item-174"></a>
+<a id="item-163"></a>
 
-### 174. SSRF 防护（HTTP Hook）（P2）
+### 163. SSRF 防护（HTTP Hook）（P2）
 
 **思路**：HTTP Hook 发送 POST 前验证目标——阻断私有 IP（10.0.0.0/8 等）和 IPv6 私有范围。检测 IPv4-mapped IPv6（`::ffff:10.0.0.1`）防止绕过。DNS 查询结果二次验证——防 DNS rebinding。
 
@@ -2483,9 +2483,9 @@
 
 ---
 
-<a id="item-175"></a>
+<a id="item-164"></a>
 
-### 175. WebFetch 域名白名单（P2）
+### 164. WebFetch 域名白名单（P2）
 
 **思路**：130+ 常用域名预批准（文档/包管理/API 参考），匹配时无需审批。路径段边界检查确保 `/anthropic` 不匹配 `/anthropic-evil/`。
 
@@ -2503,9 +2503,9 @@
 
 ---
 
-<a id="item-176"></a>
+<a id="item-165"></a>
 
-### 176. 子进程环境变量清洗（P2）
+### 165. 子进程环境变量清洗（P2）
 
 **思路**：子进程启动前清洗 30+ 敏感变量——API 密钥、云凭证、GitHub token、OTEL headers。通过 `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` 控制启用。
 
@@ -2523,9 +2523,9 @@
 
 ---
 
-<a id="item-177"></a>
+<a id="item-166"></a>
 
-### 177. 工具输出密钥扫描（P2）
+### 166. 工具输出密钥扫描（P2）
 
 **思路**：工具结果用 50+ gitleaks 规则扫描——AWS/GitHub/Slack/PEM/Stripe 等。正则懒编译。检测到密钥时阻止写入共享记忆。
 
@@ -2544,9 +2544,9 @@
 
 ---
 
-<a id="item-178"></a>
+<a id="item-167"></a>
 
-### 178. 权限升级防护（P2）
+### 167. 权限升级防护（P2）
 
 **思路**：进入自动模式时剥离危险权限规则——代码执行（python/node/ruby/perl）、shell（eval/exec/sudo）、网络（curl/wget/ssh）、云 CLI（aws/gcloud/kubectl）共 60+ 模式。
 
