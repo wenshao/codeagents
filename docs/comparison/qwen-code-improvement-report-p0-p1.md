@@ -670,3 +670,157 @@
 **意义**：Prompt cache 命中率直接影响成本和延迟——缓存命中省 90% token 费用 + 首 token 延迟减半。
 **缺失后果**：每次调用重新编码完整系统提示 + 工具 schema = ~20K-50K tokens 浪费。
 **改进收益**：分段缓存 + 稳定排序 = 80%+ 缓存命中率——成本降低 50%+，首 token 快 2×。
+
+---
+
+<a id="item-106"></a>
+
+### 106. 会话崩溃恢复与中断检测（P0）
+
+**思路**：进程异常退出（OOM、SIGKILL、断电）后，下次启动自动检测上次会话中断状态。3 种中断类型：① `none`——正常完成；② `interrupted_prompt`——用户消息未得到响应；③ `interrupted_turn`——助手响应中有未完成的工具调用。检测到中断后注入合成续行消息（synthetic continuation），模型自动恢复未完成的操作。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/conversationRecovery.ts` (598行) | `detectTurnInterruption()` 3 种中断状态检测、`deserializeMessagesWithInterruptDetection()` |
+| `utils/sessionRestore.ts` (552行) | `processResumedConversation()` 全量恢复（文件快照 + attribution + worktree + todo） |
+| `utils/sessionStorage.ts` (L447-464) | `registerCleanup()` 退出时 flush + 元数据重追加 |
+
+**Qwen Code 修改方向**：`SessionService` 有 JSONL 存储但无中断检测。改进方向：① 新增 `conversationRecovery.ts`——加载 JSONL 后检测最后一条消息是否有未完成 tool_use；② 检测到中断时注入 `[上次会话在此处中断，请继续未完成的操作]` 合成消息；③ `--resume` 时自动恢复文件快照和工作目录。
+
+**意义**：长任务最大风险是进程中途死亡——所有上下文和进度丢失。
+**缺失后果**：进程崩溃 = 从零开始——用户需手动描述"刚才做到哪了"。
+**改进收益**：自动中断检测 + 合成续行——崩溃后 `--resume` 即可无缝继续。
+
+---
+
+<a id="item-107"></a>
+
+### 107. API 指数退避与降级重试（P1）
+
+**思路**：10 次重试 + 指数退避（500ms base, 32s cap, 25% jitter）。特殊处理：① 429 rate-limit——读取 `retry-after` header 等待；② 529 overloaded——连续 3 次后降级到备用模型（`FallbackTriggeredError`）；③ 401/403——触发 token 刷新后重试；④ 网络错误（ECONNRESET/EPIPE）——禁用 keep-alive 后重试。环境变量 `CLAUDE_CODE_MAX_RETRIES` 可覆盖默认值。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/api/withRetry.ts` (823行) | `withRetry()` 主重试逻辑、`DEFAULT_MAX_RETRIES = 10`、`MAX_529_RETRIES = 3` |
+| `services/api/withRetry.ts` (L530-548) | `getRetryDelay()` 指数退避 `BASE_DELAY_MS * 2^(attempt-1)` + 25% jitter |
+| `services/api/withRetry.ts` (L326-365) | 529 连续 3 次后 `FallbackTriggeredError` 降级到备用模型 |
+| `services/api/withRetry.ts` (L696-787) | `shouldRetry()` 错误分类（可重试 vs 不可重试） |
+
+**Qwen Code 修改方向**：`generationConfig.maxRetries` 仅配置重试次数，无退避策略和降级逻辑。改进方向：① 新建 `utils/withRetry.ts`——指数退避 + jitter；② 429 读取 `retry-after` header；③ 连续 N 次服务端错误后降级到备用模型（如 qwen-plus → qwen-turbo）；④ 网络错误自动禁用 keep-alive 重建连接。
+
+**意义**：长任务需数十次 API 调用——任意一次失败不应终止整个任务。
+**缺失后果**：首次 429/500 = 任务立即失败——用户需手动重试。
+**改进收益**：10 次退避重试 + 模型降级——99.9% 瞬态故障自动恢复。
+
+---
+
+<a id="item-108"></a>
+
+### 108. 优雅关闭序列与信号处理（P1）
+
+**思路**：SIGINT/SIGTERM/SIGHUP 各有专用 handler。关闭顺序：① 同步恢复终端模式（alt-screen、鼠标、光标）；② 打印 resume 命令提示；③ 并行执行清理函数（2s 超时）；④ 执行 SessionEnd hooks（1.5s 超时）；⑤ flush 分析数据（500ms）；⑥ 5s failsafe timer 兜底——超时强制 `process.exit()`，失败则 SIGKILL。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/gracefulShutdown.ts` (530行) | `setupGracefulShutdown()` 信号注册、`gracefulShutdown()` 关闭序列 |
+| `utils/gracefulShutdown.ts` (L59-136) | `cleanupTerminalModes()` 同步终端恢复（alt-screen/mouse/cursor） |
+| `utils/gracefulShutdown.ts` (L414-426) | failsafe timer = `max(5s, hookTimeout + 3.5s)` |
+| `utils/cleanupRegistry.ts` | `registerCleanup()` / `runCleanupFunctions()` 全局清理注册 |
+
+**Qwen Code 修改方向**：无 SIGINT/SIGTERM handler；`/quit` 命令仅触发 `SessionEnd` hook。改进方向：① `process.on('SIGINT/SIGTERM/SIGHUP')` 注册 handler；② 新建 `cleanupRegistry.ts`——全局注册 cleanup 函数；③ 关闭序列：终端恢复 → 清理 → hooks → flush → exit；④ failsafe timer 防止挂起。
+
+**意义**：Ctrl+C 是最常见的中断方式——不优雅处理会导致终端状态残留、数据丢失。
+**缺失后果**：Ctrl+C 后终端光标消失、alt-screen 残留、会话未保存。
+**改进收益**：优雅关闭 = 终端恢复 + 会话保存 + 提示 resume 命令——中断零副作用。
+
+---
+
+<a id="item-109"></a>
+
+### 109. 反应式压缩（prompt_too_long 恢复）（P1）
+
+**思路**：API 返回 `prompt_too_long` 错误时，不直接报错，而是自动修复：① 解析错误消息中的 actual/limit token 数；② 按 token gap 裁剪最早的消息组（user+assistant 对）；③ 最多重试 3 次，每次裁剪后重发；④ 裁剪后注入 `[earlier conversation truncated]` 标记防止循环。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/compact/compact.ts` (L450-491) | 反应式重试循环（最多 3 次） |
+| `services/compact/compact.ts` (L243-291) | `truncateHeadForPTLRetry()` 按 token gap 或 20% 裁剪最早组 |
+| `services/api/errors.ts` (L62-118) | `parsePromptTooLongTokenCounts()` 解析 actual/limit |
+
+**Qwen Code 修改方向**：`chatCompressionService.ts` 仅主动压缩（70% 阈值），无被动恢复。改进方向：① API 调用捕获 `prompt_too_long` 错误；② 解析 token 超限量；③ 裁剪最早消息组后重试（最多 3 次）；④ 注入截断标记防止重复裁剪。
+
+**意义**：主动压缩可能因 token 估算不准而遗漏——被动恢复是最后防线。
+**缺失后果**：token 估算偏差 + 未及时压缩 = API 报错 = 任务中断。
+**改进收益**：prompt_too_long → 自动裁剪 → 重试——用户零感知，任务不中断。
+
+---
+
+<a id="item-110"></a>
+
+### 110. 持久化重试模式（无人值守/CI）（P1）
+
+**思路**：`--bg` 或 CI 模式下，API 失败不终止而是无限重试。退避上限 5 分钟（`PERSISTENT_MAX_BACKOFF_MS`），6 小时后重置退避（`PERSISTENT_RESET_CAP_MS`）。每 30 秒 yield 心跳消息保持会话活跃。读取 rate-limit `reset` header 精确等待配额恢复。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/api/withRetry.ts` (L368-412) | `PERSISTENT_MAX_BACKOFF_MS = 5min`、`PERSISTENT_RESET_CAP_MS = 6h`、`HEARTBEAT_INTERVAL_MS = 30s` |
+| `services/api/withRetry.ts` (L96-104) | `persistentAttempt` 独立计数器、rate-limit reset header 读取 |
+
+**Qwen Code 修改方向**：headless 模式下 API 失败直接退出。改进方向：① 检测 `--headless`/`--bg` 模式时启用 persistent retry；② 退避上限 5 分钟，6 小时后重置；③ 心跳消息保持远程会话存活；④ 读取 `x-ratelimit-reset` header 精确等待。
+
+**意义**：CI/CD 和后台任务运行数小时——瞬态 API 故障不应终止整个流水线。
+**缺失后果**：CI 中 API 偶发 500 = 整个 pipeline 失败 = 重新排队。
+**改进收益**：无限重试 + 5min 退避上限——CI 任务在 API 恢复后自动继续。
+
+---
+
+<a id="item-111"></a>
+
+### 111. 原子文件写入与事务回滚（P1）
+
+**思路**：文件写入先写临时文件再 `rename()`——rename 是 POSIX 原子操作，断电时要么旧文件要么新文件，不会出现半写状态。大结果（>50K chars）自动持久化到 `tool-results/{SHA256}` 文件，消息中保留 `<persisted-output>` 标签 + 2KB 预览。模型需要完整内容时通过 Read 工具回读。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/statsCache.ts` (L219-249) | 原子写入：temp file + rename + unlink on error |
+| `utils/toolResultStorage.ts` (L137-184) | 大结果落盘：`<persisted-output>` 标签 + 2KB preview + SHA256 hash |
+| `utils/toolResultStorage.ts` (L55-78) | `getPersistenceThreshold()` 默认 50K chars |
+
+**Qwen Code 修改方向**：`atomicFileWrite.ts` 已有 temp+rename 模式（仅用于用户文件编辑），但 session 存储和配置写入使用 `writeFileSync` 直接覆盖。改进方向：① session JSONL 追加使用 atomic append（write + fsync）；② 配置文件写入统一使用 temp+rename；③ 大工具结果（>25K chars，已有 `truncateToolOutputThreshold`）自动落盘 + 引用标签。
+
+**意义**：长任务运行数小时——中途断电不应导致文件损坏或数据丢失。
+**缺失后果**：`writeFileSync` 写到一半断电 = 配置文件损坏 = 下次启动失败。
+**改进收益**：原子写入 = 零损坏风险；大结果落盘 = 上下文不膨胀。
+
+---
+
+<a id="item-112"></a>
+
+### 112. 自动检查点默认启用（P1）
+
+**思路**：每轮工具执行后自动创建 git checkpoint（`git stash` 或 shadow commit），用户可通过 `/restore` 回退到任意检查点。检查点包含：文件 diff 快照、对话消息 UUID、时间戳。默认启用而非需要用户手动开启。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/fileHistory.ts` | `fileHistoryTrackEdit()`、`makeSnapshot()`、max 100 snapshots |
+| `utils/sessionStorage.ts` (L1085-1098) | `file-history-snapshot` 条目类型 |
+
+**Qwen Code 修改方向**：`general.checkpointing.enabled` 存在但**默认关闭**。改进方向：① 将 `checkpointing.enabled` 默认值改为 `true`；② 每轮工具执行后自动创建快照（path + content hash + mtime）；③ `/restore` 命令展示检查点列表 + diff 预览 + 一键恢复。
+
+**意义**：长任务中 Agent 可能在第 N 步犯错——需要回退到第 N-1 步而非从头开始。
+**缺失后果**：检查点关闭 = Agent 改错文件后只能手动 `git checkout` 恢复。
+**改进收益**：自动检查点 = `/restore` 选择任意步骤回退——精确撤销错误变更。

@@ -142,6 +142,18 @@
 | **P2** | 流式超时检测与级联取消 — 90s 空闲看门狗 + siblingAbortController 级联 [↓](./qwen-code-improvement-report-p2.md#item-92) | 固定超时/无级联 | 小 | — |
 | **P2** | Git 文件系统直读 — .git/HEAD+refs 直读 + 批量 check-ignore + LRU 缓存 [↓](./qwen-code-improvement-report-p2.md#item-93) | 每次 spawn git | 小 | — |
 | **P2** | 设置/Schema 缓存防抖动 — 3 层设置缓存 + schema 首次锁定 + parse 去重 [↓](./qwen-code-improvement-report-p2.md#item-94) | 每次重新读取解析 | 小 | — |
+| **P0** | 会话崩溃恢复与中断检测 — 3 种中断状态检测 + 合成续行 + 全量恢复 [↓](./qwen-code-improvement-report-p0-p1.md#item-106) | 无崩溃恢复 | 大 | — |
+| **P1** | API 指数退避与降级重试 — 10 次退避 + 529 模型降级 + 401 token 刷新 [↓](./qwen-code-improvement-report-p0-p1.md#item-107) | 仅配置重试次数 | 中 | — |
+| **P1** | 优雅关闭序列与信号处理 — SIGINT/SIGTERM + 清理注册 + 5s failsafe [↓](./qwen-code-improvement-report-p0-p1.md#item-108) | 无信号处理 | 中 | — |
+| **P1** | 反应式压缩 — prompt_too_long 自动裁剪最早消息 + 重试 3 次 [↓](./qwen-code-improvement-report-p0-p1.md#item-109) | 无被动恢复 | 中 | — |
+| **P1** | 持久化重试模式 — CI/后台无限重试 + 5min 退避上限 + 30s 心跳 [↓](./qwen-code-improvement-report-p0-p1.md#item-110) | 失败即退出 | 中 | — |
+| **P1** | 原子文件写入与事务回滚 — temp+rename 原子写 + 大结果落盘 [↓](./qwen-code-improvement-report-p0-p1.md#item-111) | 直接 writeFileSync | 中 | — |
+| **P1** | 自动检查点默认启用 — 每轮工具执行后自动创建文件快照 [↓](./qwen-code-improvement-report-p0-p1.md#item-112) | 检查点默认关闭 | 小 | — |
+| **P2** | Bash 交互提示卡顿检测 — 45s 无输出 + prompt regex 匹配 + 自动通知 [↓](./qwen-code-improvement-report-p2.md#item-113) | 无卡顿检测 | 小 | — |
+| **P2** | TTY 孤儿进程检测 — 30s 检查终端存活 + 自动优雅退出 [↓](./qwen-code-improvement-report-p2.md#item-114) | 无检测 | 小 | — |
+| **P2** | MCP 服务器优雅关闭升级 — SIGINT(100ms)→SIGTERM(400ms)→SIGKILL 3 阶段 [↓](./qwen-code-improvement-report-p2.md#item-115) | 直接断开 | 小 | — |
+| **P2** | 事件循环卡顿检测 — 主线程阻塞 >500ms 诊断日志 [↓](./qwen-code-improvement-report-p2.md#item-116) | 无监控 | 小 | — |
+| **P2** | 会话活动心跳 — refcount 活动追踪 + 30s keepalive + 空闲退出 [↓](./qwen-code-improvement-report-p2.md#item-117) | 无心跳 | 小 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
@@ -151,8 +163,8 @@
 
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
-| [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（Mid-Turn Drain、压缩、Fork、流式执行、文件缓存、Prompt Cache 等） | 29 |
-| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Shell 安全、MDM、MCP 并行、级联取消、Git 直读等） | 65 |
+| [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（崩溃恢复、API 退避、优雅关闭、反应式压缩、原子写入等） | 36 |
+| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Shell 安全、卡顿检测、孤儿进程、心跳、事件循环监控等） | 70 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结
@@ -193,6 +205,12 @@
 | **请求合并** | coalescing + BoundedUUIDSet | 无 | 缺失 | — |
 | **延迟初始化** | lazySchema + 延迟 import + 延迟预取 | 全量同步加载 | 中等差距 | — |
 | **Git 直读** | .git/HEAD+refs 直读 + LRU | spawn git | 中等差距 | — |
+| **崩溃恢复** | 中断检测 + 合成续行 + 全量恢复 | 无 | 缺失 | — |
+| **API 重试** | 10 次退避 + 529 降级 + 持久化重试 | 仅重试次数 | 显著落后 | — |
+| **优雅关闭** | SIGINT/SIGTERM + 清理注册 + failsafe | 无信号处理 | 缺失 | — |
+| **反应式压缩** | prompt_too_long 自动裁剪重试 | 无 | 缺失 | — |
+| **原子写入** | temp+rename + 大结果落盘 | 直接 writeFileSync | 中等差距 | — |
+| **自动检查点** | 默认启用 + per-message 快照 | 默认关闭 | 中等差距 | — |
 | Session Ingress Auth | bearer token 远程认证 | 无 | 缺失 | — |
 | Computer Use | macOS 桌面自动化 | 无 | 缺失 | — |
 | Deep Link | `claude-cli://` URI scheme | 无 | 缺失 | — |

@@ -1392,3 +1392,106 @@
 **意义**：设置文件和工具 schema 在会话中变化极少，但每轮都重新读取/生成。
 **缺失后果**：每轮读配置 + parse + schema 生成 = 10-50ms 重复工作。
 **改进收益**：缓存命中 = 0ms——消除 90%+ 的重复解析和生成。
+
+---
+
+<a id="item-113"></a>
+
+### 113. Bash 交互提示卡顿检测（P2）
+
+**思路**：后台每 5 秒检查 shell 输出增长。如果 45 秒内无新输出，读取最后 1024 字节检测交互式提示（`(y/n)`、`Press Enter`、`password:` 等 regex）。检测到卡顿后向用户队列发送 `TASK_NOTIFICATION` 提醒处理。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `tasks/LocalShellTask/LocalShellTask.tsx` (L24-100) | `STALL_CHECK_INTERVAL_MS = 5s`、`STALL_THRESHOLD_MS = 45s`、`STALL_TAIL_BYTES = 1024` |
+| `tasks/LocalShellTask/LocalShellTask.tsx` (L32-38) | `looksLikePrompt()` regex 匹配交互式提示 |
+
+**Qwen Code 修改方向**：shell 工具执行后仅等待退出码，无输出监控。改进方向：① 后台 5s 轮询 shell 输出文件大小；② 45s 无增长时读取尾部匹配 prompt 模式；③ 检测到交互提示后通知用户（`stdin` 需要输入或 kill 进程）。
+
+**意义**：`npm install` 弹出 `Do you want to continue? (y/n)` 导致 Agent 永远等待。
+**缺失后果**：交互式 prompt 卡住 = 任务永久挂起——用户不知道在等什么。
+**改进收益**：45s 检测 + 自动通知——用户立即知道需要手动输入或终止。
+
+---
+
+<a id="item-114"></a>
+
+### 114. TTY 孤儿进程检测（P2）
+
+**思路**：macOS 终端关闭有时不发 SIGHUP。每 30 秒检查 TTY 是否仍可读——如果 `process.stdin` 变为不可读，说明终端已关闭，触发优雅退出。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/gracefulShutdown.ts` (L278-296) | 30s 定时器检查 TTY 有效性、检测到 revoked TTY 时 `gracefulShutdown(0)` |
+
+**Qwen Code 修改方向**：无 TTY 存活检测——终端关闭后进程变成孤儿（消耗 CPU/内存直到被 kill）。改进方向：① `setInterval(30000)` 检查 `process.stdin.isTTY`；② TTY 不可读时触发优雅关闭；③ timer 标记 `.unref()` 不阻止进程退出。
+
+**意义**：终端窗口意外关闭（或 SSH 断开）后进程应自动退出而非变成僵尸。
+**缺失后果**：终端关闭 → 进程变孤儿 → 消耗资源直到手动 kill。
+**改进收益**：30s 检测 → 自动退出——无孤儿进程，资源自动释放。
+
+---
+
+<a id="item-115"></a>
+
+### 115. MCP 服务器优雅关闭升级（P2）
+
+**思路**：3 阶段升级关闭——100ms 发 SIGINT（给服务器处理清理的机会）→ 400ms 无响应发 SIGTERM → 500ms+ 仍存活发 SIGKILL。通过 `process.kill(pid, 0)` 检测进程是否存活。总超时 600ms。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/mcp/client.ts` (L1425-1560) | 3 阶段升级：SIGINT(100ms) → SIGTERM(400ms) → SIGKILL(500ms+) |
+
+**Qwen Code 修改方向**：`McpClient.disconnect()` 直接关闭 transport，无信号升级。改进方向：① stdio 服务器关闭时先发 SIGINT；② 100ms 后检查存活，未退出则 SIGTERM；③ 400ms 后仍存活则 SIGKILL；④ 每阶段检查 `kill(pid, 0)` 确认进程状态。
+
+**意义**：MCP 服务器可能有待保存的状态——直接 kill 可能导致数据损坏。
+**缺失后果**：直接断开 → 服务器无法清理 → 临时文件残留 / 数据库锁未释放。
+**改进收益**：3 阶段升级——给服务器 100ms 优雅退出的机会，最坏 600ms 强制结束。
+
+---
+
+<a id="item-116"></a>
+
+### 116. 事件循环卡顿检测（P2）
+
+**思路**：定时器检测 Node.js 主线程被阻塞超过 500ms 的情况。阻塞通常由同步 I/O、大量 JSON 解析或 CPU 密集计算引起。检测到卡顿后记录诊断日志（时间戳、阻塞时长、调用栈）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/eventLoopStallDetector.js` | 主线程阻塞 >500ms 时记录日志 |
+| `main.tsx` (L427-429) | feature gate 动态导入（仅内部用户启用） |
+
+**Qwen Code 修改方向**：无事件循环监控。改进方向：① 新建 `utils/eventLoopMonitor.ts`——`setInterval` 检测实际间隔与预期间隔的偏差；② 偏差 >500ms 时记录 warning + 当前执行上下文；③ 开发模式下默认启用，生产模式可通过环境变量启用。
+
+**意义**：主线程阻塞 = UI 冻结 + 键盘无响应——用户以为程序崩溃了。
+**缺失后果**：无诊断信息——"为什么卡了？" 无法定位。
+**改进收益**：自动检测 + 诊断日志——快速定位同步 I/O 和 CPU 热点。
+
+---
+
+<a id="item-117"></a>
+
+### 117. 会话活动心跳与空闲检测（P2）
+
+**思路**：基于引用计数的活动追踪——API 调用和工具执行 `start()/stop()` 维护 refcount。refcount > 0 时每 30 秒发送心跳（保持远程会话存活）；refcount = 0 后启动空闲计时器。用于远程/后台场景防止会话被服务端超时断开。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/sessionActivity.ts` | `startSessionActivity(reason)`、`stopSessionActivity(reason)`、`SESSION_ACTIVITY_INTERVAL_MS = 30s` |
+| `utils/idleTimeout.ts` (54行) | `CLAUDE_CODE_EXIT_AFTER_STOP_DELAY` 空闲退出 |
+
+**Qwen Code 修改方向**：无会话活动追踪——远程 MCP 连接可能因空闲超时断开。改进方向：① 新建 `utils/sessionActivity.ts`——refcount 追踪 API 调用和工具执行；② refcount > 0 时 30s 心跳（向远程端点发送 keepalive）；③ 可配置空闲超时——SDK/daemon 模式下空闲 N 秒后自动退出释放资源。
+
+**意义**：后台/远程会话可能因空闲被服务端断开——心跳保持连接存活。
+**缺失后果**：长工具执行期间无心跳 → 远程连接超时 → 结果无法回传。
+**改进收益**：30s 心跳 = 连接始终存活；空闲检测 = 资源自动释放。
