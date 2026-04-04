@@ -49,63 +49,63 @@
 | **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1.md#item-9) | 所有指令始终加载 | 中 | — |
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1.md#item-12) | 缺失 | 小 | — |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1.md#item-13) | 缺失 | 中 | — |
-| **P2** | [Shell 安全增强](./shell-security-deep-dive.md) — IFS 注入/Unicode 空白/Zsh 命令等 25+ 专项检查 [↓](./qwen-code-improvement-report-p2.md#item-14) | AST-only 读写分类 | 中 | — |
-| **P2** | [MDM 企业策略](./mdm-enterprise-deep-dive.md) — macOS plist + Windows Registry + 远程 API 集中管控 [↓](./qwen-code-improvement-report-p2.md#item-15) | 无 OS 级策略 | 大 | — |
-| **P2** | [API 实时 Token 计数](./token-estimation-deep-dive.md) — 每次 API 调用前精确计数，3 层回退 [↓](./qwen-code-improvement-report-p2.md#item-16) | 静态 82 种模式匹配 | 中 | — |
-| **P2** | [Output Styles](./git-workflow-session-deep-dive.md) — Learning 模式暂停让用户写代码，Explanatory 添加教育洞察 [↓](./qwen-code-improvement-report-p2.md#item-17) | 缺失 | 中 | — |
-| **P2** | [Fast Mode](./cost-fastmode-deep-dive.md) — 同一模型标准/快速推理切换（$5→$30/Mtok），含冷却机制 [↓](./qwen-code-improvement-report-p2.md#item-18) | 仅指定备用模型 | 小 | — |
-| **P2** | [并发 Session](./cost-fastmode-deep-dive.md) — 多终端 PID 追踪 + 后台 Agent 脱附/重附 [↓](./qwen-code-improvement-report-p2.md#item-21) | 缺失 | 中 | — |
-| **P2** | [Git Diff 统计](./git-workflow-session-deep-dive.md) — 编辑后 numstat + hunks 结构化 diff（50 文件/1MB 上限） [↓](./qwen-code-improvement-report-p2.md#item-22) | 无 git-aware diff | 小 | — |
-| **P2** | [文件历史快照](./git-workflow-session-deep-dive.md) — per-file SHA256 备份，按消息粒度恢复（100 个/session） [↓](./qwen-code-improvement-report-p2.md#item-23) | git-level checkpoint | 中 | — |
-| **P2** | [Computer Use](./computer-use-deep-dive.md) — macOS 截图 + 鼠标/键盘 + 剪贴板，通过 MCP 桥接 [↓](./qwen-code-improvement-report-p2.md#item-19) | 缺失 | 大 | — |
-| **P2** | [Deep Link](./deep-link-protocol-deep-dive.md) — `claude-cli://` 一键从浏览器/IDE 启动 Agent + 预填充 prompt [↓](./qwen-code-improvement-report-p2.md#item-24) | 缺失 | 中 | — |
+| **P2** | [Shell 安全增强](./shell-security-deep-dive.md) — IFS 注入/Unicode 空白/Zsh 命令等 25+ 专项检查 [↓](./qwen-code-improvement-report-p2.md#item-23) | AST-only 读写分类 | 中 | — |
+| **P2** | [MDM 企业策略](./mdm-enterprise-deep-dive.md) — macOS plist + Windows Registry + 远程 API 集中管控 [↓](./qwen-code-improvement-report-p2.md#item-24) | 无 OS 级策略 | 大 | — |
+| **P2** | [API 实时 Token 计数](./token-estimation-deep-dive.md) — 每次 API 调用前精确计数，3 层回退 [↓](./qwen-code-improvement-report-p2.md#item-25) | 静态 82 种模式匹配 | 中 | — |
+| **P2** | [Output Styles](./git-workflow-session-deep-dive.md) — Learning 模式暂停让用户写代码，Explanatory 添加教育洞察 [↓](./qwen-code-improvement-report-p2.md#item-26) | 缺失 | 中 | — |
+| **P2** | [Fast Mode](./cost-fastmode-deep-dive.md) — 同一模型标准/快速推理切换（$5→$30/Mtok），含冷却机制 [↓](./qwen-code-improvement-report-p2.md#item-27) | 仅指定备用模型 | 小 | — |
+| **P2** | [并发 Session](./cost-fastmode-deep-dive.md) — 多终端 PID 追踪 + 后台 Agent 脱附/重附 [↓](./qwen-code-improvement-report-p2.md#item-30) | 缺失 | 中 | — |
+| **P2** | [Git Diff 统计](./git-workflow-session-deep-dive.md) — 编辑后 numstat + hunks 结构化 diff（50 文件/1MB 上限） [↓](./qwen-code-improvement-report-p2.md#item-31) | 无 git-aware diff | 小 | — |
+| **P2** | [文件历史快照](./git-workflow-session-deep-dive.md) — per-file SHA256 备份，按消息粒度恢复（100 个/session） [↓](./qwen-code-improvement-report-p2.md#item-32) | git-level checkpoint | 中 | — |
+| **P2** | [Computer Use](./computer-use-deep-dive.md) — macOS 截图 + 鼠标/键盘 + 剪贴板，通过 MCP 桥接 [↓](./qwen-code-improvement-report-p2.md#item-28) | 缺失 | 大 | — |
+| **P2** | [Deep Link](./deep-link-protocol-deep-dive.md) — `claude-cli://` 一键从浏览器/IDE 启动 Agent + 预填充 prompt [↓](./qwen-code-improvement-report-p2.md#item-33) | 缺失 | 中 | — |
 | **P2** | [Team Memory](./team-memory-deep-dive.md) — 团队共享项目知识 + 29 条 gitleaks 密钥扫描 + ETag 同步 [↓](./qwen-code-improvement-report-p0-p1.md#item-10) | 缺失 | 大 | — |
-| **P2** | Plan 模式 Interview — 先收集信息再制定计划，分离探索和规划阶段 [↓](./qwen-code-improvement-report-p2.md#item-25) | 无 interview 阶段 | 中 | — |
-| **P2** | BriefTool — Agent 向用户发送异步消息（含附件），不中断工具执行 [↓](./qwen-code-improvement-report-p2.md#item-26) | 缺失 | 中 | — |
-| **P2** | [SendMessageTool](./multi-agent-deep-dive.md) — 多代理间消息传递、shutdown 请求、plan 审批 [↓](./qwen-code-improvement-report-p2.md#item-27) | 缺失 | 中 | — |
-| **P2** | FileIndex — fzf 风格模糊文件搜索 + 异步增量索引 [↓](./qwen-code-improvement-report-p2.md#item-28) | 依赖 rg/glob | 中 | — |
-| **P2** | Notebook Edit — Jupyter cell 编辑 + 自动 cell ID 追踪 + 文件历史快照 [↓](./qwen-code-improvement-report-p2.md#item-29) | 缺失 | 中 | — |
-| **P2** | 自定义快捷键 — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2.md#item-30) | 缺失 | 中 | — |
-| **P2** | Session Ingress Auth — 远程会话 bearer token 认证（企业多用户环境） [↓](./qwen-code-improvement-report-p2.md#item-31) | 缺失 | 中 | — |
-| **P2** | 企业代理 — CONNECT relay + CA cert 注入 + NO_PROXY 白名单（容器环境） [↓](./qwen-code-improvement-report-p2.md#item-32) | 缺失 | 大 | — |
-| **P2** | ConfigTool — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](./qwen-code-improvement-report-p2.md#item-33) | 仅 /settings 命令 | 小 | — |
-| **P2** | 终端主题检测 — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2.md#item-34) | 缺失 | 小 | — |
-| **P2** | 自动后台化 Agent — 超过阈值自动转后台执行，不阻塞用户交互 [↓](./qwen-code-improvement-report-p2.md#item-35) | 需显式指定 | 小 | — |
-| **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](./qwen-code-improvement-report-p2.md#item-20) | 缺失 | 小 | — |
-| **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2.md#item-36) | 缺失 | 小 | — |
-| **P2** | 状态栏紧凑布局 — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2.md#item-48) | Footer 占用偏高 | 小 | — |
-| **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](./qwen-code-improvement-report-p0-p1.md#item-50) | 缺失 | 中 | — |
-| **P1** | GitHub Code Review — 多代理自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1.md#item-51) | 缺失 | 大 | — |
-| **P1** | HTTP Hooks — Hook 可 POST JSON 到 URL 并接收响应（不仅 shell 命令）[↓](./qwen-code-improvement-report-p0-p1.md#item-52) | 仅 shell 命令 | 小 | — |
-| **P2** | Conditional Hooks — Hook `if` 字段用权限规则语法按工具/路径过滤 [↓](./qwen-code-improvement-report-p2.md#item-53) | 缺失 | 小 | — |
-| **P2** | Transcript Search — 按 `/` 搜索会话记录，`n`/`N` 导航匹配项 [↓](./qwen-code-improvement-report-p2.md#item-54) | 缺失 | 小 | — |
-| **P2** | Bash File Watcher — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](./qwen-code-improvement-report-p2.md#item-55) | 缺失 | 小 | — |
-| **P2** | /batch 并行操作 — 编排大规模并行变更（多文件/多任务）[↓](./qwen-code-improvement-report-p2.md#item-56) | 缺失 | 中 | — |
-| **P2** | Chrome Extension — 调试 live web 应用（读 DOM/Console/Network）[↓](./qwen-code-improvement-report-p2.md#item-57) | 缺失 | 中 | — |
-| **P1** | Structured Output — `--json-schema` 强制 JSON Schema 验证输出 [↓](./qwen-code-improvement-report-p0-p1.md#item-58) | 缺失 | 小 | — |
-| **P1** | Agent SDK 增强 — Python SDK + 流式回调 + 工具审批回调（Qwen 仅 TS SDK）[↓](./qwen-code-improvement-report-p0-p1.md#item-59) | 仅 TypeScript SDK | 中 | — |
-| **P1** | Bare Mode — `--bare` 跳过所有自动发现，CI/脚本最快启动 [↓](./qwen-code-improvement-report-p0-p1.md#item-60) | 缺失 | 小 | — |
-| **P1** | Remote Control Bridge — 从手机/浏览器驱动本地终端 session [↓](./qwen-code-improvement-report-p0-p1.md#item-61) | 缺失 | 大 | — |
-| **P1** | /teleport — Web session → 终端 session 双向迁移 [↓](./qwen-code-improvement-report-p0-p1.md#item-62) | 缺失 | 大 | — |
-| **P1** | GitLab CI/CD — 官方 GitLab pipeline 集成 [↓](./qwen-code-improvement-report-p0-p1.md#item-63) | 缺失 | 中 | — |
-| **P2** | /effort — 设置模型 effort 级别（○ 低 / ◐ 中 / ● 高）[↓](./qwen-code-improvement-report-p2.md#item-64) | 缺失 | 小 | — |
-| **P2** | Status Line 自定义 — shell 脚本在状态栏展示自定义信息 [↓](./qwen-code-improvement-report-p2.md#item-66) | 缺失 | 小 | — |
-| **P2** | Fullscreen Rendering — alt-screen 无闪烁渲染 + 虚拟滚动缓冲 [↓](./qwen-code-improvement-report-p2.md#item-67) | 缺失 | 中 | — |
-| **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](./qwen-code-improvement-report-p2.md#item-68) | 缺失 | 小 | — |
-| **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](./qwen-code-improvement-report-p2.md#item-69) | 缺失 | 小 | — |
-| **P2** | --max-budget-usd — headless 模式 USD 花费上限 [↓](./qwen-code-improvement-report-p2.md#item-70) | 缺失 | 小 | — |
-| **P2** | Connectors — 托管式 MCP 连接（GitHub/Slack/Linear/Google Drive OAuth）[↓](./qwen-code-improvement-report-p2.md#item-71) | 缺失 | 大 | — |
-| **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-37) | 仅静态 Footer | 小 | — |
-| **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-38) | 缺失 | 大 | — |
-| **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3.md#item-39) | 缺失 | 中 | — |
-| **P3** | Feature Gates — GrowthBook 远程特性开关 + A/B 测试 + 按事件动态采样 [↓](./qwen-code-improvement-report-p3.md#item-40) | 缺失 | 中 | — |
-| **P3** | DXT/MCPB 插件包 — zip bomb 防护（512MB/文件，1GB 总量，50:1 压缩比限制） [↓](./qwen-code-improvement-report-p3.md#item-41) | 缺失 | 中 | — |
-| **P3** | /security-review — 基于 git diff 的安全审查命令，聚焦漏洞检测 [↓](./qwen-code-improvement-report-p3.md#item-42) | 缺失 | 小 | — |
-| **P3** | Ultraplan — 启动远程 CCR 会话，用更强模型深度规划后回传结果 [↓](./qwen-code-improvement-report-p3.md#item-43) | 缺失 | 大 | — |
-| **P3** | Advisor 顾问模型 — /advisor 配置副模型审查主模型输出，多模型协作 [↓](./qwen-code-improvement-report-p3.md#item-44) | 缺失 | 中 | — |
-| **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-45) | 基础 vim.ts | 中 | — |
-| **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-46) | 缺失 | 大 | — |
-| **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-47) | 缺失 | 大 | — |
+| **P2** | Plan 模式 Interview — 先收集信息再制定计划，分离探索和规划阶段 [↓](./qwen-code-improvement-report-p2.md#item-34) | 无 interview 阶段 | 中 | — |
+| **P2** | BriefTool — Agent 向用户发送异步消息（含附件），不中断工具执行 [↓](./qwen-code-improvement-report-p2.md#item-35) | 缺失 | 中 | — |
+| **P2** | [SendMessageTool](./multi-agent-deep-dive.md) — 多代理间消息传递、shutdown 请求、plan 审批 [↓](./qwen-code-improvement-report-p2.md#item-36) | 缺失 | 中 | — |
+| **P2** | FileIndex — fzf 风格模糊文件搜索 + 异步增量索引 [↓](./qwen-code-improvement-report-p2.md#item-37) | 依赖 rg/glob | 中 | — |
+| **P2** | Notebook Edit — Jupyter cell 编辑 + 自动 cell ID 追踪 + 文件历史快照 [↓](./qwen-code-improvement-report-p2.md#item-38) | 缺失 | 中 | — |
+| **P2** | 自定义快捷键 — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2.md#item-39) | 缺失 | 中 | — |
+| **P2** | Session Ingress Auth — 远程会话 bearer token 认证（企业多用户环境） [↓](./qwen-code-improvement-report-p2.md#item-40) | 缺失 | 中 | — |
+| **P2** | 企业代理 — CONNECT relay + CA cert 注入 + NO_PROXY 白名单（容器环境） [↓](./qwen-code-improvement-report-p2.md#item-41) | 缺失 | 大 | — |
+| **P2** | ConfigTool — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](./qwen-code-improvement-report-p2.md#item-42) | 仅 /settings 命令 | 小 | — |
+| **P2** | 终端主题检测 — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2.md#item-43) | 缺失 | 小 | — |
+| **P2** | 自动后台化 Agent — 超过阈值自动转后台执行，不阻塞用户交互 [↓](./qwen-code-improvement-report-p2.md#item-44) | 需显式指定 | 小 | — |
+| **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](./qwen-code-improvement-report-p2.md#item-29) | 缺失 | 小 | — |
+| **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2.md#item-45) | 缺失 | 小 | — |
+| **P2** | 状态栏紧凑布局 — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2.md#item-46) | Footer 占用偏高 | 小 | — |
+| **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](./qwen-code-improvement-report-p0-p1.md#item-14) | 缺失 | 中 | — |
+| **P1** | GitHub Code Review — 多代理自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1.md#item-15) | 缺失 | 大 | — |
+| **P1** | HTTP Hooks — Hook 可 POST JSON 到 URL 并接收响应（不仅 shell 命令）[↓](./qwen-code-improvement-report-p0-p1.md#item-16) | 仅 shell 命令 | 小 | — |
+| **P2** | Conditional Hooks — Hook `if` 字段用权限规则语法按工具/路径过滤 [↓](./qwen-code-improvement-report-p2.md#item-47) | 缺失 | 小 | — |
+| **P2** | Transcript Search — 按 `/` 搜索会话记录，`n`/`N` 导航匹配项 [↓](./qwen-code-improvement-report-p2.md#item-48) | 缺失 | 小 | — |
+| **P2** | Bash File Watcher — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](./qwen-code-improvement-report-p2.md#item-49) | 缺失 | 小 | — |
+| **P2** | /batch 并行操作 — 编排大规模并行变更（多文件/多任务）[↓](./qwen-code-improvement-report-p2.md#item-50) | 缺失 | 中 | — |
+| **P2** | Chrome Extension — 调试 live web 应用（读 DOM/Console/Network）[↓](./qwen-code-improvement-report-p2.md#item-51) | 缺失 | 中 | — |
+| **P1** | Structured Output — `--json-schema` 强制 JSON Schema 验证输出 [↓](./qwen-code-improvement-report-p0-p1.md#item-17) | 缺失 | 小 | — |
+| **P1** | Agent SDK 增强 — Python SDK + 流式回调 + 工具审批回调（Qwen 仅 TS SDK）[↓](./qwen-code-improvement-report-p0-p1.md#item-18) | 仅 TypeScript SDK | 中 | — |
+| **P1** | Bare Mode — `--bare` 跳过所有自动发现，CI/脚本最快启动 [↓](./qwen-code-improvement-report-p0-p1.md#item-19) | 缺失 | 小 | — |
+| **P1** | Remote Control Bridge — 从手机/浏览器驱动本地终端 session [↓](./qwen-code-improvement-report-p0-p1.md#item-20) | 缺失 | 大 | — |
+| **P1** | /teleport — Web session → 终端 session 双向迁移 [↓](./qwen-code-improvement-report-p0-p1.md#item-21) | 缺失 | 大 | — |
+| **P1** | GitLab CI/CD — 官方 GitLab pipeline 集成 [↓](./qwen-code-improvement-report-p0-p1.md#item-22) | 缺失 | 中 | — |
+| **P2** | /effort — 设置模型 effort 级别（○ 低 / ◐ 中 / ● 高）[↓](./qwen-code-improvement-report-p2.md#item-52) | 缺失 | 小 | — |
+| **P2** | Status Line 自定义 — shell 脚本在状态栏展示自定义信息 [↓](./qwen-code-improvement-report-p2.md#item-53) | 缺失 | 小 | — |
+| **P2** | Fullscreen Rendering — alt-screen 无闪烁渲染 + 虚拟滚动缓冲 [↓](./qwen-code-improvement-report-p2.md#item-54) | 缺失 | 中 | — |
+| **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](./qwen-code-improvement-report-p2.md#item-55) | 缺失 | 小 | — |
+| **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](./qwen-code-improvement-report-p2.md#item-56) | 缺失 | 小 | — |
+| **P2** | --max-budget-usd — headless 模式 USD 花费上限 [↓](./qwen-code-improvement-report-p2.md#item-57) | 缺失 | 小 | — |
+| **P2** | Connectors — 托管式 MCP 连接（GitHub/Slack/Linear/Google Drive OAuth）[↓](./qwen-code-improvement-report-p2.md#item-58) | 缺失 | 大 | — |
+| **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-59) | 仅静态 Footer | 小 | — |
+| **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-60) | 缺失 | 大 | — |
+| **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3.md#item-61) | 缺失 | 中 | — |
+| **P3** | Feature Gates — GrowthBook 远程特性开关 + A/B 测试 + 按事件动态采样 [↓](./qwen-code-improvement-report-p3.md#item-62) | 缺失 | 中 | — |
+| **P3** | DXT/MCPB 插件包 — zip bomb 防护（512MB/文件，1GB 总量，50:1 压缩比限制） [↓](./qwen-code-improvement-report-p3.md#item-63) | 缺失 | 中 | — |
+| **P3** | /security-review — 基于 git diff 的安全审查命令，聚焦漏洞检测 [↓](./qwen-code-improvement-report-p3.md#item-64) | 缺失 | 小 | — |
+| **P3** | Ultraplan — 启动远程 CCR 会话，用更强模型深度规划后回传结果 [↓](./qwen-code-improvement-report-p3.md#item-65) | 缺失 | 大 | — |
+| **P3** | Advisor 顾问模型 — /advisor 配置副模型审查主模型输出，多模型协作 [↓](./qwen-code-improvement-report-p3.md#item-66) | 缺失 | 中 | — |
+| **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-67) | 基础 vim.ts | 中 | — |
+| **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-68) | 缺失 | 大 | — |
+| **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-69) | 缺失 | 大 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 

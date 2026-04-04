@@ -314,11 +314,10 @@
 
 ---
 
----
 
-<a id="item-50"></a>
+<a id="item-14"></a>
 
-### 50. GitHub Actions CI（P1）
+### 14. GitHub Actions CI（P1）
 
 **思路**：官方 GitHub Action 封装 `claude -p` headless 模式——PR 创建时自动触发 review、issue 创建时自动分类。支持 `--allowedTools` 白名单和 `--permission-mode dontAsk`。
 
@@ -337,9 +336,9 @@
 
 ---
 
-<a id="item-51"></a>
+<a id="item-15"></a>
 
-### 51. GitHub Code Review 多代理审查（P1）
+### 15. GitHub Code Review 多代理审查（P1）
 
 **思路**：多 Agent 并行审查 PR 不同文件——每个 Agent 检查一类问题（逻辑错误/安全漏洞/边界情况），验证步骤过滤误报，结果去重排序后发 inline 评论。可配合 `REVIEW.md` 定制审查规则。
 
@@ -358,9 +357,9 @@
 
 ---
 
-<a id="item-52"></a>
+<a id="item-16"></a>
 
-### 52. HTTP Hooks（P1）
+### 16. HTTP Hooks（P1）
 
 **思路**：Hook 除了 `type: "command"`（shell）外，支持 `type: "http"` —— POST JSON 到 URL 并接收 JSON 响应。适合与 CI、审批系统、消息平台直接集成，无需 shell 中转。
 
@@ -379,9 +378,9 @@
 
 ---
 
-<a id="item-58"></a>
+<a id="item-17"></a>
 
-### 58. Structured Output --json-schema（P1）
+### 17. Structured Output --json-schema（P1）
 
 **思路**：headless 模式 `--json-schema` 参数注入 SyntheticOutputTool——强制模型调用该工具输出结构化数据，Ajv 运行时验证 schema。不通过则重试。
 
@@ -400,9 +399,9 @@
 
 ---
 
-<a id="item-59"></a>
+<a id="item-18"></a>
 
-### 59. Agent SDK Python（P1）
+### 18. Agent SDK Python（P1）
 
 **思路**：Qwen Code 已有 TypeScript SDK（`@qwen-code/sdk`），缺 Python SDK。Claude Code 提供 Python + TS 双语言 SDK，支持流式回调和工具审批回调。
 
@@ -421,9 +420,9 @@
 
 ---
 
-<a id="item-60"></a>
+<a id="item-19"></a>
 
-### 60. Bare Mode --bare（P1）
+### 19. Bare Mode --bare（P1）
 
 **思路**：`--bare` 跳过所有自动发现（hooks/LSP/plugins/auto-memory/CLAUDE.md/OAuth/keychain），仅通过 CLI 显式参数传入上下文。CI 确定性执行——每台机器同样结果。
 
@@ -442,9 +441,9 @@
 
 ---
 
-<a id="item-61"></a>
+<a id="item-20"></a>
 
-### 61. Remote Control Bridge（P1）
+### 20. Remote Control Bridge（P1）
 
 **思路**：终端 Agent 注册到服务端（WebSocket），用户通过 Web/手机驱动本地 session。Outbound-only 模式——终端主动推事件，不接受入站连接。支持权限审批远程转发。
 
@@ -464,9 +463,9 @@
 
 ---
 
-<a id="item-62"></a>
+<a id="item-21"></a>
 
-### 62. /teleport 跨平台迁移（P1）
+### 21. /teleport 跨平台迁移（P1）
 
 **思路**：Web session 完成后 `/teleport` 到终端——fetch 远程分支 + checkout + 加载完整会话历史。前提：同 repo、clean git state、同账号。
 
@@ -486,9 +485,9 @@
 
 ---
 
-<a id="item-63"></a>
+<a id="item-22"></a>
 
-### 63. GitLab CI/CD 集成（P1）
+### 22. GitLab CI/CD 集成（P1）
 
 **思路**：官方 GitLab pipeline 集成——MR 创建时自动触发 review。核心是在 `.gitlab-ci.yml` 中调用 `qwen-code -p` headless 模式 + `glab` CLI 发评论。
 

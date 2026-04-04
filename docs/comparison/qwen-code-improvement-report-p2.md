@@ -6,9 +6,9 @@
 
 ---
 
-<a id="item-14"></a>
+<a id="item-41"></a>
 
-### 14. Shell 安全增强（P2）
+### 23. Shell 安全增强（P2）
 
 **思路**：在 AST 读写分类基础上，补充专项检查——IFS 注入、Unicode 空白、Zsh 危险命令、花括号展开等。AST 是主路径（精确），专项检查是补充（覆盖面）。
 
@@ -29,9 +29,9 @@
 
 ---
 
-<a id="item-15"></a>
+<a id="item-42"></a>
 
-### 15. MDM 企业策略（P2）
+### 24. MDM 企业策略（P2）
 
 **思路**：通过 OS-native 方式读取企业策略——macOS plist、Windows Registry、Linux 文件。5 级 First-Source-Wins 优先级（Remote > HKLM > file > drop-in > HKCU）。启动时子进程并行读取避免阻塞。
 
@@ -53,9 +53,9 @@
 
 ---
 
-<a id="item-16"></a>
+<a id="item-43"></a>
 
-### 16. API 实时 Token 计数（P2）
+### 25. API 实时 Token 计数（P2）
 
 **思路**：3 层回退——API `countTokens()` → Haiku 小模型回退 → 粗估（4 bytes/token）。每次 API 调用前精确计数，比静态模式匹配更准确。
 
@@ -76,9 +76,9 @@
 
 ---
 
-<a id="item-17"></a>
+<a id="item-44"></a>
 
-### 17. Output Styles（P2）
+### 26. Output Styles（P2）
 
 **思路**：内置 Learning（暂停要求用户写代码，插入 `TODO(human)` 占位符）和 Explanatory（添加 "Insight" 教育块）两种模式。通过 settings 或 plugin 可扩展自定义 style。
 
@@ -99,9 +99,9 @@
 
 ---
 
-<a id="item-18"></a>
+<a id="item-45"></a>
 
-### 18. Fast Mode（P2）
+### 27. Fast Mode（P2）
 
 **思路**：同一模型（如 Opus 4.6）的标准/快速推理切换。快速模式 $30/$150/Mtok（标准 $5/$25）。含冷却机制——429 后自动回退到标准，冷却结束恢复。
 
@@ -122,9 +122,9 @@
 
 ---
 
-<a id="item-19"></a>
+<a id="item-37"></a>
 
-### 19. Computer Use 桌面自动化（P2）
+### 28. Computer Use 桌面自动化（P2）
 
 **思路**：通过 MCP Server 桥接原生模块——截图（SCContentFilter）、鼠标/键盘（Rust enigo NAPI）、剪贴板操作。TCC 权限门控 + GrowthBook 特性开关 + 订阅检查。
 
@@ -146,9 +146,9 @@
 
 ---
 
-<a id="item-20"></a>
+<a id="item-38"></a>
 
-### 20. Denial Tracking（P2）
+### 29. Denial Tracking（P2）
 
 **思路**：记录权限分类器的连续拒绝/成功次数（`maxConsecutive: 3`, `maxTotal: 20`）。超限时自动回退到 prompting 模式，避免分类器陷入"全拒绝"死循环。
 
@@ -166,9 +166,9 @@
 
 ---
 
-<a id="item-21"></a>
+<a id="item-39"></a>
 
-### 21. 并发 Session 管理（P2）
+### 30. 并发 Session 管理（P2）
 
 **思路**：PID 文件（`~/.claude/sessions/{pid}.json`）追踪多终端会话——记录 kind（interactive/bg/daemon）、cwd、startedAt。`countConcurrentSessions()` 扫描并过滤已退出进程。
 
@@ -188,9 +188,9 @@
 
 ---
 
-<a id="item-22"></a>
+<a id="item-40"></a>
 
-### 22. Git Diff 统计（P2）
+### 31. Git Diff 统计（P2）
 
 **思路**：两阶段 diff——`git diff --numstat` 快速探测（文件数 + 行数），再 `git diff` 完整 hunks。限制：50 文件、1MB/文件、400 行/文件。merge/rebase 期间跳过。
 
@@ -210,9 +210,9 @@
 
 ---
 
-<a id="item-23"></a>
+<a id="item-41"></a>
 
-### 23. 文件历史快照（P2）
+### 32. 文件历史快照（P2）
 
 **思路**：编辑前自动备份（SHA256 + mtime），按消息粒度创建快照（上限 100 个/session）。支持回滚到任意消息时刻——比 git checkpoint 更细粒度。
 
@@ -232,9 +232,9 @@
 
 ---
 
-<a id="item-24"></a>
+<a id="item-42"></a>
 
-### 24. Deep Link 协议（P2）
+### 33. Deep Link 协议（P2）
 
 **思路**：`claude-cli://open?q=&cwd=&repo=` URI scheme——OS 协议注册（macOS .app / Linux .desktop / Windows Registry）→ 终端自动检测（10+ 终端优先级链）→ 预填充 prompt。安全：来源 banner + 手动 Enter 确认。
 
@@ -256,9 +256,9 @@
 
 ---
 
-<a id="item-25"></a>
+<a id="item-43"></a>
 
-### 25. Plan 模式 Interview（P2）
+### 34. Plan 模式 Interview（P2）
 
 **思路**：`EnterPlanMode` 支持 interview 阶段——先通过提问收集需求信息，再制定实施计划。分离"探索"和"执行"，减少返工。
 
@@ -277,9 +277,9 @@
 
 ---
 
-<a id="item-26"></a>
+<a id="item-44"></a>
 
-### 26. BriefTool（P2）
+### 35. BriefTool（P2）
 
 **思路**：Agent 向用户发送异步状态消息（含附件），不中断工具执行。用于 proactive status 更新——"已完成 3/5 个文件修改"。
 
@@ -297,9 +297,9 @@
 
 ---
 
-<a id="item-27"></a>
+<a id="item-45"></a>
 
-### 27. SendMessageTool（P2）
+### 36. SendMessageTool（P2）
 
 **思路**：多代理间消息传递——单播（name）、广播（`*`）、UDS Socket、Remote Control bridge。支持结构化消息（shutdown_request、plan_approval）。
 
@@ -320,9 +320,9 @@
 
 ---
 
-<a id="item-28"></a>
+<a id="item-37"></a>
 
-### 28. FileIndex（P2）
+### 37. FileIndex（P2）
 
 **思路**：fzf 风格模糊文件搜索——异步增量索引 + nucleo 风格匹配。不需精确文件名即可定位。
 
@@ -340,9 +340,9 @@
 
 ---
 
-<a id="item-29"></a>
+<a id="item-38"></a>
 
-### 29. Notebook Edit（P2）
+### 38. Notebook Edit（P2）
 
 **思路**：Jupyter `.ipynb` 文件的 cell 级编辑——插入/修改 code/markdown cell，自动追踪 cell ID，集成文件历史快照。
 
@@ -360,9 +360,9 @@
 
 ---
 
-<a id="item-30"></a>
+<a id="item-39"></a>
 
-### 30. 自定义快捷键（P2）
+### 39. 自定义快捷键（P2）
 
 **思路**：支持 multi-chord 组合键（如 `Ctrl+K Ctrl+S`）+ 跨平台适配（Windows VT mode 检测）+ `~/.claude/keybindings.json` 自定义。Reserved keys（Ctrl+C/D）不可重绑。
 
@@ -380,9 +380,9 @@
 
 ---
 
-<a id="item-31"></a>
+<a id="item-40"></a>
 
-### 31. Session Ingress Auth（P2）
+### 40. Session Ingress Auth（P2）
 
 **思路**：远程会话 bearer token 认证——通过文件描述符或 well-known 文件传递 token。支持企业多用户环境下的安全 Agent 访问。
 
@@ -400,9 +400,9 @@
 
 ---
 
-<a id="item-32"></a>
+<a id="item-41"></a>
 
-### 32. 企业代理支持（P2）
+### 41. 企业代理支持（P2）
 
 **思路**：CONNECT-to-WebSocket relay 处理企业代理环境——CA cert 链注入、NO_PROXY 白名单（RFC1918 + API + GitHub + 包注册表）。失败时 fail-open 不阻断。
 
@@ -421,9 +421,9 @@
 
 ---
 
-<a id="item-33"></a>
+<a id="item-42"></a>
 
-### 33. ConfigTool（P2）
+### 42. ConfigTool（P2）
 
 **思路**：模型通过工具 get/set 设置（主题、模型、权限等），带 schema 验证。模型可根据任务自动调整配置。
 
@@ -441,9 +441,9 @@
 
 ---
 
-<a id="item-34"></a>
+<a id="item-43"></a>
 
-### 34. 终端主题检测（P2）
+### 43. 终端主题检测（P2）
 
 **思路**：通过 OSC 11 查询终端背景色 + `$COLORFGBG` 环境变量回退——解析 `auto` 主题为具体 dark/light。
 
@@ -461,9 +461,9 @@
 
 ---
 
-<a id="item-35"></a>
+<a id="item-44"></a>
 
-### 35. 自动后台化 Agent（P2）
+### 44. 自动后台化 Agent（P2）
 
 **思路**：超过阈值（GrowthBook 配置的 ms 数）的 Agent 自动转后台——不阻塞用户交互。
 
@@ -481,9 +481,9 @@
 
 ---
 
-<a id="item-36"></a>
+<a id="item-45"></a>
 
-### 36. 队列输入编辑（P2）
+### 45. 队列输入编辑（P2）
 
 **思路**：排队中的命令在 prompt 下方可见。按 Escape 可将可编辑命令弹出到输入框重新编辑（过滤 task-notification、isMeta 等不可编辑项）。
 
@@ -503,9 +503,9 @@
 
 ---
 
-<a id="item-48"></a>
+<a id="item-46"></a>
 
-### 48. 状态栏紧凑布局（P2）
+### 46. 状态栏紧凑布局（P2）
 
 **思路**：状态栏固定高度不随内容伸缩——"height so the footer never grows/shrinks and shifts scroll content"。最大化终端内容区域。
 
@@ -524,9 +524,9 @@
 
 ---
 
-<a id="item-53"></a>
+<a id="item-47"></a>
 
-### 53. Conditional Hooks（P2）
+### 47. Conditional Hooks（P2）
 
 **思路**：Hook 支持 `if` 字段——使用权限规则语法过滤何时执行（如 `Bash(git:*)` 仅在 git 命令时触发）。
 
@@ -545,9 +545,9 @@
 
 ---
 
-<a id="item-54"></a>
+<a id="item-48"></a>
 
-### 54. Transcript Search（P2）
+### 48. Transcript Search（P2）
 
 **思路**：transcript 模式下按 `/` 进入搜索，输入关键词后 `n`/`N` 在匹配项间导航。
 
@@ -565,9 +565,9 @@
 
 ---
 
-<a id="item-55"></a>
+<a id="item-49"></a>
 
-### 55. Bash File Watcher（P2）
+### 49. Bash File Watcher（P2）
 
 **思路**：检测 formatter/linter 在 Agent 读取文件后修改了该文件——Agent 基于旧内容编辑会冲突。发出警告并建议重新 Read。
 
@@ -586,9 +586,9 @@
 
 ---
 
-<a id="item-56"></a>
+<a id="item-50"></a>
 
-### 56. /batch 并行操作（P2）
+### 50. /batch 并行操作（P2）
 
 **思路**：编排大规模并行变更——将任务拆分为多个子任务，fork 多个 Agent 并行执行，汇总结果。
 
@@ -606,9 +606,9 @@
 
 ---
 
-<a id="item-57"></a>
+<a id="item-51"></a>
 
-### 57. Chrome Extension 浏览器调试（P2）
+### 51. Chrome Extension 浏览器调试（P2）
 
 **思路**：Chrome 扩展通过 MCP 协议桥接——提供 `read_page`（DOM）、`read_console_messages`（Console）、`read_network_requests`（Network）、`navigate`、`switch_browser` 工具。通过 `/web-setup` 配置。
 
@@ -627,9 +627,9 @@
 
 ---
 
-<a id="item-64"></a>
+<a id="item-52"></a>
 
-### 64. /effort 命令（P2）
+### 52. /effort 命令（P2）
 
 **思路**：动态设置模型 effort 级别（低 ○ / 中 ◐ / 高 ●）——影响推理深度和 token 消耗。显示在 prompt bar 和 spinner 上。
 
@@ -648,9 +648,9 @@
 
 ---
 
-<a id="item-66"></a>
+<a id="item-53"></a>
 
-### 66. Status Line 自定义（P2）
+### 53. Status Line 自定义（P2）
 
 **思路**：用户配置 shell 脚本在状态栏展示自定义信息（如 rate limit 用量、git branch、构建状态）。脚本定期执行，输出显示在 footer。
 
@@ -669,9 +669,9 @@
 
 ---
 
-<a id="item-67"></a>
+<a id="item-54"></a>
 
-### 67. Fullscreen Rendering（P2）
+### 54. Fullscreen Rendering（P2）
 
 **思路**：Alt-screen 渲染 + 虚拟滚动缓冲区——完全消除终端闪烁。通过 `CLAUDE_CODE_NO_FLICKER=1` 启用。
 
@@ -689,9 +689,9 @@
 
 ---
 
-<a id="item-68"></a>
+<a id="item-55"></a>
 
-### 68. Image [Image #N] Chips（P2）
+### 55. Image [Image #N] Chips（P2）
 
 **思路**：粘贴图片后在输入框生成 `[Image #1]`、`[Image #2]` 位置标记——用户可在 prompt 中引用特定图片（"修复 [Image #1] 中的 bug"）。
 
@@ -709,9 +709,9 @@
 
 ---
 
-<a id="item-69"></a>
+<a id="item-56"></a>
 
-### 69. --max-turns 限制（P2）
+### 56. --max-turns 限制（P2）
 
 **思路**：headless 模式 `--max-turns N` 限制最大 agentic turn 数——防止无限循环，CI 精确控制执行范围。
 
@@ -730,9 +730,9 @@
 
 ---
 
-<a id="item-70"></a>
+<a id="item-57"></a>
 
-### 70. --max-budget-usd 花费上限（P2）
+### 57. --max-budget-usd 花费上限（P2）
 
 **思路**：headless 模式 `--max-budget-usd N` 限制 USD 花费——累计超过阈值自动停止。防止意外高消耗。
 
@@ -751,9 +751,9 @@
 
 ---
 
-<a id="item-71"></a>
+<a id="item-58"></a>
 
-### 71. Connectors 托管式 MCP（P2）
+### 58. Connectors 托管式 MCP（P2）
 
 **思路**：托管式 MCP 连接——OAuth 认证的 GitHub/Slack/Linear/Google Drive 等连接器。处理 token 刷新、401 重试、连接器去重（本地优先）。
 
