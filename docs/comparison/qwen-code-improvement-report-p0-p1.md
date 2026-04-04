@@ -673,9 +673,9 @@
 
 ---
 
-<a id="item-106"></a>
+<a id="item-30"></a>
 
-### 106. 会话崩溃恢复与中断检测（P0）
+### 30. 会话崩溃恢复与中断检测（P0）
 
 **思路**：进程异常退出（OOM、SIGKILL、断电）后，下次启动自动检测上次会话中断状态。3 种中断类型：① `none`——正常完成；② `interrupted_prompt`——用户消息未得到响应；③ `interrupted_turn`——助手响应中有未完成的工具调用。检测到中断后注入合成续行消息（synthetic continuation），模型自动恢复未完成的操作。
 
@@ -695,9 +695,9 @@
 
 ---
 
-<a id="item-107"></a>
+<a id="item-31"></a>
 
-### 107. API 指数退避与降级重试（P1）
+### 31. API 指数退避与降级重试（P1）
 
 **思路**：10 次重试 + 指数退避（500ms base, 32s cap, 25% jitter）。特殊处理：① 429 rate-limit——读取 `retry-after` header 等待；② 529 overloaded——连续 3 次后降级到备用模型（`FallbackTriggeredError`）；③ 401/403——触发 token 刷新后重试；④ 网络错误（ECONNRESET/EPIPE）——禁用 keep-alive 后重试。环境变量 `CLAUDE_CODE_MAX_RETRIES` 可覆盖默认值。
 
@@ -718,9 +718,9 @@
 
 ---
 
-<a id="item-108"></a>
+<a id="item-32"></a>
 
-### 108. 优雅关闭序列与信号处理（P1）
+### 32. 优雅关闭序列与信号处理（P1）
 
 **思路**：SIGINT/SIGTERM/SIGHUP 各有专用 handler。关闭顺序：① 同步恢复终端模式（alt-screen、鼠标、光标）；② 打印 resume 命令提示；③ 并行执行清理函数（2s 超时）；④ 执行 SessionEnd hooks（1.5s 超时）；⑤ flush 分析数据（500ms）；⑥ 5s failsafe timer 兜底——超时强制 `process.exit()`，失败则 SIGKILL。
 
@@ -741,9 +741,9 @@
 
 ---
 
-<a id="item-109"></a>
+<a id="item-33"></a>
 
-### 109. 反应式压缩（prompt_too_long 恢复）（P1）
+### 33. 反应式压缩（prompt_too_long 恢复）（P1）
 
 **思路**：API 返回 `prompt_too_long` 错误时，不直接报错，而是自动修复：① 解析错误消息中的 actual/limit token 数；② 按 token gap 裁剪最早的消息组（user+assistant 对）；③ 最多重试 3 次，每次裁剪后重发；④ 裁剪后注入 `[earlier conversation truncated]` 标记防止循环。
 
@@ -763,9 +763,9 @@
 
 ---
 
-<a id="item-110"></a>
+<a id="item-34"></a>
 
-### 110. 持久化重试模式（无人值守/CI）（P1）
+### 34. 持久化重试模式（无人值守/CI）（P1）
 
 **思路**：`--bg` 或 CI 模式下，API 失败不终止而是无限重试。退避上限 5 分钟（`PERSISTENT_MAX_BACKOFF_MS`），6 小时后重置退避（`PERSISTENT_RESET_CAP_MS`）。每 30 秒 yield 心跳消息保持会话活跃。读取 rate-limit `reset` header 精确等待配额恢复。
 
@@ -784,9 +784,9 @@
 
 ---
 
-<a id="item-111"></a>
+<a id="item-35"></a>
 
-### 111. 原子文件写入与事务回滚（P1）
+### 35. 原子文件写入与事务回滚（P1）
 
 **思路**：文件写入先写临时文件再 `rename()`——rename 是 POSIX 原子操作，断电时要么旧文件要么新文件，不会出现半写状态。大结果（>50K chars）自动持久化到 `tool-results/{SHA256}` 文件，消息中保留 `<persisted-output>` 标签 + 2KB 预览。模型需要完整内容时通过 Read 工具回读。
 
@@ -806,9 +806,9 @@
 
 ---
 
-<a id="item-112"></a>
+<a id="item-36"></a>
 
-### 112. 自动检查点默认启用（P1）
+### 36. 自动检查点默认启用（P1）
 
 **思路**：每轮工具执行后自动创建 git checkpoint（`git stash` 或 shadow commit），用户可通过 `/restore` 回退到任意检查点。检查点包含：文件 diff 快照、对话消息 UUID、时间戳。默认启用而非需要用户手动开启。
 
