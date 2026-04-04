@@ -319,20 +319,45 @@
 
 ### 14. GitHub Actions CI（P1）
 
-**思路**：官方 GitHub Action 封装 `claude -p` headless 模式——PR 创建时自动触发 review、issue 创建时自动分类。支持 `--allowedTools` allowlist和 `--permission-mode dontAsk`。
+**思路**：官方 GitHub Action（`anthropics/claude-code-action@v1`）封装 `claude -p` headless 模式，实现 CI/CD 全自动化。两个工作流模板：
+
+① **claude.yml**（@claude mention 触发）：用户在 issue/PR 评论中 @claude，自动运行 Agent 响应。触发条件：
+- `issue_comment.created` + body 包含 `@claude`
+- `pull_request_review_comment.created` + body 包含 `@claude`
+- `pull_request_review.submitted` + body 包含 `@claude`
+- `issues.opened/assigned` + title/body 包含 `@claude`
+
+② **claude-code-review.yml**（PR 自动审查）：PR 创建/更新时自动触发代码审查，通过 plugin marketplace 加载 `code-review` 插件，调用 `/code-review:code-review {repo}/pull/{number}`。
+
+**一键安装**：`/install-github-app` 命令自动化整个配置流程——检查仓库权限 → 生成 workflow YAML → 创建分支 → 配置 API Key secret（`gh secret set`）→ 打开 PR 模板让用户审批合并。
+
+**headless 模式**（`-p`/`--print`）支持 CI 场景的关键 flag：
+- `--output-format json|stream-json|text` — CI 解析结构化输出
+- `--permission-mode dontAsk` — 非预批准的工具直接拒绝（不阻塞 CI）
+- `--allowed-tools "Read,Bash(git:*)"` — 工具 allowlist
+- `--disallowed-tools "Bash(rm:*)"` — 工具 denylist
+- `--max-turns N` — 限制最大轮次防止无限循环
+- `--max-budget-usd N` — 限制 API 花费
+- `--json-schema <schema>` — 强制输出符合指定 JSON Schema
+
+**安全**：CI 环境自动检测（`GITHUB_ACTIONS` 环境变量），子进程环境变量清洗（剥离 `ACTIONS_ID_TOKEN_REQUEST_*`/`ACTIONS_RUNTIME_*`/`SSH_SIGNING_KEY` 等敏感变量），防止 Agent 执行的 shell 命令泄露 CI 凭证。
 
 **Claude Code 源码索引**：
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| 外部: `anthropics/claude-code-action` | GitHub Action YAML + headless 调用 |
-| `cli/print.ts` (5594行) | `runHeadless()` — headless 执行入口 |
+| `constants/github-app.ts` (145行) | 两个 workflow YAML 模板（`claude.yml` + `claude-code-review.yml`） |
+| `commands/install-github-app/setupGitHubActions.ts` (326行) | 一键安装：检查权限→创建分支→写 YAML→配 secret→开 PR |
+| `cli/print.ts` (5594行) | `runHeadless()` headless 执行入口 |
+| `main.tsx` (L976-1006) | CLI flag 定义：`-p`/`--output-format`/`--permission-mode`/`--allowed-tools` |
+| `utils/subprocessEnv.ts` (99行) | CI 环境变量清洗（30+ 敏感变量） |
+| `utils/env.ts` (L285) | `GITHUB_ACTIONS`/`CIRCLECI`/`CI` 平台检测 |
 
-**Qwen Code 修改方向**：创建 `qwenlm/qwen-code-action` GitHub Action；核心是调用 `qwen-code -p --allowedTools "Read,Bash" --output-format json`。
+**Qwen Code 修改方向**：已有 `.github/workflows/qwen-code-pr-review.yml` 工作流和 `QwenLM/qwen-code-action`，但缺少一键安装命令和 mention 触发。改进方向：① 新增 `/install-github-app` 一键安装命令（自动生成 YAML + 配置 secret + 创建 PR）；② 新增 @qwen mention 触发工作流（issue/PR 评论中 @qwen 自动响应）；③ headless 模式补充 `--json-schema`（强制结构化输出）和 `--max-budget-usd`（花费限制）。
 
-**意义**：CI 自动化是开发工作流的核心——每个 PR 都应被审查。
-**缺失后果**：PR 审查需手动触发 Agent——无法自动化。
-**改进收益**：PR 创建自动触发 Agent 审查——减少人工审查负担。
+**意义**：CI 自动化是开发工作流的核心——每个 PR 都应被 Agent 自动审查。
+**缺失后果**：工作流需手动配置 YAML + secret——每个仓库重复劳动且易出错。
+**改进收益**：一键安装 = 3 分钟完成 CI 集成；@mention = issue/PR 评论中随时召唤 Agent。
 
 ---
 
