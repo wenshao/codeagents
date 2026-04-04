@@ -87,6 +87,12 @@
 | **P2** | Output Token 升级重试 — 首次 8K 截断后自动 64K 重试 [↓](./qwen-code-improvement-report-p2.md#item-72) | 缺失 | 小 | — |
 | **P2** | Ripgrep 三级回退 — System→Embedded→Builtin + EAGAIN 单线程重试 [↓](./qwen-code-improvement-report-p2.md#item-73) | 缺失 | 小 | — |
 | **P2** | MAGIC DOC 自更新文档 — 空闲时 Agent 自动更新标记文件的内容 [↓](./qwen-code-improvement-report-p2.md#item-74) | 缺失 | 中 | — |
+| **P1** | Ghost Text 输入补全 — 输入时显示命令/路径建议灰字，Tab 接受 [↓](./qwen-code-improvement-report-p2.md#item-75) | 缺失 | 中 | — |
+| **P2** | 目录/文件路径补全 — 输入路径时 Tab 补全 + LRU 缓存 [↓](./qwen-code-improvement-report-p2.md#item-76) | 缺失 | 小 | — |
+| **P2** | 上下文 Tips 系统 — 根据配置/IDE/插件状态显示上下文相关提示 [↓](./qwen-code-improvement-report-p2.md#item-77) | 缺失 | 小 | — |
+| **P2** | 权限对话框文件预览 — 审批时展示文件内容 + 语法高亮 + 上下文说明 [↓](./qwen-code-improvement-report-p2.md#item-78) | 缺失 | 中 | — |
+| **P2** | Token 使用实时警告 — 显示 token 用量 + 压缩进度 + 错误计数 [↓](./qwen-code-improvement-report-p2.md#item-79) | 仅基础显示 | 小 | — |
+| **P2** | 快捷键提示组件 — UI 全局统一显示当前操作的键盘快捷方式 [↓](./qwen-code-improvement-report-p2.md#item-80) | 缺失 | 小 | — |
 | **P1** | Structured Output — `--json-schema` 强制 JSON Schema 验证输出 [↓](./qwen-code-improvement-report-p0-p1.md#item-17) | 缺失 | 小 | — |
 | **P1** | Agent SDK 增强 — Python SDK + 流式回调 + 工具审批回调（Qwen 仅 TS SDK）[↓](./qwen-code-improvement-report-p0-p1.md#item-18) | 仅 TypeScript SDK | 中 | — |
 | **P1** | Bare Mode — `--bare` 跳过所有自动发现，CI/脚本最快启动 [↓](./qwen-code-improvement-report-p0-p1.md#item-19) | 缺失 | 小 | — |

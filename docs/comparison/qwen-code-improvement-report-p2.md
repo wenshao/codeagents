@@ -882,3 +882,128 @@
 **意义**：项目文档（API 参考、架构说明）容易过时——Agent 修改代码后文档不同步。
 **缺失后果**：代码改了但文档没更新——新成员读到过时文档。
 **改进收益**：标记的文档自动保持最新——Agent 改代码后自动更新相关文档。
+
+---
+
+<a id="item-75"></a>
+
+### 75. Ghost Text 输入补全（P1）
+
+**思路**：用户输入时在光标后显示灰色建议文字（ghost text）——命令名、文件路径、shell history 三层。Tab/Right Arrow 接受。建议仅在光标位于正确插入点时显示。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `types/textInputTypes.ts` | `InlineGhostText` 类型定义 |
+| `hooks/useTextInput.ts` | ghost text 渲染 + `insertPosition === offset` 检查 |
+| `utils/suggestions/commandSuggestions.ts` | 命令名模糊匹配 |
+| `utils/suggestions/directoryCompletion.ts` | 路径补全 + LRU 缓存 |
+| `utils/suggestions/shellHistoryCompletion.ts` | `~/.bash_history` 缓存 |
+
+**Qwen Code 修改方向**：`InputPrompt.tsx` 新增 ghost text 渲染层（Ink `<Text dimColor>`）；新建 `utils/suggestions/` 目录实现命令/路径/历史三层补全。
+
+**意义**：命令补全是 CLI 工具最基础的 UX 期待——无补全等于每次都手打全名。
+**缺失后果**：用户需完整输入 `/compress`、文件路径等——效率低且易出错。
+**改进收益**：输入 `/com` 即显示 `/compress` 灰字，Tab 接受——打字量减半。
+
+---
+
+<a id="item-76"></a>
+
+### 76. 目录/文件路径补全（P2）
+
+**思路**：输入含 `/` 或 `./` 时触发文件路径补全——扫描目录 + LRU 缓存避免重复 I/O。结合 `.gitignore` 过滤不相关文件。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/suggestions/directoryCompletion.ts` | 路径扫描 + LRU 缓存 |
+
+**Qwen Code 修改方向**：`InputPrompt.tsx` 检测输入中的路径模式；新建 `utils/suggestions/directoryCompletion.ts` 扫描并缓存结果。
+
+**意义**：文件路径是 Agent 交互中最常输入的内容——补全直接提升效率。
+**缺失后果**：用户需完整输入文件路径——深层目录路径打字量大。
+**改进收益**：Tab 补全路径——减少打字量，避免路径拼写错误。
+
+---
+
+<a id="item-77"></a>
+
+### 77. 上下文 Tips 系统（P2）
+
+**思路**：基于当前配置、IDE 类型、插件状态、session 历史等条件动态显示提示（如"检测到 VS Code，推荐安装 Claude Code 扩展"）。Tips 注册表管理所有提示及其触发条件。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/tips/tipRegistry.ts` | `getActiveNotices()` + 条件过滤 |
+
+**Qwen Code 修改方向**：新建 `services/tips/`；定义 tips 数组（条件 + 消息）；启动和 session 中检查条件并显示。
+
+**意义**：新用户不知道可用功能——提示系统引导功能发现。
+**缺失后果**：用户不知道 `/compress`、`/review` 等功能存在——使用率低。
+**改进收益**：上下文提示引导——"你的上下文已用 80%，试试 /compress"。
+
+---
+
+<a id="item-78"></a>
+
+### 78. 权限对话框文件预览（P2）
+
+**思路**：权限审批对话框中显示将被操作的文件内容预览 + 语法高亮——用户看到具体变更内容再决定是否批准。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/permissions/` | 文件预览 + 语法高亮 + 上下文说明 |
+
+**Qwen Code 修改方向**：`PermissionsDialog.tsx` 的 tool confirmation 中增加文件内容预览区域。
+
+**意义**：盲目批准权限是安全隐患——用户需看到变更内容才能做出知情决策。
+**缺失后果**：用户只看到"Edit file.ts?"无法判断变更是否安全——倾向于全部批准。
+**改进收益**：预览 diff 后再批准——安全审批变得有意义。
+
+---
+
+<a id="item-79"></a>
+
+### 79. Token 使用实时警告（P2）
+
+**思路**：在 UI 中实时显示 token 使用量、压缩进度、错误计数。不是在 `/stats` 命令中查看，而是在操作过程中自动浮现警告。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/TokenWarning.tsx` | 实时 token 警告 + 压缩状态 |
+
+**Qwen Code 修改方向**：在 `Footer.tsx` 的 `ContextUsageDisplay` 中增加警告阈值——超过 80% 时高亮显示。
+
+**意义**：用户不应该被上下文溢出"突袭"——应提前可视化预警。
+**缺失后果**：用户无感知地用完上下文 → 突然报错中断工作流。
+**改进收益**：80% 时黄色警告 → 90% 红色警告——用户提前 /compress。
+
+---
+
+<a id="item-80"></a>
+
+### 80. 快捷键提示组件（P2）
+
+**思路**：统一的 `KeyboardShortcutHint` 组件在 UI 各处显示当前操作的快捷方式（如 "(Ctrl+O to expand)"），且会根据用户自定义 keybindings 动态更新显示。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/design-system/KeyboardShortcutHint.tsx` | 统一快捷键提示渲染 |
+| `keybindings/useShortcutDisplay.ts` | `useShortcutDisplay()` 读取实际绑定 |
+
+**Qwen Code 修改方向**：新建 `KeyboardShortcutHint` 组件；各对话框/footer 使用统一提示；读取 keybindings 配置动态更新文本。
+
+**意义**：用户记不住所有快捷键——UI 中随处可见的提示降低学习成本。
+**缺失后果**：用户不知道 Escape 可以取消、Ctrl+O 可以展开——功能可发现性差。
+**改进收益**：操作旁边即显示快捷键——"边用边学"。
