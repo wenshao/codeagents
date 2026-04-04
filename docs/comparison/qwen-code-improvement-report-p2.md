@@ -1989,9 +1989,9 @@
 
 ---
 
-<a id="item-151"></a>
+<a id="item-140"></a>
 
-### 151. 正则表达式编译缓存（P2）
+### 140. 正则表达式编译缓存（P2）
 
 **思路**：Hook 事件匹配中 `new RegExp(matcher)` 每次调用都重新编译——应缓存到 `Map<string, RegExp>` 中复用。LS 工具 glob→regex 转换同理。编译一次复用 N 次，Hook 每轮触发数十次。
 
@@ -2009,9 +2009,9 @@
 
 ---
 
-<a id="item-152"></a>
+<a id="item-141"></a>
 
-### 152. 搜索结果流式解析与提前终止（P2）
+### 141. 搜索结果流式解析与提前终止（P2）
 
 **思路**：ripgrep 输出不应 `split('\n')` 全量加载后再过滤，而应流式逐行解析——边读边去重边截断。配合 `--max-count` 参数让 ripgrep 在达到限制后提前退出（避免搜索完整个代码库后只取前 100 行）。流式计数文件数时仅统计换行字节，不实际存储路径字符串。
 
@@ -2031,9 +2031,9 @@
 
 ---
 
-<a id="item-153"></a>
+<a id="item-142"></a>
 
-### 153. React.memo 自定义相等性优化（P2）
+### 142. React.memo 自定义相等性优化（P2）
 
 **思路**：终端 UI 消息列表的每条消息用 `React.memo` + 自定义 `arePropsEqual` 防止不必要重渲染。击键事件触发父组件状态更新——无 memo 时整个消息列表重渲染（500ms+ 延迟）。自定义比较器仅检查消息 ID 和内容变化，忽略回调函数引用变化。
 
@@ -2053,9 +2053,9 @@
 
 ---
 
-<a id="item-154"></a>
+<a id="item-143"></a>
 
-### 154. Bun 原生 API 性能优化（P2）
+### 143. Bun 原生 API 性能优化（P2）
 
 **思路**：3 个 Bun 原生 API 替代纯 JS 实现——① `Bun.stringWidth` 原生字符串宽度计算（50-100× 快于 JS，终端渲染热路径 ~100K 调用/帧）；② `Bun.JSONL.parseChunk` 流式 JSONL 解析（无需全量 split，减少内存拷贝）；③ `Bun.spawn` 的 `argv0` 参数实现单二进制多工具调度（嵌入式 ripgrep 无需 fork 系统二进制）。
 
@@ -2075,9 +2075,9 @@
 
 ---
 
-<a id="item-155"></a>
+<a id="item-144"></a>
 
-### 155. 终端行宽缓存与 Blit 屏幕 Diff（P2）
+### 144. 终端行宽缓存与 Blit 屏幕 Diff（P2）
 
 **思路**：① 行宽缓存：已完成的行（不再变化）的 stringWidth 结果缓存到 4096-entry LRU——流式输出场景减少 50× stringWidth 调用；② Blit 屏幕 diff：未变化的子树从上一帧直接 block-transfer（blit），仅对 damage region 内的 cell 逐个 diff。滚动时用 `shiftRows()` 原地移动 prev screen 行，再 diff 差异。
 
@@ -2097,9 +2097,9 @@
 
 ---
 
-<a id="item-156"></a>
+<a id="item-145"></a>
 
-### 156. 编译时特性门控与死代码消除（P2）
+### 145. 编译时特性门控与死代码消除（P2）
 
 **思路**：`feature('FLAG_NAME')` 在编译时求值——Bun 构建器将未启用的特性分支完全移除（dead code elimination）。运行时零成本：不检查 flag，不加载代码，不占 bundle 体积。用于：调试日志、内部工具、实验性功能、平台特定代码。
 
