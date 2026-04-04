@@ -457,6 +457,8 @@
 
 **Qwen Code 修改方向**：新建 `packages/core/src/bridge/`；对接阿里云/自建 WebSocket 服务；`/remote-control` 命令启动桥接。
 
+**相关文章**：[Remote Control Bridge Deep-Dive](./remote-control-bridge-deep-dive.md)
+
 **意义**：离开电脑后 Agent 需要人类审批权限——当前无法远程操作。
 **缺失后果**：需要人在电脑前审批——离开后 Agent 暂停。
 **改进收益**：手机/浏览器远程驱动——外出时继续审批和补充上下文。

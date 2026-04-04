@@ -57,7 +57,7 @@
 | **P1** | Structured Output — `--json-schema` 强制 JSON Schema 验证输出 [↓](./qwen-code-improvement-report-p0-p1.md#item-17) | 缺失 | 小 | — |
 | **P1** | Agent SDK 增强 — Python SDK + 流式回调 + 工具审批回调（Qwen 仅 TS SDK）[↓](./qwen-code-improvement-report-p0-p1.md#item-18) | 仅 TypeScript SDK | 中 | — |
 | **P1** | Bare Mode — `--bare` 跳过所有自动发现，CI/脚本最快启动 [↓](./qwen-code-improvement-report-p0-p1.md#item-19) | 缺失 | 小 | — |
-| **P1** | Remote Control Bridge — 从手机/浏览器驱动本地终端 session [↓](./qwen-code-improvement-report-p0-p1.md#item-20) | 缺失 | 大 | — |
+| **P1** | [Remote Control Bridge](./remote-control-bridge-deep-dive.md) — 从手机/浏览器驱动本地终端 session [↓](./qwen-code-improvement-report-p0-p1.md#item-20) | 缺失 | 大 | — |
 | **P1** | /teleport — Web session → 终端 session 双向迁移 [↓](./qwen-code-improvement-report-p0-p1.md#item-21) | 缺失 | 大 | — |
 | **P1** | GitLab CI/CD — 官方 GitLab pipeline 集成 [↓](./qwen-code-improvement-report-p0-p1.md#item-22) | 缺失 | 中 | — |
 | **P1** | 流式工具执行流水线 — API 流式返回 tool_use 时立即开始执行，不等完整响应 [↓](./qwen-code-improvement-report-p0-p1.md#item-24) | 等完整响应后执行 | 中 | — |
@@ -313,6 +313,7 @@
 | Team Memory | [组织级记忆同步](./team-memory-deep-dive.md) |
 | Computer Use | [桌面自动化](./computer-use-deep-dive.md) |
 | Deep Link | [协议处理与终端启动](./deep-link-protocol-deep-dive.md) |
+| Remote Control Bridge | [远程控制桥接](./remote-control-bridge-deep-dive.md) |
 | 功能矩阵 | [功能对比矩阵](./features.md) |
 
 ### Claude Code 源码文档
