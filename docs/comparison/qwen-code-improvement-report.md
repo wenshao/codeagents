@@ -46,7 +46,7 @@
 | **P1** | [Auto Dream](./memory-system-deep-dive.md) — 后台 agent 自动合并去重过时记忆 [↓](./qwen-code-improvement-report-p0-p1.md#item-5) | 缺失 | 中 | — |
 | **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1.md#item-11) | 全部工具始终加载 | 小 | — |
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) |
-| **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP 预连接 + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1.md#item-8) | 完全缺失 | 小 | — |
+| **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1.md#item-8) | 完全缺失 | 小 | — |
 | **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1.md#item-9) | 所有指令始终加载 | 中 | — |
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1.md#item-12) | 缺失 | 小 | — |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1.md#item-13) | 缺失 | 中 | — |
@@ -62,7 +62,7 @@
 | **P1** | GitLab CI/CD — 官方 GitLab pipeline 集成 [↓](./qwen-code-improvement-report-p0-p1.md#item-22) | 缺失 | 中 | — |
 | **P1** | 流式工具执行流水线 — API 流式返回 tool_use 时立即开始执行，不等完整响应 [↓](./qwen-code-improvement-report-p0-p1.md#item-24) | 等完整响应后执行 | 中 | — |
 | **P1** | 文件读取缓存 + 批量并行 I/O — 1000 条 LRU + mtime 失效 + 32 批并行 [↓](./qwen-code-improvement-report-p0-p1.md#item-25) | 无缓存，顺序读取 | 小 | — |
-| **P1** | 记忆/附件异步预取 — 工具执行期间并行搜索相关记忆 [↓](./qwen-code-improvement-report-p0-p1.md#item-26) | 无预取 | 中 | — |
+| **P1** | 记忆/附件异步prefetch — 工具执行期间并行搜索相关记忆 [↓](./qwen-code-improvement-report-p0-p1.md#item-26) | 无prefetch | 中 | — |
 | **P1** | Token Budget 续行与自动交接 — 90% 续行 + 递减检测 + 分层压缩回退 [↓](./qwen-code-improvement-report-p0-p1.md#item-27) | 70% 一次性压缩 | 中 | — |
 | **P1** | 同步 I/O 异步化 — readFileSync/statSync 替换为 async，解阻塞事件循环 [↓](./qwen-code-improvement-report-p0-p1.md#item-28) | 多处 readFileSync | 中 | — |
 | **P1** | Prompt Cache 分段与工具稳定排序 — static/dynamic 分界 + 内置工具前缀 + schema 锁定 [↓](./qwen-code-improvement-report-p0-p1.md#item-29) | 无分段缓存 | 中 | — |
@@ -70,15 +70,15 @@
 | **P1** | 优雅关闭序列与信号处理 — SIGINT/SIGTERM + 清理注册 + 5s failsafe [↓](./qwen-code-improvement-report-p0-p1.md#item-32) | 无信号处理 | 中 | — |
 | **P1** | 反应式压缩 — prompt_too_long 自动裁剪最早消息 + 重试 3 次 [↓](./qwen-code-improvement-report-p0-p1.md#item-33) | 无被动恢复 | 中 | — |
 | **P1** | 持久化重试模式 — CI/后台无限重试 + 5min 退避上限 + 30s 心跳 [↓](./qwen-code-improvement-report-p0-p1.md#item-34) | 失败即退出 | 中 | — |
-| **P1** | 原子文件写入与事务回滚 — temp+rename 原子写 + 大结果落盘 [↓](./qwen-code-improvement-report-p0-p1.md#item-35) | 直接 writeFileSync | 中 | — |
+| **P1** | 原子文件写入与事务回滚 — temp+rename 原子写 + 大结果persist to disk [↓](./qwen-code-improvement-report-p0-p1.md#item-35) | 直接 writeFileSync | 中 | — |
 | **P1** | 自动检查点默认启用 — 每轮工具执行后自动创建文件快照 [↓](./qwen-code-improvement-report-p0-p1.md#item-36) | 检查点默认关闭 | 小 | — |
 | **P1** | Coordinator/Swarm 多 Agent编排 — Leader/Worker 团队 + 3 种执行后端 [↓](./qwen-code-improvement-report-p0-p1.md#item-37) | 仅 Arena 竞赛 | 大 | — |
-| **P1** | Agent 工具细粒度访问控制 — 3 层白名单/黑名单 + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1.md#item-38) | 全部或指定列表 | 中 | — |
+| **P1** | Agent 工具细粒度访问控制 — 3 层allowlist/denylist + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1.md#item-38) | 全部或指定列表 | 中 | — |
 | **P1** | InProcess 同进程多 Agent隔离 — AsyncLocalStorage 上下文隔离 [↓](./qwen-code-improvement-report-p0-p1.md#item-39) | 全局状态可能泄漏 | 中 | — |
 | **P1** | Agent 记忆持久化 — user/project/local 3 级跨 session 记忆 [↓](./qwen-code-improvement-report-p0-p1.md#item-40) | 无跨 session 记忆 | 中 | — |
 | **P1** | Agent 恢复与续行 — SendMessage 继续已完成代理 + transcript 重建 [↓](./qwen-code-improvement-report-p0-p1.md#item-41) | 执行完即销毁 | 中 | — |
 | **P1** | 系统提示模块化组装 — sections 缓存 + dynamic boundary + uncached 标记 [↓](./qwen-code-improvement-report-p0-p1.md#item-42) | 单一字符串 | 中 | — |
-| **P1** | 系统提示内容完善 — OWASP 安全 + 提示注入检测 + 代码风格约束 + 输出格式 [↓](./qwen-code-improvement-report-p0-p1.md#item-47) | 缺少具体指导 | 中 | — |
+| **P1** | 系统提示内容完善 — OWASP 安全 + prompt injection检测 + 代码风格约束 + 输出格式 [↓](./qwen-code-improvement-report-p0-p1.md#item-47) | 缺少具体指导 | 中 | — |
 | **P1** | @include 指令与嵌套记忆发现 — @path 递归引用 + 文件操作触发目录遍历 [↓](./qwen-code-improvement-report-p0-p1.md#item-43) | 无 @include/嵌套发现 | 中 | — |
 | **P1** | 附件类型协议与令牌预算 — 40+ 类型 + per-type 预算 + 3 阶段有序执行 [↓](./qwen-code-improvement-report-p0-p1.md#item-44) | 字符串拼接/无预算 | 中 | — |
 | **P1** | Thinking 块跨轮保留与空闲清理 — 活跃保留 + 1h 空闲清理 + latch 防缓存破坏 [↓](./qwen-code-improvement-report-p0-p1.md#item-45) | 每轮独立/无清理 | 中 | — |
@@ -101,7 +101,7 @@
 | **P2** | Notebook Edit — Jupyter cell 编辑 + 自动 cell ID 追踪 + 文件历史快照 [↓](./qwen-code-improvement-report-p2-core.md#item-16) | 缺失 | 中 | — |
 | **P2** | 自定义快捷键 — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
 | **P2** | Session Ingress Auth — 远程会话 bearer token 认证（企业多用户环境） [↓](./qwen-code-improvement-report-p2-core.md#item-18) | 缺失 | 中 | — |
-| **P2** | 企业代理 — CONNECT relay + CA cert 注入 + NO_PROXY 白名单（容器环境） [↓](./qwen-code-improvement-report-p2-core.md#item-19) | 缺失 | 大 | — |
+| **P2** | 企业代理 — CONNECT relay + CA cert 注入 + NO_PROXY allowlist（容器环境） [↓](./qwen-code-improvement-report-p2-core.md#item-19) | 缺失 | 大 | — |
 | **P2** | ConfigTool — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](./qwen-code-improvement-report-p2-core.md#item-20) | 仅 /settings 命令 | 小 | — |
 | **P2** | 终端主题检测 — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | — |
 | **P2** | 自动后台化 Agent — 超过阈值自动转后台执行，不阻塞用户交互 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | 需显式指定 | 小 | — |
@@ -140,17 +140,17 @@
 | **P2** | MCP 并行连接 — pMap 动态插槽调度 + 双层并发（local:3/remote:20）[↓](./qwen-code-improvement-report-p2-perf.md#item-1) | 已并行但无并发上限 | 小 | — |
 | **P2** | 插件/Skill 并行加载 — marketplace + session 双源并行 + 目录检查并行 [↓](./qwen-code-improvement-report-p2-perf.md#item-2) | 顺序 for 循环 | 小 | — |
 | **P2** | Speculation 流水线建议 — 投机完成后立即并行生成下一建议 [↓](./qwen-code-improvement-report-p2-perf.md#item-3) | 每次重新生成 | 小 | — |
-| **P2** | 写穿缓存与 TTL 后台刷新 — stale-while-revalidate + LRU 有界缓存 [↓](./qwen-code-improvement-report-p2-perf.md#item-4) | 无通用缓存模式 | 小 | — |
+| **P2** | write-through缓存与 TTL 后台刷新 — stale-while-revalidate + LRU 有界缓存 [↓](./qwen-code-improvement-report-p2-perf.md#item-4) | 无通用缓存模式 | 小 | — |
 | **P2** | 上下文收集并行化 — 多源附件 Promise.all 并行获取（~20 并发）[↓](./qwen-code-improvement-report-p2-perf.md#item-5) | 串行追加 | 小 | — |
 | **P2** | 输出缓冲与防阻塞渲染 — setImmediate 延迟写入 + 内存缓冲 [↓](./qwen-code-improvement-report-p2-perf.md#item-6) | 直接 appendFileSync | 小 | — |
 | **P2** | LSP 服务器并行启动 — Promise.all 并行启动 + Promise.race 端口探测 [↓](./qwen-code-improvement-report-p2-perf.md#item-7) | 顺序 for 循环 | 小 | — |
 | **P2** | 请求合并与去重 — 1-in-flight + 1-pending + BoundedUUIDSet + inFlight 去重 [↓](./qwen-code-improvement-report-p2-perf.md#item-8) | 无合并机制 | 中 | — |
-| **P2** | 延迟初始化与按需加载 — lazySchema + 动态 import() + 延迟预取 [↓](./qwen-code-improvement-report-p2-perf.md#item-9) | 全量同步加载 | 小 | — |
-| **P2** | 流式超时检测与级联取消 — 90s 空闲看门狗 + siblingAbortController 级联 [↓](./qwen-code-improvement-report-p2-perf.md#item-10) | 固定超时/无级联 | 小 | — |
+| **P2** | 延迟初始化与按需加载 — lazySchema + 动态 import() + 延迟prefetch [↓](./qwen-code-improvement-report-p2-perf.md#item-9) | 全量同步加载 | 小 | — |
+| **P2** | 流式超时检测与级联取消 — 90s 空闲watchdog + siblingAbortController 级联 [↓](./qwen-code-improvement-report-p2-perf.md#item-10) | 固定超时/无级联 | 小 | — |
 | **P2** | Git 文件系统直读 — .git/HEAD+refs 直读 + 批量 check-ignore + LRU 缓存 [↓](./qwen-code-improvement-report-p2-perf.md#item-11) | 每次 spawn git | 小 | — |
 | **P2** | 设置/Schema 缓存防抖动 — 3 层设置缓存 + schema 首次锁定 + parse 去重 [↓](./qwen-code-improvement-report-p2-perf.md#item-12) | 每次重新读取解析 | 小 | — |
 | **P2** | Bash 交互提示卡顿检测 — 45s 无输出 + prompt regex 匹配 + 自动通知 [↓](./qwen-code-improvement-report-p2-stability.md#item-1) | 无卡顿检测 | 小 | — |
-| **P2** | TTY 孤儿进程检测 — 30s 检查终端存活 + 自动优雅退出 [↓](./qwen-code-improvement-report-p2-stability.md#item-2) | 无检测 | 小 | — |
+| **P2** | TTY orphan process检测 — 30s 检查终端存活 + 自动优雅退出 [↓](./qwen-code-improvement-report-p2-stability.md#item-2) | 无检测 | 小 | — |
 | **P2** | MCP 服务器优雅关闭升级 — SIGINT(100ms)→SIGTERM(400ms)→SIGKILL 3 阶段 [↓](./qwen-code-improvement-report-p2-stability.md#item-3) | 直接断开 | 小 | — |
 | **P2** | 事件循环卡顿检测 — 主线程阻塞 >500ms 诊断日志 [↓](./qwen-code-improvement-report-p2-stability.md#item-4) | 无监控 | 小 | — |
 | **P2** | 会话活动心跳 — refcount 活动追踪 + 30s keepalive + 空闲退出 [↓](./qwen-code-improvement-report-p2-stability.md#item-5) | 无心跳 | 小 | — |
@@ -176,8 +176,8 @@
 | **P2** | 环形缓冲区与磁盘溢出 — CircularBuffer + BoundedUUIDSet + 8MB 溢出 [↓](./qwen-code-improvement-report-p2-perf.md#item-19) | 无上限数据结构 | 小 | — |
 | **P2** | 终端渲染字符串池化 — CharPool/StylePool 整数 ID 替代字符串 [↓](./qwen-code-improvement-report-p2-perf.md#item-20) | Ink 标准渲染 | 小 | — |
 | **P2** | 文件描述符与句柄追踪 — >100 handles / >500 fd 预警 [↓](./qwen-code-improvement-report-p2-perf.md#item-21) | 无追踪 | 小 | — |
-| **P2** | Memoization 冷启动去重 — inFlight Map + TTL 后台刷新 + identity guard [↓](./qwen-code-improvement-report-p2-perf.md#item-22) | 无去重 | 小 | — |
-| **P2** | 正则表达式编译缓存 — Hook/LS 热路径 new RegExp 缓存到 Map [↓](./qwen-code-improvement-report-p2-perf.md#item-23) | 每次重新编译 | 小 | — |
+| **P2** | Memoization cold start去重 — inFlight Map + TTL 后台刷新 + identity guard [↓](./qwen-code-improvement-report-p2-perf.md#item-22) | 无去重 | 小 | — |
+| **P2** | 正则表达式编译缓存 — Hook/LS hot path new RegExp 缓存到 Map [↓](./qwen-code-improvement-report-p2-perf.md#item-23) | 每次重新编译 | 小 | — |
 | **P2** | 搜索结果流式解析 — 流式逐行处理 + --max-count 提前终止 [↓](./qwen-code-improvement-report-p2-perf.md#item-24) | split('\n') 全量加载 | 小 | — |
 | **P2** | React.memo 自定义相等性 — 消息组件防止击键重渲染（500ms→16ms）[↓](./qwen-code-improvement-report-p2-perf.md#item-25) | 需确认覆盖度 | 小 | — |
 | **P2** | Bun 原生 API 优化 — stringWidth/JSONL.parseChunk/argv0 dispatch [↓](./qwen-code-improvement-report-p2-perf.md#item-26) | Node.js 标准 API | 小 | — |
@@ -199,13 +199,13 @@
 | **P2** | 退出码标准化与 Hook 唤醒 — exit 2 唤醒模型 + CI 语义文档 [↓](./qwen-code-improvement-report-p2-stability.md#item-26) | 有自定义码/无唤醒 | 小 | — |
 | **P2** | 破坏性命令警告系统 — 8 种高风险 git 操作 + 权限对话框风险说明 [↓](./qwen-code-improvement-report-p2-stability.md#item-27) | 仅读写分类/无风险说明 | 小 | — |
 | **P2** | 系统提示危险操作行为指导 — 4 类危险操作列举 + 行为准则 + 审批范围限定 [↓](./qwen-code-improvement-report-p2-stability.md#item-28) | 仅 "never push" 一条 | 小 | [PR#2889](https://github.com/QwenLM/qwen-code/pull/2889) |
-| **P2** | Unicode 净化与 ASCII 走私防御 — NFKC + 不可见字符剥离 + 递归净化 [↓](./qwen-code-improvement-report-p2-stability.md#item-29) | 无净化 | 中 | — |
-| **P2** | 沙箱运行时集成 — seatbelt/bubblewrap/Docker + 文件/网络限制 [↓](./qwen-code-improvement-report-p2-stability.md#item-30) | 可选/非默认 | 大 | — |
+| **P2** | Unicode sanitization与 ASCII 走私防御 — NFKC + 不可见字符剥离 + 递归sanitization [↓](./qwen-code-improvement-report-p2-stability.md#item-29) | 无sanitization | 中 | — |
+| **P2** | sandbox运行时集成 — seatbelt/bubblewrap/Docker + 文件/网络限制 [↓](./qwen-code-improvement-report-p2-stability.md#item-30) | 可选/非默认 | 大 | — |
 | **P2** | SSRF 防护 — 私有 IP 阻断 + IPv4-mapped + DNS rebinding 防护 [↓](./qwen-code-improvement-report-p2-stability.md#item-31) | 仅基础 isPrivateIp | 中 | — |
-| **P2** | WebFetch 域名白名单 — 130+ 预批准域名 + 路径段边界匹配 [↓](./qwen-code-improvement-report-p2-stability.md#item-32) | 无内置白名单 | 小 | — |
+| **P2** | WebFetch 域名allowlist — 130+ 预批准域名 + 路径段边界匹配 [↓](./qwen-code-improvement-report-p2-stability.md#item-32) | 无内置allowlist | 小 | — |
 | **P2** | 子进程环境变量清洗 — 30+ 敏感变量自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-33) | 继承完整环境 | 中 | — |
 | **P2** | 工具输出密钥扫描 — 50+ gitleaks 规则 + 写入阻断 [↓](./qwen-code-improvement-report-p2-stability.md#item-34) | 无扫描 | 中 | — |
-| **P2** | 权限升级防护 — auto 模式 60+ 危险规则自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-35) | yolo 批准所有 | 中 | — |
+| **P2** | privilege escalation防护 — auto 模式 60+ 危险规则自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-35) | yolo 批准所有 | 中 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-1) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-2) | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3.md#item-3) | 缺失 | 中 | — |
@@ -230,7 +230,7 @@
 | [P2 核心功能与企业特性](./qwen-code-improvement-report-p2-core.md) | 中等优先级（Shell 安全、MDM 企业策略、Token 计数、Computer Use 等） | 24 |
 | [P2 工具与命令扩展](./qwen-code-improvement-report-p2-tools.md) | 中等优先级（MCP 动态插槽、Ripgrep 回退、Notebook Edit、LSP 等） | 29 |
 | [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并等） | 34 |
-| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode 净化、沙箱集成、SSRF 防护、密钥扫描等） | 34 |
+| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描等） | 34 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结
@@ -262,20 +262,20 @@
 | 文件历史快照 | per-file SHA256 + 按消息恢复 | checkpoint（git 级） | 小差距 | — |
 | **流式工具执行** | StreamingToolExecutor 流水线 | 等完整响应 | 显著落后 | — |
 | **文件读取缓存** | FileReadCache 1000 LRU + 批量并行 | 无缓存/顺序读取 | 显著落后 | — |
-| **记忆异步预取** | Memory prefetch + skill prefetch | 无 | 缺失 | — |
+| **记忆异步prefetch** | Memory prefetch + skill prefetch | 无 | 缺失 | — |
 | **Token Budget 续行** | 90% 续行 + 递减检测 + 分层回退 | 70% 一次性压缩 | 中等差距 | — |
 | **MCP 动态插槽** | pMap + dual-tier concurrency | 无并发限制 | 小差距 | — |
 | **通用缓存模式** | memoizeWithTTL + memoizeWithLRU | 仅搜索缓存 | 中等差距 | — |
 | **同步 I/O** | 绝大多数 async | 多处 readFileSync | 显著落后 | — |
 | **Prompt Cache** | 分段 + schema 锁定 + 缓存失效检测 | 无分段 | 显著落后 | — |
 | **请求合并** | coalescing + BoundedUUIDSet | 无 | 缺失 | — |
-| **延迟初始化** | lazySchema + 延迟 import + 延迟预取 | 全量同步加载 | 中等差距 | — |
+| **延迟初始化** | lazySchema + 延迟 import + 延迟prefetch | 全量同步加载 | 中等差距 | — |
 | **Git 直读** | .git/HEAD+refs 直读 + LRU | spawn git | 中等差距 | — |
 | **崩溃恢复** | 中断检测 + 合成续行 + 全量恢复 | 无 | 缺失 | — |
 | **API 重试** | 10 次退避 + 529 降级 + 持久化重试 | 仅重试次数 | 显著落后 | — |
 | **优雅关闭** | SIGINT/SIGTERM + 清理注册 + failsafe | 无信号处理 | 缺失 | — |
 | **反应式压缩** | prompt_too_long 自动裁剪重试 | 无 | 缺失 | — |
-| **原子写入** | temp+rename + 大结果落盘 | 直接 writeFileSync | 中等差距 | — |
+| **原子写入** | temp+rename + 大结果persist to disk | 直接 writeFileSync | 中等差距 | — |
 | **自动检查点** | 默认启用 + per-message 快照 | 默认关闭 | 中等差距 | — |
 | Session Ingress Auth | bearer token 远程认证 | 无 | 缺失 | — |
 | Computer Use | macOS 桌面自动化 | 无 | 缺失 | — |

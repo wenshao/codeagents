@@ -404,7 +404,7 @@
 
 ### 19. 企业代理支持（P2）
 
-**思路**：CONNECT-to-WebSocket relay 处理企业代理环境——CA cert 链注入、NO_PROXY 白名单（RFC1918 + API + GitHub + 包注册表）。失败时 fail-open 不阻断。
+**思路**：CONNECT-to-WebSocket relay 处理企业代理环境——CA cert 链注入、NO_PROXY allowlist（RFC1918 + API + GitHub + 包注册表）。失败时 fail-open 不阻断。
 
 **Claude Code 源码索引**：
 

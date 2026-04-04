@@ -29,7 +29,7 @@
 
 <a id="item-2"></a>
 
-### 2. TTY 孤儿进程检测（P2）
+### 2. TTY orphan process检测（P2）
 
 **思路**：macOS 终端关闭有时不发 SIGHUP。每 30 秒检查 TTY 是否仍可读——如果 `process.stdin` 变为不可读，说明终端已关闭，触发优雅退出。
 
@@ -43,7 +43,7 @@
 
 **意义**：终端窗口意外关闭（或 SSH 断开）后进程应自动退出而非变成僵尸。
 **缺失后果**：终端关闭 → 进程变孤儿 → 消耗资源直到手动 kill。
-**改进收益**：30s 检测 → 自动退出——无孤儿进程，资源自动释放。
+**改进收益**：30s 检测 → 自动退出——无orphan process，资源自动释放。
 
 ---
 
@@ -601,42 +601,42 @@
 
 <a id="item-29"></a>
 
-### 29. Unicode 净化与 ASCII 走私防御（P2）
+### 29. Unicode sanitization与 ASCII 走私防御（P2）
 
-**思路**：对所有外部输入（MCP 工具结果、文件内容、URL 参数）进行 Unicode 净化——① NFKC 规范化；② 移除 Cf/Co/Cn 类别字符；③ 剥离零宽空格、RTL/LTR 标记、BOM。递归处理嵌套数据结构（最大 10 轮防止无限循环）。防御 ASCII Smuggling 和隐藏提示注入。
+**思路**：对所有外部输入（MCP 工具结果、文件内容、URL 参数）进行 Unicode sanitization——① NFKC 规范化；② 移除 Cf/Co/Cn 类别字符；③ 剥离零宽空格、RTL/LTR 标记、BOM。递归处理嵌套数据结构（最大 10 轮防止无限循环）。防御 ASCII Smuggling 和隐藏prompt injection。
 
 **Claude Code 源码索引**：
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `utils/sanitization.ts` (92行) | NFKC + Cf/Co/Cn 移除 + 零宽/RTL/BOM 剥离 + 递归净化 |
+| `utils/sanitization.ts` (92行) | NFKC + Cf/Co/Cn 移除 + 零宽/RTL/BOM 剥离 + 递归sanitization |
 
-**Qwen Code 修改方向**：无 Unicode 净化——MCP 工具返回的不可见字符直接传给模型。改进方向：① 新建 `utils/sanitization.ts`——NFKC + 不可见字符剥离；② 所有外部输入过净化函数；③ 递归处理 JSON 对象中的字符串值。
+**Qwen Code 修改方向**：无 Unicode sanitization——MCP 工具返回的不可见字符直接传给模型。改进方向：① 新建 `utils/sanitization.ts`——NFKC + 不可见字符剥离；② 所有外部输入过sanitization函数；③ 递归处理 JSON 对象中的字符串值。
 
 **意义**：攻击者可在 MCP 工具结果中嵌入不可见 Unicode 字符注入指令。
 **缺失后果**：不可见字符 = 模型"看到"用户看不到的指令——静默执行恶意操作。
-**改进收益**：Unicode 净化 = 不可见字符全部剥离——模型只看到用户能看到的内容。
+**改进收益**：Unicode sanitization = 不可见字符全部剥离——模型只看到用户能看到的内容。
 
 ---
 
 <a id="item-30"></a>
 
-### 30. 沙箱运行时集成（P2）
+### 30. sandbox运行时集成（P2）
 
-**思路**：Shell 命令在沙箱中执行——限制文件系统访问（路径模式）、网络访问（域名白名单）、进程能力。3 种后端：macOS seatbelt、Linux bubblewrap、Docker。沙箱策略可配置，特定命令可排除（如 `npm install` 需要网络）。
+**思路**：Shell 命令在sandbox中执行——限制文件系统访问（路径模式）、网络访问（域名allowlist）、进程能力。3 种后端：macOS seatbelt、Linux bubblewrap、Docker。sandbox策略可配置，特定命令可排除（如 `npm install` 需要网络）。
 
 **Claude Code 源码索引**：
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `utils/sandbox/sandbox-adapter.ts` | 沙箱运行时——路径模式、FS 限制、网络控制、违规事件 |
-| `tools/BashTool/shouldUseSandbox.ts` (L130-153) | 沙箱决策——feature gate + 排除命令列表 |
+| `utils/sandbox/sandbox-adapter.ts` | sandbox运行时——路径模式、FS 限制、网络控制、违规事件 |
+| `tools/BashTool/shouldUseSandbox.ts` (L130-153) | sandbox决策——feature gate + 排除命令列表 |
 
-**Qwen Code 修改方向**：Docker/seatbelt 沙箱存在但非默认启用。改进方向：① 默认启用轻量沙箱（文件系统限制为工作目录 + 临时目录）；② 命令排除列表；③ 违规事件记录。
+**Qwen Code 修改方向**：Docker/seatbelt sandbox存在但非默认启用。改进方向：① 默认启用轻量sandbox（文件系统限制为工作目录 + 临时目录）；② 命令排除列表；③ 违规事件记录。
 
 **意义**：Shell 命令是最大攻击面——不受限的 shell 可执行任意代码。
-**缺失后果**：无沙箱 = 任何命令无限制执行。
-**改进收益**：沙箱 = 文件/网络/进程受限——恶意命令无法越权。
+**缺失后果**：无sandbox = 任何命令无限制执行。
+**改进收益**：sandbox = 文件/网络/进程受限——恶意命令无法越权。
 
 ---
 
@@ -662,7 +662,7 @@
 
 <a id="item-32"></a>
 
-### 32. WebFetch 域名白名单（P2）
+### 32. WebFetch 域名allowlist（P2）
 
 **思路**：130+ 常用域名预批准（文档/包管理/API 参考），匹配时无需审批。路径段边界检查确保 `/anthropic` 不匹配 `/anthropic-evil/`。
 
@@ -672,11 +672,11 @@
 |------|-------------|
 | `tools/WebFetchTool/preapproved.ts` (167行) | 130+ 域名 + Set 快速匹配 + 路径段边界检查 |
 
-**Qwen Code 修改方向**：WebFetch 通过通用规则系统，无内置白名单。改进方向：① 内置常用域名白名单；② hostname Set 快速匹配；③ 路径段边界检查。
+**Qwen Code 修改方向**：WebFetch 通过通用规则系统，无内置allowlist。改进方向：① 内置常用域名allowlist；② hostname Set 快速匹配；③ 路径段边界检查。
 
 **意义**：频繁访问 npm/PyPI/MDN——每次审批影响效率。
 **缺失后果**：每次 fetch 文档站点都弹审批。
-**改进收益**：白名单 = 常用文档直接访问。
+**改进收益**：allowlist = 常用文档直接访问。
 
 ---
 
@@ -723,7 +723,7 @@
 
 <a id="item-35"></a>
 
-### 35. 权限升级防护（P2）
+### 35. privilege escalation防护（P2）
 
 **思路**：进入自动模式时剥离危险权限规则——代码执行（python/node/ruby/perl）、shell（eval/exec/sudo）、网络（curl/wget/ssh）、云 CLI（aws/gcloud/kubectl）共 60+ 模式。
 

@@ -76,7 +76,7 @@
 
 <a id="item-4"></a>
 
-### 4. 写穿缓存与 TTL 后台刷新（P2）
+### 4. write-through缓存与 TTL 后台刷新（P2）
 
 **思路**：`memoizeWithTTL` 实现 stale-while-revalidate 模式——缓存过期后**立即返回旧值**，同时后台异步刷新。防止多个并发请求同时触发刷新（`refreshing` 标志位）。用于 MCP 工具列表、Git 状态、环境检测等频繁访问但变化慢的数据。`memoizeWithLRU` 提供有界缓存（默认 100 条），防止内存无限增长。
 
@@ -130,7 +130,7 @@
 |------|-------------|
 | `utils/bufferedWriter.ts` | `createBufferedWriter()`、`flushDeferred()` setImmediate 延迟、`pendingOverflow` 排序保证 |
 
-**Qwen Code 修改方向**：`pidfile.ts` 用 `writeFileSync` 写 PID 文件；`trustedFolders.ts` 用 `readFileSync`/`writeFileSync`（已在 item-28 中列出）；`shellExecutionService.ts` 输出直接推送——长输出可能阻塞渲染。改进方向：① 新建 `utils/bufferedWriter.ts`——内存缓冲 + 定时 flush + 溢出 `setImmediate`；② 同步写入热路径改用 `bufferedWriter.write()`；③ shell 输出推送改用 buffered writer（`maxBufferBytes` 限制内存占用）。
+**Qwen Code 修改方向**：`pidfile.ts` 用 `writeFileSync` 写 PID 文件；`trustedFolders.ts` 用 `readFileSync`/`writeFileSync`（已在 item-28 中列出）；`shellExecutionService.ts` 输出直接推送——长输出可能阻塞渲染。改进方向：① 新建 `utils/bufferedWriter.ts`——内存缓冲 + 定时 flush + 溢出 `setImmediate`；② 同步写入hot path改用 `bufferedWriter.write()`；③ shell 输出推送改用 buffered writer（`maxBufferBytes` 限制内存占用）。
 
 **意义**：同步写入和大量输出推送可能阻塞 Node.js 事件循环——导致 UI 卡顿和键盘无响应。
 **缺失后果**：同步 I/O 在磁盘慢时阻塞主线程——用户输入延迟。
@@ -185,7 +185,7 @@
 
 ### 9. 延迟初始化与按需加载（Lazy Init）（P2）
 
-**思路**：3 层延迟策略——① `lazySchema()`：Zod schema 定义推迟到首次使用时构建（启动不触发 Zod）；② 延迟模块导入：大模块（如 113KB insights.ts）在命令执行时 `import()` 而非启动时 `require`；③ 延迟预取（`startDeferredPrefetches`）：AWS/GCP 凭证、MCP 官方 URL 等在首帧渲染后才开始。
+**思路**：3 层延迟策略——① `lazySchema()`：Zod schema 定义推迟到首次使用时构建（启动不触发 Zod）；② 延迟模块导入：大模块（如 113KB insights.ts）在命令执行时 `import()` 而非启动时 `require`；③ 延迟prefetch（`startDeferredPrefetches`）：AWS/GCP 凭证、MCP 官方 URL 等在首帧渲染后才开始。
 
 **Claude Code 源码索引**：
 
@@ -193,13 +193,13 @@
 |------|-------------|
 | `utils/lazySchema.ts` (8行) | `lazySchema(factory)` 缓存式惰构建 |
 | `commands.ts` (L188) | 113KB insights.ts 延迟导入 |
-| `main.tsx` (L383-418) | `startDeferredPrefetches()` 首帧后预取 |
+| `main.tsx` (L383-418) | `startDeferredPrefetches()` 首帧后prefetch |
 | `Tool.ts` (L439-442) | `shouldDefer` 属性（对应 `defer_loading`）工具延迟加载到 prompt |
 
-**Qwen Code 修改方向**：所有模块启动时同步加载；Zod schema 在模块求值时构建；所有工具定义启动时全量生成。改进方向：① 大型命令模块改为 `await import()` 动态导入；② 工具 Zod schema 包装为 `lazySchema()`——首次调用时才构建；③ 非关键预取（凭证、远程配置）推迟到首帧渲染后。
+**Qwen Code 修改方向**：所有模块启动时同步加载；Zod schema 在模块求值时构建；所有工具定义启动时全量生成。改进方向：① 大型命令模块改为 `await import()` 动态导入；② 工具 Zod schema 包装为 `lazySchema()`——首次调用时才构建；③ 非关键prefetch（凭证、远程配置）推迟到首帧渲染后。
 
 **意义**：启动时间 = 所有模块加载时间之和——延迟非关键模块直接缩短启动。
-**缺失后果**：启动加载全量模块 + 全量 schema 构建——冷启动慢 200-500ms。
+**缺失后果**：启动加载全量模块 + 全量 schema 构建——cold start慢 200-500ms。
 **改进收益**：惰加载 = 仅加载核心模块——启动时间缩短 30-50%。
 
 ---
@@ -208,13 +208,13 @@
 
 ### 10. 流式超时检测与级联取消（P2）
 
-**思路**：API 流式响应设置 90 秒空闲看门狗——收到 chunk 时重置计时器，超时则 abort stream 触发重试。工具执行层面：子 AbortController 实现级联取消——Bash 工具出错时 `siblingAbortController.abort()` 立即终止同批次的其他子进程（不终止整轮查询）。`createChildAbortController()` 用 WeakRef 防止 GC 泄漏。
+**思路**：API 流式响应设置 90 秒空闲watchdog——收到 chunk 时重置计时器，超时则 abort stream 触发重试。工具执行层面：子 AbortController 实现级联取消——Bash 工具出错时 `siblingAbortController.abort()` 立即终止同批次的其他子进程（不终止整轮查询）。`createChildAbortController()` 用 WeakRef 防止 GC 泄漏。
 
 **Claude Code 源码索引**：
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `services/api/claude.ts` (L1868-1954) | 90s 流式空闲看门狗、stall 计数 + 时间统计 |
+| `services/api/claude.ts` (L1868-1954) | 90s 流式空闲watchdog、stall 计数 + 时间统计 |
 | `utils/abortController.ts` | `createChildAbortController()` WeakRef 子控制器 |
 | `services/tools/StreamingToolExecutor.ts` (L45-48) | `siblingAbortController` Bash 错误级联 |
 | `hooks/useTypeahead.tsx` (L206-217) | 每次击键取消上一次 shell 补全 |
@@ -223,7 +223,7 @@
 
 **意义**：API 偶尔 hang——无超时检测则用户永远等待；工具失败不级联取消则浪费资源。
 **缺失后果**：API hang = 用户手动 Ctrl+C；Bash 报错后 Grep 继续白跑。
-**改进收益**：空闲看门狗自动重试 + 级联取消——异常恢复自动化，资源零浪费。
+**改进收益**：空闲watchdog自动重试 + 级联取消——异常恢复自动化，资源零浪费。
 
 ---
 
@@ -243,7 +243,7 @@
 
 **Qwen Code 修改方向**：`gitService.ts` 通过 `simple-git` 库调用 git 命令（每次 spawn 子进程）；无文件系统直读优化；无 git 操作 LRU 缓存。改进方向：① 高频查询（当前分支、HEAD 解析）直接读取 `.git/HEAD` + `.git/refs/`（async readFile，无 spawn）；② `git check-ignore` 合并为批量调用（一次传多个路径）；③ `findGitRoot` 结果 LRU 缓存（防止每次 stat 向上遍历）。
 
-**意义**：git 状态查询是热路径——每次工具执行前后都需检查。
+**意义**：git 状态查询是hot path——每次工具执行前后都需检查。
 **缺失后果**：10 次工具调用 × 2 次 git 查询 × 5ms/spawn = 100ms 开销。
 **改进收益**：直读 .git/HEAD = 0.1ms（无 fork）；批量 check-ignore = 1 次 spawn 替代 N 次。
 
@@ -466,21 +466,21 @@
 
 <a id="item-22"></a>
 
-### 22. Memoization 冷启动去重与 Identity Guard（P2）
+### 22. Memoization cold start去重与 Identity Guard（P2）
 
-**思路**：`memoizeWithTTLAsync` 的 `inFlight` Map 防止 N 个并发调用在缓存冷启动时触发 N 次昂贵操作。TTL 过期后返旧值 + 后台刷新（stale-while-revalidate）。Identity guard 防止并发 `cache.clear()` + 冷启动导致旧刷新覆盖新缓存。
+**思路**：`memoizeWithTTLAsync` 的 `inFlight` Map 防止 N 个并发调用在缓存cold start时触发 N 次昂贵操作。TTL 过期后返旧值 + 后台刷新（stale-while-revalidate）。Identity guard 防止并发 `cache.clear()` + cold start导致旧刷新覆盖新缓存。
 
 **Claude Code 源码索引**：
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `utils/memoize.ts` (L120-220) | `memoizeWithTTLAsync()`——`inFlight: Map` 冷启动去重 |
+| `utils/memoize.ts` (L120-220) | `memoizeWithTTLAsync()`——`inFlight: Map` cold start去重 |
 | `utils/memoize.ts` (L147-150, L175-189) | identity guard 防止 clear + cold-miss 数据错乱 |
 
-**Qwen Code 修改方向**：`crawlCache.ts` 有 TTL 但无冷启动去重。改进方向：① 新建 `memoizeAsync.ts`——Promise 去重 inFlight Map；② TTL 过期返旧值 + 后台刷新；③ identity guard 防 race condition。
+**Qwen Code 修改方向**：`crawlCache.ts` 有 TTL 但无cold start去重。改进方向：① 新建 `memoizeAsync.ts`——Promise 去重 inFlight Map；② TTL 过期返旧值 + 后台刷新；③ identity guard 防 race condition。
 
 **意义**：10 个并发 MCP 工具刷新 → 无去重 = 10 次相同 API 调用。
-**缺失后果**：冷启动雪崩——高并发场景 N× 重复网络请求。
+**缺失后果**：cold start雪崩——高并发场景 N× 重复网络请求。
 **改进收益**：inFlight 去重 = 1 次调用，N-1 次等待——网络开销减少 90%。
 
 ---
@@ -499,9 +499,9 @@
 
 **Qwen Code 修改方向**：`hookPlanner.ts` (L152, L169) 每次 `new RegExp(matcher)` 重新编译；`ls.ts` (L98-102) 每文件重新编译 glob regex。改进方向：① `regexCache: Map<string, RegExp>` 缓存编译结果；② LS 工具 glob→regex 编译一次后复用；③ 可选 LRU 上限（1000 条）防止长会话内存增长。
 
-**意义**：Hook 匹配是每次工具调用的热路径——数百次重复编译浪费 CPU。
+**意义**：Hook 匹配是每次工具调用的hot path——数百次重复编译浪费 CPU。
 **缺失后果**：每次工具调用 × 每个 hook matcher × new RegExp = 无谓 CPU 开销。
-**改进收益**：编译缓存 = 首次编译后 O(1) 查找——热路径 CPU 降低 90%。
+**改进收益**：编译缓存 = 首次编译后 O(1) 查找——hot path CPU 降低 90%。
 
 ---
 
@@ -543,7 +543,7 @@
 
 **Qwen Code 修改方向**：`useGeminiStream.ts` 有 useMemo/useCallback，但消息列表组件（`MessageList.tsx`）和单条消息组件是否有 React.memo 需确认。改进方向：① 消息组件加 `React.memo(MessageComponent, arePropsEqual)`；② `arePropsEqual` 仅比较 `message.id` + `message.content` 变化；③ `useCallback` 包裹所有传给子组件的回调。
 
-**意义**：终端 UI 渲染是主线程热路径——不必要重渲染 = 击键延迟。
+**意义**：终端 UI 渲染是主线程hot path——不必要重渲染 = 击键延迟。
 **缺失后果**：100 条历史消息 × 每次击键全部重渲染 = 明显卡顿。
 **改进收益**：React.memo = 仅变化的消息重渲染——击键延迟从 500ms 降到 <16ms。
 
@@ -553,13 +553,13 @@
 
 ### 26. Bun 原生 API 性能优化（P2）
 
-**思路**：3 个 Bun 原生 API 替代纯 JS 实现——① `Bun.stringWidth` 原生字符串宽度计算（50-100× 快于 JS，终端渲染热路径 ~100K 调用/帧）；② `Bun.JSONL.parseChunk` 流式 JSONL 解析（无需全量 split，减少内存拷贝）；③ `Bun.spawn` 的 `argv0` 参数实现单二进制多工具调度（嵌入式 ripgrep 无需 fork 系统二进制）。
+**思路**：3 个 Bun 原生 API 替代纯 JS 实现——① `Bun.stringWidth` 原生字符串宽度计算（50-100× 快于 JS，终端渲染hot path ~100K 调用/帧）；② `Bun.JSONL.parseChunk` 流式 JSONL 解析（无需全量 split，减少内存拷贝）；③ `Bun.spawn` 的 `argv0` 参数实现单二进制多工具调度（嵌入式 ripgrep 无需 fork 系统二进制）。
 
 **Claude Code 源码索引**：
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `ink/stringWidth.ts` (L213-222) | 模块作用域 Bun.stringWidth 解析——避免热路径 typeof 检查 |
+| `ink/stringWidth.ts` (L213-222) | 模块作用域 Bun.stringWidth 解析——避免hot path typeof 检查 |
 | `utils/json.ts` (L94-127) | `Bun.JSONL.parseChunk` 流式 JSONL 解析 + 非 Bun 回退 |
 | `utils/ripgrep.ts` (L562-567) | `Bun.spawn` argv0 dispatch 嵌入式 ripgrep |
 
@@ -691,7 +691,7 @@
 
 **Qwen Code 修改方向**：`shell.ts` (L98-108, L126-138) `isShellCommandReadOnlyAST()` 在同一命令上调用 2 次——`getDefaultPermission()` 和 `getConfirmationDetails()` 各一次。改进方向：① `astCache: Map<string, ASTResult>` 缓存解析结果；② 第二次调用直接命中缓存；③ 可选 LRU 上限防止长会话内存增长。
 
-**意义**：AST 解析是 shell 权限检查的热路径——复合命令解析尤其昂贵。
+**意义**：AST 解析是 shell 权限检查的hot path——复合命令解析尤其昂贵。
 **缺失后果**：同一命令 2× AST 解析 = 2× CPU 开销。
 **改进收益**：缓存 = 第二次 O(1) 查找——权限检查速度翻倍。
 
