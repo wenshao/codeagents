@@ -6,9 +6,9 @@
 
 ---
 
-<a id="item-168"></a>
+<a id="item-1"></a>
 
-### 168. 动态状态栏（P3）
+### 1. 动态状态栏（P3）
 
 **思路**：`AppState.statusLineText` 允许模型/工具实时更新状态文本（如"正在分析 5 个文件..."），提供执行进度可见性。
 
@@ -27,9 +27,9 @@
 
 ---
 
-<a id="item-169"></a>
+<a id="item-2"></a>
 
-### 169. 上下文折叠 History Snip（P3）
+### 2. 上下文折叠 History Snip（P3）
 
 **思路**：`feature('HISTORY_SNIP')` 门控。**Claude Code 自身仅 scaffolding**——SnipTool 有 lazy require 占位无完整实现。已有 `collapseReadSearch.ts` 的 UI 级消息折叠（连续 read/search 合并显示）。
 
@@ -47,9 +47,9 @@
 
 ---
 
-<a id="item-170"></a>
+<a id="item-3"></a>
 
-### 170. 内存诊断（P3）
+### 3. 内存诊断（P3）
 
 **思路**：1.5GB 阈值触发 V8 heap snapshot + Linux smaps_rollup 解析 + 内存增长率分析 → leak 建议。
 
@@ -67,9 +67,9 @@
 
 ---
 
-<a id="item-171"></a>
+<a id="item-4"></a>
 
-### 171. Feature Gates（P3）
+### 4. Feature Gates（P3）
 
 **思路**：GrowthBook 远程特性开关——A/B 测试 + 按事件动态采样。渐进式灰度发布。
 
@@ -87,9 +87,9 @@
 
 ---
 
-<a id="item-172"></a>
+<a id="item-5"></a>
 
-### 172. DXT/MCPB 插件包（P3）
+### 5. DXT/MCPB 插件包（P3）
 
 **思路**：`.dxt`/`.mcpb` 单文件打包 MCP 服务器 + 依赖。zip bomb 防护（512MB/文件、1GB 总量、50:1 压缩比）。
 
@@ -101,9 +101,9 @@
 
 ---
 
-<a id="item-173"></a>
+<a id="item-6"></a>
 
-### 173. /security-review（P3）
+### 6. /security-review（P3）
 
 **思路**：基于 git diff 的安全审查命令，聚焦 OWASP Top 10 漏洞检测。
 
@@ -115,9 +115,9 @@
 
 ---
 
-<a id="item-174"></a>
+<a id="item-7"></a>
 
-### 174. Ultraplan 远程计划探索（P3）
+### 7. Ultraplan 远程计划探索（P3）
 
 **思路**：启动远程 CCR 会话，用更强模型深度规划后回传结果。需云端执行基础设施。
 
@@ -129,9 +129,9 @@
 
 ---
 
-<a id="item-175"></a>
+<a id="item-8"></a>
 
-### 175. Advisor 顾问模型（P3）
+### 8. Advisor 顾问模型（P3）
 
 **思路**：`/advisor` 配置副模型（如更强模型）审查主模型输出。`server_tool_use` 方式自动调用。
 
@@ -149,9 +149,9 @@
 
 ---
 
-<a id="item-176"></a>
+<a id="item-9"></a>
 
-### 176. Vim 完整实现（P3）
+### 9. Vim 完整实现（P3）
 
 **思路**：完整 modal editing——motions + operators + text objects + transitions。4 文件结构。
 
@@ -171,9 +171,9 @@
 
 ---
 
-<a id="item-177"></a>
+<a id="item-10"></a>
 
-### 177. 语音模式（P3）
+### 10. 语音模式（P3）
 
 **思路**：push-to-talk 语音输入 + 流式 STT 转录。快捷键可通过 `keybindings.json` 重绑。
 
@@ -192,9 +192,9 @@
 
 ---
 
-<a id="item-178"></a>
+<a id="item-11"></a>
 
-### 178. 插件市场（P3）
+### 11. 插件市场（P3）
 
 **思路**：官方 marketplace 安装插件（hooks/commands/agents/MCP），安装状态追踪，自动更新。
 
