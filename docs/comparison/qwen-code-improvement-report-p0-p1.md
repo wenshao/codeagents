@@ -936,3 +936,114 @@
 **意义**：长任务代理可能需要多次交互——中途暂停后应能无缝续行。
 **缺失后果**：代理执行完即消失——"继续刚才的审查" 需要重新创建代理。
 **改进收益**：SendMessage 续行 = 代理保持完整上下文——随时继续未完成的工作。
+
+---
+
+<a id="item-136"></a>
+
+### 136. 系统提示模块化组装（P1）
+
+**思路**：系统提示由独立 section 组装而非单一字符串。每个 section 分为两类：① `systemPromptSection()`——缓存到 /clear 或 /compact，跨轮复用；② `DANGEROUS_uncachedSystemPromptSection(reason)`——每轮重新计算（日期、CWD、Git 状态等易变数据），显式标注原因。`SYSTEM_PROMPT_DYNAMIC_BOUNDARY` 标记静态/动态分界——分界前内容用 global scope 缓存，分界后不缓存。Section 异步解析通过 `Promise.all(resolveSystemPromptSections())` 并行。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `constants/systemPromptSections.ts` | `systemPromptSection()`（缓存）、`DANGEROUS_uncachedSystemPromptSection(reason)`（每轮重算） |
+| `utils/systemPrompt.ts` (L41-123) | `buildEffectiveSystemPrompt()` 5 级优先级组装 |
+| `constants/system.ts` | `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` 静态/动态分界标记 |
+| `bootstrap/state.ts` | `getSystemPromptSectionCache()` / `setSystemPromptSectionCacheEntry()` 缓存管理 |
+
+**Qwen Code 修改方向**：`getCoreSystemPrompt()` 返回单一 ~300 行字符串，无模块化。改进方向：① 拆分为独立 section（核心行为、工具指南、安全规则、环境信息等）；② 静态 section 跨轮缓存；③ 易变 section（日期/CWD/Git）每轮重算并标记 `uncached`；④ 分界标记控制缓存范围。
+
+**意义**：系统提示 ~20K tokens——每轮完整重新编码 = 首 token 延迟 + 缓存失效。
+**缺失后果**：单一字符串 = 任何微小变化（如 CWD 改变）导致整个系统提示缓存失效。
+**改进收益**：模块化 = 仅易变部分重算（~500 tokens），静态部分缓存命中（~19.5K tokens 省 90%+）。
+
+---
+
+<a id="item-137"></a>
+
+### 137. @include 指令与嵌套记忆自动发现（P1）
+
+**思路**：CLAUDE.md 支持 `@path` 语法引用外部文件——`@./relative`、`@~/home`、`@/absolute`。递归加载深度上限 5 层，防止循环引用（`processedPaths` Set 追踪）。更重要的是**嵌套记忆自动发现**：Agent 操作文件时，自动从 CWD 到目标文件路径遍历目录，加载沿途的 `.qwen/rules/*.md` 条件规则——实现"操作 src/utils/ 时自动注入 src 目录的编码规范"。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/claudemd.ts` (L451-535) | `extractIncludePathsFromTokens()` @include 路径提取 |
+| `utils/claudemd.ts` (L618-685) | `processMemoryFile()` 递归处理、`MAX_INCLUDE_DEPTH = 5` |
+| `utils/attachments.ts` (L1646-1862) | 嵌套记忆发现——文件操作触发目录遍历 + 3 阶段加载 |
+
+**Qwen Code 修改方向**：QWEN.md 无 @include、无嵌套发现。改进方向：① `@path` 语法解析——仅在叶文本节点处理（不影响代码块）；② `MAX_INCLUDE_DEPTH = 5` 防止递归爆炸；③ 文件操作时触发 `getNestedMemoryAttachmentsForFile(targetPath)`——从 CWD 到目标路径遍历，加载沿途 `.qwen/rules/*.md`。
+
+**意义**：大型项目不同目录有不同规范——`src/` 用 TypeScript，`docs/` 用 Markdown。
+**缺失后果**：所有规范堆在一个 QWEN.md 中 = token 浪费 + 规则互相冲突。
+**改进收益**：@include 拆分 + 嵌套发现 = 操作文件时自动注入该目录的规范——精准且省 token。
+
+---
+
+<a id="item-138"></a>
+
+### 138. 附件类型协议与令牌预算（P1）
+
+**思路**：40+ 种附件类型（文件/记忆/技能/IDE 诊断/MCP 资源/团队消息等）通过统一协议注入上下文。3 阶段有序执行：① 用户输入附件先完成（触发嵌套记忆）；② 线程附件并行处理；③ 主线程附件（IDE 上下文）。Per-type 令牌预算：记忆文件 200 行/4KB 上限，会话累计 60KB 上限。超限自动截断并附加 "Use FileRead to view complete file" 提示。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/attachments.ts` (3998行) | 40+ 附件类型定义、3 阶段执行、per-type 预算 |
+| `utils/attachments.ts` (L268-288) | `MAX_MEMORY_LINES = 200`、`MAX_MEMORY_BYTES = 4096`、`MAX_SESSION_BYTES = 60KB` |
+| `query.ts` (L1580-1643) | `getAttachmentMessages()` 附件收集编排 |
+
+**Qwen Code 修改方向**：上下文注入为简单字符串拼接（IDE 选区 + 文件内容 + @file 引用），无统一协议和预算。改进方向：① 定义 `AttachmentType` 枚举（file/memory/skill/diagnostic/mcp_resource 等）；② 每种类型有 token 预算上限；③ 附件收集按依赖关系分阶段执行（用户输入 → 线程级 → 主线程级）。
+
+**意义**：上下文由多种来源组成——无预算控制则某一来源可能独占整个窗口。
+**缺失后果**：一个 10KB 的 QWEN.md + 5KB IDE 诊断 = 15KB 上下文消耗，挤压工具结果空间。
+**改进收益**：per-type 预算 = 每种来源有上限——上下文分配公平且可控。
+
+---
+
+<a id="item-139"></a>
+
+### 139. Thinking 块跨轮保留与空闲清理（P1）
+
+**思路**：模型的 thinking 块在工具调用续行中**保留**（同一推理轨迹内），但空闲超过 1 小时后自动清理到仅保留最近 1 轮（`clear_thinking_20251015`）。清理通过 API `context_management` 参数实现——`keep: { type: 'thinking_turns', value: 1 }`。**Latch 机制**：一旦触发清理，永不回退——防止重新填充 thinking 导致已预热的缓存再次失效。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/api/apiMicrocompact.ts` (L25-40) | `clear_thinking_20251015` schema、空闲 1h 触发 |
+| `services/api/claude.ts` (L1446-1475) | `getThinkingClearLatched()` latch 机制——true 后永不回退 |
+| `utils/thinking.ts` (L10-13) | `ThinkingConfig` 类型：adaptive / enabled+budget / disabled |
+
+**Qwen Code 修改方向**：Anthropic 后端有 thinking budget（16K/32K/64K 按 effort），但无跨轮保留策略——每轮独立。改进方向：① thinking 块在 tool_use 续行中保留（不截断推理链）；② 空闲 >1h 后清理旧 thinking（保留最近 1 轮）；③ latch 防止清理后重新填充导致缓存失效。
+
+**意义**：Thinking 块可能消耗 10-60K tokens——不及时清理则挤占上下文。
+**缺失后果**：旧 thinking 块累积 = 上下文膨胀 → 更早触发压缩 → 信息丢失。
+**改进收益**：活跃时保留（推理连贯）+ 空闲后清理（释放空间）= 最优 thinking 利用率。
+
+---
+
+<a id="item-140"></a>
+
+### 140. 输出 Token 自适应升级（P1）
+
+**思路**：默认 8K 输出上限（slot-reservation cap，避免过度预留 GPU 资源）。当模型输出被 `max_tokens` 截断时（`stop_reason === 'max_tokens'`），自动升级到 64K 重试一次（`ESCALATED_MAX_TOKENS`）。环境变量 `CLAUDE_CODE_MAX_OUTPUT_TOKENS` 可覆盖默认值。99% 请求在 8K 内完成（BQ p99=4911 tokens），仅 <1% 需要升级。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/context.ts` (L14-25) | `CAPPED_DEFAULT_MAX_TOKENS = 8_000`、`ESCALATED_MAX_TOKENS = 64_000` |
+| `query.ts` (L1199-1217) | `max_tokens` 截断检测 → 单次升级重试 |
+| `services/api/claude.ts` (L3394-3419) | slot-reservation cap 逻辑（GrowthBook gate） |
+
+**Qwen Code 修改方向**：`maxOutputTokens` 固定（从 config 读取），截断后不重试。改进方向：① 默认 8K 输出上限（减少 GPU slot 浪费）；② `stop_reason === 'max_tokens'` 时自动升级到 64K 重试一次；③ 环境变量覆盖默认值。
+
+**意义**：99% 请求 <5K tokens 输出——32K/64K 默认值浪费 8× GPU 资源。
+**缺失后果**：固定 32K = 每次请求预留 32K slot——并发能力受限。
+**改进收益**：8K 默认 + 1% 升级 = GPU 利用率提升 4×，截断时自动恢复。

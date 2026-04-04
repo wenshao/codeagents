@@ -1772,3 +1772,109 @@
 **意义**：多代理协作需要通信——researcher 告诉 tester "结果在 path X"。
 **缺失后果**：代理间无通信 = 只能通过共享文件间接协作——脆弱且不可靠。
 **改进收益**：邮箱系统 = 结构化消息传递——代理间直接沟通、权限请求路由。
+
+---
+
+<a id="item-141"></a>
+
+### 141. cache_edits 增量缓存删除（P2）
+
+**思路**：Microcompact 清理旧工具结果时，不重建整个消息数组（会破坏 prompt cache），而是通过 API `cache_edits` 参数指定要删除的 `cache_reference`。服务端在缓存前缀上原地删除指定 block——缓存前缀不变，省去 ~20K tokens 的重新编码。`pinCacheEdits()` 追踪已发送的 edits 确保重发时不遗漏。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/compact/microCompact.ts` (L52-136) | `getPinnedCacheEdits()`、`consumePendingCacheEdits()`、`pinCacheEdits()` |
+| `services/api/claude.ts` (L3108-3161) | cache_edits block 插入 + `cache_reference` 去重 |
+
+**Qwen Code 修改方向**：压缩通过重新生成完整消息数组实现——每次压缩破坏缓存。改进方向：① 检测 API 是否支持 `cache_edits`（Anthropic API feature）；② 旧工具结果标记 `cache_reference = tool_use_id`；③ 清理时发送 `cache_edits: [{ type: 'delete', cache_reference }]` 而非重建消息。
+
+**意义**：Microcompact 每 3-5 轮触发一次——每次破坏缓存 = 重新编码 20K+ tokens。
+**缺失后果**：压缩 = 缓存失效 = 首 token 延迟翻倍 + 缓存写入费用。
+**改进收益**：cache_edits = 缓存前缀不变——压缩零延迟成本。
+
+---
+
+<a id="item-142"></a>
+
+### 142. 消息规范化与工具配对修复（P2）
+
+**思路**：发送 API 前规范化消息数组——① 合并连续 user 消息（API 要求 user/assistant 交替）；② 修复孤立 tool_use（无对应 tool_result 时注入合成错误结果）；③ 修复孤立 tool_result（引用不存在的 tool_use 时移除）；④ 超出 100 个媒体项时裁剪最老的图片/文档；⑤ 规范化工具输入 JSON 格式。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/messages.ts` (L1989+) | `normalizeMessagesForAPI()` 合并 + 过滤 + thinking 合并 |
+| `utils/messages.ts` (L1298-1301) | `ensureToolResultPairing()` 孤立 tool_use/result 修复 |
+| `utils/messages.ts` (L1308-1315) | `stripExcessMediaItems()` 100 媒体项上限裁剪 |
+
+**Qwen Code 修改方向**：`converter.ts` 在 Anthropic/OpenAI 间转换格式，`validateHistory()` 检查角色交替——但无配对修复和媒体裁剪。改进方向：① 合并连续同角色消息；② 检测孤立 tool_use → 注入 `[tool execution was interrupted]` 合成结果；③ 检测孤立 tool_result → 移除；④ 媒体项超 100 时裁剪最老的。
+
+**意义**：崩溃恢复、压缩后、长对话中容易出现消息不配对——API 会直接报错。
+**缺失后果**：孤立 tool_use = API 400 错误 = 对话中断。
+**改进收益**：自动配对修复 = API 永不因格式错误拒绝——对话不中断。
+
+---
+
+<a id="item-143"></a>
+
+### 143. Git 状态与仓库上下文自动注入（P2）
+
+**思路**：每轮 API 调用前自动收集 Git/仓库上下文注入系统提示——当前分支、工作目录、平台、文件数（四舍五入到 10 的幂保护隐私）。通过 `appendSystemContext()` 以 `<system-reminder>` 格式注入。不 spawn git 进程——直接读 `.git/HEAD` 和 refs。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `context.ts` | `getSystemContext()` 返回 gitStatus/cwd/platform dict |
+| `utils/api.ts` (L437-447) | `appendSystemContext()` 以 `<system-reminder>` 注入 |
+
+**Qwen Code 修改方向**：`getEnvironmentContext()` 仅注入平台和日期；Git 分支仅 VSCode 插件通过 `useGitBranchName` 提供。改进方向：① `getSystemContext()` 收集 gitBranch + cwd + platform + fileCount；② 每轮 `appendSystemContext()` 注入；③ fileCount 四舍五入保护隐私。
+
+**意义**：模型需要知道项目上下文才能做出正确决策——"这是 monorepo 还是小项目？哪个分支？"
+**缺失后果**：模型不知道当前分支——可能建议在 main 上直接提交。
+**改进收益**：自动注入 = 模型始终知道当前分支/目录/项目规模——决策更准确。
+
+---
+
+<a id="item-144"></a>
+
+### 144. IDE 上下文注入与嵌套记忆触发（P2）
+
+**思路**：IDE 伴侣（VS Code 等）注入 3 种上下文：① 选区内容（行号+文件名+代码）；② 打开文件列表；③ 诊断信息（错误/警告）。关键特性：IDE 选区和打开文件自动触发**嵌套记忆发现**——从文件路径向上遍历查找 `.qwen/rules/*.md`，注入该目录的编码规范。诊断信息来自 MCP + 被动 LSP 两个来源，交付后清除防止重复。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/attachments.ts` (L1614-1892) | IDE selection → `getNestedMemoryAttachmentsForFile()` 嵌套记忆触发 |
+| `utils/attachments.ts` (L2865-2916) | MCP diagnostics + LSP diagnostics 收集与交付后清除 |
+
+**Qwen Code 修改方向**：IDE 伴侣提供选区/光标/打开文件，但不触发嵌套记忆。改进方向：① IDE 选区附件处理时调用 `getNestedMemoryForFile(filePath)` 查找该目录的 rules；② 诊断信息从 MCP + LSP 双源收集，交付后标记已读。
+
+**意义**：用户在 IDE 中选择代码后切到 Agent——Agent 应该自动知道该文件的编码规范。
+**缺失后果**：选择 TypeScript 代码但 Agent 不知道项目的 TS 规范——可能用错风格。
+**改进收益**：IDE 选区 → 自动注入目录规范 = 无需用户手动指定。
+
+---
+
+<a id="item-145"></a>
+
+### 145. 图片压缩多策略流水线（P2）
+
+**思路**：图片进入上下文前经过多策略压缩流水线——① 检测格式（magic bytes 识别 PNG/JPEG/GIF/WebP）；② 尺寸约束（max width × height，保持宽高比）；③ 格式特定压缩（PNG palette=true + compression=9，JPEG quality=80/60/40/20 阶梯）；④ 尺寸不够再 resize（75%/50%/25% 逐步缩小）；⑤ 最后手段 1000×1000 + JPEG quality=20；⑥ 每次操作必须创建新 Sharp 实例（复用 bug）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/imageResizer.ts` | 多策略压缩流水线、`compressImageBufferWithTokenLimit()` token→bytes 换算 |
+| `constants/apiLimits.ts` | `API_IMAGE_MAX_BASE64_SIZE` base64 上限 |
+
+**Qwen Code 修改方向**：`imageTokenizer.ts` 仅计算 token 数（28×28 像素 = 1 token），不做实际压缩/resize。改进方向：① 发送前检查图片 base64 大小是否超限；② 超限时用 sharp 库按 quality 阶梯压缩；③ 仍超限则逐步 resize；④ token 预算转换：`maxBytes = (maxTokens / 0.125) * 0.75`。
+
+**意义**：截图/设计稿常超过 API base64 上限——直接发送 = 被拒绝。
+**缺失后果**：大图片 = API 报错 = 用户需手动压缩再粘贴。
+**改进收益**：自动压缩流水线 = 任何图片自动适配 API 限制——粘贴即用。
