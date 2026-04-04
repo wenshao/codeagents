@@ -770,3 +770,24 @@
 **意义**：与外部服务（GitHub/Slack/Linear）的集成需要 OAuth 管理。
 **缺失后果**：手动配置 token + 手动刷新——容易过期。
 **改进收益**：托管式 OAuth——一键连接，自动刷新，401 自动重试。
+
+---
+
+<a id="item-70"></a>
+
+### 70. MCP Auto-Reconnect（P2）
+
+**思路**：MCP 服务器连接不稳定（网络抖动、服务重启）时自动重连——连续 3 次错误后关闭连接并重建。SSE 传输层内置重连（maxRetries: 2），session 过期（404）时自动刷新。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/mcp/client.ts` (L1225-L1357) | `MAX_ERRORS_BEFORE_RECONNECT = 3`、`consecutiveConnectionErrors` 计数、SSE reconnection exhausted 检测 |
+| `services/mcp/types.ts` (L211) | `reconnectAttempt?: number` |
+
+**Qwen Code 修改方向**：`mcp-client.ts` 的 `McpClient` 类新增 `consecutiveErrors` 计数；`onError` 回调中累计错误数，达到 3 次时 `close()` + 重新 `connect()`。
+
+**意义**：MCP 工具是 Agent 扩展能力的核心——连接中断会导致 Agent 丧失关键工具能力。
+**缺失后果**：MCP 服务器短暂不可用 → Agent 整个 session 的 MCP 工具失效——需手动重启。
+**改进收益**：瞬态故障自动恢复——用户无感知，Agent 持续使用 MCP 工具。
