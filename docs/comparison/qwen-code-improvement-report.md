@@ -93,6 +93,13 @@
 | **P2** | 权限对话框文件预览 — 审批时展示文件内容 + 语法高亮 + 上下文说明 [↓](./qwen-code-improvement-report-p2.md#item-78) | 缺失 | 中 | — |
 | **P2** | Token 使用实时警告 — 显示 token 用量 + 压缩进度 + 错误计数 [↓](./qwen-code-improvement-report-p2.md#item-79) | 仅基础显示 | 小 | — |
 | **P2** | 快捷键提示组件 — UI 全局统一显示当前操作的键盘快捷方式 [↓](./qwen-code-improvement-report-p2.md#item-80) | 缺失 | 小 | — |
+| **P2** | 终端完成通知 — 后台任务完成时 iTerm2/Kitty/Ghostty OSC 通知 + 进度百分比 [↓](./qwen-code-improvement-report-p2.md#item-81) | 仅 bell | 小 | — |
+| **P2** | Spinner 工具名 + 计时 — 显示"正在执行 Bash(npm test) · 15s"而非通用 spinner [↓](./qwen-code-improvement-report-p2.md#item-82) | 通用 Responding | 小 | — |
+| **P2** | /rewind 检查点回退 — 会话内代码 + 对话恢复到之前的检查点 [↓](./qwen-code-improvement-report-p2.md#item-83) | 缺失 | 中 | — |
+| **P2** | /copy OSC 52 剪贴板 — 复制代码块到剪贴板，OSC 52 + temp 文件回退 [↓](./qwen-code-improvement-report-p2.md#item-84) | 缺失 | 小 | — |
+| **P2** | 首次运行引导向导 — 主题/认证/API Key/安全/终端设置多步引导 [↓](./qwen-code-improvement-report-p2.md#item-85) | 缺失 | 中 | — |
+| **P2** | /doctor 诊断工具 — 系统环境检查（git/node/shell/权限/代理）[↓](./qwen-code-improvement-report-p2.md#item-86) | 缺失 | 小 | — |
+| **P2** | 结构化 Diff 渲染 — Rust NAPI 快速着色 + 行号 gutter + 语法高亮 [↓](./qwen-code-improvement-report-p2.md#item-87) | 基础 inline diff | 中 | — |
 | **P1** | Structured Output — `--json-schema` 强制 JSON Schema 验证输出 [↓](./qwen-code-improvement-report-p0-p1.md#item-17) | 缺失 | 小 | — |
 | **P1** | Agent SDK 增强 — Python SDK + 流式回调 + 工具审批回调（Qwen 仅 TS SDK）[↓](./qwen-code-improvement-report-p0-p1.md#item-18) | 仅 TypeScript SDK | 中 | — |
 | **P1** | Bare Mode — `--bare` 跳过所有自动发现，CI/脚本最快启动 [↓](./qwen-code-improvement-report-p0-p1.md#item-19) | 缺失 | 小 | — |
