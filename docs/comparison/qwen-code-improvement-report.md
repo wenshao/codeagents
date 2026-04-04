@@ -133,8 +133,8 @@
 
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
-| [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（Mid-Turn Drain、压缩、Fork、记忆、并行等） | 22 |
-| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Shell 安全、MDM、Computer Use、Deep Link 等） | 37 |
+| [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（Mid-Turn Drain、压缩、Fork、记忆、并行、Ghost Text 等） | 23 |
+| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Shell 安全、MDM、Computer Use、终端渲染、/rewind 等） | 53 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结

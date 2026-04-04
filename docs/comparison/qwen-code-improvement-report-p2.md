@@ -827,7 +827,7 @@
 
 ### 72. Output Token 升级重试（P2）
 
-**思路**：首次请求用保守的 `max_output_tokens = 8,000`（BQ p99 仅 4,911 tokens）。如果 `stop_reason === 'max_tokens'`，自动用 64,000 重试一次——避免默认预留过多槽位。
+**思路**：首次请求用保守的 `max_output_tokens = 8_000`（BQ p99 仅 4911 tokens）。如果 `stop_reason === 'max_tokens'`，自动用 `64_000` 重试一次——避免默认预留过多槽位。
 
 **Claude Code 源码索引**：
 
