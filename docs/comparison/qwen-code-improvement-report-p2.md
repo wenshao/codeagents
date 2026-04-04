@@ -1986,3 +1986,132 @@
 **意义**：10 个并发 MCP 工具刷新 → 无去重 = 10 次相同 API 调用。
 **缺失后果**：冷启动雪崩——高并发场景 N× 重复网络请求。
 **改进收益**：inFlight 去重 = 1 次调用，N-1 次等待——网络开销减少 90%。
+
+---
+
+<a id="item-151"></a>
+
+### 151. 正则表达式编译缓存（P2）
+
+**思路**：Hook 事件匹配中 `new RegExp(matcher)` 每次调用都重新编译——应缓存到 `Map<string, RegExp>` 中复用。LS 工具 glob→regex 转换同理。编译一次复用 N 次，Hook 每轮触发数十次。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| 多处 | 正则模式在模块作用域预编译（如 `const PATTERN = /regex/`） |
+
+**Qwen Code 修改方向**：`hookPlanner.ts` (L152, L169) 每次 `new RegExp(matcher)` 重新编译；`ls.ts` (L98-102) 每文件重新编译 glob regex。改进方向：① `regexCache: Map<string, RegExp>` 缓存编译结果；② LS 工具 glob→regex 编译一次后复用；③ 可选 LRU 上限（1000 条）防止长会话内存增长。
+
+**意义**：Hook 匹配是每次工具调用的热路径——数百次重复编译浪费 CPU。
+**缺失后果**：每次工具调用 × 每个 hook matcher × new RegExp = 无谓 CPU 开销。
+**改进收益**：编译缓存 = 首次编译后 O(1) 查找——热路径 CPU 降低 90%。
+
+---
+
+<a id="item-152"></a>
+
+### 152. 搜索结果流式解析与提前终止（P2）
+
+**思路**：ripgrep 输出不应 `split('\n')` 全量加载后再过滤，而应流式逐行解析——边读边去重边截断。配合 `--max-count` 参数让 ripgrep 在达到限制后提前退出（避免搜索完整个代码库后只取前 100 行）。流式计数文件数时仅统计换行字节，不实际存储路径字符串。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/ripgrep.ts` (L246-279) | `countFilesRoundedRg()` 流式计数——仅统计换行字节，不存路径 |
+| `utils/ripgrep.ts` (L295-343) | `ripGrepStream()` 流式回调——每 chunk 调用 `onLines()` |
+| `utils/ripgrep.ts` (L108-232) | `MAX_BUFFER_SIZE = 20MB` 截断防止内存爆炸 |
+
+**Qwen Code 修改方向**：`ripGrep.ts` (L109) `rawOutput.split('\n').filter(...)` 全量加载；`grep.ts` (L203-209) 字符串拼接 `grepOutput += ...` 在循环中。改进方向：① ripgrep 结果用流式 `onData` 回调逐行处理；② 字符串拼接改为 `array.push()` + `join()`；③ 传 `--max-count` 参数提前终止大搜索。
+
+**意义**：大型代码库搜索可能返回 10 万+ 行——全量 split 创建 10 万个字符串对象。
+**缺失后果**：split('\n') + filter + deduplicate = 3× O(n) 内存 + GC 压力。
+**改进收益**：流式解析 = O(1) 内存（逐行处理）；--max-count = 搜索提前终止。
+
+---
+
+<a id="item-153"></a>
+
+### 153. React.memo 自定义相等性优化（P2）
+
+**思路**：终端 UI 消息列表的每条消息用 `React.memo` + 自定义 `arePropsEqual` 防止不必要重渲染。击键事件触发父组件状态更新——无 memo 时整个消息列表重渲染（500ms+ 延迟）。自定义比较器仅检查消息 ID 和内容变化，忽略回调函数引用变化。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/Message.tsx` (L626) | `React.memo` + `areMessagePropsEqual` 自定义比较 |
+| `components/Messages.tsx` (L730-741) | 消息列表 `React.memo` 防止结构未变时重渲染 |
+| `components/messages/UserPromptMessage.tsx` (L23-48) | `React.memo` 防止击键 500ms+ 延迟 |
+
+**Qwen Code 修改方向**：`useGeminiStream.ts` 有 useMemo/useCallback，但消息列表组件（`MessageList.tsx`）和单条消息组件是否有 React.memo 需确认。改进方向：① 消息组件加 `React.memo(MessageComponent, arePropsEqual)`；② `arePropsEqual` 仅比较 `message.id` + `message.content` 变化；③ `useCallback` 包裹所有传给子组件的回调。
+
+**意义**：终端 UI 渲染是主线程热路径——不必要重渲染 = 击键延迟。
+**缺失后果**：100 条历史消息 × 每次击键全部重渲染 = 明显卡顿。
+**改进收益**：React.memo = 仅变化的消息重渲染——击键延迟从 500ms 降到 <16ms。
+
+---
+
+<a id="item-154"></a>
+
+### 154. Bun 原生 API 性能优化（P2）
+
+**思路**：3 个 Bun 原生 API 替代纯 JS 实现——① `Bun.stringWidth` 原生字符串宽度计算（50-100× 快于 JS，终端渲染热路径 ~100K 调用/帧）；② `Bun.JSONL.parseChunk` 流式 JSONL 解析（无需全量 split，减少内存拷贝）；③ `Bun.spawn` 的 `argv0` 参数实现单二进制多工具调度（嵌入式 ripgrep 无需 fork 系统二进制）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `ink/stringWidth.ts` (L213-222) | 模块作用域 Bun.stringWidth 解析——避免热路径 typeof 检查 |
+| `utils/json.ts` (L94-127) | `Bun.JSONL.parseChunk` 流式 JSONL 解析 + 非 Bun 回退 |
+| `utils/ripgrep.ts` (L562-567) | `Bun.spawn` argv0 dispatch 嵌入式 ripgrep |
+
+**Qwen Code 修改方向**：使用 Node.js 标准 API（`string-width` npm 包、`JSON.parse` 逐行、`execFile` 子进程）。改进方向：① 检测 Bun 运行时时使用原生 API（条件导入）；② 非 Bun 环境保持现有实现作为回退；③ stringWidth 结果模块作用域缓存（避免重复 typeof 检查）。
+
+**意义**：字符串宽度计算是终端渲染最热的函数——每帧调用 10 万次。
+**缺失后果**：JS 实现 = 每帧 10-50ms 用于宽度计算——60fps 渲染预算仅 16ms。
+**改进收益**：Bun 原生 = 0.1-0.5ms/帧——渲染预算充裕。
+
+---
+
+<a id="item-155"></a>
+
+### 155. 终端行宽缓存与 Blit 屏幕 Diff（P2）
+
+**思路**：① 行宽缓存：已完成的行（不再变化）的 stringWidth 结果缓存到 4096-entry LRU——流式输出场景减少 50× stringWidth 调用；② Blit 屏幕 diff：未变化的子树从上一帧直接 block-transfer（blit），仅对 damage region 内的 cell 逐个 diff。滚动时用 `shiftRows()` 原地移动 prev screen 行，再 diff 差异。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `ink/line-width-cache.ts` | 4096-entry 行宽 LRU 缓存——完成行不再计算 |
+| `ink/output.ts` (L208-384) | Blit 屏幕 diff——未变化区域直接复制 + damage tracking |
+| `ink/render-node-to-output.ts` (L508-522) | `hasRemovedChild` 禁用 blit（防止删除元素残留） |
+
+**Qwen Code 修改方向**：使用 Ink 标准渲染——每帧完整重算布局和宽度。改进方向：① 代码高亮/diff 渲染行添加行级缓存（内容不变则复用上次渲染结果）；② 长输出滚动时仅更新新增行，不重绘已有行。
+
+**意义**：流式输出 1000 行——每帧只新增 1 行，但无缓存时重算 1000 行宽度。
+**缺失后果**：O(total_lines) 每帧 vs O(new_lines) 每帧——1000× 性能差距。
+**改进收益**：行宽缓存 + blit diff = 仅新增/变化行参与计算——渲染帧率稳定 60fps。
+
+---
+
+<a id="item-156"></a>
+
+### 156. 编译时特性门控与死代码消除（P2）
+
+**思路**：`feature('FLAG_NAME')` 在编译时求值——Bun 构建器将未启用的特性分支完全移除（dead code elimination）。运行时零成本：不检查 flag，不加载代码，不占 bundle 体积。用于：调试日志、内部工具、实验性功能、平台特定代码。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/slowOperations.ts` (L157) | `feature('SLOW_OPERATION_LOGGING')` 编译时消除调试日志 |
+| `tools.ts` | `feature('PROACTIVE')`, `feature('COORDINATOR_MODE')` 等条件工具加载 |
+
+**Qwen Code 修改方向**：使用运行时环境变量（`process.env.DEBUG`）控制特性——未使用的代码仍在 bundle 中。改进方向：① 定义编译时常量（如 `__DEV__`、`__INTERNAL__`）；② 构建工具（esbuild/rollup）配置 `define` 替换；③ 调试日志、内部工具包裹在 `if (__DEV__)` 中——生产构建自动消除。
+
+**意义**：调试代码占 bundle 5-10%——生产环境不需要但仍加载和解析。
+**缺失后果**：运行时 flag 检查 = 每次调用多一个 if 分支 + 调试模块仍占内存。
+**改进收益**：编译时消除 = 零运行时成本——bundle 更小、启动更快、内存更少。

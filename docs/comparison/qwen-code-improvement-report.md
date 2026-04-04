@@ -176,6 +176,12 @@
 | **P2** | 终端渲染字符串池化 — CharPool/StylePool 整数 ID 替代字符串 [↓](./qwen-code-improvement-report-p2.md#item-137) | Ink 标准渲染 | 小 | — |
 | **P2** | 文件描述符与句柄追踪 — >100 handles / >500 fd 预警 [↓](./qwen-code-improvement-report-p2.md#item-138) | 无追踪 | 小 | — |
 | **P2** | Memoization 冷启动去重 — inFlight Map + TTL 后台刷新 + identity guard [↓](./qwen-code-improvement-report-p2.md#item-139) | 无去重 | 小 | — |
+| **P2** | 正则表达式编译缓存 — Hook/LS 热路径 new RegExp 缓存到 Map [↓](./qwen-code-improvement-report-p2.md#item-151) | 每次重新编译 | 小 | — |
+| **P2** | 搜索结果流式解析 — 流式逐行处理 + --max-count 提前终止 [↓](./qwen-code-improvement-report-p2.md#item-152) | split('\n') 全量加载 | 小 | — |
+| **P2** | React.memo 自定义相等性 — 消息组件防止击键重渲染（500ms→16ms）[↓](./qwen-code-improvement-report-p2.md#item-153) | 需确认覆盖度 | 小 | — |
+| **P2** | Bun 原生 API 优化 — stringWidth/JSONL.parseChunk/argv0 dispatch [↓](./qwen-code-improvement-report-p2.md#item-154) | Node.js 标准 API | 小 | — |
+| **P2** | 行宽缓存与 Blit 屏幕 Diff — 4096-LRU + 未变化区域直接复制 [↓](./qwen-code-improvement-report-p2.md#item-155) | 每帧完整重算 | 中 | — |
+| **P2** | 编译时特性门控 — feature() 编译求值 + 死代码消除 [↓](./qwen-code-improvement-report-p2.md#item-156) | 运行时 env 检查 | 小 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-140) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-141) | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3.md#item-142) | 缺失 | 中 | — |
@@ -197,7 +203,7 @@
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
 | [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（系统提示模块化、@include、附件协议、Thinking 管理等） | 46 |
-| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（cache_edits、WeakRef、环形缓冲、字符串池化、fd 追踪等） | 93 |
+| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（cache_edits、正则缓存、React.memo、行宽缓存、编译时门控等） | 99 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结
