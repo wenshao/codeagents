@@ -124,6 +124,24 @@
 | **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-85) | 基础 vim.ts | 中 | — |
 | **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-86) | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-87) | 缺失 | 大 | — |
+| **P1** | 流式工具执行流水线 — API 流式返回 tool_use 时立即开始执行，不等完整响应 [↓](./qwen-code-improvement-report-p0-p1.md#item-88) | 等完整响应后执行 | 中 | — |
+| **P2** | MCP 并行连接 — pMap 动态插槽调度 + 双层并发（local:3/remote:20）[↓](./qwen-code-improvement-report-p2.md#item-89) | 已并行但无并发上限 | 小 | — |
+| **P2** | 插件/Skill 并行加载 — marketplace + session 双源并行 + 目录检查并行 [↓](./qwen-code-improvement-report-p2.md#item-90) | 顺序 for 循环 | 小 | — |
+| **P1** | 文件读取缓存 + 批量并行 I/O — 1000 条 LRU + mtime 失效 + 32 批并行 [↓](./qwen-code-improvement-report-p0-p1.md#item-91) | 无缓存，顺序读取 | 小 | — |
+| **P2** | Speculation 流水线建议 — 投机完成后立即并行生成下一建议 [↓](./qwen-code-improvement-report-p2.md#item-92) | 每次重新生成 | 小 | — |
+| **P1** | 记忆/附件异步预取 — 工具执行期间并行搜索相关记忆 [↓](./qwen-code-improvement-report-p0-p1.md#item-93) | 无预取 | 中 | — |
+| **P1** | Token Budget 续行与自动交接 — 90% 续行 + 递减检测 + 分层压缩回退 [↓](./qwen-code-improvement-report-p0-p1.md#item-94) | 70% 一次性压缩 | 中 | — |
+| **P2** | 写穿缓存与 TTL 后台刷新 — stale-while-revalidate + LRU 有界缓存 [↓](./qwen-code-improvement-report-p2.md#item-95) | 无通用缓存模式 | 小 | — |
+| **P2** | 上下文收集并行化 — 多源附件 Promise.all 并行获取（~20 并发）[↓](./qwen-code-improvement-report-p2.md#item-96) | 串行追加 | 小 | — |
+| **P2** | 输出缓冲与防阻塞渲染 — setImmediate 延迟写入 + 内存缓冲 [↓](./qwen-code-improvement-report-p2.md#item-97) | 直接 appendFileSync | 小 | — |
+| **P2** | LSP 服务器并行启动 — Promise.all 并行启动 + Promise.race 端口探测 [↓](./qwen-code-improvement-report-p2.md#item-98) | 顺序 for 循环 | 小 | — |
+| **P1** | 同步 I/O 异步化 — readFileSync/statSync 替换为 async，解阻塞事件循环 [↓](./qwen-code-improvement-report-p0-p1.md#item-99) | 多处 readFileSync | 中 | — |
+| **P1** | Prompt Cache 分段与工具稳定排序 — static/dynamic 分界 + 内置工具前缀 + schema 锁定 [↓](./qwen-code-improvement-report-p0-p1.md#item-100) | 无分段缓存 | 中 | — |
+| **P2** | 请求合并与去重 — 1-in-flight + 1-pending + BoundedUUIDSet + inFlight 去重 [↓](./qwen-code-improvement-report-p2.md#item-101) | 无合并机制 | 中 | — |
+| **P2** | 延迟初始化与按需加载 — lazySchema + 动态 import() + 延迟预取 [↓](./qwen-code-improvement-report-p2.md#item-102) | 全量同步加载 | 小 | — |
+| **P2** | 流式超时检测与级联取消 — 90s 空闲看门狗 + siblingAbortController 级联 [↓](./qwen-code-improvement-report-p2.md#item-103) | 固定超时/无级联 | 小 | — |
+| **P2** | Git 文件系统直读 — .git/HEAD+refs 直读 + 批量 check-ignore + LRU 缓存 [↓](./qwen-code-improvement-report-p2.md#item-104) | 每次 spawn git | 小 | — |
+| **P2** | 设置/Schema 缓存防抖动 — 3 层设置缓存 + schema 首次锁定 + parse 去重 [↓](./qwen-code-improvement-report-p2.md#item-105) | 每次重新读取解析 | 小 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
@@ -133,8 +151,8 @@
 
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
-| [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（Mid-Turn Drain、压缩、Fork、记忆、并行、Ghost Text 等） | 23 |
-| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Shell 安全、MDM、Computer Use、终端渲染、/rewind 等） | 53 |
+| [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（Mid-Turn Drain、压缩、Fork、流式执行、文件缓存、Prompt Cache 等） | 29 |
+| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Shell 安全、MDM、MCP 并行、级联取消、Git 直读等） | 65 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结
@@ -164,6 +182,17 @@
 | 并发 Session | 多终端 PID 追踪 + 后台脱附 | 无 | 缺失 | — |
 | Git Diff 统计 | 结构化 diff + 按文件统计 | 无 git-aware stats | 中等差距 | — |
 | 文件历史快照 | per-file SHA256 + 按消息恢复 | checkpoint（git 级） | 小差距 | — |
+| **流式工具执行** | StreamingToolExecutor 流水线 | 等完整响应 | 显著落后 | — |
+| **文件读取缓存** | FileReadCache 1000 LRU + 批量并行 | 无缓存/顺序读取 | 显著落后 | — |
+| **记忆异步预取** | Memory prefetch + skill prefetch | 无 | 缺失 | — |
+| **Token Budget 续行** | 90% 续行 + 递减检测 + 分层回退 | 70% 一次性压缩 | 中等差距 | — |
+| **MCP 动态插槽** | pMap + dual-tier concurrency | 无并发限制 | 小差距 | — |
+| **通用缓存模式** | memoizeWithTTL + memoizeWithLRU | 仅搜索缓存 | 中等差距 | — |
+| **同步 I/O** | 绝大多数 async | 多处 readFileSync | 显著落后 | — |
+| **Prompt Cache** | 分段 + schema 锁定 + 缓存失效检测 | 无分段 | 显著落后 | — |
+| **请求合并** | coalescing + BoundedUUIDSet | 无 | 缺失 | — |
+| **延迟初始化** | lazySchema + 延迟 import + 延迟预取 | 全量同步加载 | 中等差距 | — |
+| **Git 直读** | .git/HEAD+refs 直读 + LRU | spawn git | 中等差距 | — |
 | Session Ingress Auth | bearer token 远程认证 | 无 | 缺失 | — |
 | Computer Use | macOS 桌面自动化 | 无 | 缺失 | — |
 | Deep Link | `claude-cli://` URI scheme | 无 | 缺失 | — |
