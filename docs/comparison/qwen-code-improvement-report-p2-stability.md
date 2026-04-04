@@ -579,6 +579,26 @@
 
 ---
 
+<a id="item-35"></a>
+
+### 35. 系统提示危险操作行为指导（P2）
+
+**思路**：在系统提示中向模型提供分层的危险操作行为指导——① 总原则："评估可逆性和影响范围，高风险操作必须先确认"；② 4 类危险操作具体列举（破坏性操作/难以逆转操作/影响共享状态操作/第三方上传）；③ 行为准则："不要用破坏性操作作为捷径"、"调查后再删除/覆盖"、"解决冲突而非丢弃变更"、"measure twice, cut once"；④ 审批范围限定："一次审批不等于所有场景的永久授权"。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `constants/prompts.ts` (L255-267) | `getActionsSection()` — "Executing actions with care" 完整行为指导 |
+
+**Qwen Code 修改方向**：`prompts.ts` (L316) 仅 "Never push changes to a remote repository without being asked explicitly by the user"——一条规则，无分层指导。改进方向：① 新增 `getActionsSection()` 系统提示段，列举 4 类危险操作（force-push/reset --hard/rm -rf/DROP TABLE/kubectl delete 等）；② 行为准则：不绕过安全检查（--no-verify）、调查异常状态而非直接删除、解决冲突而非丢弃；③ 审批范围："用户批准一次 git push 不等于批准所有 push"；④ 终端焦点感知："用户不在时更自主，但仍对不可逆操作暂停"。
+
+**意义**：模型行为受系统提示引导——无指导则模型可能选择"最省事"的破坏性路径。
+**缺失后果**：模型遇到合并冲突 → 直接 `git checkout --theirs .` 丢弃所有本地变更。
+**改进收益**：行为指导 = 模型优先选择安全路径——resolve > discard，investigate > delete。
+
+---
+
 <a id="item-28"></a>
 
 ### 28. Unicode 净化与 ASCII 走私防御（P2）
