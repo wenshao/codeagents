@@ -2397,3 +2397,25 @@
 **意义**：CI pipeline 依赖退出码判断成功/失败——语义不清 = 错误的 pipeline 决策。
 **缺失后果**：Hook 验证失败但退出码 0 = CI 误认为成功。
 **改进收益**：标准化退出码 + Hook 唤醒 = CI 精确判断 + Agent 自动响应验证失败。
+
+---
+
+<a id="item-171"></a>
+
+### 171. 破坏性命令警告系统（P2）
+
+**思路**：在权限审批对话框中对 8 种高风险 git/shell 操作显示具体风险说明——`git push --force`（"可能覆盖远程历史"）、`git reset --hard`（"丢弃未提交变更"）、`git clean -f`（"永久删除未跟踪文件"）、`git checkout .`/`git restore .`（"丢弃工作树变更"）、`git stash drop/clear`（"永久删除暂存"）、`git branch -D`（"强制删除分支"）、`--no-verify`（"跳过安全钩子"）、`git commit --amend`（"改写最后一次提交"）。用户看到风险说明后做出知情审批决策。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `tools/BashTool/destructiveCommandWarning.ts` | 8 种 regex 模式 + 对应警告文字 |
+| `tools/PowerShellTool/destructiveCommandWarning.ts` (L64) | PowerShell 版本（case-insensitive） |
+| `components/permissions/BashPermissionRequest/BashPermissionRequest.tsx` (L274) | 警告文字在权限对话框中显示 |
+
+**Qwen Code 修改方向**：`shellReadOnlyChecker.ts` 将 `git push` 归为非 read-only（需审批），但不提供操作级别风险说明。改进方向：① 新建 `destructiveCommandWarning.ts`——8 种 regex 模式匹配危险 flag；② 权限对话框中显示具体警告文字（"Note: may overwrite remote history"）；③ 系统提示中明确列出 force-push 等为"难以逆转的操作"。
+
+**意义**：用户审批"git push --force"时只知道"这是写操作"——不知道具体风险。
+**缺失后果**：用户盲目批准 force push = 远程历史被覆盖——无法恢复。
+**改进收益**：风险说明 = 用户看到"可能覆盖远程历史"后谨慎决策——避免数据丢失。
