@@ -885,8 +885,6 @@
 
 ---
 
----
-
 <a id="item-65"></a>
 
 ### 65. 目录/文件路径补全（P2）
@@ -1129,3 +1127,268 @@
 **意义**：Diff 是用户审查 Agent 变更的核心界面——可读性直接影响审查质量。
 **缺失后果**：基础 inline diff 在大变更时难以阅读——用户可能遗漏关键修改。
 **改进收益**：行号 + 着色 + gutter——变更一目了然，审查效率提升。
+
+---
+
+<a id="item-89"></a>
+
+### 89. MCP 并行连接 — 动态插槽调度 + 双层并发（P2）
+
+**思路**：MCP 服务器分两组并行初始化——本地（stdio/sdk，并发 3）和远程（sse/http/ws，并发 20），`Promise.all()` 同时启动两组。关键优化：用 `pMap` 动态插槽调度替代固定批次——一个慢服务器只占一个插槽，不阻塞整批。工具/命令/资源获取也并行（`Promise.all([fetchTools, fetchCommands, fetchResources])`）。LRU 缓存（20 条）避免重复获取。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/mcp/client.ts` (L2226-2403) | `getMcpToolsCommandsAndResources()` 双组并行、`processBatched()` pMap 动态调度 |
+| `services/mcp/client.ts` (L552-560) | `getMcpServerConnectionBatchSize() = 3`、`getRemoteMcpServerConnectionBatchSize() = 20` |
+| `services/mcp/client.ts` (L2171-2178) | `Promise.all([fetchTools, fetchCommands, fetchSkills, fetchResources])` |
+| `services/mcp/client.ts` (L1726) | `MCP_FETCH_CACHE_SIZE = 20` LRU 缓存 |
+| `services/mcp/client.ts` (L595) | `connectToServer = memoize(...)` 连接记忆化 |
+
+**Qwen Code 修改方向**：`mcp-client-manager.ts` 已用 `Promise.all(discoveryPromises)` 并行初始化，但无并发上限控制——10 个 stdio 服务器同时 spawn 可能耗尽进程资源。无工具/资源并行获取，无 LRU 缓存。改进方向：① `McpClientManager.initializeAllClients()` 分 local/remote 两组，用 `p-limit` 控制并发上限（local:3, remote:20）；② `McpClient.discover()` 内部用 `Promise.all([tools, commands, resources])` 并行获取；③ 工具列表加 LRU 缓存，reconnect 时清除。
+
+**意义**：企业环境配置 10+ MCP 服务器——启动时全部 spawn 可能 fork bomb。
+**缺失后果**：无并发限制 = 进程资源争抢；固定批次 = 一个慢服务器阻塞整批。
+**改进收益**：动态插槽 + 双层并发——启动快且资源可控；LRU 缓存避免重复获取。
+
+---
+
+<a id="item-90"></a>
+
+### 90. 插件/Skill 并行加载与启动缓存（P2）
+
+**思路**：3 层并行——① marketplace 插件 + session 插件 `Promise.all()` 并行加载；② 每个插件内部 commands/agents/hooks 目录存在检查 `Promise.all([pathExists(commandsDir), pathExists(agentsDir), pathExists(hooksDir)])`；③ 加载结果缓存，热重载时仅增量更新变更的插件。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/plugins/pluginLoader.ts` (L3165) | `Promise.all([marketplaceResult, sessionResult])` 双源并行 |
+| `utils/plugins/pluginLoader.ts` (L1374-1386) | `Promise.all([commandsDirExists, agentsDirExists, skillsDirExists, outputStylesDirExists])` 4 目录检查并行 |
+| `utils/plugins/pluginLoader.ts` (L1962) | `Promise.allSettled(plugins.map(...))` marketplace 并行加载 |
+
+**Qwen Code 修改方向**：`skill-manager.ts` 用 `for` 循环顺序扫描 skill 目录 + 顺序读取 manifest 文件；`extensionManager.ts` 顺序加载 MCP/skills/subagents/hooks。改进方向：① `loadSkillsFromDir()` 改为 `Promise.all(entries.map(readManifest))`；② `extensionManager.ts` 中 MCP 初始化与 skill/hook 加载 `Promise.all()` 并行（无依赖关系）；③ 加载结果存入 Map 缓存，`/reload` 时仅重新加载变更的插件。
+
+**意义**：用户安装 10+ 插件后启动时间线性增长——并行加载控制在常数时间。
+**缺失后果**：10 个插件 × 50ms/插件 = 500ms 启动延迟（顺序加载）。
+**改进收益**：并行加载 = ~50ms（最慢的一个）；缓存 = 热重载几乎免费。
+
+---
+
+<a id="item-92"></a>
+
+### 92. Speculation 流水线建议（Pipelined Suggestions）（P2）
+
+**思路**：当前 speculation 执行完成后，**立即并行生成下一个建议**（pipelined suggestion）。用户接受当前建议时，下一个建议已经准备好——连续 Tab 接受零延迟。投机结果作为上下文传给下一轮建议生成，确保连贯性。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/PromptSuggestion/speculation.ts` (L345-400) | `generatePipelinedSuggestion()` 并行生成下一建议 |
+| `services/PromptSuggestion/speculation.ts` (L672-679) | speculation 完成后触发 pipelined generation |
+| `services/PromptSuggestion/speculation.ts` (L928-955) | 接受建议时提升 pipelined suggestion |
+
+**Qwen Code 修改方向**：speculation 已实现（PR#2525），但每次接受建议后需重新生成下一建议——间有 1-2 秒空白等待。改进方向：speculation 完成回调中立即调用 `generateNextSuggestion()`，将投机结果 + 新消息传入作为上下文；`state.pipelinedSuggestion` 存储预生成的建议；接受时直接提升，无需等待。
+
+**意义**：Speculation 的价值在于连续流——中间有停顿会打破用户"心流"。
+**缺失后果**：每次 Tab 接受后等 1-2 秒才出现下一建议——体验不够连贯。
+**改进收益**：流水线预生成——连续 Tab 零延迟，真正的"自动驾驶"体验。
+
+---
+
+<a id="item-95"></a>
+
+### 95. 写穿缓存与 TTL 后台刷新（P2）
+
+**思路**：`memoizeWithTTL` 实现 stale-while-revalidate 模式——缓存过期后**立即返回旧值**，同时后台异步刷新。防止多个并发请求同时触发刷新（`refreshing` 标志位）。用于 MCP 工具列表、Git 状态、环境检测等频繁访问但变化慢的数据。`memoizeWithLRU` 提供有界缓存（默认 100 条），防止内存无限增长。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/memoize.ts` (L40-100) | `memoizeWithTTL()` write-through + background refresh、`cacheLifetimeMs = 5min` |
+| `utils/memoize.ts` (L234-269) | `memoizeWithLRU()` LRU 有界缓存、`LRUCache` 封装 |
+| `services/mcp/client.ts` (L595) | `connectToServer = memoize(...)` 连接缓存 |
+| `services/mcp/client.ts` (L1743) | `fetchToolsForClient = memoizeWithLRU(...)` 工具列表 LRU |
+
+**Qwen Code 修改方向**：`filesearch/result-cache.ts` 有搜索结果缓存；`crawlCache.ts` 有爬取缓存；但无通用 stale-while-revalidate 模式。MCP 工具列表每次重新获取。改进方向：① 新建 `utils/memoize.ts` 实现 `memoizeWithTTL`（过期返旧值 + 后台刷新）+ `memoizeWithLRU`（有界缓存）；② MCP 工具列表包装为 `memoizeWithLRU`；③ Git 状态检测包装为 `memoizeWithTTL(5min)`。
+
+**意义**：MCP 工具列表、Git 状态等热点数据——每次 fetch 浪费 10-50ms。
+**缺失后果**：每次查询触发完整 fetch——高频路径累积延迟显著。
+**改进收益**：缓存命中 = 0ms + 后台静默刷新——用户永远不等待过期数据。
+
+---
+
+<a id="item-96"></a>
+
+### 96. 上下文收集并行化（P2）
+
+**思路**：每轮对话前需收集多种上下文附件（文件内容、图片、MCP 资源、诊断信息、LSP 数据等）。Claude Code 分两阶段并行：① 用户输入附件先完成（可能触发嵌套记忆加载）；② 线程附件 + 主线程附件 `Promise.all()` 并行处理，~20+ 并发计算。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/attachments.ts` (L819) | `Promise.all(userInputAttachments)` 用户附件并行 |
+| `utils/attachments.ts` (L990-994) | `Promise.all([Promise.all(threadAttachments), Promise.all(mainThreadAttachments)])` 双阶段并行 |
+
+**Qwen Code 修改方向**：上下文通过 `appendAdditionalContext()` 串行追加；hook 输出通过 `hookRunner.ts` 可并行但上下文收集本身是顺序的。改进方向：抽取上下文收集为独立函数；文件内容、MCP 资源、诊断信息等无依赖项用 `Promise.all()` 并行获取；有依赖项（如记忆触发嵌套加载）按拓扑顺序处理。
+
+**意义**：每轮对话的上下文收集涉及 5-10 种来源——串行 = 延迟叠加。
+**缺失后果**：10 种上下文来源 × 20ms = 200ms 串行等待。
+**改进收益**：并行收集 = ~20ms（最慢的一个来源）——每轮省 150-180ms。
+
+---
+
+<a id="item-97"></a>
+
+### 97. 输出缓冲与防阻塞渲染（P2）
+
+**思路**：`createBufferedWriter` 在写入目标（如日志文件 appendFileSync）可能阻塞时，将输出缓冲到内存队列。溢出时用 `setImmediate` 延迟写入——当前 tick 不阻塞，保证键盘响应和渲染帧率。参数可调：`flushIntervalMs`（默认 1s）、`maxBufferSize`（默认 100 条）、`maxBufferBytes`。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/bufferedWriter.ts` | `createBufferedWriter()`、`flushDeferred()` setImmediate 延迟、`pendingOverflow` 排序保证 |
+
+**Qwen Code 修改方向**：`pidfile.ts` 用 `writeFileSync` 写 PID 文件；`trustedFolders.ts` 用 `readFileSync`/`writeFileSync`（已在 item-99 中列出）；`shellExecutionService.ts` 输出直接推送——长输出可能阻塞渲染。改进方向：① 新建 `utils/bufferedWriter.ts`——内存缓冲 + 定时 flush + 溢出 `setImmediate`；② 同步写入热路径改用 `bufferedWriter.write()`；③ shell 输出推送改用 buffered writer（`maxBufferBytes` 限制内存占用）。
+
+**意义**：同步写入和大量输出推送可能阻塞 Node.js 事件循环——导致 UI 卡顿和键盘无响应。
+**缺失后果**：同步 I/O 在磁盘慢时阻塞主线程——用户输入延迟。
+**改进收益**：缓冲 + 延迟写入——主线程永不阻塞，UI 始终流畅。
+
+---
+
+<a id="item-98"></a>
+
+### 98. LSP 服务器并行启动/关闭（P2）
+
+**思路**：多个 LSP 服务器（TypeScript、Python、Go 等）相互独立，启动和关闭可以 `Promise.all()` 并行。端口探测也可用 `Promise.race()` 并行尝试——首个成功连接即返回。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/lsp/` (7 文件) | LSP 客户端管理——多服务器独立启动 |
+
+**Qwen Code 修改方向**：`LspServerManager.ts` 的 `startAll()` 和 `stopAll()` 用 `for` 循环顺序启动/关闭每个服务器（L81-92）。`LspConfigLoader.ts` 用 `readFileSync` 顺序读取配置文件。改进方向：① `startAll()` 改为 `Promise.all(servers.map(s => this.startServer(s)))` 并行启动；② `stopAll()` 改为 `Promise.allSettled()` 确保全部关闭（一个失败不影响其他）；③ 端口探测用 `Promise.race()` 并行尝试多个端口。
+
+**意义**：多语言项目配置 3-5 个 LSP——顺序启动延迟线性叠加。
+**缺失后果**：3 个 LSP × 500ms/个 = 1.5s 启动延迟（顺序）。
+**改进收益**：并行启动 = ~500ms（最慢的一个）；端口探测首个成功即返回。
+
+---
+
+<a id="item-101"></a>
+
+### 101. 请求合并与去重（Request Coalescing）（P2）
+
+**思路**：高频请求场景——多个组件同时触发相同操作（如 MCP 工具列表刷新、认证检查、状态上报），合并为一次实际执行。3 种模式：① PUT 合并（1 in-flight + 1 pending，新请求合并到 pending）；② 401 去重（同 token 的多个 401 只触发一次 keychain 读取）；③ UUID 去重（BoundedUUIDSet 环形缓冲区 O(1) 查重）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `cli/transports/WorkerStateUploader.ts` (131行) | 1 in-flight + 1 pending slot、RFC 7396 patch 合并 |
+| `utils/auth.ts` (L1343) | `pending401Handlers: Map<token, Promise>` 防止 N 个 401 并发读 keychain（省 800ms+） |
+| `bridge/bridgeMessaging.ts` (L429-459) | `BoundedUUIDSet` 环形缓冲区（cap=2000）O(1) 去重 |
+| `utils/memoize.ts` (L125-162) | `inFlight` Map 防止 N 个 cold-miss 并发调用同一函数 |
+
+**Qwen Code 修改方向**：无通用请求合并机制；MCP 工具列表每次 reconnect 全量重新获取；无认证去重。改进方向：① 新建 `utils/requestCoalescer.ts`——通用 1-in-flight + 1-pending 合并器；② MCP 工具刷新包装为 coalescer（多个 reconnect 事件合并）；③ API 认证失败处理加 inFlight 去重。
+
+**意义**：高频事件（文件保存触发 lint + format + refresh）产生重复请求——合并后只执行一次。
+**缺失后果**：10 个文件保存 → 10 次 MCP 工具列表刷新 → 10× 不必要 I/O。
+**改进收益**：请求合并 = 1 次实际执行——消除 90% 重复操作。
+
+---
+
+<a id="item-102"></a>
+
+### 102. 延迟初始化与按需加载（Lazy Init）（P2）
+
+**思路**：3 层延迟策略——① `lazySchema()`：Zod schema 定义推迟到首次使用时构建（启动不触发 Zod）；② 延迟模块导入：大模块（如 113KB insights.ts）在命令执行时 `import()` 而非启动时 `require`；③ 延迟预取（`startDeferredPrefetches`）：AWS/GCP 凭证、MCP 官方 URL 等在首帧渲染后才开始。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/lazySchema.ts` (8行) | `lazySchema(factory)` 缓存式惰构建 |
+| `commands.ts` (L188) | 113KB insights.ts 延迟导入 |
+| `main.tsx` (L383-418) | `startDeferredPrefetches()` 首帧后预取 |
+| `Tool.ts` (L439-442) | `shouldDefer` 属性（对应 `defer_loading`）工具延迟加载到 prompt |
+
+**Qwen Code 修改方向**：所有模块启动时同步加载；Zod schema 在模块求值时构建；所有工具定义启动时全量生成。改进方向：① 大型命令模块改为 `await import()` 动态导入；② 工具 Zod schema 包装为 `lazySchema()`——首次调用时才构建；③ 非关键预取（凭证、远程配置）推迟到首帧渲染后。
+
+**意义**：启动时间 = 所有模块加载时间之和——延迟非关键模块直接缩短启动。
+**缺失后果**：启动加载全量模块 + 全量 schema 构建——冷启动慢 200-500ms。
+**改进收益**：惰加载 = 仅加载核心模块——启动时间缩短 30-50%。
+
+---
+
+<a id="item-103"></a>
+
+### 103. 流式超时检测与级联取消（P2）
+
+**思路**：API 流式响应设置 90 秒空闲看门狗——收到 chunk 时重置计时器，超时则 abort stream 触发重试。工具执行层面：子 AbortController 实现级联取消——Bash 工具出错时 `siblingAbortController.abort()` 立即终止同批次的其他子进程（不终止整轮查询）。`createChildAbortController()` 用 WeakRef 防止 GC 泄漏。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/api/claude.ts` (L1868-1954) | 90s 流式空闲看门狗、stall 计数 + 时间统计 |
+| `utils/abortController.ts` | `createChildAbortController()` WeakRef 子控制器 |
+| `services/tools/StreamingToolExecutor.ts` (L45-48) | `siblingAbortController` Bash 错误级联 |
+| `hooks/useTypeahead.tsx` (L206-217) | 每次击键取消上一次 shell 补全 |
+
+**Qwen Code 修改方向**：API 流式超时使用全局固定超时（无空闲检测）；工具执行无级联取消——一个工具失败其他继续运行。改进方向：① API stream 处理添加空闲检测（每个 chunk 重置 timer，超时 abort + 重试）；② `coreToolScheduler.ts` 添加 `siblingAbortController`——写工具（Bash）失败时取消同批次其他工具；③ 输入补全/搜索添加 AbortController——新输入取消旧搜索。
+
+**意义**：API 偶尔 hang——无超时检测则用户永远等待；工具失败不级联取消则浪费资源。
+**缺失后果**：API hang = 用户手动 Ctrl+C；Bash 报错后 Grep 继续白跑。
+**改进收益**：空闲看门狗自动重试 + 级联取消——异常恢复自动化，资源零浪费。
+
+---
+
+<a id="item-104"></a>
+
+### 104. Git 文件系统直读避免进程 Spawn（P2）
+
+**思路**：频繁的 git 状态查询（当前分支、HEAD 指向、ref 解析）不 spawn `git` 子进程，而是直接读取 `.git/HEAD` 和 `.git/refs/` 文件。`git check-ignore` 用批量路径参数代替逐文件调用。减少进程 fork 开销（每次 ~5-10ms）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/git/gitFilesystem.ts` | 文件系统级 git 状态读取——避免 spawn git 子进程 |
+| `tools/LSPTool/LSPTool.ts` (L554) | `git check-ignore` 批量路径参数 |
+| `utils/git.ts` | `findGitRoot` LRU 记忆化（max 50）、`gitExe` 单例查找 |
+
+**Qwen Code 修改方向**：`gitService.ts` 通过 `simple-git` 库调用 git 命令（每次 spawn 子进程）；无文件系统直读优化；无 git 操作 LRU 缓存。改进方向：① 高频查询（当前分支、HEAD 解析）直接读取 `.git/HEAD` + `.git/refs/`（async readFile，无 spawn）；② `git check-ignore` 合并为批量调用（一次传多个路径）；③ `findGitRoot` 结果 LRU 缓存（防止每次 stat 向上遍历）。
+
+**意义**：git 状态查询是热路径——每次工具执行前后都需检查。
+**缺失后果**：10 次工具调用 × 2 次 git 查询 × 5ms/spawn = 100ms 开销。
+**改进收益**：直读 .git/HEAD = 0.1ms（无 fork）；批量 check-ignore = 1 次 spawn 替代 N 次。
+
+---
+
+<a id="item-105"></a>
+
+### 105. 设置/Schema 缓存与 Parse 去重（P2）
+
+**思路**：3 层设置缓存——① `sessionSettingsCache`：每 session 合并后的设置（避免重复合并）；② `perSourceCache`：按来源缓存（用户/项目/本地）；③ `parseFileCache`：路径级去重（同一文件只读一次 + Zod parse 一次）。Schema 缓存在首次渲染时锁定快照，防止 GrowthBook 特性开关翻转导致工具定义变化（~11K tokens）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/settings/settingsCache.ts` | 3 层缓存：session/perSource/parseFile |
+| `utils/toolSchemaCache.ts` (26行) | 首次渲染锁定 tool schema，防止 mid-session 抖动 |
+| `utils/fileStateCache.ts` | `FileStateCache` LRU（max 100 条/25MB） |
+
+**Qwen Code 修改方向**：`settings.ts` 每次调用重新读取 + 解析配置文件（`readFileSync` + JSON.parse）；工具 schema 每轮重新生成；无文件状态缓存。改进方向：① 设置加载结果缓存——文件 mtime 变化时才重新读取/解析；② 工具 schema 首次生成后缓存，MCP 工具变化时增量更新；③ 文件状态（内容 + 编码）LRU 缓存。
+
+**意义**：设置文件和工具 schema 在会话中变化极少，但每轮都重新读取/生成。
+**缺失后果**：每轮读配置 + parse + schema 生成 = 10-50ms 重复工作。
+**改进收益**：缓存命中 = 0ms——消除 90%+ 的重复解析和生成。

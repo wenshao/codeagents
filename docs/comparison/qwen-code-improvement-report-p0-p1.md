@@ -527,3 +527,146 @@
 **意义**：命令补全是 CLI 工具最基础的 UX 期待——无补全等于每次都手打全名。
 **缺失后果**：用户需完整输入 `/compress`、文件路径等——效率低且易出错。
 **改进收益**：输入 `/com` 即显示 `/compress` 灰字，Tab 接受——打字量减半。
+
+---
+
+<a id="item-88"></a>
+
+### 88. 流式工具执行流水线（P1）
+
+**思路**：API 流式返回 tool_use block 时，**不等完整响应结束**就立即开始执行已完成解析的工具。StreamingToolExecutor 维护有序队列：工具按到达顺序入队，并发安全的立即启动，结果按入队顺序出队。进度消息（pendingProgress）实时流出，不等工具完成。与 item-7（智能工具并行）互补——item-7 解决"哪些工具可以并行"，本项解决"何时开始执行"。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/tools/StreamingToolExecutor.ts` (530行) | `addTool()` 入队即触发 `processQueue()`、`getCompletedResults()` 非阻塞出队、`getRemainingResults()` 异步等待 |
+| `query.ts` (L561-567, L838-862) | `config.gates.streamingToolExecution` 特性门控、流式回调中调用 `addTool()` |
+| `utils/generators.ts` (L32-72) | `all()` 并发异步生成器——`Promise.race()` 等待任意完成 |
+
+**Qwen Code 修改方向**：`coreToolScheduler.ts` 等待模型完整响应后才开始工具执行；`streamingToolCallParser.ts` 仅解析流式 JSON，不触发提前执行。改进方向：在 `streamingToolCallParser.ts` 中 tool_call 解析完成时立即通知 `coreToolScheduler`；调度器维护 `TrackedTool[]` 队列，并发安全工具立即启动，非安全工具排队等待。结果按顺序 yield 给渲染层。
+
+**意义**：模型生成 5 个工具调用需 2-3 秒——流式执行让前面的工具在后面的还在生成时就开始执行。
+**缺失后果**：等完整响应 = 工具延迟 = 模型生成时间 + 工具执行时间（串行叠加）。
+**改进收益**：流式流水线 = 模型生成与工具执行重叠——端到端延迟减少 30-50%。
+
+---
+
+<a id="item-91"></a>
+
+### 91. 文件读取缓存 + 批量并行 I/O（P1）
+
+**思路**：3 层优化——① FileReadCache：1000 条 LRU 缓存，mtime 自动失效，Edit 后立即命中缓存无需重新读取；② 批量并行读取：32 个文件一批 `Promise.all(batch.map(readFile))`；③ 并行 stat：`Promise.all(filePaths.map(lstat))` 同时检测多文件修改时间。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/fileReadCache.ts` | `FileReadCache` 类、`maxCacheSize = 1000`、mtime 自动失效 |
+| `utils/listSessionsImpl.ts` (L255) | `READ_BATCH_SIZE = 32`、`Promise.all(batch.map(readCandidate))` |
+| `utils/filePersistence/outputsScanner.ts` (L97) | `Promise.all(filePaths.map(lstat))` 并行 stat |
+| `utils/ide.ts` (L312, L684) | 并行 lockfile stat + 并行 lockfile 读取 |
+
+**Qwen Code 修改方向**：`readManyFiles.ts` 顺序 `for` 循环逐个读取文件；无文件内容缓存；`atomicFileWrite.ts` 仅写入端有优化。改进方向：① 新建 `utils/fileReadCache.ts`——Map + mtime 校验 + 1000 条上限 LRU 淘汰；② `readManyFiles.ts` 中独立文件用 `Promise.all()` 并行读取（保留目录递归的顺序逻辑）；③ 文件扫描场景用 `Promise.all(paths.map(stat))` 并行获取元信息。
+
+**意义**：文件 I/O 是 Agent 最频繁的操作——Read + Edit 循环中同一文件反复读取。
+**缺失后果**：每次 Edit 后 re-read 全量磁盘 I/O；多文件探索时逐个串行读取。
+**改进收益**：缓存命中 = 0ms 读取；32 并行 = 延迟降至 1/32（I/O 密集场景）。
+
+---
+
+<a id="item-93"></a>
+
+### 93. 记忆/附件异步预取（P1）
+
+**思路**：用户消息到达时，**不等工具执行完**就立即启动相关记忆搜索（异步 prefetch handle）。工具执行期间记忆搜索并行进行，工具完成后如果搜索已 settle 则注入结果，否则下一轮重试。Skill 发现同理——检测到"写操作转折点"时异步预取相关 skill。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/attachments.ts` (L2361-2415) | `startRelevantMemoryPrefetch()` 返回 handle、~20KB/turn 预算上限 |
+| `query.ts` (L301, L1592) | 每轮 `using prefetch = startRelevantMemoryPrefetch()`、工具后 `if settled → inject` |
+| `query.ts` (L66-67, L331, L1620) | `skillPrefetch?.startSkillDiscoveryPrefetch()` skill 发现预取、write-pivot 触发（feature gate `EXPERIMENTAL_SKILL_SEARCH`） |
+
+**Qwen Code 修改方向**：无记忆预取机制；技能加载在启动时一次性完成（`skill-manager.ts`）；上下文附件在工具执行前同步收集。改进方向：① `chatCompressionService.ts` 旁新建 `memoryPrefetch.ts`——用户消息处理时 fire-and-forget 启动记忆搜索；② `coreToolScheduler.ts` 工具执行完成后检查 prefetch 是否 settled；③ skill 发现改为惰性——首次需要时搜索 + 结果缓存。
+
+**意义**：记忆搜索需 50-200ms（涉及文件扫描或向量匹配）——与工具执行重叠则用户零感知。
+**缺失后果**：记忆/上下文收集阻塞工具执行——每轮额外 100-200ms 串行等待。
+**改进收益**：异步预取——记忆搜索与工具执行并行，延迟完全隐藏。
+
+---
+
+<a id="item-94"></a>
+
+### 94. Token Budget 续行与自动交接（P1）
+
+**思路**：长任务不因 `max_tokens` 截断而丢失进度。BudgetTracker 追踪每轮 token 增量：① 未达 90% 预算 → 注入续行提示让模型继续；② 连续 3 次增量 < 500 tokens → 检测为"收益递减"，停止续行；③ 停止后触发 auto-compact 链（microcompact → session memory compact → full compact）。整个过程用户无感知。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `query/tokenBudget.ts` (93行) | `COMPLETION_THRESHOLD = 0.9`、`DIMINISHING_THRESHOLD = 500`、`checkTokenBudget()` |
+| `services/compact/autoCompact.ts` (L72-145) | `AUTOCOMPACT_BUFFER_TOKENS = 13_000`、3 次失败断路器 |
+| `services/compact/microCompact.ts` | 旧工具结果清理（8 种可清除工具） |
+| `services/compact/sessionMemoryCompact.ts` | 先尝试清理记忆附件，再触发全量压缩 |
+
+**Qwen Code 修改方向**：`chatCompressionService.ts` 仅在 token 超 70% 阈值时触发一次性全量压缩（`COMPRESSION_TOKEN_THRESHOLD = 0.7`）。无 token 预算续行，无递减检测，无分层压缩回退。改进方向：① 新建 `tokenBudget.ts`——追踪续行次数 + delta + 递减检测；② 推理循环中检查 budget → continue 时注入续行提示、stop 时正常结束；③ 压缩改为分层：先清旧工具结果 → 再清记忆附件 → 最后全量摘要。
+
+**意义**：复杂任务（重构、多文件变更）经常超出单次 max_tokens——截断等于前功尽弃。
+**缺失后果**：达到 token 上限直接停止——用户需手动"继续"或重新开始。
+**改进收益**：自动续行 + 递减检测——复杂任务自动完成，收益递减时自动停止，避免浪费。
+
+---
+
+<a id="item-99"></a>
+
+### 99. 同步 I/O 异步化 — 事件循环解阻塞（P1）
+
+**思路**：将热路径上的 `readFileSync`/`statSync`/`writeFileSync` 替换为 async 版本，防止阻塞 Node.js 事件循环。同步 I/O 在主线程执行时会冻结 UI 渲染和键盘输入处理——文件越大、磁盘越慢影响越大。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/fileReadCache.ts` | 唯一允许 sync 的地方——FileEditTool 内部热路径（有 mtime 缓存保护） |
+| 其他文件 | 绝大多数文件操作使用 async `fs.promises` API |
+
+**Qwen Code 修改方向**：多处热路径使用同步 I/O：
+- `packages/cli/src/config/settings.ts` (L462, L498, L575) — 配置加载 `readFileSync`
+- `packages/cli/src/config/trustedFolders.ts` (L142, L182) — 信任目录 `readFileSync`/`writeFileSync`
+- `packages/core/src/utils/readManyFiles.ts` (L99) — 多文件读取 `statSync`
+- `packages/core/src/lsp/LspConfigLoader.ts` — LSP 配置 `readFileSync`
+- `packages/core/src/utils/workspaceContext.ts` (L98) — 工作区上下文 `statSync`
+
+改进方向：① 全局搜索 `readFileSync`/`statSync`/`writeFileSync`，逐个替换为 async 版本；② 启动路径允许 sync（模块初始化阶段事件循环未运行）；③ 运行时路径（用户交互后）强制使用 async。
+
+**意义**：同步 I/O 是 Node.js 性能杀手——10ms 的 readFileSync 意味着 10ms 的 UI 冻结。
+**缺失后果**：大配置文件或慢磁盘上 readFileSync 阻塞事件循环——键盘无响应、渲染卡顿。
+**改进收益**：async I/O = 事件循环不阻塞——UI 始终流畅，文件操作在后台完成。
+
+---
+
+<a id="item-100"></a>
+
+### 100. Prompt Cache 分段与工具稳定排序（P1）
+
+**思路**：系统提示拆分为 static（全局缓存）+ dynamic（每次重算）两段，用 `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` 标记分界。内置工具保持稳定的连续前缀排序（MCP/动态工具追加在后），服务端在前缀后插入 cache breakpoint。工具 schema 锁定在首次渲染时（`toolSchemaCache`），防止 GrowthBook 特性开关翻转导致 11K-token schema 变化破坏缓存。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/api.ts` (L321-435) | `splitSysPromptPrefix()` 3 种缓存策略（global/org/tool-based） |
+| `services/api/promptCacheBreakDetection.ts` | per-tool hash 追踪——77% 缓存失效由单个工具 schema 变化引起 |
+| `utils/toolSchemaCache.ts` | 首次渲染锁定 schema，防止 mid-session 抖动 |
+| `utils/toolPool.ts` (L64) | built-in 工具保持连续前缀，MCP 工具追加在后 |
+| `services/api/claude.ts` (L358-434) | `getCacheControl()` 1h vs 5m TTL 决策 |
+| `constants/systemPromptSections.ts` | `DANGEROUS_uncachedSystemPromptSection()` 显式标记易变段 |
+
+**Qwen Code 修改方向**：系统提示作为整体发送，无分段缓存策略；工具列表无稳定排序；无缓存失效检测。每次 API 调用可能因工具顺序变化或系统提示微调导致缓存完全失效。改进方向：① 系统提示拆分 static/dynamic 段，static 段标记 `cache_control: { type: 'ephemeral' }`；② 工具排序：内置工具固定顺序在前，MCP 工具追加在后；③ 新建 `toolSchemaCache.ts` 锁定首次渲染的 schema 快照；④ 跟踪 `cache_read_input_tokens` 下降来检测意外缓存失效。
+
+**意义**：Prompt cache 命中率直接影响成本和延迟——缓存命中省 90% token 费用 + 首 token 延迟减半。
+**缺失后果**：每次调用重新编码完整系统提示 + 工具 schema = ~20K-50K tokens 浪费。
+**改进收益**：分段缓存 + 稳定排序 = 80%+ 缓存命中率——成本降低 50%+，首 token 快 2×。
