@@ -1881,9 +1881,9 @@
 
 ---
 
-<a id="item-146"></a>
+<a id="item-135"></a>
 
-### 146. WeakRef/WeakMap 防止 GC 保留（P2）
+### 135. WeakRef/WeakMap 防止 GC 保留（P2）
 
 **思路**：长会话中的缓存对象使用 WeakRef/WeakMap 替代强引用——对象不再被使用时自动被 GC 回收。关键场景：① AbortController 父子关系用 WeakRef 防止子保留父；② Span 追踪用 `WeakRef<SpanContext>` + 30 分钟 TTL 清理孤儿；③ 消息渲染缓存用 `WeakMap<Message, string>` 随消息替换自动释放。
 
@@ -1904,9 +1904,9 @@
 
 ---
 
-<a id="item-147"></a>
+<a id="item-136"></a>
 
-### 147. 环形缓冲区与磁盘溢出（P2）
+### 136. 环形缓冲区与磁盘溢出（P2）
 
 **思路**：需要保留"最近 N 条"的场景使用 CircularBuffer（固定容量，满时覆盖最老）和 BoundedUUIDSet（cap=2000 环形 + Set O(1) 去重）。工具输出超过 8MB 内存限制自动溢出到磁盘文件。
 
@@ -1926,9 +1926,9 @@
 
 ---
 
-<a id="item-148"></a>
+<a id="item-137"></a>
 
-### 148. 终端渲染字符串池化（P2）
+### 137. 终端渲染字符串池化（P2）
 
 **思路**：终端每帧处理数千 cell——CharPool/StylePool/HyperlinkPool 将重复字符串驻留为整数 ID，cell 存储 ID 而非字符串。帧间 diff 比较整数（O(1)）替代字符串比较。每行仅 3 次 intern 调用（非每字符），JIT 友好。
 
@@ -1947,9 +1947,9 @@
 
 ---
 
-<a id="item-149"></a>
+<a id="item-138"></a>
 
-### 149. 文件描述符与活跃句柄追踪（P2）
+### 138. 文件描述符与活跃句柄追踪（P2）
 
 **思路**：定期检查 `process._getActiveHandles()` 和 `/proc/self/fd` 数量。超过阈值（>100 handles / >500 fd）记录诊断警告。长会话中 MCP/LSP/子进程/文件观察器每个占 1-2 fd——不清理可能耗尽系统限制（1024）。
 
@@ -1968,9 +1968,9 @@
 
 ---
 
-<a id="item-150"></a>
+<a id="item-139"></a>
 
-### 150. Memoization 冷启动去重与 Identity Guard（P2）
+### 139. Memoization 冷启动去重与 Identity Guard（P2）
 
 **思路**：`memoizeWithTTLAsync` 的 `inFlight` Map 防止 N 个并发调用在缓存冷启动时触发 N 次昂贵操作。TTL 过期后返旧值 + 后台刷新（stale-while-revalidate）。Identity guard 防止并发 `cache.clear()` + 冷启动导致旧刷新覆盖新缓存。
 
