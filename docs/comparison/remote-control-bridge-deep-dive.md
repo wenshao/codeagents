@@ -1,6 +1,6 @@
 # Remote Control Bridge Deep-Dive
 
-> 离开电脑后 Agent 需要人类审批权限——当前无法远程操作。本文基于 Claude Code 源码分析（bridge/ 目录 ~9000 行）和 Qwen Code（channels/ + ACP 架构）的源码对比，深度介绍 Claude Code 的 Remote Control Bridge 机制及其与 Qwen Code 的架构差异。
+> 离开电脑后 Agent 需要人类审批权限——当前无法远程操作。本文基于 Claude Code 源码分析（bridge/ 目录 ~12600 行）和 Qwen Code（channels/ + ACP 架构）的源码对比，深度介绍 Claude Code 的 Remote Control Bridge 机制及其与 Qwen Code 的架构差异。
 
 ---
 
@@ -58,12 +58,12 @@ Claude Code 实现了 3 种传输协议，按优先级降级：
 | WebSocket ping/pong | 10s | — |
 | Keep-alive 数据帧 | 5min | — |
 | SSE comment 帧 | 15s（服务端） | 45s（客户端判定死亡） |
-| Session 心跳 | 30-60s | — |
+| Session 心跳 | 120s（2min） | — |
 
 **重连策略**：
 
 ```typescript
-// 源码: bridge/bridgeMain.ts#L107-110
+// 源码: bridge/bridgeMain.ts#L72-75
 const DEFAULT_BACKOFF = {
   connInitialMs: 2_000,       // 初始 2 秒
   connCapMs: 120_000,         // 上限 2 分钟
@@ -104,13 +104,14 @@ Terminal                         Cloud API
 **work_secret 解码**（源码: `bridge/workSecret.ts`）：
 
 ```typescript
-// Base64url JSON 包含：
+// Base64url JSON 包含（源码: bridge/workSecret.ts 解码验证字段）：
 {
+  version: number,                // 协议版本
   session_ingress_token: string,  // JWT 访问令牌
   api_base_url: string,           // API 端点
-  sources: SourceConfig[],        // 数据源配置
-  auth: AuthConfig,               // 认证信息
-  mcp_config: MCPConfig           // MCP 服务器配置
+  // 额外字段（由 WorkSecret 类型定义，解码器不做强校验）：
+  sources?: unknown,              // 数据源配置
+  mcp_config?: unknown            // MCP 服务器配置
 }
 ```
 
@@ -228,12 +229,12 @@ Terminal                    Cloud                    Web/Mobile
 | **会话认证** | Session Ingress JWT | work_secret 解码获取 |
 | **设备信任** | Trusted Device Token | 90 天滚动过期，Keychain 存储 |
 | **ID 验证** | 正则白名单 `[a-zA-Z0-9_-]+` | 防路径遍历和注入 |
-| **消息净化** | `webhookSanitizer.js` | 防 XSS 和注入 |
+| **消息净化** | `hooks/useReplBridge.tsx` 引用 `webhookSanitizer.js`（运行时生成） | 防 XSS 和注入 |
 
 **Trusted Device Token**（源码: `bridge/trustedDevice.ts`）：
 
 ```typescript
-// 注册: POST /api/auth/trusted_devices（注册后 <10 分钟内）
+// 注册: POST /api/auth/trusted_devices（登录后 <10 分钟内）
 // 存储: macOS Keychain
 // 有效期: 90 天滚动
 // Header: X-Trusted-Device-Token
@@ -250,13 +251,13 @@ Terminal                    Cloud                    Web/Mobile
 'same-dir'        // 持久服务，共享工作目录（可能冲突）
 ```
 
-**容量管理**（源码: `bridge/pollConfig.ts`）：
+**容量管理**（源码: `bridge/pollConfigDefaults.ts`）：
 
 ```typescript
 {
-  poll_interval_ms_not_at_capacity: 30_000,    // 空闲时 30s 轮询
-  poll_interval_ms_at_capacity: 0,             // 满载时停止轮询
-  multisession_poll_interval_ms_partial_capacity: 5_000, // 部分满载 5s
+  poll_interval_ms_not_at_capacity: 2_000,     // 空闲时 2s 轮询
+  poll_interval_ms_at_capacity: 600_000,       // 满载时 10min 轮询
+  multisession_poll_interval_ms_partial_capacity: 2_000, // 部分满载 2s
   reclaim_older_than_ms: 5_000,                // 5s 无活动可回收
   session_keepalive_interval_v2_ms: 120_000    // 2min 心跳
 }
@@ -303,9 +304,9 @@ Qwen Code 通过 Channels 架构实现多平台接入：
 - 崩溃后指数退避重启
 
 **会话路由**（SessionRouter）：
-- Key: `<channel>:<sender>` → ACP session
+- Key 格式按作用域不同：`user` → `<channel>:<senderId>:<chatId>`、`thread` → `<channel>:<threadId|chatId>`、`single` → `<channel>:__single__`
 - 作用域: `user`（每用户独立）/ `thread`（每线程）/ `single`（全局单一）
-- 消息调度: `collect`（收集）/ `steer`（转向）/ `followup`（追加）
+- 消息调度（ChannelBase 层）: `collect`（收集）/ `steer`（转向，默认）/ `followup`（追加）
 
 ### 3.2 与 Claude Code Bridge 的关键差异
 
@@ -371,21 +372,21 @@ Channels 不是 Remote Control Bridge 的替代——它们解决完全不同的
 
 | 文件 | 行数 | 职责 |
 |------|:----:|------|
-| `bridge/bridgeMain.ts` | ~2700 | Poll-dispatch 主循环、多会话编排 |
-| `bridge/replBridge.ts` | ~2400 | REPL 桥接核心、Session Ingress |
-| `bridge/bridgeMessaging.ts` | ~460 | 消息路由、BoundedUUIDSet 去重 |
-| `bridge/bridgeApi.ts` | ~500 | HTTP API 封装（环境/会话端点） |
-| `bridge/bridgePointer.ts` | ~210 | 崩溃恢复指针管理 |
-| `bridge/codeSessionApi.ts` | ~180 | CCR v2 会话 API |
-| `bridge/bridgePermissionCallbacks.ts` | ~100 | 权限回调协议 |
-| `bridge/workSecret.ts` | ~130 | Work Secret 解码 |
-| `bridge/trustedDevice.ts` | ~210 | Trusted Device 注册与管理 |
-| `bridge/flushGate.ts` | ~70 | 初始消息刷新门控 |
-| `bridge/inboundAttachments.ts` | ~150 | Web 文件附件下载 |
-| `bridge/sessionRunner.ts` | ~800 | 子 CLI 进程管理 |
-| `cli/transports/HybridTransport.ts` | ~250 | WS 读 + HTTP 写 |
-| `cli/transports/SSETransport.ts` | ~700 | SSE 传输 |
-| `cli/transports/WebSocketTransport.ts` | ~600 | WebSocket 传输 |
+| `bridge/bridgeMain.ts` | 2999 | Poll-dispatch 主循环、多会话编排 |
+| `bridge/replBridge.ts` | 2406 | REPL 桥接核心、Session Ingress |
+| `bridge/bridgeMessaging.ts` | 461 | 消息路由、BoundedUUIDSet 去重 |
+| `bridge/bridgeApi.ts` | 539 | HTTP API 封装（环境/会话端点） |
+| `bridge/bridgePointer.ts` | 210 | 崩溃恢复指针管理 |
+| `bridge/codeSessionApi.ts` | 168 | CCR v2 会话 API |
+| `bridge/bridgePermissionCallbacks.ts` | 43 | 权限回调协议 |
+| `bridge/workSecret.ts` | 127 | Work Secret 解码 |
+| `bridge/trustedDevice.ts` | 210 | Trusted Device 注册与管理 |
+| `bridge/flushGate.ts` | 71 | 初始消息刷新门控 |
+| `bridge/inboundAttachments.ts` | 175 | Web 文件附件下载 |
+| `bridge/sessionRunner.ts` | 550 | 子 CLI 进程管理 |
+| `cli/transports/HybridTransport.ts` | 282 | WS 读 + HTTP 写 |
+| `cli/transports/SSETransport.ts` | 711 | SSE 传输 |
+| `cli/transports/WebSocketTransport.ts` | 800 | WebSocket 传输 |
 
 ### Qwen Code Channels 文件
 
