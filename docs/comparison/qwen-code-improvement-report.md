@@ -78,6 +78,7 @@
 | **P1** | 代理记忆持久化 — user/project/local 3 级跨 session 记忆 [↓](./qwen-code-improvement-report-p0-p1.md#item-40) | 无跨 session 记忆 | 中 | — |
 | **P1** | 代理恢复与续行 — SendMessage 继续已完成代理 + transcript 重建 [↓](./qwen-code-improvement-report-p0-p1.md#item-41) | 执行完即销毁 | 中 | — |
 | **P1** | 系统提示模块化组装 — sections 缓存 + dynamic boundary + uncached 标记 [↓](./qwen-code-improvement-report-p0-p1.md#item-42) | 单一字符串 | 中 | — |
+| **P1** | 系统提示内容完善 — OWASP 安全 + 提示注入检测 + 代码风格约束 + 输出格式 [↓](./qwen-code-improvement-report-p0-p1.md#item-47) | 缺少具体指导 | 中 | — |
 | **P1** | @include 指令与嵌套记忆发现 — @path 递归引用 + 文件操作触发目录遍历 [↓](./qwen-code-improvement-report-p0-p1.md#item-43) | 无 @include/嵌套发现 | 中 | — |
 | **P1** | 附件类型协议与令牌预算 — 40+ 类型 + per-type 预算 + 3 阶段有序执行 [↓](./qwen-code-improvement-report-p0-p1.md#item-44) | 字符串拼接/无预算 | 中 | — |
 | **P1** | Thinking 块跨轮保留与空闲清理 — 活跃保留 + 1h 空闲清理 + latch 防缓存破坏 [↓](./qwen-code-improvement-report-p0-p1.md#item-45) | 每轮独立/无清理 | 中 | — |
