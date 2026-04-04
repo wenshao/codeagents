@@ -77,6 +77,11 @@
 | **P1** | InProcess 同进程多代理隔离 — AsyncLocalStorage 上下文隔离 [↓](./qwen-code-improvement-report-p0-p1.md#item-39) | 全局状态可能泄漏 | 中 | — |
 | **P1** | 代理记忆持久化 — user/project/local 3 级跨 session 记忆 [↓](./qwen-code-improvement-report-p0-p1.md#item-40) | 无跨 session 记忆 | 中 | — |
 | **P1** | 代理恢复与续行 — SendMessage 继续已完成代理 + transcript 重建 [↓](./qwen-code-improvement-report-p0-p1.md#item-41) | 执行完即销毁 | 中 | — |
+| **P1** | 系统提示模块化组装 — sections 缓存 + dynamic boundary + uncached 标记 [↓](./qwen-code-improvement-report-p0-p1.md#item-136) | 单一字符串 | 中 | — |
+| **P1** | @include 指令与嵌套记忆发现 — @path 递归引用 + 文件操作触发目录遍历 [↓](./qwen-code-improvement-report-p0-p1.md#item-137) | 无 @include/嵌套发现 | 中 | — |
+| **P1** | 附件类型协议与令牌预算 — 40+ 类型 + per-type 预算 + 3 阶段有序执行 [↓](./qwen-code-improvement-report-p0-p1.md#item-138) | 字符串拼接/无预算 | 中 | — |
+| **P1** | Thinking 块跨轮保留与空闲清理 — 活跃保留 + 1h 空闲清理 + latch 防缓存破坏 [↓](./qwen-code-improvement-report-p0-p1.md#item-139) | 每轮独立/无清理 | 中 | — |
+| **P1** | 输出 Token 自适应升级 — 8K 默认 + max_tokens 截断时自动 64K 重试 [↓](./qwen-code-improvement-report-p0-p1.md#item-140) | 固定值/不重试 | 小 | — |
 | **P2** | [Shell 安全增强](./shell-security-deep-dive.md) — IFS 注入/Unicode 空白/Zsh 命令等 25+ 专项检查 [↓](./qwen-code-improvement-report-p2.md#item-42) | AST-only 读写分类 | 中 | — |
 | **P2** | [MDM 企业策略](./mdm-enterprise-deep-dive.md) — macOS plist + Windows Registry + 远程 API 集中管控 [↓](./qwen-code-improvement-report-p2.md#item-43) | 无 OS 级策略 | 大 | — |
 | **P2** | [API 实时 Token 计数](./token-estimation-deep-dive.md) — 每次 API 调用前精确计数，3 层回退 [↓](./qwen-code-improvement-report-p2.md#item-44) | 静态 82 种模式匹配 | 中 | — |
@@ -161,6 +166,11 @@
 | **P2** | 代理创建向导 — 11 步交互式向导 + AI 生成模式 [↓](./qwen-code-improvement-report-p2.md#item-122) | 基础命令行创建 | 中 | — |
 | **P2** | 代理进度追踪与实时状态 — ProgressTracker + task-notification + kill 控制 [↓](./qwen-code-improvement-report-p2.md#item-123) | 仅最终结果 | 中 | — |
 | **P2** | 代理邮箱系统 — 文件 IPC + lockfile + 单播/广播 [↓](./qwen-code-improvement-report-p2.md#item-124) | 仅 Arena 文件 IPC | 中 | — |
+| **P2** | cache_edits 增量缓存删除 — API 原地删除旧工具结果不破坏缓存前缀 [↓](./qwen-code-improvement-report-p2.md#item-141) | 重建消息数组 | 小 | — |
+| **P2** | 消息规范化与配对修复 — 合并连续 user + 修复孤立 tool_use/result + 100 媒体上限 [↓](./qwen-code-improvement-report-p2.md#item-142) | 格式转换/无修复 | 中 | — |
+| **P2** | Git 状态自动注入上下文 — gitBranch/cwd/platform/fileCount 每轮注入 [↓](./qwen-code-improvement-report-p2.md#item-143) | 仅平台和日期 | 小 | — |
+| **P2** | IDE 上下文注入与嵌套记忆触发 — 选区→目录规范自动注入 + 诊断双源收集 [↓](./qwen-code-improvement-report-p2.md#item-144) | 无嵌套记忆触发 | 中 | — |
+| **P2** | 图片压缩多策略流水线 — format→resize→quality 阶梯 + JPEG fallback [↓](./qwen-code-improvement-report-p2.md#item-145) | 仅计算 token/不压缩 | 中 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-125) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-126) | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3.md#item-127) | 缺失 | 中 | — |
@@ -181,8 +191,8 @@
 
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
-| [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（崩溃恢复、Swarm 编排、代理记忆、工具访问控制等） | 41 |
-| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（权限冒泡、代理进度、邮箱系统、设计系统、无障碍等） | 83 |
+| [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（系统提示模块化、@include、附件协议、Thinking 管理等） | 46 |
+| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（cache_edits、消息修复、Git 注入、图片压缩等） | 88 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结
