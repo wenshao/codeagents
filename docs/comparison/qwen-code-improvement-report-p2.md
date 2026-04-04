@@ -1495,3 +1495,173 @@
 **意义**：后台/远程会话可能因空闲被服务端断开——心跳保持连接存活。
 **缺失后果**：长工具执行期间无心跳 → 远程连接超时 → 结果无法回传。
 **改进收益**：30s 心跳 = 连接始终存活；空闲检测 = 资源自动释放。
+
+---
+
+<a id="item-118"></a>
+
+### 118. Markdown 渲染缓存与纯文本快速路径（P2）
+
+**思路**：Markdown 解析开销大（正则 + 递归），但大部分文本在滚动/重绘时不变。500 条 LRU 缓存存储解析后的 token 树，命中时零解析开销。纯文本快速检测（无 `#`/`*`/`` ` ``/`|` 等标记）直接跳过解析器。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/Markdown.tsx` | 500-item LRU token cache、`marked` 库解析 |
+| `utils/markdown.ts` | 纯文本快速检测（fast path for plain text） |
+
+**Qwen Code 修改方向**：`MarkdownDisplay.tsx` 每次渲染重新解析 markdown。改进方向：① 新增 `markdownCache: LRUCache<string, Token[]>(500)`；② 渲染前检查缓存命中；③ 纯文本快速路径——无 markdown 标记时直接渲染 `<Text>`。
+
+**意义**：滚动回看历史消息时每帧重新解析 markdown——CPU 浪费导致卡顿。
+**缺失后果**：100 条消息的历史 × 每帧解析 = 滚动卡顿。
+**改进收益**：缓存命中 = 0ms 解析；纯文本快速路径 = 跳过 90% 的简单消息。
+
+---
+
+<a id="item-119"></a>
+
+### 119. OSC 8 终端超链接（P2）
+
+**思路**：文件路径和 URL 渲染为 OSC 8 超链接——用户可直接 Cmd+Click 在 IDE 中打开文件。格式：`\e]8;;file:///path\e\\text\e]8;;\e\\`。支持检测终端是否支持 OSC 8（iTerm2、WezTerm、Ghostty、kitty 等）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `ink/termio/osc.ts` | OSC 8 超链接序列生成 |
+| `ink/components/Text.tsx` | `hyperlink` 属性渲染 OSC 8 |
+| `ink/output.ts` | `HyperlinkPool` 超链接池化 + 去重 |
+
+**Qwen Code 修改方向**：文件路径作为纯文本输出，不可点击。改进方向：① 检测终端 OSC 8 支持（通过 `$TERM_PROGRAM`）；② 文件路径渲染时包裹 OSC 8 序列；③ URL 自动检测并包裹超链接。
+
+**意义**：Agent 输出大量文件路径——点击直接跳转 vs 手动复制粘贴。
+**缺失后果**：`src/utils/foo.ts:42` 只是文本——需手动复制路径再打开。
+**改进收益**：Cmd+Click 直接在 IDE 打开——文件导航效率提升 10×。
+
+---
+
+<a id="item-120"></a>
+
+### 120. 模糊搜索选择器（FuzzyPicker）（P2）
+
+**思路**：通用模糊搜索组件——输入过滤 + 键盘导航 + 异步预览加载。支持方向键上下选择、Tab/Shift+Tab 操作、滚动指示器（↑↓）。用于：会话选择、文件选择、命令选择、MCP 工具选择等所有列表场景。预览面板支持 bottom 和 right 两种布局。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/design-system/FuzzyPicker.tsx` | 通用模糊搜索、异步预览、方向键导航、滚动指示器 |
+| `components/HistorySearchDialog.tsx` | 会话搜索 + 预览（时间戳、首行、年龄格式化） |
+| `utils/highlightMatch.tsx` | 匹配字符高亮渲染 |
+
+**Qwen Code 修改方向**：`RadioButtonSelect.tsx` 和 `BaseSelectionList.tsx` 提供基础列表选择，但无模糊搜索过滤。改进方向：① 新建 `FuzzyPicker.tsx`——输入框 + 过滤列表 + 预览面板；② 集成 fzf-like 模糊匹配算法；③ 匹配字符高亮渲染。
+
+**意义**：50+ 会话历史需要快速搜索定位——逐个浏览效率极低。
+**缺失后果**：无搜索过滤的列表 = 用户只能逐项滚动。
+**改进收益**：输入 2-3 个字符即过滤到目标——搜索效率提升 10×。
+
+---
+
+<a id="item-121"></a>
+
+### 121. 统一设计系统组件库（P2）
+
+**思路**：12 个语义化 UI 原语组成设计系统——ThemedBox（主题感知边框）、ThemedText（语义颜色文本）、StatusIcon（✓✗⚠ℹ○ 状态图标）、Divider（带标题分割线）、ListItem（焦点/选中态列表项）、Pane（容器组件）、ProgressBar（Unicode 块字符进度条 ▏▎▍▌▋▊▉█）、LoadingState（spinner + 消息 + 副标题）。所有组件通过 ThemeProvider 统一主题。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/design-system/` | 12 个设计系统组件 |
+| `components/design-system/ThemeProvider.tsx` | React Context 主题管理 |
+| `components/design-system/StatusIcon.tsx` | 5 种状态图标 + 颜色映射 |
+| `components/design-system/ProgressBar.tsx` | Unicode 块字符精确进度条 |
+
+**Qwen Code 修改方向**：UI 组件分散在 `components/` 各处，无统一设计系统。改进方向：① 新建 `components/design-system/` 目录；② 抽取通用 UI 原语（ThemedBox、StatusIcon、Divider、ProgressBar 等）；③ 通过 ThemeProvider 统一注入主题色。
+
+**意义**：统一设计系统 = UI 一致性 + 新功能开发效率。
+**缺失后果**：每个组件自行管理颜色/边框样式——不一致 + 重复代码。
+**改进收益**：12 个语义原语 = 新功能直接组合，UI 风格自动一致。
+
+---
+
+<a id="item-122"></a>
+
+### 122. Markdown 表格终端渲染（P2）
+
+**思路**：Markdown 表格在终端中正确渲染——ANSI-aware 列宽计算（处理颜色转义不占宽度）+ 自动换行 + 对齐（左/右/居中）。处理 CJK 字符占 2 列宽度。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/MarkdownTable.tsx` | HTML table → 终端渲染、cell 换行、列宽计算 |
+
+**Qwen Code 修改方向**：`MarkdownDisplay.tsx` 的表格渲染在 CJK/ANSI 混合场景列对齐不准确。改进方向：① 列宽计算使用 `stringWidth()`（ANSI-aware + CJK 2-width）；② cell 内容超宽时自动换行而非截断；③ 支持对齐标记（`:---`/`:---:`/`---:`）。
+
+**意义**：Agent 输出对比表格是核心展示方式——对齐错误 = 信息不可读。
+**缺失后果**：CJK + ANSI 颜色混合时列错位——表格变成乱码。
+**改进收益**：ANSI-aware + CJK-aware 列宽 = 表格在任何语言下都对齐。
+
+---
+
+<a id="item-123"></a>
+
+### 123. 屏幕阅读器无障碍支持（P2）
+
+**思路**：检测环境变量启用无障碍模式。无障碍模式下：① 禁用动画（spinner 改为静态文本）；② Diff 渲染为纯文本格式；③ 进度信息以文本而非进度条显示；④ 颜色信息附带文字标签。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| 多个组件 | `isScreenReaderActive` 条件渲染——Diff/Spinner/Progress 均有无障碍替代 |
+
+**Qwen Code 修改方向**：`useIsScreenReaderEnabled()` hook 已存在但使用有限。改进方向：① Diff 组件添加屏幕阅读器替代渲染（纯文本模式）；② Spinner 改为 `"Processing..."` 静态文本；③ ProgressBar 改为 `"45% complete"` 文本；④ `NoColor` 主题作为无障碍默认。
+
+**意义**：视障开发者依赖屏幕阅读器——动画和颜色对他们是噪音。
+**缺失后果**：屏幕阅读器读出 "dots dots dots" 而非 "正在处理"。
+**改进收益**：无障碍模式 = 所有信息以文本呈现——屏幕阅读器完美工作。
+
+---
+
+<a id="item-124"></a>
+
+### 124. 色觉无障碍主题（Daltonized）（P2）
+
+**思路**：为色觉障碍用户提供专用主题——红绿色盲（deuteranopia）最常见（男性 8%），diff 的红/绿改为蓝/橙。提供 `light-daltonized` 和 `dark-daltonized` 两个变体。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/theme.ts` | `light-daltonized`、`dark-daltonized` 主题定义 |
+
+**Qwen Code 修改方向**：15 个主题中无色觉无障碍主题。改进方向：① 新增 `qwen-daltonized-dark` 和 `qwen-daltonized-light` 主题；② Diff 颜色从红/绿改为蓝/橙；③ 所有语义颜色（success/error/warning）使用色觉安全色板。
+
+**意义**：8% 男性用户有色觉障碍——红绿 diff 对他们看不出区别。
+**缺失后果**：红色删除和绿色新增 = 对色觉障碍用户完全相同。
+**改进收益**：蓝/橙 diff = 100% 用户可区分。
+
+---
+
+<a id="item-125"></a>
+
+### 125. 动画系统与卡顿状态检测（P2）
+
+**思路**：统一动画框架——`useAnimationFrame(intervalMs)` 以 60fps 驱动所有动画。共享时钟（ClockContext）确保多个动画同步。卡顿检测：spinner 超过阈值时间（如 30s）自动从蓝色 shimmer 渐变为红色，提示可能卡住。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/Spinner/useShimmerAnimation.ts` | shimmer 微光效果（glimmer index 计算） |
+| `components/Spinner/useStalledAnimation.ts` | 超时后颜色渐变为红色 |
+| `ink/hooks/use-animation-frame.ts` | `useAnimationFrame(intervalMs)` 统一动画驱动 |
+
+**Qwen Code 修改方向**：`GeminiRespondingSpinner.tsx` 使用 `ink-spinner` 库的固定动画，无超时状态检测。改进方向：① spinner 超过 30s 时颜色渐变为黄色/红色提示可能卡住；② shimmer 微光效果替代单调转圈；③ 共享动画时钟确保多组件同步。
+
+**意义**：用户看到同一个 spinner 转 60 秒——不知道是正常还是卡住了。
+**缺失后果**：spinner 永远蓝色 = "还在正常工作？还是卡住了？" 无法判断。
+**改进收益**：30s 后变红 = 用户立即知道可能需要干预（Escape 或等待）。
