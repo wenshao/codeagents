@@ -1878,3 +1878,111 @@
 **意义**：截图/设计稿常超过 API base64 上限——直接发送 = 被拒绝。
 **缺失后果**：大图片 = API 报错 = 用户需手动压缩再粘贴。
 **改进收益**：自动压缩流水线 = 任何图片自动适配 API 限制——粘贴即用。
+
+---
+
+<a id="item-146"></a>
+
+### 146. WeakRef/WeakMap 防止 GC 保留（P2）
+
+**思路**：长会话中的缓存对象使用 WeakRef/WeakMap 替代强引用——对象不再被使用时自动被 GC 回收。关键场景：① AbortController 父子关系用 WeakRef 防止子保留父；② Span 追踪用 `WeakRef<SpanContext>` + 30 分钟 TTL 清理孤儿；③ 消息渲染缓存用 `WeakMap<Message, string>` 随消息替换自动释放。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/abortController.ts` (L30-96) | `WeakRef<AbortController>` 父子关系 |
+| `utils/telemetry/sessionTracing.ts` (L71) | `activeSpans: Map<string, WeakRef<SpanContext>>` + 30min TTL |
+| `components/VirtualMessageList.tsx` (L24) | `WeakMap<RenderableMessage, string>` 渲染缓存 |
+| `ink/node-cache.ts` | `nodeCache: WeakMap<DOMElement, CachedLayout>` 布局缓存 |
+
+**Qwen Code 修改方向**：无 WeakRef/WeakMap 使用——所有缓存用强引用 Map。改进方向：① AbortController 父子关系用 WeakRef；② 消息渲染缓存改用 WeakMap；③ 搜索结果缓存改用 WeakMap。
+
+**意义**：长会话 8+ 小时——强引用缓存累积数百 MB 不可回收内存。
+**缺失后果**：Map 缓存 = 即使对象不再使用，内存永不释放。
+**改进收益**：WeakRef/WeakMap = 缓存随原始对象 GC 释放——零手动清理。
+
+---
+
+<a id="item-147"></a>
+
+### 147. 环形缓冲区与磁盘溢出（P2）
+
+**思路**：需要保留"最近 N 条"的场景使用 CircularBuffer（固定容量，满时覆盖最老）和 BoundedUUIDSet（cap=2000 环形 + Set O(1) 去重）。工具输出超过 8MB 内存限制自动溢出到磁盘文件。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/CircularBuffer.ts` | 固定容量环形缓冲区 |
+| `bridge/bridgeMessaging.ts` (L429-459) | `BoundedUUIDSet` cap=2000 |
+| `utils/task/TaskOutput.ts` | `CircularBuffer(1000)` + `DEFAULT_MAX_MEMORY = 8MB` 磁盘溢出 |
+
+**Qwen Code 修改方向**：`result-cache.ts` 和 `agent-interactive.ts` 的 messages 数组无上限；shell 输出 Buffer 无大小限制。改进方向：① 搜索结果缓存加 `maxSize` 或改用 LRU；② 代理消息数组加 `MAX_MESSAGES` 上限；③ shell 输出缓冲加磁盘溢出机制。
+
+**意义**：无上限数据结构是长会话内存泄漏的首要原因。
+**缺失后果**：1000 次搜索 × 10KB = 10MB 不可回收；长 shell 输出 = 数百 MB Buffer。
+**改进收益**：有界结构 = 内存有确定上限——无论会话多长都不超限。
+
+---
+
+<a id="item-148"></a>
+
+### 148. 终端渲染字符串池化（P2）
+
+**思路**：终端每帧处理数千 cell——CharPool/StylePool/HyperlinkPool 将重复字符串驻留为整数 ID，cell 存储 ID 而非字符串。帧间 diff 比较整数（O(1)）替代字符串比较。每行仅 3 次 intern 调用（非每字符），JIT 友好。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `ink/output.ts` (L553-584) | `styledCharsWithGraphemeClustering()` 每行仅 3 次 intern |
+| `ink/screen.ts` | CharPool、StylePool、HyperlinkPool 字符串→整数映射 |
+
+**Qwen Code 修改方向**：使用 Ink 标准渲染，无自定义池化。改进方向：① 代码高亮/diff 渲染场景使用行级缓存（避免重复着色）；② 如扩展自定义渲染层，考虑字符串驻留。
+
+**意义**：60fps 渲染每帧 10K+ 字符串 = GC 压力导致卡顿。
+**缺失后果**：GC pause = 渲染闪烁 + 输入延迟。
+**改进收益**：字符串池化 = 整数比较 + 零临时对象——GC 压力减少 90%+。
+
+---
+
+<a id="item-149"></a>
+
+### 149. 文件描述符与活跃句柄追踪（P2）
+
+**思路**：定期检查 `process._getActiveHandles()` 和 `/proc/self/fd` 数量。超过阈值（>100 handles / >500 fd）记录诊断警告。长会话中 MCP/LSP/子进程/文件观察器每个占 1-2 fd——不清理可能耗尽系统限制（1024）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/heapDumpService.ts` (L106-119) | `process._getActiveHandles().length`、`/proc/self/fd` 计数 |
+| `utils/heapDumpService.ts` (L141, L156) | >100 handles 警告、>500 fd 警告 |
+
+**Qwen Code 修改方向**：无句柄/fd 追踪——MCP 断连后 transport 可能未完全关闭。改进方向：① 定期检查句柄数；② 超阈值记录类型分布日志；③ 配合 heapDump 一起报告。
+
+**意义**：fd 耗尽 = EMFILE 错误 = 无法打开文件/建立连接。
+**缺失后果**：fd 泄漏无诊断——突然崩溃无法定位原因。
+**改进收益**：定期追踪 = 提前发现泄漏——在耗尽前修复。
+
+---
+
+<a id="item-150"></a>
+
+### 150. Memoization 冷启动去重与 Identity Guard（P2）
+
+**思路**：`memoizeWithTTLAsync` 的 `inFlight` Map 防止 N 个并发调用在缓存冷启动时触发 N 次昂贵操作。TTL 过期后返旧值 + 后台刷新（stale-while-revalidate）。Identity guard 防止并发 `cache.clear()` + 冷启动导致旧刷新覆盖新缓存。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/memoize.ts` (L120-220) | `memoizeWithTTLAsync()`——`inFlight: Map` 冷启动去重 |
+| `utils/memoize.ts` (L147-150, L175-189) | identity guard 防止 clear + cold-miss 数据错乱 |
+
+**Qwen Code 修改方向**：`crawlCache.ts` 有 TTL 但无冷启动去重。改进方向：① 新建 `memoizeAsync.ts`——Promise 去重 inFlight Map；② TTL 过期返旧值 + 后台刷新；③ identity guard 防 race condition。
+
+**意义**：10 个并发 MCP 工具刷新 → 无去重 = 10 次相同 API 调用。
+**缺失后果**：冷启动雪崩——高并发场景 N× 重复网络请求。
+**改进收益**：inFlight 去重 = 1 次调用，N-1 次等待——网络开销减少 90%。
