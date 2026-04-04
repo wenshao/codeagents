@@ -2400,9 +2400,9 @@
 
 ---
 
-<a id="item-171"></a>
+<a id="item-160"></a>
 
-### 171. 破坏性命令警告系统（P2）
+### 160. 破坏性命令警告系统（P2）
 
 **思路**：在权限审批对话框中对 8 种高风险 git/shell 操作显示具体风险说明——`git push --force`（"可能覆盖远程历史"）、`git reset --hard`（"丢弃未提交变更"）、`git clean -f`（"永久删除未跟踪文件"）、`git checkout .`/`git restore .`（"丢弃工作树变更"）、`git stash drop/clear`（"永久删除暂存"）、`git branch -D`（"强制删除分支"）、`--no-verify`（"跳过安全钩子"）、`git commit --amend`（"改写最后一次提交"）。用户看到风险说明后做出知情审批决策。
 
