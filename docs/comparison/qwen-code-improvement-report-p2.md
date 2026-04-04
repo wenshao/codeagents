@@ -673,21 +673,29 @@
 
 <a id="item-54"></a>
 
-### 54. Fullscreen Rendering（P2）
+### 54. 终端渲染优化（P2）
 
-**思路**：Alt-screen 渲染 + 虚拟滚动缓冲区——完全消除终端闪烁。通过 `CLAUDE_CODE_NO_FLICKER=1` 启用。
+**思路**：Claude Code 定制了 Ink 渲染引擎（`ink/` 目录 ~7,000 行），实现 8 层防闪烁机制。Qwen Code 使用标准 Ink 库仅有消息拆分一种防闪烁手段。核心技术：DEC 2026 同步输出（BSU/ESU 包裹所有输出，终端原子渲染）+ cell-level 差分（仅写变化的 cell）+ 双缓冲（frontFrame/backFrame swap）。
 
 **Claude Code 源码索引**：
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `utils/fullscreen.ts` | alt-screen 切换 + 虚拟化 |
+| `ink/terminal.ts` (248行) | DEC 2026 检测（`CSI ?2026h/l`）、`writeDiffToTerminal()` |
+| `ink/log-update.ts` (773行) | cell-level diff 引擎、DECSTBM 硬件滚动 |
+| `ink/renderer.ts` (178行) | `frontFrame`/`backFrame` 双缓冲、`prevFrameContaminated` |
+| `ink/output.ts` (797行) | Damage Tracking（dirty rectangle）、CharCache（16K cap） |
+| `ink/screen.ts` (1486行) | StylePool、CharPool、HyperlinkPool |
+| `ink/ink.tsx` (1722行) | 渲染节流（~60fps via `queueMicrotask`）、pool 管理 |
+| `utils/fullscreen.ts` | alt-screen 切换（`CLAUDE_CODE_NO_FLICKER=1`） |
 
-**Qwen Code 修改方向**：`AppContainer.tsx` 新增 fullscreen 模式；通过 ANSI alt-screen sequences 切换；Ink `<ScrollBox>` 虚拟化长内容。
+**Qwen Code 修改方向**：短期——对 Ink 的 `render()` 包裹 BSU/ESU 序列实现同步输出（最高性价比）；中期——引入 cell-level diff（参考 `ink/log-update.ts`）替代 Ink 默认的全量 rewrite。
 
-**意义**：终端闪烁是低性能终端上的常见 UX 问题。
-**缺失后果**：长输出时终端闪烁——视觉体验差。
-**改进收益**：alt-screen 无闪烁渲染——视觉稳定。
+**意义**：终端渲染质量直接决定用户对工具的第一感受——闪烁 = 不专业。
+**缺失后果**：流式输出和工具执行时终端闪烁——尤其在 tmux/低性能终端上明显。
+**改进收益**：8 层防闪烁机制——从"能用"到"丝滑"的 UX 跨越。
+
+**相关文章**：[终端渲染与防闪烁](../tools/claude-code/11-terminal-rendering.md)
 
 ---
 
@@ -770,3 +778,24 @@
 **意义**：与外部服务（GitHub/Slack/Linear）的集成需要 OAuth 管理。
 **缺失后果**：手动配置 token + 手动刷新——容易过期。
 **改进收益**：托管式 OAuth——一键连接，自动刷新，401 自动重试。
+
+---
+
+<a id="item-70"></a>
+
+### 70. MCP Auto-Reconnect（P2）
+
+**思路**：MCP 服务器连接不稳定（网络抖动、服务重启）时自动重连——连续 3 次错误后关闭连接并重建。SSE 传输层内置重连（maxRetries: 2），session 过期（404）时自动刷新。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/mcp/client.ts` (L1225-L1357) | `MAX_ERRORS_BEFORE_RECONNECT = 3`、`consecutiveConnectionErrors` 计数、SSE reconnection exhausted 检测 |
+| `services/mcp/types.ts` (L211) | `reconnectAttempt?: number` |
+
+**Qwen Code 修改方向**：`mcp-client.ts` 的 `McpClient` 类新增 `consecutiveErrors` 计数；`onError` 回调中累计错误数，达到 3 次时 `close()` + 重新 `connect()`。
+
+**意义**：MCP 工具是 Agent 扩展能力的核心——连接中断会导致 Agent 丧失关键工具能力。
+**缺失后果**：MCP 服务器短暂不可用 → Agent 整个 session 的 MCP 工具失效——需手动重启。
+**改进收益**：瞬态故障自动恢复——用户无感知，Agent 持续使用 MCP 工具。
