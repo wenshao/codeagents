@@ -6,7 +6,7 @@
 
 ---
 
-<a id="item-41"></a>
+<a id="item-23"></a>
 
 ### 23. Shell 安全增强（P2）
 
@@ -29,7 +29,7 @@
 
 ---
 
-<a id="item-42"></a>
+<a id="item-24"></a>
 
 ### 24. MDM 企业策略（P2）
 
@@ -53,7 +53,7 @@
 
 ---
 
-<a id="item-43"></a>
+<a id="item-25"></a>
 
 ### 25. API 实时 Token 计数（P2）
 
@@ -76,7 +76,7 @@
 
 ---
 
-<a id="item-44"></a>
+<a id="item-26"></a>
 
 ### 26. Output Styles（P2）
 
@@ -99,7 +99,7 @@
 
 ---
 
-<a id="item-45"></a>
+<a id="item-27"></a>
 
 ### 27. Fast Mode（P2）
 
@@ -122,7 +122,7 @@
 
 ---
 
-<a id="item-37"></a>
+<a id="item-28"></a>
 
 ### 28. Computer Use 桌面自动化（P2）
 
@@ -146,7 +146,7 @@
 
 ---
 
-<a id="item-38"></a>
+<a id="item-29"></a>
 
 ### 29. Denial Tracking（P2）
 
@@ -166,7 +166,7 @@
 
 ---
 
-<a id="item-39"></a>
+<a id="item-30"></a>
 
 ### 30. 并发 Session 管理（P2）
 
@@ -188,7 +188,7 @@
 
 ---
 
-<a id="item-40"></a>
+<a id="item-31"></a>
 
 ### 31. Git Diff 统计（P2）
 
@@ -210,7 +210,7 @@
 
 ---
 
-<a id="item-41"></a>
+<a id="item-32"></a>
 
 ### 32. 文件历史快照（P2）
 
@@ -232,7 +232,7 @@
 
 ---
 
-<a id="item-42"></a>
+<a id="item-33"></a>
 
 ### 33. Deep Link 协议（P2）
 
@@ -256,7 +256,7 @@
 
 ---
 
-<a id="item-43"></a>
+<a id="item-34"></a>
 
 ### 34. Plan 模式 Interview（P2）
 
@@ -277,7 +277,7 @@
 
 ---
 
-<a id="item-44"></a>
+<a id="item-35"></a>
 
 ### 35. BriefTool（P2）
 
@@ -297,7 +297,7 @@
 
 ---
 
-<a id="item-45"></a>
+<a id="item-36"></a>
 
 ### 36. SendMessageTool（P2）
 
@@ -764,3 +764,7 @@
 | `services/mcp/client.ts` | OAuth token 管理 + 401 重试 + 连接器去重 |
 
 **Qwen Code 修改方向**：`mcp-client.ts` 扩展 OAuth 连接管理；新增托管连接器配置 UI（类似 `/mcp` 对话框）。
+
+**意义**：与外部服务（GitHub/Slack/Linear）的集成需要 OAuth 管理。
+**缺失后果**：手动配置 token + 手动刷新——容易过期。
+**改进收益**：托管式 OAuth——一键连接，自动刷新，401 自动重试。

@@ -499,3 +499,7 @@
 | `cli/print.ts` | headless 执行入口 |
 
 **Qwen Code 修改方向**：创建 `qwenlm/qwen-code-gitlab` CI 模板；核心调用 `qwen-code -p --output-format json` + `glab mr note`。
+
+**意义**：GitLab 在企业用户中占比显著——仅支持 GitHub 覆盖面不够。
+**缺失后果**：GitLab 用户无法在 CI 中集成 Agent。
+**改进收益**：覆盖 GitLab 用户群——企业级 CI 集成。
