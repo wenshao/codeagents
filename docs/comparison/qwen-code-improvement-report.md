@@ -171,6 +171,11 @@
 | **P2** | Git 状态自动注入上下文 — gitBranch/cwd/platform/fileCount 每轮注入 [↓](./qwen-code-improvement-report-p2.md#item-132) | 仅平台和日期 | 小 | — |
 | **P2** | IDE 上下文注入与嵌套记忆触发 — 选区→目录规范自动注入 + 诊断双源收集 [↓](./qwen-code-improvement-report-p2.md#item-133) | 无嵌套记忆触发 | 中 | — |
 | **P2** | 图片压缩多策略流水线 — format→resize→quality 阶梯 + JPEG fallback [↓](./qwen-code-improvement-report-p2.md#item-134) | 仅计算 token/不压缩 | 中 | — |
+| **P2** | WeakRef/WeakMap 防止 GC 保留 — AbortController/渲染缓存/span 自动释放 [↓](./qwen-code-improvement-report-p2.md#item-146) | 全部强引用 Map | 小 | — |
+| **P2** | 环形缓冲区与磁盘溢出 — CircularBuffer + BoundedUUIDSet + 8MB 溢出 [↓](./qwen-code-improvement-report-p2.md#item-147) | 无上限数据结构 | 小 | — |
+| **P2** | 终端渲染字符串池化 — CharPool/StylePool 整数 ID 替代字符串 [↓](./qwen-code-improvement-report-p2.md#item-148) | Ink 标准渲染 | 小 | — |
+| **P2** | 文件描述符与句柄追踪 — >100 handles / >500 fd 预警 [↓](./qwen-code-improvement-report-p2.md#item-149) | 无追踪 | 小 | — |
+| **P2** | Memoization 冷启动去重 — inFlight Map + TTL 后台刷新 + identity guard [↓](./qwen-code-improvement-report-p2.md#item-150) | 无去重 | 小 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-135) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-136) | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3.md#item-137) | 缺失 | 中 | — |
@@ -192,7 +197,7 @@
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
 | [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（系统提示模块化、@include、附件协议、Thinking 管理等） | 46 |
-| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（cache_edits、消息修复、Git 注入、图片压缩等） | 88 |
+| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（cache_edits、WeakRef、环形缓冲、字符串池化、fd 追踪等） | 93 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结
