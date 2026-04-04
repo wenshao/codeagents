@@ -10,24 +10,43 @@
 
 ### 1. 多层上下文压缩（P0）
 
-**思路**：不做一次性全量摘要，而是分层递进——先清旧工具结果（MicroCompact），再自动触发全量摘要（~93% 阈值），最后记忆感知压缩。大多数场景 MicroCompact 就够。
+**思路**：Claude Code 把上下文压缩设计为 **5 层递进式系统**——从最轻量到最重量级逐层升级，大多数情况下在前两层就解决问题，用户完全无感知：
+
+| 层级 | 名称 | 触发条件 | 做什么 | 代价 |
+|:----:|------|----------|--------|------|
+| L1 | cache_edits | 每轮自动 | 通过 API 参数标记旧工具结果为"已删除"，服务端在缓存前缀上原地删除 | **零**——不破坏 prompt cache |
+| L2 | Time-Based MicroCompact | 空闲 >1 小时（cache TTL 过期） | 将旧工具结果内容替换为 `[Old tool result content cleared]` | **极低**——仅清内容不改结构 |
+| L3 | Session Memory Compact | token 达 ~83% 窗口 | 利用 Session Memory 的结构化笔记裁剪旧消息（保留最近 5 条文本消息 + 10K-40K token 预算） | **低**——不调用 LLM |
+| L4 | Full Auto-Compact | L3 不够或失败 | 调用 LLM 生成 9 章节摘要（目标/概念/文件/错误/过程/用户消息/待办/当前工作/下一步），然后自动恢复最近 5 个文件 + 活跃 Skill + Plan | **中**——一次 LLM 调用（20K output token 预算） |
+| L5 | Reactive PTL Recovery | API 返回 `prompt_too_long` | 裁剪最早的消息组后重试（最多 3 次），每次按 token 超限量或 20% 裁剪 | **高**——丢弃旧消息，但避免报错 |
+
+**关键设计细节**：
+
+- **8 种可清除工具**（MicroCompact 只清这些，保留 Agent/Skill/MCP 结果）：FileRead、Bash、Grep、Glob、WebSearch、WebFetch、FileEdit、FileWrite
+- **自动触发阈值**：`有效窗口 - 13,000 token`（200K 窗口 ≈ 83.5%，1M 窗口 ≈ 98.7%）
+- **断路器**：连续 3 次 auto-compact 失败后停止重试（曾造成 ~250K 次/天无效 API 调用）
+- **压缩后自动恢复**：最近 5 个文件（50K token 预算，每文件 5K 上限）+ 活跃 Skill（25K 预算）+ Plan 文件
+- **图片剥离**：压缩前先去掉图片（防止压缩请求本身触发 prompt_too_long）
 
 **Claude Code 源码索引**：
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `services/compact/microCompact.ts` (531行) | `COMPACTABLE_TOOLS` Set（8 种可清除工具）、`consumePendingCacheEdits()` |
-| `services/compact/autoCompact.ts` | `AUTOCOMPACT_BUFFER_TOKENS = 13_000`（~93% 触发） |
-| `services/compact/compact.ts` (1705行) | `compactConversation()`、`POST_COMPACT_MAX_FILES_TO_RESTORE = 5` |
-| `services/compact/prompt.ts` | 9 章节摘要 Prompt 模板 |
+| `services/compact/microCompact.ts` (531行) | `COMPACTABLE_TOOLS` Set（8 种）、cache_edits 路径、time-based 路径 |
+| `services/compact/autoCompact.ts` (351行) | `AUTOCOMPACT_BUFFER_TOKENS = 13_000`、`MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3` 断路器 |
+| `services/compact/compact.ts` (1705行) | `compactConversation()`、9 章节摘要模板、`POST_COMPACT_MAX_FILES_TO_RESTORE = 5` |
+| `services/compact/sessionMemoryCompact.ts` (631行) | `minTokens: 10K`、`maxTokens: 40K`、`minTextBlockMessages: 5` |
+| `services/compact/prompt.ts` | `NO_TOOLS_PREAMBLE`（防止模型在摘要时调用工具） |
 
-**Qwen Code 修改方向**：在 `chatCompressionService.ts` 新增 `microCompact()` 方法，在 `agent-core.ts` 的 `processFunctionCalls()` 后调用；`tryCompressChat()` 改为 93% 自动触发。
+**Qwen Code 现状**：单层压缩——用户手动触发 `/compress` 或 token 超 70% 阈值时一次性全量压缩。基于字符数（非 token 数）定位分割点，保留后 30% 历史。压缩后不恢复文件/Skill，用户需重新 read 文件。5 章节摘要模板（vs Claude 的 9 章节）。
+
+**Qwen Code 修改方向**：① 新增 MicroCompact——每轮检查旧工具结果，替换为 `[cleared]`（最轻量）；② 阈值从 70% 改为 ~83%（给模型更多工作空间）；③ auto-compact 增加断路器（3 次失败停止）；④ 压缩后自动恢复最近 5 个文件 + 活跃 Skill；⑤ 增加 prompt_too_long 被动恢复（裁剪最早消息组后重试）。
 
 **相关文章**：[上下文压缩深度对比](./context-compression-deep-dive.md)
 
-**意义**：长会话是 AI Agent 的核心使用场景，压缩质量直接决定长会话的可用性。
-**缺失后果**：用户需手动 /compress，压缩后模型'失忆'需重新描述上下文。
-**改进收益**：长会话无限延续无需干预，压缩后自动恢复最近文件和记忆。
+**意义**：长会话是 AI Agent 的核心使用场景——一个复杂重构可能持续 50+ 轮对话。
+**缺失后果**：用户需手动 `/compress`，压缩后模型"失忆"——不知道刚才改了哪些文件。
+**改进收益**：5 层自动压缩 = 用户零干预 + 压缩后自动恢复文件上下文——长会话无限延续。
 
 ---
 
