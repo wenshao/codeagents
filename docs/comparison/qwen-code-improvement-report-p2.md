@@ -6,9 +6,9 @@
 
 ---
 
-<a id="item-37"></a>
+<a id="item-42"></a>
 
-### 37. Shell 安全增强（P2）
+### 42. Shell 安全增强（P2）
 
 **思路**：在 AST 读写分类基础上，补充专项检查——IFS 注入、Unicode 空白、Zsh 危险命令、花括号展开等。AST 是主路径（精确），专项检查是补充（覆盖面）。
 
@@ -29,9 +29,9 @@
 
 ---
 
-<a id="item-38"></a>
+<a id="item-43"></a>
 
-### 38. MDM 企业策略（P2）
+### 43. MDM 企业策略（P2）
 
 **思路**：通过 OS-native 方式读取企业策略——macOS plist、Windows Registry、Linux 文件。5 级 First-Source-Wins 优先级（Remote > HKLM > file > drop-in > HKCU）。启动时子进程并行读取避免阻塞。
 
@@ -53,9 +53,9 @@
 
 ---
 
-<a id="item-39"></a>
+<a id="item-44"></a>
 
-### 39. API 实时 Token 计数（P2）
+### 44. API 实时 Token 计数（P2）
 
 **思路**：3 层回退——API `countTokens()` → Haiku 小模型回退 → 粗估（4 bytes/token）。每次 API 调用前精确计数，比静态模式匹配更准确。
 
@@ -76,9 +76,9 @@
 
 ---
 
-<a id="item-40"></a>
+<a id="item-45"></a>
 
-### 40. Output Styles（P2）
+### 45. Output Styles（P2）
 
 **思路**：内置 Learning（暂停要求用户写代码，插入 `TODO(human)` 占位符）和 Explanatory（添加 "Insight" 教育块）两种模式。通过 settings 或 plugin 可扩展自定义 style。
 
@@ -99,9 +99,9 @@
 
 ---
 
-<a id="item-41"></a>
+<a id="item-46"></a>
 
-### 41. Fast Mode（P2）
+### 46. Fast Mode（P2）
 
 **思路**：同一模型（如 Opus 4.6）的标准/快速推理切换。快速模式 $30/$150/Mtok（标准 $5/$25）。含冷却机制——429 后自动回退到标准，冷却结束恢复。
 
@@ -122,9 +122,9 @@
 
 ---
 
-<a id="item-42"></a>
+<a id="item-47"></a>
 
-### 42. Computer Use 桌面自动化（P2）
+### 47. Computer Use 桌面自动化（P2）
 
 **思路**：通过 MCP Server 桥接原生模块——截图（SCContentFilter）、鼠标/键盘（Rust enigo NAPI）、剪贴板操作。TCC 权限门控 + GrowthBook 特性开关 + 订阅检查。
 
@@ -146,9 +146,9 @@
 
 ---
 
-<a id="item-43"></a>
+<a id="item-48"></a>
 
-### 43. Denial Tracking（P2）
+### 48. Denial Tracking（P2）
 
 **思路**：记录权限分类器的连续拒绝/成功次数（`maxConsecutive: 3`, `maxTotal: 20`）。超限时自动回退到 prompting 模式，避免分类器陷入"全拒绝"死循环。
 
@@ -166,9 +166,9 @@
 
 ---
 
-<a id="item-44"></a>
+<a id="item-49"></a>
 
-### 44. 并发 Session 管理（P2）
+### 49. 并发 Session 管理（P2）
 
 **思路**：PID 文件（`~/.claude/sessions/{pid}.json`）追踪多终端会话——记录 kind（interactive/bg/daemon）、cwd、startedAt。`countConcurrentSessions()` 扫描并过滤已退出进程。
 
@@ -188,9 +188,9 @@
 
 ---
 
-<a id="item-45"></a>
+<a id="item-50"></a>
 
-### 45. Git Diff 统计（P2）
+### 50. Git Diff 统计（P2）
 
 **思路**：两阶段 diff——`git diff --numstat` 快速探测（文件数 + 行数），再 `git diff` 完整 hunks。限制：50 文件、1MB/文件、400 行/文件。merge/rebase 期间跳过。
 
@@ -210,9 +210,9 @@
 
 ---
 
-<a id="item-46"></a>
+<a id="item-51"></a>
 
-### 46. 文件历史快照（P2）
+### 51. 文件历史快照（P2）
 
 **思路**：编辑前自动备份（SHA256 + mtime），按消息粒度创建快照（上限 100 个/session）。支持回滚到任意消息时刻——比 git checkpoint 更细粒度。
 
@@ -232,9 +232,9 @@
 
 ---
 
-<a id="item-47"></a>
+<a id="item-52"></a>
 
-### 47. Deep Link 协议（P2）
+### 52. Deep Link 协议（P2）
 
 **思路**：`claude-cli://open?q=&cwd=&repo=` URI scheme——OS 协议注册（macOS .app / Linux .desktop / Windows Registry）→ 终端自动检测（10+ 终端优先级链）→ 预填充 prompt。安全：来源 banner + 手动 Enter 确认。
 
@@ -256,9 +256,9 @@
 
 ---
 
-<a id="item-48"></a>
+<a id="item-53"></a>
 
-### 48. Plan 模式 Interview（P2）
+### 53. Plan 模式 Interview（P2）
 
 **思路**：`EnterPlanMode` 支持 interview 阶段——先通过提问收集需求信息，再制定实施计划。分离"探索"和"执行"，减少返工。
 
@@ -277,9 +277,9 @@
 
 ---
 
-<a id="item-49"></a>
+<a id="item-54"></a>
 
-### 49. BriefTool（P2）
+### 54. BriefTool（P2）
 
 **思路**：Agent 向用户发送异步状态消息（含附件），不中断工具执行。用于 proactive status 更新——"已完成 3/5 个文件修改"。
 
@@ -297,9 +297,9 @@
 
 ---
 
-<a id="item-50"></a>
+<a id="item-55"></a>
 
-### 50. SendMessageTool（P2）
+### 55. SendMessageTool（P2）
 
 **思路**：多代理间消息传递——单播（name）、广播（`*`）、UDS Socket、Remote Control bridge。支持结构化消息（shutdown_request、plan_approval）。
 
@@ -320,9 +320,9 @@
 
 ---
 
-<a id="item-51"></a>
+<a id="item-56"></a>
 
-### 51. FileIndex（P2）
+### 56. FileIndex（P2）
 
 **思路**：fzf 风格模糊文件搜索——异步增量索引 + nucleo 风格匹配。不需精确文件名即可定位。
 
@@ -340,9 +340,9 @@
 
 ---
 
-<a id="item-52"></a>
+<a id="item-57"></a>
 
-### 52. Notebook Edit（P2）
+### 57. Notebook Edit（P2）
 
 **思路**：Jupyter `.ipynb` 文件的 cell 级编辑——插入/修改 code/markdown cell，自动追踪 cell ID，集成文件历史快照。
 
@@ -360,9 +360,9 @@
 
 ---
 
-<a id="item-53"></a>
+<a id="item-58"></a>
 
-### 53. 自定义快捷键（P2）
+### 58. 自定义快捷键（P2）
 
 **思路**：支持 multi-chord 组合键（如 `Ctrl+K Ctrl+S`）+ 跨平台适配（Windows VT mode 检测）+ `~/.claude/keybindings.json` 自定义。Reserved keys（Ctrl+C/D）不可重绑。
 
@@ -380,9 +380,9 @@
 
 ---
 
-<a id="item-54"></a>
+<a id="item-59"></a>
 
-### 54. Session Ingress Auth（P2）
+### 59. Session Ingress Auth（P2）
 
 **思路**：远程会话 bearer token 认证——通过文件描述符或 well-known 文件传递 token。支持企业多用户环境下的安全 Agent 访问。
 
@@ -400,9 +400,9 @@
 
 ---
 
-<a id="item-55"></a>
+<a id="item-60"></a>
 
-### 55. 企业代理支持（P2）
+### 60. 企业代理支持（P2）
 
 **思路**：CONNECT-to-WebSocket relay 处理企业代理环境——CA cert 链注入、NO_PROXY 白名单（RFC1918 + API + GitHub + 包注册表）。失败时 fail-open 不阻断。
 
@@ -421,9 +421,9 @@
 
 ---
 
-<a id="item-56"></a>
+<a id="item-61"></a>
 
-### 56. ConfigTool（P2）
+### 61. ConfigTool（P2）
 
 **思路**：模型通过工具 get/set 设置（主题、模型、权限等），带 schema 验证。模型可根据任务自动调整配置。
 
@@ -441,9 +441,9 @@
 
 ---
 
-<a id="item-57"></a>
+<a id="item-62"></a>
 
-### 57. 终端主题检测（P2）
+### 62. 终端主题检测（P2）
 
 **思路**：通过 OSC 11 查询终端背景色 + `$COLORFGBG` 环境变量回退——解析 `auto` 主题为具体 dark/light。
 
@@ -461,9 +461,9 @@
 
 ---
 
-<a id="item-58"></a>
+<a id="item-63"></a>
 
-### 58. 自动后台化 Agent（P2）
+### 63. 自动后台化 Agent（P2）
 
 **思路**：超过阈值（GrowthBook 配置的 ms 数）的 Agent 自动转后台——不阻塞用户交互。
 
@@ -481,9 +481,9 @@
 
 ---
 
-<a id="item-59"></a>
+<a id="item-64"></a>
 
-### 59. 队列输入编辑（P2）
+### 64. 队列输入编辑（P2）
 
 **思路**：排队中的命令在 prompt 下方可见。按 Escape 可将可编辑命令弹出到输入框重新编辑（过滤 task-notification、isMeta 等不可编辑项）。
 
@@ -505,9 +505,9 @@
 
 ---
 
-<a id="item-60"></a>
+<a id="item-65"></a>
 
-### 60. 状态栏紧凑布局（P2）
+### 65. 状态栏紧凑布局（P2）
 
 **思路**：状态栏固定高度不随内容伸缩——"height so the footer never grows/shrinks and shifts scroll content"。最大化终端内容区域。
 
@@ -526,9 +526,9 @@
 
 ---
 
-<a id="item-61"></a>
+<a id="item-66"></a>
 
-### 61. Conditional Hooks（P2）
+### 66. Conditional Hooks（P2）
 
 **思路**：Hook 支持 `if` 字段——使用权限规则语法过滤何时执行（如 `Bash(git:*)` 仅在 git 命令时触发）。
 
@@ -547,9 +547,9 @@
 
 ---
 
-<a id="item-62"></a>
+<a id="item-67"></a>
 
-### 62. Transcript Search（P2）
+### 67. Transcript Search（P2）
 
 **思路**：transcript 模式下按 `/` 进入搜索，输入关键词后 `n`/`N` 在匹配项间导航。
 
@@ -567,9 +567,9 @@
 
 ---
 
-<a id="item-63"></a>
+<a id="item-68"></a>
 
-### 63. Bash File Watcher（P2）
+### 68. Bash File Watcher（P2）
 
 **思路**：检测 formatter/linter 在 Agent 读取文件后修改了该文件——Agent 基于旧内容编辑会冲突。发出警告并建议重新 Read。
 
@@ -588,9 +588,9 @@
 
 ---
 
-<a id="item-64"></a>
+<a id="item-69"></a>
 
-### 64. /batch 并行操作（P2）
+### 69. /batch 并行操作（P2）
 
 **思路**：编排大规模并行变更——将任务拆分为多个子任务，fork 多个 Agent 并行执行，汇总结果。
 
@@ -608,9 +608,9 @@
 
 ---
 
-<a id="item-65"></a>
+<a id="item-70"></a>
 
-### 65. Chrome Extension 浏览器调试（P2）
+### 70. Chrome Extension 浏览器调试（P2）
 
 **思路**：Chrome 扩展通过 MCP 协议桥接——提供 `read_page`（DOM）、`read_console_messages`（Console）、`read_network_requests`（Network）、`navigate`、`switch_browser` 工具。通过 `/web-setup` 配置。
 
@@ -629,9 +629,9 @@
 
 ---
 
-<a id="item-66"></a>
+<a id="item-71"></a>
 
-### 66. /effort 命令（P2）
+### 71. /effort 命令（P2）
 
 **思路**：动态设置模型 effort 级别（低 ○ / 中 ◐ / 高 ●）——影响推理深度和 token 消耗。显示在 prompt bar 和 spinner 上。
 
@@ -650,9 +650,9 @@
 
 ---
 
-<a id="item-67"></a>
+<a id="item-72"></a>
 
-### 67. Status Line 自定义（P2）
+### 72. Status Line 自定义（P2）
 
 **思路**：用户配置 shell 脚本在状态栏展示自定义信息（如 rate limit 用量、git branch、构建状态）。脚本定期执行，输出显示在 footer。
 
@@ -671,9 +671,9 @@
 
 ---
 
-<a id="item-68"></a>
+<a id="item-73"></a>
 
-### 68. 终端渲染优化（P2）
+### 73. 终端渲染优化（P2）
 
 **思路**：Claude Code 定制了 Ink 渲染引擎（`ink/` 目录 ~7,000 行），实现 8 层防闪烁机制。Qwen Code 使用标准 Ink 库仅有消息拆分一种防闪烁手段。核心技术：DEC 2026 同步输出（BSU/ESU 包裹所有输出，终端原子渲染）+ cell-level 差分（仅写变化的 cell）+ 双缓冲（frontFrame/backFrame swap）。
 
@@ -699,9 +699,9 @@
 
 ---
 
-<a id="item-69"></a>
+<a id="item-74"></a>
 
-### 69. Image [Image #N] Chips（P2）
+### 74. Image [Image #N] Chips（P2）
 
 **思路**：粘贴图片后在输入框生成 `[Image #1]`、`[Image #2]` 位置标记——用户可在 prompt 中引用特定图片（"修复 [Image #1] 中的 bug"）。
 
@@ -719,9 +719,9 @@
 
 ---
 
-<a id="item-70"></a>
+<a id="item-75"></a>
 
-### 70. --max-turns 限制（P2）
+### 75. --max-turns 限制（P2）
 
 **思路**：headless 模式 `--max-turns N` 限制最大 agentic turn 数——防止无限循环，CI 精确控制执行范围。
 
@@ -740,9 +740,9 @@
 
 ---
 
-<a id="item-71"></a>
+<a id="item-76"></a>
 
-### 71. --max-budget-usd 花费上限（P2）
+### 76. --max-budget-usd 花费上限（P2）
 
 **思路**：headless 模式 `--max-budget-usd N` 限制 USD 花费——累计超过阈值自动停止。防止意外高消耗。
 
@@ -761,9 +761,9 @@
 
 ---
 
-<a id="item-72"></a>
+<a id="item-77"></a>
 
-### 72. Connectors 托管式 MCP（P2）
+### 77. Connectors 托管式 MCP（P2）
 
 **思路**：托管式 MCP 连接——OAuth 认证的 GitHub/Slack/Linear/Google Drive 等连接器。处理 token 刷新、401 重试、连接器去重（本地优先）。
 
@@ -781,9 +781,9 @@
 
 ---
 
-<a id="item-73"></a>
+<a id="item-78"></a>
 
-### 73. MCP Auto-Reconnect（P2）
+### 78. MCP Auto-Reconnect（P2）
 
 **思路**：MCP 服务器连接不稳定（网络抖动、服务重启）时自动重连——连续 3 次错误后关闭连接并重建。SSE 传输层内置重连（maxRetries: 2），session 过期（404）时自动刷新。
 
@@ -802,9 +802,9 @@
 
 ---
 
-<a id="item-74"></a>
+<a id="item-79"></a>
 
-### 74. Tool Result 大小限制（P2）
+### 79. Tool Result 大小限制（P2）
 
 **思路**：每个工具定义 `maxResultSizeChars`（如 100K 字符）。超限结果持久化到磁盘文件，模型收到预览 + 文件路径而非完整内容——防止单个巨大工具结果占满上下文。
 
@@ -823,9 +823,9 @@
 
 ---
 
-<a id="item-75"></a>
+<a id="item-80"></a>
 
-### 75. Output Token 升级重试（P2）
+### 80. Output Token 升级重试（P2）
 
 **思路**：首次请求用保守的 `max_output_tokens = 8_000`（BQ p99 仅 4911 tokens）。如果 `stop_reason === 'max_tokens'`，自动用 `64_000` 重试一次——避免默认预留过多槽位。
 
@@ -844,9 +844,9 @@
 
 ---
 
-<a id="item-76"></a>
+<a id="item-81"></a>
 
-### 76. Ripgrep 三级回退（P2）
+### 81. Ripgrep 三级回退（P2）
 
 **思路**：Grep 工具解析 `rg` 二进制通过三级回退：系统安装 → Bun 内嵌 → 平台特定 vendored 二进制。EAGAIN 错误（资源不足）时自动用 `-j 1`（单线程）重试。
 
@@ -864,9 +864,9 @@
 
 ---
 
-<a id="item-77"></a>
+<a id="item-82"></a>
 
-### 77. MAGIC DOC 自更新文档（P2）
+### 82. MAGIC DOC 自更新文档（P2）
 
 **思路**：标记 `# MAGIC DOC: [title]` 的 markdown 文件在 Agent 空闲时自动更新。后台 forked subagent 读取文件 + 项目上下文 → 更新内容。单文件范围限制防止越界。支持自定义 prompt（`~/.claude/magic-docs/prompt.md`）。
 
@@ -885,9 +885,9 @@
 
 ---
 
-<a id="item-78"></a>
+<a id="item-83"></a>
 
-### 78. 目录/文件路径补全（P2）
+### 83. 目录/文件路径补全（P2）
 
 **思路**：输入含 `/` 或 `./` 时触发文件路径补全——扫描目录 + LRU 缓存避免重复 I/O。结合 `.gitignore` 过滤不相关文件。
 
@@ -905,9 +905,9 @@
 
 ---
 
-<a id="item-79"></a>
+<a id="item-84"></a>
 
-### 79. 上下文 Tips 系统（P2）
+### 84. 上下文 Tips 系统（P2）
 
 **思路**：基于当前配置、IDE 类型、插件状态、session 历史等条件动态显示提示（如"检测到 VS Code，推荐安装 Claude Code 扩展"）。Tips 注册表管理所有提示及其触发条件。
 
@@ -925,9 +925,9 @@
 
 ---
 
-<a id="item-80"></a>
+<a id="item-85"></a>
 
-### 80. 权限对话框文件预览（P2）
+### 85. 权限对话框文件预览（P2）
 
 **思路**：权限审批对话框中显示将被操作的文件内容预览 + 语法高亮——用户看到具体变更内容再决定是否批准。
 
@@ -945,9 +945,9 @@
 
 ---
 
-<a id="item-81"></a>
+<a id="item-86"></a>
 
-### 81. Token 使用实时警告（P2）
+### 86. Token 使用实时警告（P2）
 
 **思路**：在 UI 中实时显示 token 使用量、压缩进度、错误计数。不是在 `/stats` 命令中查看，而是在操作过程中自动浮现警告。
 
@@ -965,9 +965,9 @@
 
 ---
 
-<a id="item-82"></a>
+<a id="item-87"></a>
 
-### 82. 快捷键提示组件（P2）
+### 87. 快捷键提示组件（P2）
 
 **思路**：统一的 `KeyboardShortcutHint` 组件在 UI 各处显示当前操作的快捷方式（如 "(Ctrl+O to expand)"），且会根据用户自定义 keybindings 动态更新显示。
 
@@ -986,9 +986,9 @@
 
 ---
 
-<a id="item-83"></a>
+<a id="item-88"></a>
 
-### 83. 终端完成通知（P2）
+### 88. 终端完成通知（P2）
 
 **思路**：后台任务完成时通过 OSC 转义序列通知终端——iTerm2 notification、Kitty notification、Ghostty notification 各有专用 OSC。同时上报进度百分比，终端标签可显示进度。
 
@@ -1006,9 +1006,9 @@
 
 ---
 
-<a id="item-84"></a>
+<a id="item-89"></a>
 
-### 84. Spinner 工具名 + 计时（P2）
+### 89. Spinner 工具名 + 计时（P2）
 
 **思路**：Spinner 不再只显示"Responding"，而是显示当前执行的工具名 + 已用时间——如"Bash(npm test) · 15s"。工具名从 `spinnerVerbs.ts` 的动词表中选择友好显示。
 
@@ -1027,9 +1027,9 @@
 
 ---
 
-<a id="item-85"></a>
+<a id="item-90"></a>
 
-### 85. /rewind 检查点回退（P2）
+### 90. /rewind 检查点回退（P2）
 
 **思路**：`/rewind` 命令恢复代码和对话到之前的检查点——结合 file history snapshots 和 git 状态。交互式检查点选择器展示每个点的变更摘要。
 
@@ -1048,9 +1048,9 @@
 
 ---
 
-<a id="item-86"></a>
+<a id="item-91"></a>
 
-### 86. /copy OSC 52 剪贴板（P2）
+### 91. /copy OSC 52 剪贴板（P2）
 
 **思路**：`/copy` 命令通过 OSC 52 转义序列将内容写入系统剪贴板——SSH 远程环境也能工作。终端不支持 OSC 52 时自动回退到 temp 文件 + 提示路径。
 
@@ -1068,9 +1068,9 @@
 
 ---
 
-<a id="item-87"></a>
+<a id="item-92"></a>
 
-### 87. 首次运行引导向导（P2）
+### 92. 首次运行引导向导（P2）
 
 **思路**：首次运行显示多步引导——主题选择 → 认证（OAuth/API Key）→ 安全设置 → 终端优化建议。每步有分析追踪确保完成率。
 
@@ -1089,9 +1089,9 @@
 
 ---
 
-<a id="item-88"></a>
+<a id="item-93"></a>
 
-### 88. /doctor 诊断工具（P2）
+### 93. /doctor 诊断工具（P2）
 
 **思路**：`/doctor` 检查系统环境健康——git 版本、Node.js/Bun 版本、shell 类型、权限配置、代理设置、MCP 服务器状态。输出可操作的修复建议。
 
@@ -1109,9 +1109,9 @@
 
 ---
 
-<a id="item-89"></a>
+<a id="item-94"></a>
 
-### 89. 结构化 Diff 渲染（P2）
+### 94. 结构化 Diff 渲染（P2）
 
 **思路**：文件编辑后展示结构化 diff——Rust NAPI 快速着色 + 行号 gutter 列 + 语法高亮。比基础 inline diff 更易读。
 
@@ -1130,9 +1130,9 @@
 
 ---
 
-<a id="item-90"></a>
+<a id="item-95"></a>
 
-### 90. MCP 并行连接 — 动态插槽调度 + 双层并发（P2）
+### 95. MCP 并行连接 — 动态插槽调度 + 双层并发（P2）
 
 **思路**：MCP 服务器分两组并行初始化——本地（stdio/sdk，并发 3）和远程（sse/http/ws，并发 20），`Promise.all()` 同时启动两组。关键优化：用 `pMap` 动态插槽调度替代固定批次——一个慢服务器只占一个插槽，不阻塞整批。工具/命令/资源获取也并行（`Promise.all([fetchTools, fetchCommands, fetchResources])`）。LRU 缓存（20 条）避免重复获取。
 
@@ -1154,9 +1154,9 @@
 
 ---
 
-<a id="item-91"></a>
+<a id="item-96"></a>
 
-### 91. 插件/Skill 并行加载与启动缓存（P2）
+### 96. 插件/Skill 并行加载与启动缓存（P2）
 
 **思路**：3 层并行——① marketplace 插件 + session 插件 `Promise.all()` 并行加载；② 每个插件内部 commands/agents/hooks 目录存在检查 `Promise.all([pathExists(commandsDir), pathExists(agentsDir), pathExists(hooksDir)])`；③ 加载结果缓存，热重载时仅增量更新变更的插件。
 
@@ -1176,9 +1176,9 @@
 
 ---
 
-<a id="item-92"></a>
+<a id="item-97"></a>
 
-### 92. Speculation 流水线建议（Pipelined Suggestions）（P2）
+### 97. Speculation 流水线建议（Pipelined Suggestions）（P2）
 
 **思路**：当前 speculation 执行完成后，**立即并行生成下一个建议**（pipelined suggestion）。用户接受当前建议时，下一个建议已经准备好——连续 Tab 接受零延迟。投机结果作为上下文传给下一轮建议生成，确保连贯性。
 
@@ -1198,9 +1198,9 @@
 
 ---
 
-<a id="item-93"></a>
+<a id="item-98"></a>
 
-### 93. 写穿缓存与 TTL 后台刷新（P2）
+### 98. 写穿缓存与 TTL 后台刷新（P2）
 
 **思路**：`memoizeWithTTL` 实现 stale-while-revalidate 模式——缓存过期后**立即返回旧值**，同时后台异步刷新。防止多个并发请求同时触发刷新（`refreshing` 标志位）。用于 MCP 工具列表、Git 状态、环境检测等频繁访问但变化慢的数据。`memoizeWithLRU` 提供有界缓存（默认 100 条），防止内存无限增长。
 
@@ -1221,9 +1221,9 @@
 
 ---
 
-<a id="item-94"></a>
+<a id="item-99"></a>
 
-### 94. 上下文收集并行化（P2）
+### 99. 上下文收集并行化（P2）
 
 **思路**：每轮对话前需收集多种上下文附件（文件内容、图片、MCP 资源、诊断信息、LSP 数据等）。Claude Code 分两阶段并行：① 用户输入附件先完成（可能触发嵌套记忆加载）；② 线程附件 + 主线程附件 `Promise.all()` 并行处理，~20+ 并发计算。
 
@@ -1242,9 +1242,9 @@
 
 ---
 
-<a id="item-95"></a>
+<a id="item-100"></a>
 
-### 95. 输出缓冲与防阻塞渲染（P2）
+### 100. 输出缓冲与防阻塞渲染（P2）
 
 **思路**：`createBufferedWriter` 在写入目标（如日志文件 appendFileSync）可能阻塞时，将输出缓冲到内存队列。溢出时用 `setImmediate` 延迟写入——当前 tick 不阻塞，保证键盘响应和渲染帧率。参数可调：`flushIntervalMs`（默认 1s）、`maxBufferSize`（默认 100 条）、`maxBufferBytes`。
 
@@ -1262,9 +1262,9 @@
 
 ---
 
-<a id="item-96"></a>
+<a id="item-101"></a>
 
-### 96. LSP 服务器并行启动/关闭（P2）
+### 101. LSP 服务器并行启动/关闭（P2）
 
 **思路**：多个 LSP 服务器（TypeScript、Python、Go 等）相互独立，启动和关闭可以 `Promise.all()` 并行。端口探测也可用 `Promise.race()` 并行尝试——首个成功连接即返回。
 
@@ -1282,9 +1282,9 @@
 
 ---
 
-<a id="item-97"></a>
+<a id="item-102"></a>
 
-### 97. 请求合并与去重（Request Coalescing）（P2）
+### 102. 请求合并与去重（Request Coalescing）（P2）
 
 **思路**：高频请求场景——多个组件同时触发相同操作（如 MCP 工具列表刷新、认证检查、状态上报），合并为一次实际执行。3 种模式：① PUT 合并（1 in-flight + 1 pending，新请求合并到 pending）；② 401 去重（同 token 的多个 401 只触发一次 keychain 读取）；③ UUID 去重（BoundedUUIDSet 环形缓冲区 O(1) 查重）。
 
@@ -1305,9 +1305,9 @@
 
 ---
 
-<a id="item-98"></a>
+<a id="item-103"></a>
 
-### 98. 延迟初始化与按需加载（Lazy Init）（P2）
+### 103. 延迟初始化与按需加载（Lazy Init）（P2）
 
 **思路**：3 层延迟策略——① `lazySchema()`：Zod schema 定义推迟到首次使用时构建（启动不触发 Zod）；② 延迟模块导入：大模块（如 113KB insights.ts）在命令执行时 `import()` 而非启动时 `require`；③ 延迟预取（`startDeferredPrefetches`）：AWS/GCP 凭证、MCP 官方 URL 等在首帧渲染后才开始。
 
@@ -1328,9 +1328,9 @@
 
 ---
 
-<a id="item-99"></a>
+<a id="item-104"></a>
 
-### 99. 流式超时检测与级联取消（P2）
+### 104. 流式超时检测与级联取消（P2）
 
 **思路**：API 流式响应设置 90 秒空闲看门狗——收到 chunk 时重置计时器，超时则 abort stream 触发重试。工具执行层面：子 AbortController 实现级联取消——Bash 工具出错时 `siblingAbortController.abort()` 立即终止同批次的其他子进程（不终止整轮查询）。`createChildAbortController()` 用 WeakRef 防止 GC 泄漏。
 
@@ -1351,9 +1351,9 @@
 
 ---
 
-<a id="item-100"></a>
+<a id="item-105"></a>
 
-### 100. Git 文件系统直读避免进程 Spawn（P2）
+### 105. Git 文件系统直读避免进程 Spawn（P2）
 
 **思路**：频繁的 git 状态查询（当前分支、HEAD 指向、ref 解析）不 spawn `git` 子进程，而是直接读取 `.git/HEAD` 和 `.git/refs/` 文件。`git check-ignore` 用批量路径参数代替逐文件调用。减少进程 fork 开销（每次 ~5-10ms）。
 
@@ -1373,9 +1373,9 @@
 
 ---
 
-<a id="item-101"></a>
+<a id="item-106"></a>
 
-### 101. 设置/Schema 缓存与 Parse 去重（P2）
+### 106. 设置/Schema 缓存与 Parse 去重（P2）
 
 **思路**：3 层设置缓存——① `sessionSettingsCache`：每 session 合并后的设置（避免重复合并）；② `perSourceCache`：按来源缓存（用户/项目/本地）；③ `parseFileCache`：路径级去重（同一文件只读一次 + Zod parse 一次）。Schema 缓存在首次渲染时锁定快照，防止 GrowthBook 特性开关翻转导致工具定义变化（~11K tokens）。
 
@@ -1395,9 +1395,9 @@
 
 ---
 
-<a id="item-102"></a>
+<a id="item-107"></a>
 
-### 102. Bash 交互提示卡顿检测（P2）
+### 107. Bash 交互提示卡顿检测（P2）
 
 **思路**：后台每 5 秒检查 shell 输出增长。如果 45 秒内无新输出，读取最后 1024 字节检测交互式提示（`(y/n)`、`Press Enter`、`password:` 等 regex）。检测到卡顿后向用户队列发送 `TASK_NOTIFICATION` 提醒处理。
 
@@ -1416,9 +1416,9 @@
 
 ---
 
-<a id="item-103"></a>
+<a id="item-108"></a>
 
-### 103. TTY 孤儿进程检测（P2）
+### 108. TTY 孤儿进程检测（P2）
 
 **思路**：macOS 终端关闭有时不发 SIGHUP。每 30 秒检查 TTY 是否仍可读——如果 `process.stdin` 变为不可读，说明终端已关闭，触发优雅退出。
 
@@ -1436,9 +1436,9 @@
 
 ---
 
-<a id="item-104"></a>
+<a id="item-109"></a>
 
-### 104. MCP 服务器优雅关闭升级（P2）
+### 109. MCP 服务器优雅关闭升级（P2）
 
 **思路**：3 阶段升级关闭——100ms 发 SIGINT（给服务器处理清理的机会）→ 400ms 无响应发 SIGTERM → 500ms+ 仍存活发 SIGKILL。通过 `process.kill(pid, 0)` 检测进程是否存活。总超时 600ms。
 
@@ -1456,9 +1456,9 @@
 
 ---
 
-<a id="item-105"></a>
+<a id="item-110"></a>
 
-### 105. 事件循环卡顿检测（P2）
+### 110. 事件循环卡顿检测（P2）
 
 **思路**：定时器检测 Node.js 主线程被阻塞超过 500ms 的情况。阻塞通常由同步 I/O、大量 JSON 解析或 CPU 密集计算引起。检测到卡顿后记录诊断日志（时间戳、阻塞时长、调用栈）。
 
@@ -1477,9 +1477,9 @@
 
 ---
 
-<a id="item-106"></a>
+<a id="item-111"></a>
 
-### 106. 会话活动心跳与空闲检测（P2）
+### 111. 会话活动心跳与空闲检测（P2）
 
 **思路**：基于引用计数的活动追踪——API 调用和工具执行 `start()/stop()` 维护 refcount。refcount > 0 时每 30 秒发送心跳（保持远程会话存活）；refcount = 0 后启动空闲计时器。用于远程/后台场景防止会话被服务端超时断开。
 
@@ -1498,9 +1498,9 @@
 
 ---
 
-<a id="item-107"></a>
+<a id="item-112"></a>
 
-### 107. Markdown 渲染缓存与纯文本快速路径（P2）
+### 112. Markdown 渲染缓存与纯文本快速路径（P2）
 
 **思路**：Markdown 解析开销大（正则 + 递归），但大部分文本在滚动/重绘时不变。500 条 LRU 缓存存储解析后的 token 树，命中时零解析开销。纯文本快速检测（无 `#`/`*`/`` ` ``/`|` 等标记）直接跳过解析器。
 
@@ -1519,9 +1519,9 @@
 
 ---
 
-<a id="item-108"></a>
+<a id="item-113"></a>
 
-### 108. OSC 8 终端超链接（P2）
+### 113. OSC 8 终端超链接（P2）
 
 **思路**：文件路径和 URL 渲染为 OSC 8 超链接——用户可直接 Cmd+Click 在 IDE 中打开文件。格式：`\e]8;;file:///path\e\\text\e]8;;\e\\`。支持检测终端是否支持 OSC 8（iTerm2、WezTerm、Ghostty、kitty 等）。
 
@@ -1541,9 +1541,9 @@
 
 ---
 
-<a id="item-109"></a>
+<a id="item-114"></a>
 
-### 109. 模糊搜索选择器（FuzzyPicker）（P2）
+### 114. 模糊搜索选择器（FuzzyPicker）（P2）
 
 **思路**：通用模糊搜索组件——输入过滤 + 键盘导航 + 异步预览加载。支持方向键上下选择、Tab/Shift+Tab 操作、滚动指示器（↑↓）。用于：会话选择、文件选择、命令选择、MCP 工具选择等所有列表场景。预览面板支持 bottom 和 right 两种布局。
 
@@ -1563,9 +1563,9 @@
 
 ---
 
-<a id="item-110"></a>
+<a id="item-115"></a>
 
-### 110. 统一设计系统组件库（P2）
+### 115. 统一设计系统组件库（P2）
 
 **思路**：12 个语义化 UI 原语组成设计系统——ThemedBox（主题感知边框）、ThemedText（语义颜色文本）、StatusIcon（✓✗⚠ℹ○ 状态图标）、Divider（带标题分割线）、ListItem（焦点/选中态列表项）、Pane（容器组件）、ProgressBar（Unicode 块字符进度条 ▏▎▍▌▋▊▉█）、LoadingState（spinner + 消息 + 副标题）。所有组件通过 ThemeProvider 统一主题。
 
@@ -1586,9 +1586,9 @@
 
 ---
 
-<a id="item-111"></a>
+<a id="item-116"></a>
 
-### 111. Markdown 表格终端渲染（P2）
+### 116. Markdown 表格终端渲染（P2）
 
 **思路**：Markdown 表格在终端中正确渲染——ANSI-aware 列宽计算（处理颜色转义不占宽度）+ 自动换行 + 对齐（左/右/居中）。处理 CJK 字符占 2 列宽度。
 
@@ -1606,9 +1606,9 @@
 
 ---
 
-<a id="item-112"></a>
+<a id="item-117"></a>
 
-### 112. 屏幕阅读器无障碍支持（P2）
+### 117. 屏幕阅读器无障碍支持（P2）
 
 **思路**：检测环境变量启用无障碍模式。无障碍模式下：① 禁用动画（spinner 改为静态文本）；② Diff 渲染为纯文本格式；③ 进度信息以文本而非进度条显示；④ 颜色信息附带文字标签。
 
@@ -1626,9 +1626,9 @@
 
 ---
 
-<a id="item-113"></a>
+<a id="item-118"></a>
 
-### 113. 色觉无障碍主题（Daltonized）（P2）
+### 118. 色觉无障碍主题（Daltonized）（P2）
 
 **思路**：为色觉障碍用户提供专用主题——红绿色盲（deuteranopia）最常见（男性 8%），diff 的红/绿改为蓝/橙。提供 `light-daltonized` 和 `dark-daltonized` 两个变体。
 
@@ -1646,9 +1646,9 @@
 
 ---
 
-<a id="item-114"></a>
+<a id="item-119"></a>
 
-### 114. 动画系统与卡顿状态检测（P2）
+### 119. 动画系统与卡顿状态检测（P2）
 
 **思路**：统一动画框架——`useAnimationFrame(intervalMs)` 以 60fps 驱动所有动画。共享时钟（ClockContext）确保多个动画同步。卡顿检测：spinner 超过阈值时间（如 30s）自动从蓝色 shimmer 渐变为红色，提示可能卡住。
 
@@ -1668,9 +1668,9 @@
 
 ---
 
-<a id="item-131"></a>
+<a id="item-120"></a>
 
-### 131. 代理权限冒泡与审批路由（P2）
+### 120. 代理权限冒泡与审批路由（P2）
 
 **思路**：Fork 子代理的 `permissionMode: 'bubble'` 将权限请求上浮到父级终端——子代理无需独立 UI，权限对话框在用户可见的父终端弹出。Leader 通过 `leaderPermissionBridge` 桥接——InProcess Teammate 的权限请求路由到 Leader 的 `ToolUseConfirm` 对话框。邮箱回退：桥接不可用时通过文件邮箱异步审批。
 
@@ -1690,9 +1690,9 @@
 
 ---
 
-<a id="item-132"></a>
+<a id="item-121"></a>
 
-### 132. 代理专属 MCP 服务器（P2）
+### 121. 代理专属 MCP 服务器（P2）
 
 **思路**：代理 frontmatter 配置 `mcpServers` 字段——① 字符串引用（如 `"slack"`）复用已连接的服务器；② 内联定义（如 `{ slack: { command: "..." } }`）创建新连接。代理启动时连接，退出时自动清理。安全策略：plugin/built-in 代理可自由使用 MCP，用户自定义代理受 policy 限制。
 
@@ -1711,9 +1711,9 @@
 
 ---
 
-<a id="item-133"></a>
+<a id="item-122"></a>
 
-### 133. 代理创建向导（P2）
+### 122. 代理创建向导（P2）
 
 **思路**：多步骤交互式向导引导创建自定义代理——① 选择位置（User/Project）；② 选择方式（手动/AI 生成）；③ 设定类型名；④ 编写系统提示；⑤ 选择工具子集；⑥ 选择模型；⑦ 配置记忆范围；⑧ 确认并保存为 `.claude/agents/name.md`。
 
@@ -1732,9 +1732,9 @@
 
 ---
 
-<a id="item-134"></a>
+<a id="item-123"></a>
 
-### 134. 代理进度追踪与实时状态（P2）
+### 123. 代理进度追踪与实时状态（P2）
 
 **思路**：`ProgressTracker` 追踪后台代理的实时状态——toolUseCount、tokenCount（input/output）、recentActivities（最近 5 条操作描述）。通过 `<task-notification>` XML 格式向 Coordinator 报告完成状态（success/failed/killed + 摘要 + token 用量 + 时长）。UI 组件 `BackgroundTasksDialog` 展示所有后台代理列表 + 进度 + kill 控制。
 
@@ -1754,9 +1754,9 @@
 
 ---
 
-<a id="item-135"></a>
+<a id="item-124"></a>
 
-### 135. 代理邮箱系统（Teammate Mailbox）（P2）
+### 124. 代理邮箱系统（Teammate Mailbox）（P2）
 
 **思路**：基于文件的异步消息系统——每个 Teammate 有独立收件箱（`~/.claude/teams/{team}/inboxes/{agent}.json`）。消息包含：sender、text、timestamp、read 标志、color、summary。`proper-lockfile` 确保并发写入安全（10 次重试，5-100ms 退避）。支持单播（指定收件人）和广播（`to: "*"`）。
 
