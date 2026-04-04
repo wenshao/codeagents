@@ -799,3 +799,86 @@
 **意义**：MCP 工具是 Agent 扩展能力的核心——连接中断会导致 Agent 丧失关键工具能力。
 **缺失后果**：MCP 服务器短暂不可用 → Agent 整个 session 的 MCP 工具失效——需手动重启。
 **改进收益**：瞬态故障自动恢复——用户无感知，Agent 持续使用 MCP 工具。
+
+---
+
+<a id="item-71"></a>
+
+### 71. Tool Result 大小限制（P2）
+
+**思路**：每个工具定义 `maxResultSizeChars`（如 100K 字符）。超限结果持久化到磁盘文件，模型收到预览 + 文件路径而非完整内容——防止单个巨大工具结果占满上下文。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `Tool.ts` | `maxResultSizeChars` 工具属性 |
+| 各工具（TaskStopTool/NotebookEditTool/SkillTool 等） | `maxResultSizeChars: 100_000` |
+
+**Qwen Code 修改方向**：`BaseDeclarativeTool` 新增 `maxResultSize` 属性；工具执行后检查结果长度，超限时写入 temp 文件 + 返回预览。
+
+**意义**：单个大文件 Read 或长命令输出可能超过 100K 字符——直接塞入上下文会溢出。
+**缺失后果**：大结果直接注入 → 上下文溢出或挤占其他内容空间。
+**改进收益**：大结果自动落盘 + 预览——模型需要时可 Read 完整文件，不浪费上下文。
+
+---
+
+<a id="item-72"></a>
+
+### 72. Output Token 升级重试（P2）
+
+**思路**：首次请求用保守的 `max_output_tokens = 8,000`（BQ p99 仅 4,911 tokens）。如果 `stop_reason === 'max_tokens'`，自动用 64,000 重试一次——避免默认预留过多槽位。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/context.ts` | `CAPPED_DEFAULT_MAX_TOKENS = 8_000`、`ESCALATED_MAX_TOKENS = 64_000` |
+| `query.ts` (L1205) | `max_output_tokens_escalate` 重试逻辑 |
+
+**Qwen Code 修改方向**：`contentGenerator.ts` 首次请求用较小 `maxOutputTokens`；`agent-core.ts` 检测截断后自动升级重试。
+
+**意义**：默认 32K/64K max_output_tokens 过度预留——浪费 API 槽位容量，增加延迟。
+**缺失后果**：每次请求都预留 32K+ 输出槽位——即使大多数响应 <5K tokens。
+**改进收益**：8K 首次 + 64K 重试——99% 请求用 8K 就够，<1% 需要重试，总体延迟降低。
+
+---
+
+<a id="item-73"></a>
+
+### 73. Ripgrep 三级回退（P2）
+
+**思路**：Grep 工具解析 `rg` 二进制通过三级回退：系统安装 → Bun 内嵌 → 平台特定 vendored 二进制。EAGAIN 错误（资源不足）时自动用 `-j 1`（单线程）重试。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/ripgrep.ts` | `isEagainError()`（L83）、`-j 1` 单线程重试（L390-391） |
+
+**Qwen Code 修改方向**：`ripgrepUtils.ts` 新增 EAGAIN 检测 + `-j 1` 重试；增加 rg 二进制回退链。
+
+**意义**：CI 容器和资源受限环境中 rg 可能 EAGAIN 失败——静默失败导致搜索不全。
+**缺失后果**：rg EAGAIN → 搜索失败 → Agent 误认为无匹配结果。
+**改进收益**：EAGAIN 自动单线程重试——资源受限环境下仍能完成搜索。
+
+---
+
+<a id="item-74"></a>
+
+### 74. MAGIC DOC 自更新文档（P2）
+
+**思路**：标记 `# MAGIC DOC: [title]` 的 markdown 文件在 Agent 空闲时自动更新。后台 forked subagent 读取文件 + 项目上下文 → 更新内容。单文件范围限制防止越界。支持自定义 prompt（`~/.claude/magic-docs/prompt.md`）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/MagicDocs/prompts.ts` | 更新 Prompt 模板（保留 header、实质性变更才更新） |
+| `services/MagicDocs/` | 触发逻辑 + forked agent 调度 |
+
+**Qwen Code 修改方向**：新建 `services/magicDocs/`；检测 `# MAGIC DOC:` header 的文件；空闲时 fork agent 执行更新。
+
+**意义**：项目文档（API 参考、架构说明）容易过时——Agent 修改代码后文档不同步。
+**缺失后果**：代码改了但文档没更新——新成员读到过时文档。
+**改进收益**：标记的文档自动保持最新——Agent 改代码后自动更新相关文档。
