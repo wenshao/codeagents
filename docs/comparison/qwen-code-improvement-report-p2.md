@@ -2226,3 +2226,174 @@
 **意义**：Diff 是最频繁渲染的组件——文件编辑后每帧重渲染。
 **缺失后果**：10KB diff × 每帧解析 = 每帧 5-10ms（60fps 预算仅 16ms）。
 **改进收益**：useMemo = 内容不变时 0ms；预编译正则 = 省去每次 compile 开销。
+
+---
+
+<a id="item-163"></a>
+
+### 163. 远程触发器 REST API（P2）
+
+**思路**：通过 REST API 管理定时远程 Agent——CRUD 端点 `/v1/code/triggers`。支持创建、更新、列表、获取、手动运行。触发器在云端 CCR 执行（非本地），适合 CI/CD 定时任务（如每日代码质量扫描、定期安全审查）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `tools/RemoteTriggerTool/RemoteTriggerTool.ts` (162行) | REST API: `list`/`get`/`create`/`update`/`run` 5 种操作 |
+| `skills/bundled/scheduleRemoteAgents.ts` | `/schedule` 技能——创建/管理远程定时 Agent |
+| `utils/cronTasks.ts` (L30-70) | `CronTask` 类型：cron 表达式 + prompt + recurring/permanent/durable 标志 |
+
+**Qwen Code 修改方向**：`CronScheduler` 仅支持会话内 cron（进程退出即丢失）。改进方向：① 新增 `/v1/code/triggers` REST 端点（或对接 DashScope 定时任务 API）；② 触发器配置持久化到 `.qwen/scheduled_tasks.json`；③ daemon 模式下 watch 文件变化自动加载新触发器。
+
+**意义**：CI/CD 需要定时触发——每日安全扫描、每周代码质量报告。
+**缺失后果**：cron 仅会话内 = 关闭终端即丢失——无法作为 CI 定时任务。
+**改进收益**：REST API + 持久化 = 触发器跨会话存活——真正的 CI/CD 定时能力。
+
+---
+
+<a id="item-164"></a>
+
+### 164. SDK 双向控制协议（P2）
+
+**思路**：SDK 消费者与 CLI 之间的双向 NDJSON 控制协议——① SDK→CLI：`can_use_tool` 权限响应、`set_model` 切换模型、`set_permission_mode` 切换权限、`interrupt` 中断、`seed_read_state` 预填缓存；② CLI→SDK：`can_use_tool` 权限请求、`hook_callback` Hook 事件、`mcp_message` MCP 消息路由。26+ Hook 事件类型支持中间件模式。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `entrypoints/sdk/controlSchemas.ts` | 20+ 控制请求类型（`can_use_tool`/`set_model`/`interrupt`/`mcp_message` 等） |
+| `entrypoints/sdk/coreSchemas.ts` (L642-655) | Stdout/Stdin 消息联合类型 |
+| `bridge/bridgePermissionCallbacks.ts` | 权限回调：`allow`/`deny` + `updatedInput` + `updatedPermissions` |
+
+**Qwen Code 修改方向**：TypeScript SDK 支持 `canUseTool` 回调和 `setModel`/`setPermissionMode`，但无完整控制协议（如 `seed_read_state`/`mcp_message`/`reload_plugins` 等高级操作）。改进方向：① 扩展控制协议覆盖 MCP 管理（`mcp_set_servers`/`mcp_reconnect`）；② 添加 `get_context_usage` 获取 token 分布；③ 添加 `rewind_files` 文件回退控制。
+
+**意义**：IDE 插件和自动化系统需要精细控制 Agent 行为——不仅是发送消息。
+**缺失后果**：SDK 只能发消息 + 审批权限——无法控制 MCP/设置/文件回退。
+**改进收益**：完整控制协议 = IDE 插件可实现任意集成——模型切换、MCP 管理、文件回退。
+
+---
+
+<a id="item-165"></a>
+
+### 165. CI 环境自动检测与行为适配（P2）
+
+**思路**：检测具体 CI 平台（GitHub Actions/CircleCI/Jenkins/GitLab CI）并自适应行为——① 跳过浏览器认证流程（CI 无桌面）；② 自动启用 headless 输出格式；③ 提取 CI 上下文（PR 号、分支、commit SHA）注入系统提示；④ 调整超时（CI 通常有更长超时预算）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/env.ts` (L285, L318) | `GITHUB_ACTIONS`/`CIRCLECI`/`CI` 环境变量检测 |
+| `services/analytics/metadata.ts` (L617-624) | `isCi`/`isGithubAction` + GitHub 元数据采集 |
+| `main.tsx` (L531) | GitHub Actions 入口点标记 `claude-code-github-action` |
+
+**Qwen Code 修改方向**：仅检测通用 `CI` 环境变量（跳过浏览器认证），无具体平台检测。改进方向：① 检测 `GITHUB_ACTIONS`/`GITLAB_CI`/`CIRCLECI`/`JENKINS_HOME`；② 提取平台特定上下文（PR_NUMBER、BRANCH、COMMIT_SHA）；③ CI 模式自动调整：更长超时、JSON 输出、跳过交互提示。
+
+**意义**：不同 CI 平台有不同的环境变量和能力——通用检测不够精准。
+**缺失后果**：CI 中缺少 PR 上下文 = Agent 不知道在审查哪个 PR。
+**改进收益**：平台感知 = 自动提取 PR/分支/commit 上下文——CI 集成零配置。
+
+---
+
+<a id="item-166"></a>
+
+### 166. PR Webhook 事件实时订阅（P2）
+
+**思路**：Agent 可订阅 GitHub PR 活动事件（review comments、CI 结果、状态变更），事件作为 user message 实时注入对话。Coordinator 代理可持续监控 PR 进展——CI 失败时自动修复，review 评论自动回复。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `coordinator/coordinatorMode.ts` (L133) | `subscribe_pr_activity` / `unsubscribe_pr_activity` |
+| `commands/pr_comments/index.ts` | `/pr-comments` 获取 PR 级 + code review 评论 |
+
+**Qwen Code 修改方向**：PR review 是一次性操作（工作流触发 → 评论 → 结束），无持续监控。改进方向：① WebSocket/SSE 订阅 GitHub PR 事件；② 事件转为 user message 注入 Agent 对话；③ Coordinator 模式下自动响应（CI 失败→修复→推送→再评论）。
+
+**意义**：PR 审查是持续过程——reviewer 评论后 Agent 应能自动响应。
+**缺失后果**：一次性审查 = reviewer 评论后需手动再次触发 Agent。
+**改进收益**：实时订阅 = Agent 持续监控 PR——评论自动回复，CI 失败自动修复。
+
+---
+
+<a id="item-167"></a>
+
+### 167. UltraReview 远程深度代码审查（P2）
+
+**思路**：`/ultrareview` 在远程 CCR 环境中运行 10-20 分钟的深度代码审查（本地 `/review` 仅几分钟）。远程审查有独立配额追踪（`reviews_used/limit/remaining`）。每 10 秒发送 `<remote-review-progress>` 心跳标签。30 分钟超时保护。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `commands/review/reviewRemote.ts` | 远程审查传送（teleport to CCR） |
+| `tasks/RemoteAgentTask/RemoteAgentTask.tsx` (L42-45) | `REMOTE_REVIEW_TIMEOUT_MS`、进度心跳标签 |
+| `services/api/ultrareviewQuota.ts` | `fetchUltrareviewQuota()` 配额追踪 |
+
+**Qwen Code 修改方向**：PR review 通过 GitHub Actions 工作流在 runner 上执行，无独立远程深度审查。改进方向：① `/ultrareview` 命令将审查任务发送到云端执行；② 进度心跳保持连接；③ 配额追踪防止滥用；④ 结果通过 `<remote-review>` 标签回传。
+
+**意义**：复杂 PR（100+ 文件）需要 10-20 分钟深度分析——本地审查不够深入。
+**缺失后果**：本地审查 = 受限于单次 API 调用——大 PR 覆盖不全。
+**改进收益**：远程深度审查 = 10-20 分钟全面分析——发现更多隐藏 bug。
+
+---
+
+<a id="item-168"></a>
+
+### 168. GitHub App 自动安装与工作流生成（P2）
+
+**思路**：`/install-github-app` 命令自动化 GitHub Actions 集成——① 检查仓库访问权限（`gh api`）；② 生成 workflow YAML 文件（claude.yml + claude-code-review.yml）；③ 通过 GitHub API 创建分支并提交 workflow；④ 自动配置 `ANTHROPIC_API_KEY` secret；⑤ 打开浏览器创建 PR。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `commands/install-github-app/setupGitHubActions.ts` (325行) | 完整安装流程：检查权限→生成 YAML→创建分支→配置 secret→打开 PR |
+| `constants/github-app.ts` | 工作流模板：`claude.yml`（PR 自动审查）+ `claude-code-review.yml`（代码审查） |
+
+**Qwen Code 修改方向**：PR review 工作流手动配置（`.github/workflows/qwen-code-pr-review.yml`）。改进方向：① `/install-github-app` 一键安装命令；② 自动生成 workflow YAML 模板；③ 自动配置 API key secret（`gh secret set`）；④ 自动创建 PR 提交 workflow 文件。
+
+**意义**：CI 集成配置复杂——手动编写 workflow YAML + 配置 secret 容易出错。
+**缺失后果**：手动配置 = 每个仓库重复劳动 + 配置错误。
+**改进收益**：一键安装 = 3 分钟完成 CI 集成——零手动编辑 YAML。
+
+---
+
+<a id="item-169"></a>
+
+### 169. Headless 性能剖析（TTFT/延迟追踪）（P2）
+
+**思路**：CI/headless 模式下自动收集性能指标——① TTFT（Time To First Token）；② 每轮处理延迟；③ 系统消息 yield 时间；④ 查询开销。100% 内部用户 + 5% 外部用户采样。指标用于优化 CI 场景下的 Agent 响应速度。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/headlessProfiler.ts` | `headlessProfilerStartTurn()`、`headlessProfilerCheckpoint()`、`logHeadlessProfilerTurn()` |
+
+**Qwen Code 修改方向**：headless 模式无性能剖析——不知道 CI 中哪步最慢。改进方向：① 新建 `headlessProfiler.ts`——记录 TTFT/turn latency/overhead；② CI 环境自动启用（采样率可配置）；③ 结果输出到 JSON 或遥测系统。
+
+**意义**：CI 中 Agent 执行时间直接影响 pipeline 总时长——需要知道哪步最慢。
+**缺失后果**：无剖析 = "为什么 CI 这么慢？" 无数据可分析。
+**改进收益**：TTFT/延迟追踪 = 精确定位瓶颈——优化 CI 执行时间。
+
+---
+
+<a id="item-170"></a>
+
+### 170. 退出码标准化与 Hook 唤醒（P2）
+
+**思路**：标准化 CI 友好的退出码语义——0=成功、1=错误、2=Hook 阻塞错误（唤醒模型重新处理）。后台异步 Hook 返回退出码 2 时唤醒 Agent 处理 Hook 结果——允许 Hook 在后台运行验证（如 lint/test），失败时自动通知 Agent 修复。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `schemas/hooks.ts` (L63) | `"exit code 2 (blocking error)"` 唤醒模型 |
+| `interactiveHelpers.tsx` (L67-79) | 退出码 0/1 语义 |
+
+**Qwen Code 修改方向**：有自定义退出码（`FatalTurnLimitedError` 等），但无 Hook 退出码 2 唤醒机制。改进方向：① 标准化退出码文档（0=成功/1=错误/2=hook 阻塞/53=turn 限制）；② 后台 Hook 退出码 2 时注入 `<hook-blocking-error>` 消息唤醒 Agent；③ CI 文档说明各退出码含义。
+
+**意义**：CI pipeline 依赖退出码判断成功/失败——语义不清 = 错误的 pipeline 决策。
+**缺失后果**：Hook 验证失败但退出码 0 = CI 误认为成功。
+**改进收益**：标准化退出码 + Hook 唤醒 = CI 精确判断 + Agent 自动响应验证失败。
