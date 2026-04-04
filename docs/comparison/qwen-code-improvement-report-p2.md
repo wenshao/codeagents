@@ -815,7 +815,7 @@
 | `Tool.ts` | `maxResultSizeChars` 工具属性 |
 | 各工具（TaskStopTool/NotebookEditTool/SkillTool 等） | `maxResultSizeChars: 100_000` |
 
-**Qwen Code 修改方向**：`BaseDeclarativeTool` 新增 `maxResultSize` 属性；工具执行后检查结果长度，超限时写入 temp 文件 + 返回预览。
+**Qwen Code 修改方向**：`BaseDeclarativeTool` 新增 `maxResultSizeChars` 属性；工具执行后检查结果字符数，超限时写入 temp 文件 + 返回预览。
 
 **意义**：单个大文件 Read 或长命令输出可能超过 100K 字符——直接塞入上下文会溢出。
 **缺失后果**：大结果直接注入 → 上下文溢出或挤占其他内容空间。
@@ -884,28 +884,6 @@
 **改进收益**：标记的文档自动保持最新——Agent 改代码后自动更新相关文档。
 
 ---
-
-<a id="item-75"></a>
-
-### 75. Ghost Text 输入补全（P1）
-
-**思路**：用户输入时在光标后显示灰色建议文字（ghost text）——命令名、文件路径、shell history 三层。Tab/Right Arrow 接受。建议仅在光标位于正确插入点时显示。
-
-**Claude Code 源码索引**：
-
-| 文件 | 关键函数/常量 |
-|------|-------------|
-| `types/textInputTypes.ts` | `InlineGhostText` 类型定义 |
-| `hooks/useTextInput.ts` | ghost text 渲染 + `insertPosition === offset` 检查 |
-| `utils/suggestions/commandSuggestions.ts` | 命令名模糊匹配 |
-| `utils/suggestions/directoryCompletion.ts` | 路径补全 + LRU 缓存 |
-| `utils/suggestions/shellHistoryCompletion.ts` | `~/.bash_history` 缓存 |
-
-**Qwen Code 修改方向**：`InputPrompt.tsx` 新增 ghost text 渲染层（Ink `<Text dimColor>`）；新建 `utils/suggestions/` 目录实现命令/路径/历史三层补全。
-
-**意义**：命令补全是 CLI 工具最基础的 UX 期待——无补全等于每次都手打全名。
-**缺失后果**：用户需完整输入 `/compress`、文件路径等——效率低且易出错。
-**改进收益**：输入 `/com` 即显示 `/compress` 灰字，Tab 接受——打字量减半。
 
 ---
 
