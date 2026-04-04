@@ -827,9 +827,9 @@
 
 ---
 
-<a id="item-126"></a>
+<a id="item-37"></a>
 
-### 126. Coordinator/Swarm 多代理编排模式（P1）
+### 37. Coordinator/Swarm 多代理编排模式（P1）
 
 **思路**：Leader/Worker 团队编排——Leader 分解任务、分配给 Worker、收集结果。TeamFile 存储团队元数据（成员列表、worktree 路径、允许路径）。3 种执行后端：① tmux pane（每个 Worker 独立终端窗格）；② iTerm2 原生分屏；③ InProcess（同进程 AsyncLocalStorage 隔离）。自动检测最佳后端。
 
@@ -851,9 +851,9 @@
 
 ---
 
-<a id="item-127"></a>
+<a id="item-38"></a>
 
-### 127. 代理工具细粒度访问控制（P1）
+### 38. 代理工具细粒度访问控制（P1）
 
 **思路**：3 层工具访问控制——① `ALL_AGENT_DISALLOWED_TOOLS`：所有代理禁用的工具（TaskOutput、ExitPlanMode、AskUser 等）；② `ASYNC_AGENT_ALLOWED_TOOLS`：异步代理白名单（Read/Write/Edit/Bash/Grep/Glob）；③ `IN_PROCESS_TEAMMATE_ALLOWED_TOOLS`：同进程 Teammate 额外工具（TaskCreate/SendMessage）。代理定义支持 `tools` 白名单 + `disallowedTools` 黑名单组合。
 
@@ -873,9 +873,9 @@
 
 ---
 
-<a id="item-128"></a>
+<a id="item-39"></a>
 
-### 128. InProcess 同进程多代理隔离（P1）
+### 39. InProcess 同进程多代理隔离（P1）
 
 **思路**：多个代理在同一 Node.js 进程中并发运行，通过 AsyncLocalStorage 实现上下文隔离——每个代理有独立的 AgentContext（agentId、teamName、权限模式）、独立的 AbortController、独立的工具注册表。相比 tmux/iTerm2 后端，InProcess 无进程 fork 开销（省 50-100ms/代理），适合轻量级并行任务。
 
@@ -896,9 +896,9 @@
 
 ---
 
-<a id="item-129"></a>
+<a id="item-40"></a>
 
-### 129. 代理记忆持久化（P1）
+### 40. 代理记忆持久化（P1）
 
 **思路**：3 级代理记忆——① `user`（~/.claude/agent-memory/）：跨项目全局记忆；② `project`（.claude/agent-memory/）：项目级记忆（可提交到 VCS）；③ `local`（.claude/agent-memory-local/）：项目级但 gitignore。记忆在 frontmatter 中配置 `memory: user|project|local`，启用后自动注入 Read/Write/Edit 工具。记忆内容追加到代理系统提示中。
 
@@ -917,9 +917,9 @@
 
 ---
 
-<a id="item-130"></a>
+<a id="item-41"></a>
 
-### 130. 代理恢复与续行（P1）
+### 41. 代理恢复与续行（P1）
 
 **思路**：已完成或中断的代理可通过 `SendMessage` 工具继续对话。`resumeAgentBackground()` 从 JSONL transcript 重建完整上下文——包括文件状态缓存、content replacements、系统提示。检测 fork 代理并特殊处理系统提示继承。过滤过期消息（空白、孤立 thinking、未解决 tool_use）。
 
