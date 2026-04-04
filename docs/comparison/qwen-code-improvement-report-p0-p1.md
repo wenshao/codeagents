@@ -939,9 +939,9 @@
 
 ---
 
-<a id="item-136"></a>
+<a id="item-42"></a>
 
-### 136. 系统提示模块化组装（P1）
+### 42. 系统提示模块化组装（P1）
 
 **思路**：系统提示由独立 section 组装而非单一字符串。每个 section 分为两类：① `systemPromptSection()`——缓存到 /clear 或 /compact，跨轮复用；② `DANGEROUS_uncachedSystemPromptSection(reason)`——每轮重新计算（日期、CWD、Git 状态等易变数据），显式标注原因。`SYSTEM_PROMPT_DYNAMIC_BOUNDARY` 标记静态/动态分界——分界前内容用 global scope 缓存，分界后不缓存。Section 异步解析通过 `Promise.all(resolveSystemPromptSections())` 并行。
 
@@ -962,9 +962,9 @@
 
 ---
 
-<a id="item-137"></a>
+<a id="item-43"></a>
 
-### 137. @include 指令与嵌套记忆自动发现（P1）
+### 43. @include 指令与嵌套记忆自动发现（P1）
 
 **思路**：CLAUDE.md 支持 `@path` 语法引用外部文件——`@./relative`、`@~/home`、`@/absolute`。递归加载深度上限 5 层，防止循环引用（`processedPaths` Set 追踪）。更重要的是**嵌套记忆自动发现**：Agent 操作文件时，自动从 CWD 到目标文件路径遍历目录，加载沿途的 `.qwen/rules/*.md` 条件规则——实现"操作 src/utils/ 时自动注入 src 目录的编码规范"。
 
@@ -984,9 +984,9 @@
 
 ---
 
-<a id="item-138"></a>
+<a id="item-44"></a>
 
-### 138. 附件类型协议与令牌预算（P1）
+### 44. 附件类型协议与令牌预算（P1）
 
 **思路**：40+ 种附件类型（文件/记忆/技能/IDE 诊断/MCP 资源/团队消息等）通过统一协议注入上下文。3 阶段有序执行：① 用户输入附件先完成（触发嵌套记忆）；② 线程附件并行处理；③ 主线程附件（IDE 上下文）。Per-type 令牌预算：记忆文件 200 行/4KB 上限，会话累计 60KB 上限。超限自动截断并附加 "Use FileRead to view complete file" 提示。
 
@@ -1006,9 +1006,9 @@
 
 ---
 
-<a id="item-139"></a>
+<a id="item-45"></a>
 
-### 139. Thinking 块跨轮保留与空闲清理（P1）
+### 45. Thinking 块跨轮保留与空闲清理（P1）
 
 **思路**：模型的 thinking 块在工具调用续行中**保留**（同一推理轨迹内），但空闲超过 1 小时后自动清理到仅保留最近 1 轮（`clear_thinking_20251015`）。清理通过 API `context_management` 参数实现——`keep: { type: 'thinking_turns', value: 1 }`。**Latch 机制**：一旦触发清理，永不回退——防止重新填充 thinking 导致已预热的缓存再次失效。
 
@@ -1028,9 +1028,9 @@
 
 ---
 
-<a id="item-140"></a>
+<a id="item-46"></a>
 
-### 140. 输出 Token 自适应升级（P1）
+### 46. 输出 Token 自适应升级（P1）
 
 **思路**：默认 8K 输出上限（slot-reservation cap，避免过度预留 GPU 资源）。当模型输出被 `max_tokens` 截断时（`stop_reason === 'max_tokens'`），自动升级到 64K 重试一次（`ESCALATED_MAX_TOKENS`）。环境变量 `CLAUDE_CODE_MAX_OUTPUT_TOKENS` 可覆盖默认值。99% 请求在 8K 内完成（BQ p99=4911 tokens），仅 <1% 需要升级。
 

@@ -6,9 +6,9 @@
 
 ---
 
-<a id="item-125"></a>
+<a id="item-135"></a>
 
-### 125. 动态状态栏（P3）
+### 135. 动态状态栏（P3）
 
 **思路**：`AppState.statusLineText` 允许模型/工具实时更新状态文本（如"正在分析 5 个文件..."），提供执行进度可见性。
 
@@ -27,9 +27,9 @@
 
 ---
 
-<a id="item-126"></a>
+<a id="item-136"></a>
 
-### 126. 上下文折叠 History Snip（P3）
+### 136. 上下文折叠 History Snip（P3）
 
 **思路**：`feature('HISTORY_SNIP')` 门控。**Claude Code 自身仅 scaffolding**——SnipTool 有 lazy require 占位无完整实现。已有 `collapseReadSearch.ts` 的 UI 级消息折叠（连续 read/search 合并显示）。
 
@@ -47,9 +47,9 @@
 
 ---
 
-<a id="item-127"></a>
+<a id="item-137"></a>
 
-### 127. 内存诊断（P3）
+### 137. 内存诊断（P3）
 
 **思路**：1.5GB 阈值触发 V8 heap snapshot + Linux smaps_rollup 解析 + 内存增长率分析 → leak 建议。
 
@@ -67,9 +67,9 @@
 
 ---
 
-<a id="item-128"></a>
+<a id="item-138"></a>
 
-### 128. Feature Gates（P3）
+### 138. Feature Gates（P3）
 
 **思路**：GrowthBook 远程特性开关——A/B 测试 + 按事件动态采样。渐进式灰度发布。
 
@@ -87,9 +87,9 @@
 
 ---
 
-<a id="item-129"></a>
+<a id="item-139"></a>
 
-### 129. DXT/MCPB 插件包（P3）
+### 139. DXT/MCPB 插件包（P3）
 
 **思路**：`.dxt`/`.mcpb` 单文件打包 MCP 服务器 + 依赖。zip bomb 防护（512MB/文件、1GB 总量、50:1 压缩比）。
 
@@ -101,9 +101,9 @@
 
 ---
 
-<a id="item-130"></a>
+<a id="item-140"></a>
 
-### 130. /security-review（P3）
+### 140. /security-review（P3）
 
 **思路**：基于 git diff 的安全审查命令，聚焦 OWASP Top 10 漏洞检测。
 
@@ -115,9 +115,9 @@
 
 ---
 
-<a id="item-131"></a>
+<a id="item-141"></a>
 
-### 131. Ultraplan 远程计划探索（P3）
+### 141. Ultraplan 远程计划探索（P3）
 
 **思路**：启动远程 CCR 会话，用更强模型深度规划后回传结果。需云端执行基础设施。
 
@@ -129,9 +129,9 @@
 
 ---
 
-<a id="item-132"></a>
+<a id="item-142"></a>
 
-### 132. Advisor 顾问模型（P3）
+### 142. Advisor 顾问模型（P3）
 
 **思路**：`/advisor` 配置副模型（如更强模型）审查主模型输出。`server_tool_use` 方式自动调用。
 
@@ -149,9 +149,9 @@
 
 ---
 
-<a id="item-133"></a>
+<a id="item-143"></a>
 
-### 133. Vim 完整实现（P3）
+### 143. Vim 完整实现（P3）
 
 **思路**：完整 modal editing——motions + operators + text objects + transitions。4 文件结构。
 
@@ -171,9 +171,9 @@
 
 ---
 
-<a id="item-134"></a>
+<a id="item-144"></a>
 
-### 134. 语音模式（P3）
+### 144. 语音模式（P3）
 
 **思路**：push-to-talk 语音输入 + 流式 STT 转录。快捷键可通过 `keybindings.json` 重绑。
 
@@ -192,9 +192,9 @@
 
 ---
 
-<a id="item-135"></a>
+<a id="item-145"></a>
 
-### 135. 插件市场（P3）
+### 145. 插件市场（P3）
 
 **思路**：官方 marketplace 安装插件（hooks/commands/agents/MCP），安装状态追踪，自动更新。
 
