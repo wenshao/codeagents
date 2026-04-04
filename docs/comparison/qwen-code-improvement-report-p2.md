@@ -2118,9 +2118,9 @@
 
 ---
 
-<a id="item-157"></a>
+<a id="item-146"></a>
 
-### 157. Shell 环境快照与会话级缓存（P2）
+### 146. Shell 环境快照与会话级缓存（P2）
 
 **思路**：会话启动时一次性捕获用户 shell 环境（functions/aliases/options/PATH）存储为 snapshot 脚本文件。后续每次 shell 命令执行时 `source snapshot.sh` 获得完整环境——无需每次重新解析 .bashrc/.zshrc（通常 200-500ms）。Shell 配置（shell 路径、类型检测）通过 `memoize()` 缓存——整个会话只发现一次。
 
@@ -2139,9 +2139,9 @@
 
 ---
 
-<a id="item-158"></a>
+<a id="item-147"></a>
 
-### 158. Shell 输出文件直写绕过 JS（P2）
+### 147. Shell 输出文件直写绕过 JS（P2）
 
 **思路**：Bash 命令的 stdout/stderr 直接写入文件描述符（`stdio[1] = fd, stdio[2] = fd`），完全绕过 JS 事件循环。进度信息通过定期轮询文件尾部（1s 间隔，读取尾部 4096 字节）提取。对比 pipe 模式（数据经 JS Buffer → string → 处理），文件模式零 JS 开销。5GB 磁盘上限 watchdog 防止磁盘填满。
 
@@ -2160,9 +2160,9 @@
 
 ---
 
-<a id="item-159"></a>
+<a id="item-148"></a>
 
-### 159. 增量文件索引签名检测（P2）
+### 148. 增量文件索引签名检测（P2）
 
 **思路**：文件补全列表是否需要刷新？通过两个低成本检测——① `stat('.git/index')` 的 mtime 变化检测 git 操作（checkout/add/rm）——未变化则跳过刷新（5s 节流）；② FNV-1a hash 对路径列表进行**采样签名**（每 500 个路径取 1 个样本），<1ms 检测 34.6 万文件列表是否变化——未变化则跳过重建 nucleo 索引。
 
@@ -2181,9 +2181,9 @@
 
 ---
 
-<a id="item-160"></a>
+<a id="item-149"></a>
 
-### 160. Shell AST 解析缓存（P2）
+### 149. Shell AST 解析缓存（P2）
 
 **思路**：同一条 shell 命令在权限检查流程中被多次 AST 解析——`getDefaultPermission()` 解析一次，`getConfirmationDetails()` 再解析一次。缓存 AST 结果到 `Map<string, ASTResult>` 避免重复解析。复合命令（`foo && bar || baz`）的子命令也各自缓存。
 
@@ -2201,9 +2201,9 @@
 
 ---
 
-<a id="item-161"></a>
+<a id="item-150"></a>
 
-### 161. 终端输出 JSON.stringify 比较替换（P2）
+### 150. 终端输出 JSON.stringify 比较替换（P2）
 
 **思路**：`shellExecutionService.ts` (L699) 用 `JSON.stringify(output) !== JSON.stringify(finalOutput)` 比较终端输出变化——这是 O(n) 序列化操作，每个数据事件都触发。替换为浅比较（数组长度 + 最后一行变化检测）或脏位标记（xterm.js 的 `onRender` 回调标记变化行范围）。
 
@@ -2215,9 +2215,9 @@
 
 ---
 
-<a id="item-162"></a>
+<a id="item-151"></a>
 
-### 162. Diff 渲染 useMemo 与 Regex 预编译（P2）
+### 151. Diff 渲染 useMemo 与 Regex 预编译（P2）
 
 **思路**：Diff 渲染组件的 `parseDiffWithLineNumbers()` 每次 React render 重新执行——包括正则编译和行迭代。用 `useMemo(fn, [diffContent])` 包裹确保仅在 diff 内容变化时重新计算。大文件 diff（>1MB）添加异步分块处理避免阻塞主线程。
 
