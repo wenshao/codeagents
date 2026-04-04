@@ -530,9 +530,9 @@
 
 ---
 
-<a id="item-88"></a>
+<a id="item-24"></a>
 
-### 88. 流式工具执行流水线（P1）
+### 24. 流式工具执行流水线（P1）
 
 **思路**：API 流式返回 tool_use block 时，**不等完整响应结束**就立即开始执行已完成解析的工具。StreamingToolExecutor 维护有序队列：工具按到达顺序入队，并发安全的立即启动，结果按入队顺序出队。进度消息（pendingProgress）实时流出，不等工具完成。与 item-7（智能工具并行）互补——item-7 解决"哪些工具可以并行"，本项解决"何时开始执行"。
 
@@ -552,9 +552,9 @@
 
 ---
 
-<a id="item-91"></a>
+<a id="item-25"></a>
 
-### 91. 文件读取缓存 + 批量并行 I/O（P1）
+### 25. 文件读取缓存 + 批量并行 I/O（P1）
 
 **思路**：3 层优化——① FileReadCache：1000 条 LRU 缓存，mtime 自动失效，Edit 后立即命中缓存无需重新读取；② 批量并行读取：32 个文件一批 `Promise.all(batch.map(readFile))`；③ 并行 stat：`Promise.all(filePaths.map(lstat))` 同时检测多文件修改时间。
 
@@ -575,9 +575,9 @@
 
 ---
 
-<a id="item-93"></a>
+<a id="item-26"></a>
 
-### 93. 记忆/附件异步预取（P1）
+### 26. 记忆/附件异步预取（P1）
 
 **思路**：用户消息到达时，**不等工具执行完**就立即启动相关记忆搜索（异步 prefetch handle）。工具执行期间记忆搜索并行进行，工具完成后如果搜索已 settle 则注入结果，否则下一轮重试。Skill 发现同理——检测到"写操作转折点"时异步预取相关 skill。
 
@@ -597,9 +597,9 @@
 
 ---
 
-<a id="item-94"></a>
+<a id="item-27"></a>
 
-### 94. Token Budget 续行与自动交接（P1）
+### 27. Token Budget 续行与自动交接（P1）
 
 **思路**：长任务不因 `max_tokens` 截断而丢失进度。BudgetTracker 追踪每轮 token 增量：① 未达 90% 预算 → 注入续行提示让模型继续；② 连续 3 次增量 < 500 tokens → 检测为"收益递减"，停止续行；③ 停止后触发 auto-compact 链（microcompact → session memory compact → full compact）。整个过程用户无感知。
 
@@ -620,9 +620,9 @@
 
 ---
 
-<a id="item-99"></a>
+<a id="item-28"></a>
 
-### 99. 同步 I/O 异步化 — 事件循环解阻塞（P1）
+### 28. 同步 I/O 异步化 — 事件循环解阻塞（P1）
 
 **思路**：将热路径上的 `readFileSync`/`statSync`/`writeFileSync` 替换为 async 版本，防止阻塞 Node.js 事件循环。同步 I/O 在主线程执行时会冻结 UI 渲染和键盘输入处理——文件越大、磁盘越慢影响越大。
 
@@ -648,9 +648,9 @@
 
 ---
 
-<a id="item-100"></a>
+<a id="item-29"></a>
 
-### 100. Prompt Cache 分段与工具稳定排序（P1）
+### 29. Prompt Cache 分段与工具稳定排序（P1）
 
 **思路**：系统提示拆分为 static（全局缓存）+ dynamic（每次重算）两段，用 `SYSTEM_PROMPT_DYNAMIC_BOUNDARY` 标记分界。内置工具保持稳定的连续前缀排序（MCP/动态工具追加在后），服务端在前缀后插入 cache breakpoint。工具 schema 锁定在首次渲染时（`toolSchemaCache`），防止 GrowthBook 特性开关翻转导致 11K-token schema 变化破坏缓存。
 
