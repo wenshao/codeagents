@@ -1665,3 +1665,110 @@
 **意义**：用户看到同一个 spinner 转 60 秒——不知道是正常还是卡住了。
 **缺失后果**：spinner 永远蓝色 = "还在正常工作？还是卡住了？" 无法判断。
 **改进收益**：30s 后变红 = 用户立即知道可能需要干预（Escape 或等待）。
+
+---
+
+<a id="item-131"></a>
+
+### 131. 代理权限冒泡与审批路由（P2）
+
+**思路**：Fork 子代理的 `permissionMode: 'bubble'` 将权限请求上浮到父级终端——子代理无需独立 UI，权限对话框在用户可见的父终端弹出。Leader 通过 `leaderPermissionBridge` 桥接——InProcess Teammate 的权限请求路由到 Leader 的 `ToolUseConfirm` 对话框。邮箱回退：桥接不可用时通过文件邮箱异步审批。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/swarm/permissionSync.ts` (928行) | `createPermissionRequest()`、`sendPermissionRequestViaMailbox()` |
+| `utils/swarm/leaderPermissionBridge.ts` (54行) | Leader ToolUseConfirm 队列桥接 |
+| `tools/AgentTool/forkSubagent.ts` (L60) | `permissionMode: 'bubble'` |
+
+**Qwen Code 修改方向**：子代理继承父级 ApprovalMode，但无冒泡机制——后台代理的权限请求无处显示。改进方向：① 新增 `bubble` 权限模式——子代理请求路由到父级 UI；② Leader 桥接——Teammate 权限请求显示在 Leader 终端；③ 文件邮箱回退——tmux 代理通过 JSON 文件异步审批。
+
+**意义**：后台代理需要权限审批但没有自己的终端——请求必须路由到用户可见处。
+**缺失后果**：后台代理权限请求 = 静默阻塞——用户不知道在等什么。
+**改进收益**：权限冒泡 = 请求自动出现在父终端——用户审批后代理继续。
+
+---
+
+<a id="item-132"></a>
+
+### 132. 代理专属 MCP 服务器（P2）
+
+**思路**：代理 frontmatter 配置 `mcpServers` 字段——① 字符串引用（如 `"slack"`）复用已连接的服务器；② 内联定义（如 `{ slack: { command: "..." } }`）创建新连接。代理启动时连接，退出时自动清理。安全策略：plugin/built-in 代理可自由使用 MCP，用户自定义代理受 policy 限制。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `tools/AgentTool/runAgent.ts` (L95) | `initializeAgentMcpServers()` 连接代理专属 MCP |
+| `tools/AgentTool/loadAgentsDir.ts` (L87) | frontmatter `mcpServers` 字段 |
+
+**Qwen Code 修改方向**：代理共享全局 MCP 配置，无 per-agent MCP。改进方向：① frontmatter 新增 `mcpServers` 字段；② 字符串引用复用已连接服务器（`connectToServer = memoize()` 已支持）；③ 内联定义在代理启动时 `connect()`、退出时 `disconnect()`；④ 安全策略区分 admin-trusted 和 user-controlled 代理。
+
+**意义**：专业代理需要专属工具——Slack 代理需要 Slack MCP，数据库代理需要 DB MCP。
+**缺失后果**：所有代理共享全部 MCP = 权限过宽 + 工具列表过长浪费 token。
+**改进收益**：per-agent MCP = 精准工具集 + 安全隔离 + 启动时按需连接。
+
+---
+
+<a id="item-133"></a>
+
+### 133. 代理创建向导（P2）
+
+**思路**：多步骤交互式向导引导创建自定义代理——① 选择位置（User/Project）；② 选择方式（手动/AI 生成）；③ 设定类型名；④ 编写系统提示；⑤ 选择工具子集；⑥ 选择模型；⑦ 配置记忆范围；⑧ 确认并保存为 `.claude/agents/name.md`。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/agents/new-agent-creation/CreateAgentWizard.tsx` | 11 步向导（Location→Method→Type→Prompt→Tools→Model→Color→Memory→Confirm） |
+| `components/agents/agentFileUtils.ts` | `saveAgentToFile()`、`formatAgentAsMarkdown()` |
+
+**Qwen Code 修改方向**：`/agents create` 命令存在但交互流程简单。改进方向：① 多步向导 UI（Ink 组件）引导每个配置项；② 工具选择提供可勾选列表（而非手动输入名称）；③ AI 生成模式——描述需求后 AI 生成 system prompt；④ 保存前预览完整的 YAML frontmatter + markdown。
+
+**意义**：代理定义涉及 10+ 配置项——无向导引导容易遗漏或出错。
+**缺失后果**：用户手动编辑 YAML frontmatter——格式错误 = 代理加载失败。
+**改进收益**：向导引导 = 3 分钟创建完整代理定义——零格式错误。
+
+---
+
+<a id="item-134"></a>
+
+### 134. 代理进度追踪与实时状态（P2）
+
+**思路**：`ProgressTracker` 追踪后台代理的实时状态——toolUseCount、tokenCount（input/output）、recentActivities（最近 5 条操作描述）。通过 `<task-notification>` XML 格式向 Coordinator 报告完成状态（success/failed/killed + 摘要 + token 用量 + 时长）。UI 组件 `BackgroundTasksDialog` 展示所有后台代理列表 + 进度 + kill 控制。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `tasks/LocalAgentTask/LocalAgentTask.tsx` | `ProgressTracker`、`registerAsyncAgent()`、`updateAsyncAgentProgress()` |
+| `utils/sdkEventQueue.ts` | `<task-notification>` XML 格式 |
+| `components/tasks/BackgroundTasksDialog.tsx` | 后台代理 UI 列表 + kill 控制 |
+
+**Qwen Code 修改方向**：`AgentResultDisplay` 提供最终结果但无实时进度追踪。改进方向：① 新增 `ProgressTracker`——每轮更新 toolUseCount/tokenCount/activities；② 后台代理面板显示实时进度列表；③ `<task-notification>` 格式标准化代理完成报告；④ kill 按钮一键终止卡住的代理。
+
+**意义**：5 个后台代理并行运行——用户需要知道每个的进度和状态。
+**缺失后果**：后台代理 = 黑箱——"做到哪了？卡住了吗？" 无法回答。
+**改进收益**：实时进度面板 = 每个代理的 tool 调用数 + token 用量 + 最近操作一目了然。
+
+---
+
+<a id="item-135"></a>
+
+### 135. 代理邮箱系统（Teammate Mailbox）（P2）
+
+**思路**：基于文件的异步消息系统——每个 Teammate 有独立收件箱（`~/.claude/teams/{team}/inboxes/{agent}.json`）。消息包含：sender、text、timestamp、read 标志、color、summary。`proper-lockfile` 确保并发写入安全（10 次重试，5-100ms 退避）。支持单播（指定收件人）和广播（`to: "*"`）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/teammateMailbox.ts` (400+行) | `readMailbox()`、`writeToMailbox()`、`markMessageAsReadByIndex()` |
+| `tools/SendMessageTool/SendMessageTool.ts` | `HandleMessage()` 单播、`HandleBroadcast()` 广播 |
+
+**Qwen Code 修改方向**：Arena 系统用文件 IPC（status/control JSON），但无通用代理间邮箱。改进方向：① 新建 `utils/teammateMailbox.ts`——JSON 文件 + lockfile 并发控制；② SendMessage 工具支持 `to: agentName` 和 `to: "*"` 广播；③ 代理执行循环中定期检查邮箱（500ms 轮询）。
+
+**意义**：多代理协作需要通信——researcher 告诉 tester "结果在 path X"。
+**缺失后果**：代理间无通信 = 只能通过共享文件间接协作——脆弱且不可靠。
+**改进收益**：邮箱系统 = 结构化消息传递——代理间直接沟通、权限请求路由。
