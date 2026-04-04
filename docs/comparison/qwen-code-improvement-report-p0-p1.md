@@ -503,3 +503,27 @@
 **意义**：GitLab 在企业用户中占比显著——仅支持 GitHub 覆盖面不够。
 **缺失后果**：GitLab 用户无法在 CI 中集成 Agent。
 **改进收益**：覆盖 GitLab 用户群——企业级 CI 集成。
+
+---
+
+<a id="item-75"></a>
+
+### 75. Ghost Text 输入补全（P1）
+
+**思路**：用户输入时在光标后显示灰色建议文字（ghost text）——命令名、文件路径、shell history 三层。Tab/Right Arrow 接受。建议仅在光标位于正确插入点时显示。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `types/textInputTypes.ts` | `InlineGhostText` 类型定义 |
+| `hooks/useTextInput.ts` | ghost text 渲染 + `insertPosition === offset` 检查 |
+| `utils/suggestions/commandSuggestions.ts` | 命令名模糊匹配 |
+| `utils/suggestions/directoryCompletion.ts` | 路径补全 + LRU 缓存 |
+| `utils/suggestions/shellHistoryCompletion.ts` | `~/.bash_history` 缓存 |
+
+**Qwen Code 修改方向**：`InputPrompt.tsx` 新增 ghost text 渲染层（Ink `<Text dimColor>`）；新建 `utils/suggestions/` 目录实现命令/路径/历史三层补全。
+
+**意义**：命令补全是 CLI 工具最基础的 UX 期待——无补全等于每次都手打全名。
+**缺失后果**：用户需完整输入 `/compress`、文件路径等——效率低且易出错。
+**改进收益**：输入 `/com` 即显示 `/compress` 灰字，Tab 接受——打字量减半。
