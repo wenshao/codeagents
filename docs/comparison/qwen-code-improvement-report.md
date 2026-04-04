@@ -91,7 +91,7 @@
 | **P1** | GitLab CI/CD — 官方 GitLab pipeline 集成 [↓](./qwen-code-improvement-report-p0-p1.md#item-22) | 缺失 | 中 | — |
 | **P2** | /effort — 设置模型 effort 级别（○ 低 / ◐ 中 / ● 高）[↓](./qwen-code-improvement-report-p2.md#item-52) | 缺失 | 小 | — |
 | **P2** | Status Line 自定义 — shell 脚本在状态栏展示自定义信息 [↓](./qwen-code-improvement-report-p2.md#item-53) | 缺失 | 小 | — |
-| **P2** | Fullscreen Rendering — alt-screen 无闪烁渲染 + 虚拟滚动缓冲 [↓](./qwen-code-improvement-report-p2.md#item-54) | 缺失 | 中 | — |
+| **P2** | 终端渲染优化 — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2.md#item-54) | 仅消息拆分防闪烁 | 大 | — |
 | **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](./qwen-code-improvement-report-p2.md#item-55) | 缺失 | 小 | — |
 | **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](./qwen-code-improvement-report-p2.md#item-56) | 缺失 | 小 | — |
 | **P2** | --max-budget-usd — headless 模式 USD 花费上限 [↓](./qwen-code-improvement-report-p2.md#item-57) | 缺失 | 小 | — |
