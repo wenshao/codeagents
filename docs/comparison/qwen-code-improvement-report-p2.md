@@ -495,6 +495,8 @@
 
 **Qwen Code 修改方向**：`AsyncMessageQueue` 新增 `popEditable()` 方法；`InputPrompt.tsx` 渲染队列内容并处理 Escape。
 
+**进展**：[QwenLM/qwen-code#2871](https://github.com/QwenLM/qwen-code/pull/2871)（open）— 实现了 Up 方向键弹出队列消息到输入框编辑。
+
 **相关文章**：[输入队列与中断机制](./input-queue-deep-dive.md)
 
 **意义**：发现排队输入有误需要修改——但已入队无法撤回。
