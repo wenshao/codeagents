@@ -2229,9 +2229,9 @@
 
 ---
 
-<a id="item-163"></a>
+<a id="item-152"></a>
 
-### 163. 远程触发器 REST API（P2）
+### 152. 远程触发器 REST API（P2）
 
 **思路**：通过 REST API 管理定时远程 Agent——CRUD 端点 `/v1/code/triggers`。支持创建、更新、列表、获取、手动运行。触发器在云端 CCR 执行（非本地），适合 CI/CD 定时任务（如每日代码质量扫描、定期安全审查）。
 
@@ -2251,9 +2251,9 @@
 
 ---
 
-<a id="item-164"></a>
+<a id="item-153"></a>
 
-### 164. SDK 双向控制协议（P2）
+### 153. SDK 双向控制协议（P2）
 
 **思路**：SDK 消费者与 CLI 之间的双向 NDJSON 控制协议——① SDK→CLI：`can_use_tool` 权限响应、`set_model` 切换模型、`set_permission_mode` 切换权限、`interrupt` 中断、`seed_read_state` 预填缓存；② CLI→SDK：`can_use_tool` 权限请求、`hook_callback` Hook 事件、`mcp_message` MCP 消息路由。26+ Hook 事件类型支持中间件模式。
 
@@ -2273,9 +2273,9 @@
 
 ---
 
-<a id="item-165"></a>
+<a id="item-154"></a>
 
-### 165. CI 环境自动检测与行为适配（P2）
+### 154. CI 环境自动检测与行为适配（P2）
 
 **思路**：检测具体 CI 平台（GitHub Actions/CircleCI/Jenkins/GitLab CI）并自适应行为——① 跳过浏览器认证流程（CI 无桌面）；② 自动启用 headless 输出格式；③ 提取 CI 上下文（PR 号、分支、commit SHA）注入系统提示；④ 调整超时（CI 通常有更长超时预算）。
 
@@ -2295,9 +2295,9 @@
 
 ---
 
-<a id="item-166"></a>
+<a id="item-155"></a>
 
-### 166. PR Webhook 事件实时订阅（P2）
+### 155. PR Webhook 事件实时订阅（P2）
 
 **思路**：Agent 可订阅 GitHub PR 活动事件（review comments、CI 结果、状态变更），事件作为 user message 实时注入对话。Coordinator 代理可持续监控 PR 进展——CI 失败时自动修复，review 评论自动回复。
 
@@ -2316,9 +2316,9 @@
 
 ---
 
-<a id="item-167"></a>
+<a id="item-156"></a>
 
-### 167. UltraReview 远程深度代码审查（P2）
+### 156. UltraReview 远程深度代码审查（P2）
 
 **思路**：`/ultrareview` 在远程 CCR 环境中运行 10-20 分钟的深度代码审查（本地 `/review` 仅几分钟）。远程审查有独立配额追踪（`reviews_used/limit/remaining`）。每 10 秒发送 `<remote-review-progress>` 心跳标签。30 分钟超时保护。
 
@@ -2338,9 +2338,9 @@
 
 ---
 
-<a id="item-168"></a>
+<a id="item-157"></a>
 
-### 168. GitHub App 自动安装与工作流生成（P2）
+### 157. GitHub App 自动安装与工作流生成（P2）
 
 **思路**：`/install-github-app` 命令自动化 GitHub Actions 集成——① 检查仓库访问权限（`gh api`）；② 生成 workflow YAML 文件（claude.yml + claude-code-review.yml）；③ 通过 GitHub API 创建分支并提交 workflow；④ 自动配置 `ANTHROPIC_API_KEY` secret；⑤ 打开浏览器创建 PR。
 
@@ -2359,9 +2359,9 @@
 
 ---
 
-<a id="item-169"></a>
+<a id="item-158"></a>
 
-### 169. Headless 性能剖析（TTFT/延迟追踪）（P2）
+### 158. Headless 性能剖析（TTFT/延迟追踪）（P2）
 
 **思路**：CI/headless 模式下自动收集性能指标——① TTFT（Time To First Token）；② 每轮处理延迟；③ 系统消息 yield 时间；④ 查询开销。100% 内部用户 + 5% 外部用户采样。指标用于优化 CI 场景下的 Agent 响应速度。
 
@@ -2379,9 +2379,9 @@
 
 ---
 
-<a id="item-170"></a>
+<a id="item-159"></a>
 
-### 170. 退出码标准化与 Hook 唤醒（P2）
+### 159. 退出码标准化与 Hook 唤醒（P2）
 
 **思路**：标准化 CI 友好的退出码语义——0=成功、1=错误、2=Hook 阻塞错误（唤醒模型重新处理）。后台异步 Hook 返回退出码 2 时唤醒 Agent 处理 Hook 结果——允许 Hook 在后台运行验证（如 lint/test），失败时自动通知 Agent 修复。
 
