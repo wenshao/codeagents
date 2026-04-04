@@ -824,3 +824,115 @@
 **意义**：长任务中 Agent 可能在第 N 步犯错——需要回退到第 N-1 步而非从头开始。
 **缺失后果**：检查点关闭 = Agent 改错文件后只能手动 `git checkout` 恢复。
 **改进收益**：自动检查点 = `/restore` 选择任意步骤回退——精确撤销错误变更。
+
+---
+
+<a id="item-126"></a>
+
+### 126. Coordinator/Swarm 多代理编排模式（P1）
+
+**思路**：Leader/Worker 团队编排——Leader 分解任务、分配给 Worker、收集结果。TeamFile 存储团队元数据（成员列表、worktree 路径、允许路径）。3 种执行后端：① tmux pane（每个 Worker 独立终端窗格）；② iTerm2 原生分屏；③ InProcess（同进程 AsyncLocalStorage 隔离）。自动检测最佳后端。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `coordinator/coordinatorMode.ts` (370行) | `isCoordinatorMode()`、Coordinator 系统提示、Worker 结果收集 |
+| `utils/swarm/backends/registry.ts` | `detectAndGetBackend()` 优先级：tmux > iTerm2 > InProcess |
+| `utils/swarm/teamHelpers.ts` (683行) | `TeamFile` 结构、`readTeamFile()`、`cleanupSessionTeams()` |
+| `utils/swarm/inProcessRunner.ts` (1400+行) | AsyncLocalStorage 上下文隔离、权限轮询、空闲通知 |
+| `tools/shared/spawnMultiAgent.ts` | `spawnInProcessTeammateInternal()`、`spawnPaneTeammateInternal()` |
+
+**Qwen Code 修改方向**：Arena 系统支持多模型并行竞赛，但无 Leader/Worker 协作编排。改进方向：① 新建 `coordinator/` 模块——Leader 系统提示指导任务分解；② Worker 结果通过 `<task-notification>` XML 回传给 Leader；③ 后端抽象层——tmux/iTerm2/InProcess 三种执行模式；④ TeamFile 管理团队元数据和成员状态。
+
+**意义**：复杂任务（大规模重构、跨模块变更）超出单 Agent 能力——需要团队协作。
+**缺失后果**：所有工作由单 Agent 顺序完成——100 个文件修改 = 100 轮对话。
+**改进收益**：Leader 分解 + 20 Worker 并行 = 5× 速度提升 + 自动 PR 生成。
+
+---
+
+<a id="item-127"></a>
+
+### 127. 代理工具细粒度访问控制（P1）
+
+**思路**：3 层工具访问控制——① `ALL_AGENT_DISALLOWED_TOOLS`：所有代理禁用的工具（TaskOutput、ExitPlanMode、AskUser 等）；② `ASYNC_AGENT_ALLOWED_TOOLS`：异步代理白名单（Read/Write/Edit/Bash/Grep/Glob）；③ `IN_PROCESS_TEAMMATE_ALLOWED_TOOLS`：同进程 Teammate 额外工具（TaskCreate/SendMessage）。代理定义支持 `tools` 白名单 + `disallowedTools` 黑名单组合。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `constants/tools.ts` | `ALL_AGENT_DISALLOWED_TOOLS`、`ASYNC_AGENT_ALLOWED_TOOLS`、`IN_PROCESS_TEAMMATE_ALLOWED_TOOLS` |
+| `tools/AgentTool/agentToolUtils.ts` (L122-150) | `resolveAgentTools()`、`filterToolsForAgent()` 白名单/黑名单计算 |
+| `tools/AgentTool/loadAgentsDir.ts` (L76-77) | frontmatter `tools:` 和 `disallowedTools:` 字段 |
+
+**Qwen Code 修改方向**：代理 `tools` 数组可选但无分层控制——要么全部工具要么指定列表。改进方向：① 定义 3 层限制集（全局禁止 + 异步白名单 + Teammate 额外）；② `filterToolsForAgent()` 按代理类型（built-in/user/plugin）应用不同限制；③ 支持 `disallowedTools` 黑名单在白名单基础上进一步排除。
+
+**意义**：代理权限最小化原则——只读探索代理不应有写权限。
+**缺失后果**：所有代理拥有全部工具 = Explore 代理可能意外写文件。
+**改进收益**：白名单 + 黑名单 = 每个代理恰好拥有所需权限。
+
+---
+
+<a id="item-128"></a>
+
+### 128. InProcess 同进程多代理隔离（P1）
+
+**思路**：多个代理在同一 Node.js 进程中并发运行，通过 AsyncLocalStorage 实现上下文隔离——每个代理有独立的 AgentContext（agentId、teamName、权限模式）、独立的 AbortController、独立的工具注册表。相比 tmux/iTerm2 后端，InProcess 无进程 fork 开销（省 50-100ms/代理），适合轻量级并行任务。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/agentContext.ts` | `AgentContext` 联合类型、`runWithAgentContext()` AsyncLocalStorage 隔离 |
+| `utils/teammateContext.ts` | `TeammateContext`、`runWithTeammateContext()` |
+| `utils/swarm/backends/InProcessBackend.ts` (339行) | 同进程执行器——无 PTY、文件邮箱通信 |
+| `utils/swarm/spawnInProcess.ts` | `spawnInProcessTeammate()`、`killInProcessTeammate()` |
+
+**Qwen Code 修改方向**：`InProcessBackend` 已有基础实现（每个代理独立 ToolRegistry + WorkspaceContext），但无 AsyncLocalStorage 上下文隔离——全局状态可能在代理间泄漏。改进方向：① 引入 AsyncLocalStorage 存储 per-agent 上下文（agentId、cwd、permissions）；② 全局单例（如 logger、config）通过 AsyncLocalStorage 读取 agent-scoped 值；③ 每个代理独立 AbortController，kill 单个代理不影响其他。
+
+**意义**：InProcess 后端是最高效的多代理执行方式——零 fork 开销 + 共享内存。
+**缺失后果**：全局状态泄漏——代理 A 的配置变更影响代理 B。
+**改进收益**：AsyncLocalStorage = 完美隔离 + 零开销——每个代理看到自己的上下文。
+
+---
+
+<a id="item-129"></a>
+
+### 129. 代理记忆持久化（P1）
+
+**思路**：3 级代理记忆——① `user`（~/.claude/agent-memory/）：跨项目全局记忆；② `project`（.claude/agent-memory/）：项目级记忆（可提交到 VCS）；③ `local`（.claude/agent-memory-local/）：项目级但 gitignore。记忆在 frontmatter 中配置 `memory: user|project|local`，启用后自动注入 Read/Write/Edit 工具。记忆内容追加到代理系统提示中。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `tools/AgentTool/agentMemory.ts` | 3 级记忆路径解析、`loadAgentMemoryPrompt()` 注入系统提示 |
+| `tools/AgentTool/loadAgentsDir.ts` (L92) | frontmatter `memory: user|project|local` |
+
+**Qwen Code 修改方向**：代理无跨 session 持久记忆——每次启动从零开始。改进方向：① 新建 `agent-memory/` 目录结构（3 级）；② 代理 frontmatter 新增 `memory` 字段；③ 代理启动时 `loadAgentMemoryPrompt()` 读取记忆目录内容注入系统提示；④ 代理可通过 Write 工具写入记忆文件。
+
+**意义**：专业代理（如 code-reviewer）需要积累领域知识——每次从零学习浪费 token。
+**缺失后果**：代码审查代理每次重新学习项目规范——重复指出已修复的问题。
+**改进收益**：持久记忆 = 代理越用越懂项目——审查质量随时间提升。
+
+---
+
+<a id="item-130"></a>
+
+### 130. 代理恢复与续行（P1）
+
+**思路**：已完成或中断的代理可通过 `SendMessage` 工具继续对话。`resumeAgentBackground()` 从 JSONL transcript 重建完整上下文——包括文件状态缓存、content replacements、系统提示。检测 fork 代理并特殊处理系统提示继承。过滤过期消息（空白、孤立 thinking、未解决 tool_use）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `tools/AgentTool/resumeAgent.ts` | `resumeAgentBackground()` 恢复 transcript + 上下文重建 |
+| `tools/SendMessageTool/SendMessageTool.ts` | `HandleMessage()` 发送消息给已有代理 |
+| `utils/teammateMailbox.ts` | 文件邮箱系统、`proper-lockfile` 并发写入 |
+
+**Qwen Code 修改方向**：`AgentHeadless` 执行完即销毁，无续行能力；`AgentInteractive` 支持 `enqueueMessage()` 但无跨 session 恢复。改进方向：① 代理 transcript 保存到 JSONL（已有 SessionService 基础）；② 新增 `resumeAgent()` 从 transcript 重建上下文；③ SendMessage 工具支持 `to: agentId` 向运行中或已完成的代理发送消息。
+
+**意义**：长任务代理可能需要多次交互——中途暂停后应能无缝续行。
+**缺失后果**：代理执行完即消失——"继续刚才的审查" 需要重新创建代理。
+**改进收益**：SendMessage 续行 = 代理保持完整上下文——随时继续未完成的工作。

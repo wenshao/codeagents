@@ -162,6 +162,16 @@
 | **P2** | 屏幕阅读器无障碍支持 — Diff/Spinner/Progress 纯文本替代渲染 [↓](./qwen-code-improvement-report-p2.md#item-112) | hook 存在但使用有限 | 小 | — |
 | **P2** | 色觉无障碍主题 — daltonized 红绿→蓝橙 diff 色板 [↓](./qwen-code-improvement-report-p2.md#item-113) | 无色觉主题 | 小 | — |
 | **P2** | 动画系统与卡顿状态检测 — shimmer 微光 + 30s 超时变红 [↓](./qwen-code-improvement-report-p2.md#item-114) | 固定动画/无超时检测 | 小 | — |
+| **P1** | Coordinator/Swarm 多代理编排 — Leader/Worker 团队 + 3 种执行后端 [↓](./qwen-code-improvement-report-p0-p1.md#item-126) | 仅 Arena 竞赛 | 大 | — |
+| **P1** | 代理工具细粒度访问控制 — 3 层白名单/黑名单 + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1.md#item-127) | 全部或指定列表 | 中 | — |
+| **P1** | InProcess 同进程多代理隔离 — AsyncLocalStorage 上下文隔离 [↓](./qwen-code-improvement-report-p0-p1.md#item-128) | 全局状态可能泄漏 | 中 | — |
+| **P1** | 代理记忆持久化 — user/project/local 3 级跨 session 记忆 [↓](./qwen-code-improvement-report-p0-p1.md#item-129) | 无跨 session 记忆 | 中 | — |
+| **P1** | 代理恢复与续行 — SendMessage 继续已完成代理 + transcript 重建 [↓](./qwen-code-improvement-report-p0-p1.md#item-130) | 执行完即销毁 | 中 | — |
+| **P2** | 代理权限冒泡 — bubble 模式 + Leader 桥接 + 邮箱回退 [↓](./qwen-code-improvement-report-p2.md#item-131) | 继承父级模式 | 中 | — |
+| **P2** | 代理专属 MCP 服务器 — frontmatter mcpServers + 按需连接/清理 [↓](./qwen-code-improvement-report-p2.md#item-132) | 共享全局 MCP | 小 | — |
+| **P2** | 代理创建向导 — 11 步交互式向导 + AI 生成模式 [↓](./qwen-code-improvement-report-p2.md#item-133) | 基础命令行创建 | 中 | — |
+| **P2** | 代理进度追踪与实时状态 — ProgressTracker + task-notification + kill 控制 [↓](./qwen-code-improvement-report-p2.md#item-134) | 仅最终结果 | 中 | — |
+| **P2** | 代理邮箱系统 — 文件 IPC + lockfile + 单播/广播 [↓](./qwen-code-improvement-report-p2.md#item-135) | 仅 Arena 文件 IPC | 中 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
@@ -171,8 +181,8 @@
 
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
-| [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（崩溃恢复、API 退避、优雅关闭、反应式压缩、原子写入等） | 36 |
-| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Shell 安全、卡顿检测、超链接、设计系统、无障碍等） | 78 |
+| [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（崩溃恢复、Swarm 编排、代理记忆、工具访问控制等） | 41 |
+| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（权限冒泡、代理进度、邮箱系统、设计系统、无障碍等） | 83 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结
