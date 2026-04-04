@@ -301,7 +301,7 @@
 
 ### 14. SendMessageTool（P2）
 
-**思路**：多代理间消息传递——单播（name）、广播（`*`）、UDS Socket、Remote Control bridge。支持结构化消息（shutdown_request、plan_approval）。
+**思路**：多 Agent间消息传递——单播（name）、广播（`*`）、UDS Socket、Remote Control bridge。支持结构化消息（shutdown_request、plan_approval）。
 
 **Claude Code 源码索引**：
 
@@ -312,10 +312,10 @@
 
 **Qwen Code 修改方向**：Arena 模式下新增消息传递工具；基于文件或 IPC 实现 agent 间通信。
 
-**相关文章**：[多代理系统](./multi-agent-deep-dive.md)
+**相关文章**：[多 Agent系统](./multi-agent-deep-dive.md)
 
-**意义**：多代理协作需要代理间通信——分配任务、报告进度、协调行动。
-**缺失后果**：Arena 模式下代理间无法通信——只能各自独立执行。
+**意义**：多 Agent 协作需要 Agent 间通信——分配任务、报告进度、协调行动。
+**缺失后果**：Arena 模式下 Agent 间无法通信——只能各自独立执行。
 **改进收益**：Leader 分配任务后 Worker 通过消息报告进度——真正的团队协作。
 
 ---

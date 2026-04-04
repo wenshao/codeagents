@@ -39,7 +39,7 @@
 |:------:|--------|----------------|:----:|------|
 | **P0** | [Mid-Turn Queue Drain](./input-queue-deep-dive.md) — Agent 执行中途注入用户输入，无需等整轮结束 [↓](./qwen-code-improvement-report-p0-p1.md#item-6) | 推理循环内无队列检查 | 中 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) |
 | **P0** | [多层上下文压缩](./context-compression-deep-dive.md) — 自动裁剪旧工具结果 + 摘要，用户无需手动 /compress [↓](./qwen-code-improvement-report-p0-p1.md#item-1) | 仅单一 70% 手动压缩 | 中 | — |
-| **P0** | [Fork 子代理](./fork-subagent-deep-dive.md) — 子代理继承完整对话上下文，共享 prompt cache 省 80%+ 费用 [↓](./qwen-code-improvement-report-p0-p1.md#item-2) | 子代理必须从零开始 | 中 | — |
+| **P0** | [Fork Subagent](./fork-subagent-deep-dive.md) — Subagent 继承完整对话上下文，共享 prompt cache 省 80%+ 费用 [↓](./qwen-code-improvement-report-p0-p1.md#item-2) | Subagent 必须从零开始 | 中 | — |
 | **P0** | 会话崩溃恢复与中断检测 — 3 种中断状态检测 + 合成续行 + 全量恢复 [↓](./qwen-code-improvement-report-p0-p1.md#item-30) | 无崩溃恢复 | 大 | — |
 | **P1** | [Speculation](../tools/claude-code/10-prompt-suggestions.md) — 预测用户下一步并提前执行，Tab 接受零延迟 [↓](./qwen-code-improvement-report-p0-p1.md#item-3) | 已实现但默认关闭 | 小 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | **P1** | [会话记忆](./memory-system-deep-dive.md) — 关键决策/文件结构自动提取，新 session 自动注入 [↓](./qwen-code-improvement-report-p0-p1.md#item-4) | 仅简单笔记工具 | 大 | — |
@@ -51,7 +51,7 @@
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1.md#item-12) | 缺失 | 小 | — |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1.md#item-13) | 缺失 | 中 | — |
 | **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](./qwen-code-improvement-report-p0-p1.md#item-14) | 缺失 | 中 | — |
-| **P1** | GitHub Code Review — 多代理自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1.md#item-15) | 缺失 | 大 | — |
+| **P1** | GitHub Code Review — 多 Agent自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1.md#item-15) | 缺失 | 大 | — |
 | **P1** | HTTP Hooks — Hook 可 POST JSON 到 URL 并接收响应（不仅 shell 命令）[↓](./qwen-code-improvement-report-p0-p1.md#item-16) | 仅 shell 命令 | 小 | — |
 | **P1** | Ghost Text 输入补全 — 输入时显示命令/路径建议灰字，Tab 接受 [↓](./qwen-code-improvement-report-p0-p1.md#item-23) | 缺失 | 中 | — |
 | **P1** | Structured Output — `--json-schema` 强制 JSON Schema 验证输出 [↓](./qwen-code-improvement-report-p0-p1.md#item-17) | 缺失 | 小 | — |
@@ -72,11 +72,11 @@
 | **P1** | 持久化重试模式 — CI/后台无限重试 + 5min 退避上限 + 30s 心跳 [↓](./qwen-code-improvement-report-p0-p1.md#item-34) | 失败即退出 | 中 | — |
 | **P1** | 原子文件写入与事务回滚 — temp+rename 原子写 + 大结果落盘 [↓](./qwen-code-improvement-report-p0-p1.md#item-35) | 直接 writeFileSync | 中 | — |
 | **P1** | 自动检查点默认启用 — 每轮工具执行后自动创建文件快照 [↓](./qwen-code-improvement-report-p0-p1.md#item-36) | 检查点默认关闭 | 小 | — |
-| **P1** | Coordinator/Swarm 多代理编排 — Leader/Worker 团队 + 3 种执行后端 [↓](./qwen-code-improvement-report-p0-p1.md#item-37) | 仅 Arena 竞赛 | 大 | — |
-| **P1** | 代理工具细粒度访问控制 — 3 层白名单/黑名单 + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1.md#item-38) | 全部或指定列表 | 中 | — |
-| **P1** | InProcess 同进程多代理隔离 — AsyncLocalStorage 上下文隔离 [↓](./qwen-code-improvement-report-p0-p1.md#item-39) | 全局状态可能泄漏 | 中 | — |
-| **P1** | 代理记忆持久化 — user/project/local 3 级跨 session 记忆 [↓](./qwen-code-improvement-report-p0-p1.md#item-40) | 无跨 session 记忆 | 中 | — |
-| **P1** | 代理恢复与续行 — SendMessage 继续已完成代理 + transcript 重建 [↓](./qwen-code-improvement-report-p0-p1.md#item-41) | 执行完即销毁 | 中 | — |
+| **P1** | Coordinator/Swarm 多 Agent编排 — Leader/Worker 团队 + 3 种执行后端 [↓](./qwen-code-improvement-report-p0-p1.md#item-37) | 仅 Arena 竞赛 | 大 | — |
+| **P1** | Agent 工具细粒度访问控制 — 3 层白名单/黑名单 + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1.md#item-38) | 全部或指定列表 | 中 | — |
+| **P1** | InProcess 同进程多 Agent隔离 — AsyncLocalStorage 上下文隔离 [↓](./qwen-code-improvement-report-p0-p1.md#item-39) | 全局状态可能泄漏 | 中 | — |
+| **P1** | Agent 记忆持久化 — user/project/local 3 级跨 session 记忆 [↓](./qwen-code-improvement-report-p0-p1.md#item-40) | 无跨 session 记忆 | 中 | — |
+| **P1** | Agent 恢复与续行 — SendMessage 继续已完成代理 + transcript 重建 [↓](./qwen-code-improvement-report-p0-p1.md#item-41) | 执行完即销毁 | 中 | — |
 | **P1** | 系统提示模块化组装 — sections 缓存 + dynamic boundary + uncached 标记 [↓](./qwen-code-improvement-report-p0-p1.md#item-42) | 单一字符串 | 中 | — |
 | **P1** | 系统提示内容完善 — OWASP 安全 + 提示注入检测 + 代码风格约束 + 输出格式 [↓](./qwen-code-improvement-report-p0-p1.md#item-47) | 缺少具体指导 | 中 | — |
 | **P1** | @include 指令与嵌套记忆发现 — @path 递归引用 + 文件操作触发目录遍历 [↓](./qwen-code-improvement-report-p0-p1.md#item-43) | 无 @include/嵌套发现 | 中 | — |
@@ -96,7 +96,7 @@
 | **P2** | [Team Memory](./team-memory-deep-dive.md) — 团队共享项目知识 + 29 条 gitleaks 密钥扫描 + ETag 同步 [↓](./qwen-code-improvement-report-p0-p1.md#item-10) | 缺失 | 大 | — |
 | **P2** | Plan 模式 Interview — 先收集信息再制定计划，分离探索和规划阶段 [↓](./qwen-code-improvement-report-p2-core.md#item-12) | 无 interview 阶段 | 中 | — |
 | **P2** | BriefTool — Agent 向用户发送异步消息（含附件），不中断工具执行 [↓](./qwen-code-improvement-report-p2-core.md#item-13) | 缺失 | 中 | — |
-| **P2** | [SendMessageTool](./multi-agent-deep-dive.md) — 多代理间消息传递、shutdown 请求、plan 审批 [↓](./qwen-code-improvement-report-p2-core.md#item-14) | 缺失 | 中 | — |
+| **P2** | [SendMessageTool](./multi-agent-deep-dive.md) — 多 Agent间消息传递、shutdown 请求、plan 审批 [↓](./qwen-code-improvement-report-p2-core.md#item-14) | 缺失 | 中 | — |
 | **P2** | FileIndex — fzf 风格模糊文件搜索 + 异步增量索引 [↓](./qwen-code-improvement-report-p2-core.md#item-15) | 依赖 rg/glob | 中 | — |
 | **P2** | Notebook Edit — Jupyter cell 编辑 + 自动 cell ID 追踪 + 文件历史快照 [↓](./qwen-code-improvement-report-p2-core.md#item-16) | 缺失 | 中 | — |
 | **P2** | 自定义快捷键 — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
@@ -162,11 +162,11 @@
 | **P2** | 屏幕阅读器无障碍支持 — Diff/Spinner/Progress 纯文本替代渲染 [↓](./qwen-code-improvement-report-p2-stability.md#item-11) | hook 存在但使用有限 | 小 | — |
 | **P2** | 色觉无障碍主题 — daltonized 红绿→蓝橙 diff 色板 [↓](./qwen-code-improvement-report-p2-stability.md#item-12) | 无色觉主题 | 小 | — |
 | **P2** | 动画系统与卡顿状态检测 — shimmer 微光 + 30s 超时变红 [↓](./qwen-code-improvement-report-p2-stability.md#item-13) | 固定动画/无超时检测 | 小 | — |
-| **P2** | 代理权限冒泡 — bubble 模式 + Leader 桥接 + 邮箱回退 [↓](./qwen-code-improvement-report-p2-stability.md#item-14) | 继承父级模式 | 中 | — |
-| **P2** | 代理专属 MCP 服务器 — frontmatter mcpServers + 按需连接/清理 [↓](./qwen-code-improvement-report-p2-stability.md#item-15) | 共享全局 MCP | 小 | — |
-| **P2** | 代理创建向导 — 11 步交互式向导 + AI 生成模式 [↓](./qwen-code-improvement-report-p2-stability.md#item-16) | 基础命令行创建 | 中 | — |
-| **P2** | 代理进度追踪与实时状态 — ProgressTracker + task-notification + kill 控制 [↓](./qwen-code-improvement-report-p2-stability.md#item-17) | 仅最终结果 | 中 | — |
-| **P2** | 代理邮箱系统 — 文件 IPC + lockfile + 单播/广播 [↓](./qwen-code-improvement-report-p2-stability.md#item-18) | 仅 Arena 文件 IPC | 中 | — |
+| **P2** | Agent 权限冒泡 — bubble 模式 + Leader 桥接 + 邮箱回退 [↓](./qwen-code-improvement-report-p2-stability.md#item-14) | 继承父级模式 | 中 | — |
+| **P2** | Agent 专属 MCP 服务器 — frontmatter mcpServers + 按需连接/清理 [↓](./qwen-code-improvement-report-p2-stability.md#item-15) | 共享全局 MCP | 小 | — |
+| **P2** | Agent 创建向导 — 11 步交互式向导 + AI 生成模式 [↓](./qwen-code-improvement-report-p2-stability.md#item-16) | 基础命令行创建 | 中 | — |
+| **P2** | Agent 进度追踪与实时状态 — ProgressTracker + task-notification + kill 控制 [↓](./qwen-code-improvement-report-p2-stability.md#item-17) | 仅最终结果 | 中 | — |
+| **P2** | Agent 邮箱系统 — 文件 IPC + lockfile + 单播/广播 [↓](./qwen-code-improvement-report-p2-stability.md#item-18) | 仅 Arena 文件 IPC | 中 | — |
 | **P2** | cache_edits 增量缓存删除 — API 原地删除旧工具结果不破坏缓存前缀 [↓](./qwen-code-improvement-report-p2-perf.md#item-13) | 重建消息数组 | 小 | — |
 | **P2** | 消息规范化与配对修复 — 合并连续 user + 修复孤立 tool_use/result + 100 媒体上限 [↓](./qwen-code-improvement-report-p2-perf.md#item-14) | 格式转换/无修复 | 中 | — |
 | **P2** | Git 状态自动注入上下文 — gitBranch/cwd/platform/fileCount 每轮注入 [↓](./qwen-code-improvement-report-p2-perf.md#item-15) | 仅平台和日期 | 小 | — |
@@ -198,14 +198,14 @@
 | **P2** | Headless 性能剖析 — TTFT/turn latency/overhead 采样追踪 [↓](./qwen-code-improvement-report-p2-stability.md#item-25) | 无剖析 | 小 | — |
 | **P2** | 退出码标准化与 Hook 唤醒 — exit 2 唤醒模型 + CI 语义文档 [↓](./qwen-code-improvement-report-p2-stability.md#item-26) | 有自定义码/无唤醒 | 小 | — |
 | **P2** | 破坏性命令警告系统 — 8 种高风险 git 操作 + 权限对话框风险说明 [↓](./qwen-code-improvement-report-p2-stability.md#item-27) | 仅读写分类/无风险说明 | 小 | — |
-| **P2** | 系统提示危险操作行为指导 — 4 类危险操作列举 + 行为准则 + 审批范围限定 [↓](./qwen-code-improvement-report-p2-stability.md#item-35) | 仅 "never push" 一条 | 小 | [PR#2889](https://github.com/QwenLM/qwen-code/pull/2889) |
-| **P2** | Unicode 净化与 ASCII 走私防御 — NFKC + 不可见字符剥离 + 递归净化 [↓](./qwen-code-improvement-report-p2-stability.md#item-28) | 无净化 | 中 | — |
-| **P2** | 沙箱运行时集成 — seatbelt/bubblewrap/Docker + 文件/网络限制 [↓](./qwen-code-improvement-report-p2-stability.md#item-29) | 可选/非默认 | 大 | — |
-| **P2** | SSRF 防护 — 私有 IP 阻断 + IPv4-mapped + DNS rebinding 防护 [↓](./qwen-code-improvement-report-p2-stability.md#item-30) | 仅基础 isPrivateIp | 中 | — |
-| **P2** | WebFetch 域名白名单 — 130+ 预批准域名 + 路径段边界匹配 [↓](./qwen-code-improvement-report-p2-stability.md#item-31) | 无内置白名单 | 小 | — |
-| **P2** | 子进程环境变量清洗 — 30+ 敏感变量自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-32) | 继承完整环境 | 中 | — |
-| **P2** | 工具输出密钥扫描 — 50+ gitleaks 规则 + 写入阻断 [↓](./qwen-code-improvement-report-p2-stability.md#item-33) | 无扫描 | 中 | — |
-| **P2** | 权限升级防护 — auto 模式 60+ 危险规则自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-34) | yolo 批准所有 | 中 | — |
+| **P2** | 系统提示危险操作行为指导 — 4 类危险操作列举 + 行为准则 + 审批范围限定 [↓](./qwen-code-improvement-report-p2-stability.md#item-28) | 仅 "never push" 一条 | 小 | [PR#2889](https://github.com/QwenLM/qwen-code/pull/2889) |
+| **P2** | Unicode 净化与 ASCII 走私防御 — NFKC + 不可见字符剥离 + 递归净化 [↓](./qwen-code-improvement-report-p2-stability.md#item-29) | 无净化 | 中 | — |
+| **P2** | 沙箱运行时集成 — seatbelt/bubblewrap/Docker + 文件/网络限制 [↓](./qwen-code-improvement-report-p2-stability.md#item-30) | 可选/非默认 | 大 | — |
+| **P2** | SSRF 防护 — 私有 IP 阻断 + IPv4-mapped + DNS rebinding 防护 [↓](./qwen-code-improvement-report-p2-stability.md#item-31) | 仅基础 isPrivateIp | 中 | — |
+| **P2** | WebFetch 域名白名单 — 130+ 预批准域名 + 路径段边界匹配 [↓](./qwen-code-improvement-report-p2-stability.md#item-32) | 无内置白名单 | 小 | — |
+| **P2** | 子进程环境变量清洗 — 30+ 敏感变量自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-33) | 继承完整环境 | 中 | — |
+| **P2** | 工具输出密钥扫描 — 50+ gitleaks 规则 + 写入阻断 [↓](./qwen-code-improvement-report-p2-stability.md#item-34) | 无扫描 | 中 | — |
+| **P2** | 权限升级防护 — auto 模式 60+ 危险规则自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-35) | yolo 批准所有 | 中 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-1) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-2) | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3.md#item-3) | 缺失 | 中 | — |
@@ -239,7 +239,7 @@
 |------|-------------|-----------|----------|------|
 | **Mid-Turn Queue Drain** | `query.ts` 工具批次间 drain | 无 | 显著落后 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) |
 | 压缩 (Compression) 策略 | 4 层分层压缩 | 单一阈值压缩 | 显著落后 | — |
-| 子代理 (Subagent) | 支持 fork + 上下文继承 | 仅预定义类型 | 显著落后 | — |
+| Subagent | 支持 fork + 上下文继承 | 仅预定义类型 | 显著落后 | — |
 | **智能工具并行** | Kind-based batching（默认 10 并发） | Agent 并发 / 其他顺序 | 中等差距 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) |
 | 投机执行 (Speculation) | 完整 overlay-fs + cow（991 行） | v0.15.0 已完整实现（563 行），默认关闭 | 小差距 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | 启动优化 | API Preconnect + Early Input | 无 | 缺失 | — |
@@ -251,7 +251,7 @@
 | MDM 企业策略 | plist + Registry + 远程 API | 无 | 缺失 | — |
 | Token 实时计数 | API 计数 + VCR 缓存 | 静态模式匹配 | 中等差距 | — |
 | 工具发现 | ToolSearchTool | 无 | 缺失 | — |
-| 多代理通信 | SendMessageTool | 无 | 缺失 | — |
+| 多 Agent通信 | SendMessageTool | 无 | 缺失 | — |
 | 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | — |
 | Commit Attribution | Co-Authored-By 追踪 | 无 | 缺失 | — |
 | 会话分支 | /branch 对话分叉 | 无 | 缺失 | — |
@@ -295,7 +295,7 @@
 |----------|------|
 | Mid-Turn Queue Drain | [输入队列与中断机制](./input-queue-deep-dive.md) |
 | 上下文压缩 | [上下文压缩算法](./context-compression-deep-dive.md) |
-| Fork 子代理 | [Fork 子代理](./fork-subagent-deep-dive.md) |
+| Fork Subagent | [Fork Subagent](./fork-subagent-deep-dive.md) |
 | 智能工具并行 | [工具并行执行](./tool-parallelism-deep-dive.md) |
 | Shell 安全 | [Shell 安全模型](./shell-security-deep-dive.md) |
 | 启动优化 | [启动阶段优化](./startup-optimization-deep-dive.md) |
@@ -304,7 +304,7 @@
 | 遥测架构 | [遥测架构](./telemetry-architecture-deep-dive.md) |
 | Token 估算 | [Token 估算与 Thinking](./token-estimation-deep-dive.md) |
 | 会话记忆 | [记忆系统](./memory-system-deep-dive.md) |
-| 多代理通信 | [多代理系统](./multi-agent-deep-dive.md) |
+| 多 Agent通信 | [多 Agent系统](./multi-agent-deep-dive.md) |
 | 插件/Hook 扩展 | [Hook 与插件扩展](./hook-plugin-extension-deep-dive.md) |
 | MCP 集成 | [MCP 集成](./mcp-integration-deep-dive.md) |
 | 成本与 Fast Mode | [成本追踪与 Fast Mode](./cost-fastmode-deep-dive.md) |
@@ -322,7 +322,7 @@
 |------|------|
 | 架构总览 | [技术架构（22 节）](../tools/claude-code/03-architecture.md) |
 | 工具系统 | [工具系统](../tools/claude-code/04-tools.md) |
-| 多代理 / Swarm | [多代理系统](../tools/claude-code/09-multi-agent.md) |
+| 多 Agent / Swarm | [多 Agent系统](../tools/claude-code/09-multi-agent.md) |
 | Prompt Suggestions | [Prompt Suggestions + Speculation](../tools/claude-code/10-prompt-suggestions.md) |
 | 终端渲染 | [终端渲染与防闪烁](../tools/claude-code/11-terminal-rendering.md) |
 | 设置与安全 | [设置与安全](../tools/claude-code/06-settings.md) |

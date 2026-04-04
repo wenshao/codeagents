@@ -33,9 +33,9 @@
 
 <a id="item-2"></a>
 
-### 2. Fork 子代理（P0）
+### 2. Fork Subagent（P0）
 
-**思路**：省略 `subagent_type` 时自动 fork——子代理继承完整对话历史 + 系统提示 + 工具集。所有 fork 使用相同占位 tool_result 文本，确保 API 请求前缀字节一致 → prompt cache 共享（5 个子代理省 80%+ token）。
+**思路**：省略 `subagent_type` 时自动 fork——Subagent继承完整对话历史 + 系统提示 + 工具集。所有 fork 使用相同占位 tool_result 文本，确保 API 请求前缀字节一致 → prompt cache 共享（5 个Subagent省 80%+ token）。
 
 **Claude Code 源码索引**：
 
@@ -48,11 +48,11 @@
 
 **Qwen Code 修改方向**：`agent.ts` 中将 `subagent_type` 改为可选；新增 `forkSubagent.ts` 实现消息构建（克隆 assistant message + 统一占位 tool_result + 指令注入）。
 
-**相关文章**：[Fork 子代理 Deep-Dive](./fork-subagent-deep-dive.md)
+**相关文章**：[Fork Subagent Deep-Dive](./fork-subagent-deep-dive.md)
 
-**意义**：大型任务需拆分给多个子代理并行处理，上下文传递效率决定成本和准确率。
-**缺失后果**：每个子代理独立上下文 = N× 完整 prompt 费用，且需重复描述背景。
-**改进收益**：N 个子代理共享一份 cache（省 80%+ token），继承完整对话零丢失。
+**意义**：大型任务需拆分给多个Subagent并行处理，上下文传递效率决定成本和准确率。
+**缺失后果**：每个Subagent独立上下文 = N× 完整 prompt 费用，且需重复描述背景。
+**改进收益**：N 个Subagent共享一份 cache（省 80%+ token），继承完整对话零丢失。
 
 ---
 
@@ -338,7 +338,7 @@
 
 <a id="item-15"></a>
 
-### 15. GitHub Code Review 多代理审查（P1）
+### 15. GitHub Code Review 多 Agent审查（P1）
 
 **思路**：多 Agent 并行审查 PR 不同文件——每个 Agent 检查一类问题（逻辑错误/安全漏洞/边界情况），验证步骤过滤误报，结果去重排序后发 inline 评论。可配合 `REVIEW.md` 定制审查规则。
 
@@ -351,7 +351,7 @@
 
 **Qwen Code 修改方向**：基于已有 `/review` Skill 扩展——fork 多个 Agent 各审查一组文件；`gh api` 发 inline 评论；新增 `REVIEW.md` 支持。
 
-**意义**：大 PR 单 Agent 逐文件审查慢——多代理并行可大幅提速。
+**意义**：大 PR 单 Agent 逐文件审查慢——多 Agent并行可大幅提速。
 **缺失后果**：单 Agent 审查大 PR 需 N 分钟。
 **改进收益**：多 Agent 并行审查——大 PR 审查时间缩短到 ~1 分钟。
 
@@ -831,7 +831,7 @@
 
 <a id="item-37"></a>
 
-### 37. Coordinator/Swarm 多代理编排模式（P1）
+### 37. Coordinator/Swarm 多 Agent编排模式（P1）
 
 **思路**：Leader/Worker 团队编排——Leader 分解任务、分配给 Worker、收集结果。TeamFile 存储团队元数据（成员列表、worktree 路径、允许路径）。3 种执行后端：① tmux pane（每个 Worker 独立终端窗格）；② iTerm2 原生分屏；③ InProcess（同进程 AsyncLocalStorage 隔离）。自动检测最佳后端。
 
@@ -855,7 +855,7 @@
 
 <a id="item-38"></a>
 
-### 38. 代理工具细粒度访问控制（P1）
+### 38. Agent 工具细粒度访问控制（P1）
 
 **思路**：3 层工具访问控制——① `ALL_AGENT_DISALLOWED_TOOLS`：所有代理禁用的工具（TaskOutput、ExitPlanMode、AskUser 等）；② `ASYNC_AGENT_ALLOWED_TOOLS`：异步代理白名单（Read/Write/Edit/Bash/Grep/Glob）；③ `IN_PROCESS_TEAMMATE_ALLOWED_TOOLS`：同进程 Teammate 额外工具（TaskCreate/SendMessage）。代理定义支持 `tools` 白名单 + `disallowedTools` 黑名单组合。
 
@@ -869,7 +869,7 @@
 
 **Qwen Code 修改方向**：代理 `tools` 数组可选但无分层控制——要么全部工具要么指定列表。改进方向：① 定义 3 层限制集（全局禁止 + 异步白名单 + Teammate 额外）；② `filterToolsForAgent()` 按代理类型（built-in/user/plugin）应用不同限制；③ 支持 `disallowedTools` 黑名单在白名单基础上进一步排除。
 
-**意义**：代理权限最小化原则——只读探索代理不应有写权限。
+**意义**：Agent 权限最小化原则——只读探索代理不应有写权限。
 **缺失后果**：所有代理拥有全部工具 = Explore 代理可能意外写文件。
 **改进收益**：白名单 + 黑名单 = 每个代理恰好拥有所需权限。
 
@@ -877,7 +877,7 @@
 
 <a id="item-39"></a>
 
-### 39. InProcess 同进程多代理隔离（P1）
+### 39. InProcess 同进程多 Agent隔离（P1）
 
 **思路**：多个代理在同一 Node.js 进程中并发运行，通过 AsyncLocalStorage 实现上下文隔离——每个代理有独立的 AgentContext（agentId、teamName、权限模式）、独立的 AbortController、独立的工具注册表。相比 tmux/iTerm2 后端，InProcess 无进程 fork 开销（省 50-100ms/代理），适合轻量级并行任务。
 
@@ -890,9 +890,9 @@
 | `utils/swarm/backends/InProcessBackend.ts` (339行) | 同进程执行器——无 PTY、文件邮箱通信 |
 | `utils/swarm/spawnInProcess.ts` | `spawnInProcessTeammate()`、`killInProcessTeammate()` |
 
-**Qwen Code 修改方向**：`InProcessBackend` 已有基础实现（每个代理独立 ToolRegistry + WorkspaceContext），但无 AsyncLocalStorage 上下文隔离——全局状态可能在代理间泄漏。改进方向：① 引入 AsyncLocalStorage 存储 per-agent 上下文（agentId、cwd、permissions）；② 全局单例（如 logger、config）通过 AsyncLocalStorage 读取 agent-scoped 值；③ 每个代理独立 AbortController，kill 单个代理不影响其他。
+**Qwen Code 修改方向**：`InProcessBackend` 已有基础实现（每个代理独立 ToolRegistry + WorkspaceContext），但无 AsyncLocalStorage 上下文隔离——全局状态可能在 Agent 间泄漏。改进方向：① 引入 AsyncLocalStorage 存储 per-agent 上下文（agentId、cwd、permissions）；② 全局单例（如 logger、config）通过 AsyncLocalStorage 读取 agent-scoped 值；③ 每个代理独立 AbortController，kill 单个代理不影响其他。
 
-**意义**：InProcess 后端是最高效的多代理执行方式——零 fork 开销 + 共享内存。
+**意义**：InProcess 后端是最高效的多 Agent执行方式——零 fork 开销 + 共享内存。
 **缺失后果**：全局状态泄漏——代理 A 的配置变更影响代理 B。
 **改进收益**：AsyncLocalStorage = 完美隔离 + 零开销——每个代理看到自己的上下文。
 
@@ -900,9 +900,9 @@
 
 <a id="item-40"></a>
 
-### 40. 代理记忆持久化（P1）
+### 40. Agent 记忆持久化（P1）
 
-**思路**：3 级代理记忆——① `user`（~/.claude/agent-memory/）：跨项目全局记忆；② `project`（.claude/agent-memory/）：项目级记忆（可提交到 VCS）；③ `local`（.claude/agent-memory-local/）：项目级但 gitignore。记忆在 frontmatter 中配置 `memory: user|project|local`，启用后自动注入 Read/Write/Edit 工具。记忆内容追加到代理系统提示中。
+**思路**：3 级 Agent 记忆——① `user`（~/.claude/agent-memory/）：跨项目全局记忆；② `project`（.claude/agent-memory/）：项目级记忆（可提交到 VCS）；③ `local`（.claude/agent-memory-local/）：项目级但 gitignore。记忆在 frontmatter 中配置 `memory: user|project|local`，启用后自动注入 Read/Write/Edit 工具。记忆内容追加到 Agent 系统提示中。
 
 **Claude Code 源码索引**：
 
@@ -921,7 +921,7 @@
 
 <a id="item-41"></a>
 
-### 41. 代理恢复与续行（P1）
+### 41. Agent 恢复与续行（P1）
 
 **思路**：已完成或中断的代理可通过 `SendMessage` 工具继续对话。`resumeAgentBackground()` 从 JSONL transcript 重建完整上下文——包括文件状态缓存、content replacements、系统提示。检测 fork 代理并特殊处理系统提示继承。过滤过期消息（空白、孤立 thinking、未解决 tool_use）。
 

@@ -281,9 +281,9 @@
 
 <a id="item-14"></a>
 
-### 14. 代理权限冒泡与审批路由（P2）
+### 14. Agent 权限冒泡与审批路由（P2）
 
-**思路**：Fork 子代理的 `permissionMode: 'bubble'` 将权限请求上浮到父级终端——子代理无需独立 UI，权限对话框在用户可见的父终端弹出。Leader 通过 `leaderPermissionBridge` 桥接——InProcess Teammate 的权限请求路由到 Leader 的 `ToolUseConfirm` 对话框。邮箱回退：桥接不可用时通过文件邮箱异步审批。
+**思路**：Fork Subagent的 `permissionMode: 'bubble'` 将权限请求上浮到父级终端——Subagent无需独立 UI，权限对话框在用户可见的父终端弹出。Leader 通过 `leaderPermissionBridge` 桥接——InProcess Teammate 的权限请求路由到 Leader 的 `ToolUseConfirm` 对话框。邮箱回退：桥接不可用时通过文件邮箱异步审批。
 
 **Claude Code 源码索引**：
 
@@ -293,17 +293,17 @@
 | `utils/swarm/leaderPermissionBridge.ts` (54行) | Leader ToolUseConfirm 队列桥接 |
 | `tools/AgentTool/forkSubagent.ts` (L60) | `permissionMode: 'bubble'` |
 
-**Qwen Code 修改方向**：子代理继承父级 ApprovalMode，但无冒泡机制——后台代理的权限请求无处显示。改进方向：① 新增 `bubble` 权限模式——子代理请求路由到父级 UI；② Leader 桥接——Teammate 权限请求显示在 Leader 终端；③ 文件邮箱回退——tmux 代理通过 JSON 文件异步审批。
+**Qwen Code 修改方向**：Subagent继承父级 ApprovalMode，但无冒泡机制——后台代理的权限请求无处显示。改进方向：① 新增 `bubble` 权限模式——Subagent请求路由到父级 UI；② Leader 桥接——Teammate 权限请求显示在 Leader 终端；③ 文件邮箱回退——tmux 代理通过 JSON 文件异步审批。
 
 **意义**：后台代理需要权限审批但没有自己的终端——请求必须路由到用户可见处。
-**缺失后果**：后台代理权限请求 = 静默阻塞——用户不知道在等什么。
+**缺失后果**：后台 Agent 权限请求 = 静默阻塞——用户不知道在等什么。
 **改进收益**：权限冒泡 = 请求自动出现在父终端——用户审批后代理继续。
 
 ---
 
 <a id="item-15"></a>
 
-### 15. 代理专属 MCP 服务器（P2）
+### 15. Agent 专属 MCP 服务器（P2）
 
 **思路**：代理 frontmatter 配置 `mcpServers` 字段——① 字符串引用（如 `"slack"`）复用已连接的服务器；② 内联定义（如 `{ slack: { command: "..." } }`）创建新连接。代理启动时连接，退出时自动清理。安全策略：plugin/built-in 代理可自由使用 MCP，用户自定义代理受 policy 限制。
 
@@ -311,7 +311,7 @@
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `tools/AgentTool/runAgent.ts` (L95) | `initializeAgentMcpServers()` 连接代理专属 MCP |
+| `tools/AgentTool/runAgent.ts` (L95) | `initializeAgentMcpServers()` 连接 Agent 专属 MCP |
 | `tools/AgentTool/loadAgentsDir.ts` (L87) | frontmatter `mcpServers` 字段 |
 
 **Qwen Code 修改方向**：代理共享全局 MCP 配置，无 per-agent MCP。改进方向：① frontmatter 新增 `mcpServers` 字段；② 字符串引用复用已连接服务器（`connectToServer = memoize()` 已支持）；③ 内联定义在代理启动时 `connect()`、退出时 `disconnect()`；④ 安全策略区分 admin-trusted 和 user-controlled 代理。
@@ -324,7 +324,7 @@
 
 <a id="item-16"></a>
 
-### 16. 代理创建向导（P2）
+### 16. Agent 创建向导（P2）
 
 **思路**：多步骤交互式向导引导创建自定义代理——① 选择位置（User/Project）；② 选择方式（手动/AI 生成）；③ 设定类型名；④ 编写系统提示；⑤ 选择工具子集；⑥ 选择模型；⑦ 配置记忆范围；⑧ 确认并保存为 `.claude/agents/name.md`。
 
@@ -345,7 +345,7 @@
 
 <a id="item-17"></a>
 
-### 17. 代理进度追踪与实时状态（P2）
+### 17. Agent 进度追踪与实时状态（P2）
 
 **思路**：`ProgressTracker` 追踪后台代理的实时状态——toolUseCount、tokenCount（input/output）、recentActivities（最近 5 条操作描述）。通过 `<task-notification>` XML 格式向 Coordinator 报告完成状态（success/failed/killed + 摘要 + token 用量 + 时长）。UI 组件 `BackgroundTasksDialog` 展示所有后台代理列表 + 进度 + kill 控制。
 
@@ -367,7 +367,7 @@
 
 <a id="item-18"></a>
 
-### 18. 代理邮箱系统（Teammate Mailbox）（P2）
+### 18. Agent 邮箱系统（Teammate Mailbox）（P2）
 
 **思路**：基于文件的异步消息系统——每个 Teammate 有独立收件箱（`~/.claude/teams/{team}/inboxes/{agent}.json`）。消息包含：sender、text、timestamp、read 标志、color、summary。`proper-lockfile` 确保并发写入安全（10 次重试，5-100ms 退避）。支持单播（指定收件人）和广播（`to: "*"`）。
 
@@ -378,11 +378,11 @@
 | `utils/teammateMailbox.ts` (400+行) | `readMailbox()`、`writeToMailbox()`、`markMessageAsReadByIndex()` |
 | `tools/SendMessageTool/SendMessageTool.ts` | `HandleMessage()` 单播、`HandleBroadcast()` 广播 |
 
-**Qwen Code 修改方向**：Arena 系统用文件 IPC（status/control JSON），但无通用代理间邮箱。改进方向：① 新建 `utils/teammateMailbox.ts`——JSON 文件 + lockfile 并发控制；② SendMessage 工具支持 `to: agentName` 和 `to: "*"` 广播；③ 代理执行循环中定期检查邮箱（500ms 轮询）。
+**Qwen Code 修改方向**：Arena 系统用文件 IPC（status/control JSON），但无通用 Agent 间邮箱。改进方向：① 新建 `utils/teammateMailbox.ts`——JSON 文件 + lockfile 并发控制；② SendMessage 工具支持 `to: agentName` 和 `to: "*"` 广播；③ 代理执行循环中定期检查邮箱（500ms 轮询）。
 
-**意义**：多代理协作需要通信——researcher 告诉 tester "结果在 path X"。
-**缺失后果**：代理间无通信 = 只能通过共享文件间接协作——脆弱且不可靠。
-**改进收益**：邮箱系统 = 结构化消息传递——代理间直接沟通、权限请求路由。
+**意义**：多 Agent协作需要通信——researcher 告诉 tester "结果在 path X"。
+**缺失后果**：Agent 间无通信 = 只能通过共享文件间接协作——脆弱且不可靠。
+**改进收益**：邮箱系统 = 结构化消息传递——Agent 间直接沟通、权限请求路由。
 
 ---
 
@@ -579,9 +579,9 @@
 
 ---
 
-<a id="item-35"></a>
+<a id="item-28"></a>
 
-### 35. 系统提示危险操作行为指导（P2）
+### 28. 系统提示危险操作行为指导（P2）
 
 **思路**：在系统提示中向模型提供分层的危险操作行为指导——① 总原则："评估可逆性和影响范围，高风险操作必须先确认"；② 4 类危险操作具体列举（破坏性操作/难以逆转操作/影响共享状态操作/第三方上传）；③ 行为准则："不要用破坏性操作作为捷径"、"调查后再删除/覆盖"、"解决冲突而非丢弃变更"、"measure twice, cut once"；④ 审批范围限定："一次审批不等于所有场景的永久授权"。
 
@@ -599,9 +599,9 @@
 
 ---
 
-<a id="item-28"></a>
+<a id="item-29"></a>
 
-### 28. Unicode 净化与 ASCII 走私防御（P2）
+### 29. Unicode 净化与 ASCII 走私防御（P2）
 
 **思路**：对所有外部输入（MCP 工具结果、文件内容、URL 参数）进行 Unicode 净化——① NFKC 规范化；② 移除 Cf/Co/Cn 类别字符；③ 剥离零宽空格、RTL/LTR 标记、BOM。递归处理嵌套数据结构（最大 10 轮防止无限循环）。防御 ASCII Smuggling 和隐藏提示注入。
 
@@ -619,9 +619,9 @@
 
 ---
 
-<a id="item-29"></a>
+<a id="item-30"></a>
 
-### 29. 沙箱运行时集成（P2）
+### 30. 沙箱运行时集成（P2）
 
 **思路**：Shell 命令在沙箱中执行——限制文件系统访问（路径模式）、网络访问（域名白名单）、进程能力。3 种后端：macOS seatbelt、Linux bubblewrap、Docker。沙箱策略可配置，特定命令可排除（如 `npm install` 需要网络）。
 
@@ -640,9 +640,9 @@
 
 ---
 
-<a id="item-30"></a>
+<a id="item-31"></a>
 
-### 30. SSRF 防护（HTTP Hook）（P2）
+### 31. SSRF 防护（HTTP Hook）（P2）
 
 **思路**：HTTP Hook 发送 POST 前验证目标——阻断私有 IP（10.0.0.0/8 等）和 IPv6 私有范围。检测 IPv4-mapped IPv6（`::ffff:10.0.0.1`）防止绕过。DNS 查询结果二次验证——防 DNS rebinding。
 
@@ -660,9 +660,9 @@
 
 ---
 
-<a id="item-31"></a>
+<a id="item-32"></a>
 
-### 31. WebFetch 域名白名单（P2）
+### 32. WebFetch 域名白名单（P2）
 
 **思路**：130+ 常用域名预批准（文档/包管理/API 参考），匹配时无需审批。路径段边界检查确保 `/anthropic` 不匹配 `/anthropic-evil/`。
 
@@ -680,9 +680,9 @@
 
 ---
 
-<a id="item-32"></a>
+<a id="item-33"></a>
 
-### 32. 子进程环境变量清洗（P2）
+### 33. 子进程环境变量清洗（P2）
 
 **思路**：子进程启动前清洗 30+ 敏感变量——API 密钥、云凭证、GitHub token、OTEL headers。通过 `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` 控制启用。
 
@@ -700,9 +700,9 @@
 
 ---
 
-<a id="item-33"></a>
+<a id="item-34"></a>
 
-### 33. 工具输出密钥扫描（P2）
+### 34. 工具输出密钥扫描（P2）
 
 **思路**：工具结果用 50+ gitleaks 规则扫描——AWS/GitHub/Slack/PEM/Stripe 等。正则懒编译。检测到密钥时阻止写入共享记忆。
 
@@ -721,9 +721,9 @@
 
 ---
 
-<a id="item-34"></a>
+<a id="item-35"></a>
 
-### 34. 权限升级防护（P2）
+### 35. 权限升级防护（P2）
 
 **思路**：进入自动模式时剥离危险权限规则——代码执行（python/node/ruby/perl）、shell（eval/exec/sudo）、网络（curl/wget/ssh）、云 CLI（aws/gcloud/kubectl）共 60+ 模式。
 
