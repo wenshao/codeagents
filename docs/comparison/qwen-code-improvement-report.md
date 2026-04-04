@@ -154,6 +154,14 @@
 | **P2** | MCP 服务器优雅关闭升级 — SIGINT(100ms)→SIGTERM(400ms)→SIGKILL 3 阶段 [↓](./qwen-code-improvement-report-p2.md#item-104) | 直接断开 | 小 | — |
 | **P2** | 事件循环卡顿检测 — 主线程阻塞 >500ms 诊断日志 [↓](./qwen-code-improvement-report-p2.md#item-105) | 无监控 | 小 | — |
 | **P2** | 会话活动心跳 — refcount 活动追踪 + 30s keepalive + 空闲退出 [↓](./qwen-code-improvement-report-p2.md#item-106) | 无心跳 | 小 | — |
+| **P2** | Markdown 渲染缓存 — 500-LRU token cache + 纯文本快速路径 [↓](./qwen-code-improvement-report-p2.md#item-118) | 每次重新解析 | 小 | — |
+| **P2** | OSC 8 终端超链接 — 文件路径/URL Cmd+Click 直接打开 [↓](./qwen-code-improvement-report-p2.md#item-119) | 纯文本路径 | 小 | — |
+| **P2** | 模糊搜索选择器 — FuzzyPicker 通用组件 + 异步预览 + 匹配高亮 [↓](./qwen-code-improvement-report-p2.md#item-120) | 无模糊搜索 | 中 | — |
+| **P2** | 统一设计系统组件库 — 12 个语义 UI 原语 + ThemeProvider [↓](./qwen-code-improvement-report-p2.md#item-121) | 组件分散 | 中 | — |
+| **P2** | Markdown 表格终端渲染 — ANSI-aware + CJK-aware 列宽计算 [↓](./qwen-code-improvement-report-p2.md#item-122) | CJK 列错位 | 小 | — |
+| **P2** | 屏幕阅读器无障碍支持 — Diff/Spinner/Progress 纯文本替代渲染 [↓](./qwen-code-improvement-report-p2.md#item-123) | hook 存在但使用有限 | 小 | — |
+| **P2** | 色觉无障碍主题 — daltonized 红绿→蓝橙 diff 色板 [↓](./qwen-code-improvement-report-p2.md#item-124) | 无色觉主题 | 小 | — |
+| **P2** | 动画系统与卡顿状态检测 — shimmer 微光 + 30s 超时变红 [↓](./qwen-code-improvement-report-p2.md#item-125) | 固定动画/无超时检测 | 小 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
@@ -164,7 +172,7 @@
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
 | [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（崩溃恢复、API 退避、优雅关闭、反应式压缩、原子写入等） | 36 |
-| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Shell 安全、卡顿检测、孤儿进程、心跳、事件循环监控等） | 70 |
+| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Shell 安全、卡顿检测、超链接、设计系统、无障碍等） | 78 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结
