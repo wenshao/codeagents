@@ -506,9 +506,9 @@
 
 ---
 
-<a id="item-75"></a>
+<a id="item-23"></a>
 
-### 75. Ghost Text 输入补全（P1）
+### 23. Ghost Text 输入补全（P1）
 
 **思路**：用户输入时在光标后显示灰色建议文字（ghost text）——命令名、文件路径、shell history 三层。Tab/Right Arrow 接受。建议仅在光标位于正确插入点时显示。
 
