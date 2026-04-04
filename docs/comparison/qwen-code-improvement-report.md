@@ -197,6 +197,13 @@
 | **P2** | Headless 性能剖析 — TTFT/turn latency/overhead 采样追踪 [↓](./qwen-code-improvement-report-p2.md#item-158) | 无剖析 | 小 | — |
 | **P2** | 退出码标准化与 Hook 唤醒 — exit 2 唤醒模型 + CI 语义文档 [↓](./qwen-code-improvement-report-p2.md#item-159) | 有自定义码/无唤醒 | 小 | — |
 | **P2** | 破坏性命令警告系统 — 8 种高风险 git 操作 + 权限对话框风险说明 [↓](./qwen-code-improvement-report-p2.md#item-160) | 仅读写分类/无风险说明 | 小 | — |
+| **P2** | Unicode 净化与 ASCII 走私防御 — NFKC + 不可见字符剥离 + 递归净化 [↓](./qwen-code-improvement-report-p2.md#item-172) | 无净化 | 中 | — |
+| **P2** | 沙箱运行时集成 — seatbelt/bubblewrap/Docker + 文件/网络限制 [↓](./qwen-code-improvement-report-p2.md#item-173) | 可选/非默认 | 大 | — |
+| **P2** | SSRF 防护 — 私有 IP 阻断 + IPv4-mapped + DNS rebinding 防护 [↓](./qwen-code-improvement-report-p2.md#item-174) | 仅基础 isPrivateIp | 中 | — |
+| **P2** | WebFetch 域名白名单 — 130+ 预批准域名 + 路径段边界匹配 [↓](./qwen-code-improvement-report-p2.md#item-175) | 无内置白名单 | 小 | — |
+| **P2** | 子进程环境变量清洗 — 30+ 敏感变量自动剥离 [↓](./qwen-code-improvement-report-p2.md#item-176) | 继承完整环境 | 中 | — |
+| **P2** | 工具输出密钥扫描 — 50+ gitleaks 规则 + 写入阻断 [↓](./qwen-code-improvement-report-p2.md#item-177) | 无扫描 | 中 | — |
+| **P2** | 权限升级防护 — auto 模式 60+ 危险规则自动剥离 [↓](./qwen-code-improvement-report-p2.md#item-178) | yolo 批准所有 | 中 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-161) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-162) | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3.md#item-163) | 缺失 | 中 | — |
@@ -218,7 +225,7 @@
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
 | [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（系统提示模块化、@include、附件协议、Thinking 管理等） | 46 |
-| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（远程触发器、破坏性命令警告、CI 检测、UltraReview 等） | 114 |
+| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Unicode 净化、沙箱集成��SSRF 防护、密钥扫描等） | 121 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结
