@@ -182,6 +182,12 @@
 | **P2** | Bun 原生 API 优化 — stringWidth/JSONL.parseChunk/argv0 dispatch [↓](./qwen-code-improvement-report-p2.md#item-143) | Node.js 标准 API | 小 | — |
 | **P2** | 行宽缓存与 Blit 屏幕 Diff — 4096-LRU + 未变化区域直接复制 [↓](./qwen-code-improvement-report-p2.md#item-144) | 每帧完整重算 | 中 | — |
 | **P2** | 编译时特性门控 — feature() 编译求值 + 死代码消除 [↓](./qwen-code-improvement-report-p2.md#item-145) | 运行时 env 检查 | 小 | — |
+| **P2** | Shell 环境快照 — 一次性捕获 aliases/functions/PATH + 会话级 memoize [↓](./qwen-code-improvement-report-p2.md#item-157) | 每次 spawn 干净环境 | 中 | — |
+| **P2** | Shell 输出文件直写 — stdout/stderr 直写 fd 绕过 JS + 1s 文件轮询 [↓](./qwen-code-improvement-report-p2.md#item-158) | PTY + JSON.stringify | 中 | — |
+| **P2** | 增量文件索引签名 — .git/index mtime + FNV-1a 采样签名 <1ms [↓](./qwen-code-improvement-report-p2.md#item-159) | SHA256 全量 hash | 小 | — |
+| **P2** | Shell AST 解析缓存 — 同一命令 2 次解析→Map 缓存 [↓](./qwen-code-improvement-report-p2.md#item-160) | 每次重新解析 | 小 | — |
+| **P2** | 终端输出浅比较 — JSON.stringify O(n)→浅比较 O(1) + 脏行范围 [↓](./qwen-code-improvement-report-p2.md#item-161) | JSON.stringify 深比较 | 小 | — |
+| **P2** | Diff 渲染 useMemo — parseDiff 缓存 + Regex 模块级预编译 [↓](./qwen-code-improvement-report-p2.md#item-162) | 每帧重新解析 | 小 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-146) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-147) | 缺失 | 大 | — |
 | **P3** | 内存诊断 — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3.md#item-148) | 缺失 | 中 | — |
@@ -203,7 +209,7 @@
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
 | [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（系统提示模块化、@include、附件协议、Thinking 管理等） | 46 |
-| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（cache_edits、正则缓存、React.memo、行宽缓存、编译时门控等） | 99 |
+| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Shell 快照、文件直写、索引签名、AST 缓存、输出浅比较等） | 105 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结

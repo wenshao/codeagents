@@ -2115,3 +2115,114 @@
 **意义**：调试代码占 bundle 5-10%——生产环境不需要但仍加载和解析。
 **缺失后果**：运行时 flag 检查 = 每次调用多一个 if 分支 + 调试模块仍占内存。
 **改进收益**：编译时消除 = 零运行时成本——bundle 更小、启动更快、内存更少。
+
+---
+
+<a id="item-157"></a>
+
+### 157. Shell 环境快照与会话级缓存（P2）
+
+**思路**：会话启动时一次性捕获用户 shell 环境（functions/aliases/options/PATH）存储为 snapshot 脚本文件。后续每次 shell 命令执行时 `source snapshot.sh` 获得完整环境——无需每次重新解析 .bashrc/.zshrc（通常 200-500ms）。Shell 配置（shell 路径、类型检测）通过 `memoize()` 缓存——整个会话只发现一次。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/bash/ShellSnapshot.ts` (L388-582) | 一次性捕获 functions/aliases/options/PATH，10s 超时 |
+| `utils/Shell.ts` (L145-146) | `getShellConfig = memoize()` 会话级缓存 |
+
+**Qwen Code 修改方向**：每次 shell 命令通过 `spawn` 创建新进程——不继承用户别名和函数。改进方向：① 会话启动时执行 `source ~/.bashrc && declare -f > snapshot.sh`；② 后续命令前 `source snapshot.sh`；③ Shell 类型/路径检测结果 `memoize()` 缓存。
+
+**意义**：用户的 shell 别名（如 `alias ll='ls -la'`）在 Agent 中不可用——命令行为不一致。
+**缺失后果**：每次 spawn = 干净环境 = 用户别名/函数不可用 + 200-500ms 初始化。
+**改进收益**：快照 = 一次捕获 + 每次 source = 完整用户环境 + 省去重复初始化。
+
+---
+
+<a id="item-158"></a>
+
+### 158. Shell 输出文件直写绕过 JS（P2）
+
+**思路**：Bash 命令的 stdout/stderr 直接写入文件描述符（`stdio[1] = fd, stdio[2] = fd`），完全绕过 JS 事件循环。进度信息通过定期轮询文件尾部（1s 间隔，读取尾部 4096 字节）提取。对比 pipe 模式（数据经 JS Buffer → string → 处理），文件模式零 JS 开销。5GB 磁盘上限 watchdog 防止磁盘填满。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/Shell.ts` (L302-358) | `O_APPEND + O_CREAT + O_NOFOLLOW` 文件直写——child 持有 fd |
+| `utils/task/TaskOutput.ts` (L32-390) | `POLL_INTERVAL_MS = 1000` 文件尾部轮询、`MAX_TASK_OUTPUT_BYTES = 5GB` watchdog |
+
+**Qwen Code 修改方向**：`shellExecutionService.ts` 通过 PTY + headless terminal 处理所有 shell 输出——数据经 xterm.js 解析 + 每事件 JSON.stringify 比较（L699）。改进方向：① 非交互命令改用文件直写模式（stdin/stdout 直接到 fd）；② 进度通过 1s 文件尾部轮询提取；③ 大输出 watchdog（5GB 上限 + SIGKILL）。
+
+**意义**：`npm install` 输出数万行——全部经 xterm.js 解析 + JSON.stringify 对比 = 巨大开销。
+**缺失后果**：PTY 处理全部输出 = CPU 密集 + 内存膨胀（xterm buffer）。
+**改进收益**：文件直写 = 零 JS 开销；文件轮询 = 仅读最后 4KB 获取进度。
+
+---
+
+<a id="item-159"></a>
+
+### 159. 增量文件索引签名检测（P2）
+
+**思路**：文件补全列表是否需要刷新？通过两个低成本检测——① `stat('.git/index')` 的 mtime 变化检测 git 操作（checkout/add/rm）——未变化则跳过刷新（5s 节流）；② FNV-1a hash 对路径列表进行**采样签名**（每 500 个路径取 1 个样本），<1ms 检测 34.6 万文件列表是否变化——未变化则跳过重建 nucleo 索引。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `hooks/fileSuggestions.ts` (L60-150) | `getGitIndexMtime()` + `REFRESH_THROTTLE_MS = 5000` |
+| `hooks/fileSuggestions.ts` (L111-131) | `pathListSignature()` FNV-1a 采样签名 |
+
+**Qwen Code 修改方向**：`crawlCache.ts` 每次搜索用 `crypto.createHash('sha256')` 对完整 ignore 内容 + 目录字符串计算 hash。改进方向：① 用文件 mtime 替代内容 hash 作为缓存 key（避免读文件内容）；② 路径列表用采样签名（每 N 个取 1 个）检测变化；③ 5s 节流避免频繁 stat。
+
+**意义**：文件补全每次击键触发——全量 SHA256 = 每次 10-50ms。
+**缺失后果**：SHA256(ignore 内容 + 目录) × 每次击键 = 累积延迟。
+**改进收益**：mtime stat = 0.1ms + 采样签名 = <1ms——击键零延迟。
+
+---
+
+<a id="item-160"></a>
+
+### 160. Shell AST 解析缓存（P2）
+
+**思路**：同一条 shell 命令在权限检查流程中被多次 AST 解析——`getDefaultPermission()` 解析一次，`getConfirmationDetails()` 再解析一次。缓存 AST 结果到 `Map<string, ASTResult>` 避免重复解析。复合命令（`foo && bar || baz`）的子命令也各自缓存。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/bash/treeSitterAnalysis.ts` (506行) | AST 解析 + 读写分类——结果可缓存 |
+
+**Qwen Code 修改方向**：`shell.ts` (L98-108, L126-138) `isShellCommandReadOnlyAST()` 在同一命令上调用 2 次——`getDefaultPermission()` 和 `getConfirmationDetails()` 各一次。改进方向：① `astCache: Map<string, ASTResult>` 缓存解析结果；② 第二次调用直接命中缓存；③ 可选 LRU 上限防止长会话内存增长。
+
+**意义**：AST 解析是 shell 权限检查的热路径——复合命令解析尤其昂贵。
+**缺失后果**：同一命令 2× AST 解析 = 2× CPU 开销。
+**改进收益**：缓存 = 第二次 O(1) 查找——权限检查速度翻倍。
+
+---
+
+<a id="item-161"></a>
+
+### 161. 终端输出 JSON.stringify 比较替换（P2）
+
+**思路**：`shellExecutionService.ts` (L699) 用 `JSON.stringify(output) !== JSON.stringify(finalOutput)` 比较终端输出变化——这是 O(n) 序列化操作，每个数据事件都触发。替换为浅比较（数组长度 + 最后一行变化检测）或脏位标记（xterm.js 的 `onRender` 回调标记变化行范围）。
+
+**Qwen Code 修改方向**：`shellExecutionService.ts` (L699) `JSON.stringify` 深比较 + (L654-676) 全缓冲区逐行迭代 + (L768) Promise chain 串行处理。改进方向：① 输出比较改为 `output.length !== finalOutput.length || output[output.length-1] !== finalOutput[finalOutput.length-1]` 浅比较；② 缓冲区序列化仅处理脏行范围；③ Promise chain 改为批量处理（累积 chunks 后一次 write）。
+
+**意义**：大输出（npm install 10 万行）× 每行 JSON.stringify = 性能灾难。
+**缺失后果**：O(n) 序列化 × 每行 = O(n²) 总开销——终端卡死。
+**改进收益**：浅比较 O(1) + 脏行范围 O(dirty) = 线性时间处理。
+
+---
+
+<a id="item-162"></a>
+
+### 162. Diff 渲染 useMemo 与 Regex 预编译（P2）
+
+**思路**：Diff 渲染组件的 `parseDiffWithLineNumbers()` 每次 React render 重新执行——包括正则编译和行迭代。用 `useMemo(fn, [diffContent])` 包裹确保仅在 diff 内容变化时重新计算。大文件 diff（>1MB）添加异步分块处理避免阻塞主线程。
+
+**Qwen Code 修改方向**：`DiffRenderer.tsx` (L23-81) `parseDiffWithLineNumbers()` 每次 render 调用，内部 `new RegExp(...)` (L29) 每次编译。改进方向：① `useMemo(() => parseDiffWithLineNumbers(diff), [diff])`；② 正则提取到模块作用域预编译；③ 大 diff（>5000 行）分块渲染（先显示首 200 行 + "展开更多"）。
+
+**意义**：Diff 是最频繁渲染的组件——文件编辑后每帧重渲染。
+**缺失后果**：10KB diff × 每帧解析 = 每帧 5-10ms（60fps 预算仅 16ms）。
+**改进收益**：useMemo = 内容不变时 0ms；预编译正则 = 省去每次 compile 开销。
