@@ -225,7 +225,7 @@
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
 | [P0/P1 详细说明](./qwen-code-improvement-report-p0-p1.md) | 最高优先级（系统提示模块化、@include、附件协议、Thinking 管理等） | 46 |
-| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Unicode 净化、沙箱集成��SSRF 防护、密钥扫描等） | 121 |
+| [P2 详细说明](./qwen-code-improvement-report-p2.md) | 中等优先级（Unicode 净化、沙箱集成、SSRF 防护、密钥扫描等） | 121 |
 | [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
 
 ## 四、架构差异总结
