@@ -54,24 +54,56 @@
 
 ### 2. Fork Subagent（P0）
 
-**思路**：省略 `subagent_type` 时自动 fork——Subagent继承完整对话历史 + 系统提示 + 工具集。所有 fork 使用相同占位 tool_result 文本，确保 API 请求前缀字节一致 → prompt cache 共享（5 个Subagent省 80%+ token）。
+**问题**：用户让 Agent 同时做 3 件事（如"研究 A、修改 B、测试 C"），Agent 需要启动 3 个 Subagent 并行执行。但每个 Subagent 都是"从零开始"——不知道之前对话聊了什么，也不知道项目上下文。用户必须在每个 Subagent 的 prompt 中重新描述完整背景。更严重的是，3 个 Subagent 各自向 API 发送完整的对话历史（比如 50K token），总共花 150K token——其中 ~100K 是重复的。
+
+**Claude Code 的解决方案——隐式 Fork**：
+
+省略 `subagent_type` 参数时，Agent 工具不创建新 Subagent，而是 **fork 当前对话**——子进程继承父进程的完整对话历史、系统提示、工具集。关键技巧是 **prompt cache 共享**：
+
+```
+父进程对话：[系统提示 | 工具定义 | 消息1 | 消息2 | ... | 消息N]
+                          ↑ 这部分所有 fork 完全一致 ↑
+
+Fork A：[...消息N | 占位结果 | "请研究 A"]  ← 共享前缀 cache
+Fork B：[...消息N | 占位结果 | "请修改 B"]  ← 共享前缀 cache
+Fork C：[...消息N | 占位结果 | "请测试 C"]  ← 共享前缀 cache
+```
+
+所有 fork 使用**相同的占位 tool_result 文本**（`FORK_PLACEHOLDER_RESULT`），确保 API 请求的前缀字节完全一致。这样 Anthropic API 的 prompt cache 只需缓存一次前缀，3 个 fork 共享这份缓存——**省 80%+ token 费用**。
+
+**工作原理**：
+
+| 步骤 | 做什么 |
+|------|--------|
+| 1. 模型调用 Agent 工具（省略 `subagent_type`） | 触发隐式 fork |
+| 2. `buildForkedMessages()` 构建子消息 | 克隆父进程最后一条 assistant message + 统一占位 tool_result |
+| 3. Fork 以后台任务运行 | `permissionMode: 'bubble'`——权限请求冒泡到父终端 |
+| 4. Fork 使用 `CacheSafeParams` | 确保系统提示/工具/模型与父进程字节一致 |
+| 5. Fork 完成后返回结果 | 通过 `<task-notification>` 通知父进程 |
+
+**关键约束**：
+- Fork 子进程**不能再 fork**（检测 `isInForkChild()` 防止递归）
+- 与 Coordinator 模式互斥（Coordinator 有自己的 Worker 机制）
+- 权限审批冒泡到父终端（fork 没有自己的 UI）
+- 工具集完全继承（`useExactTools: true`，不做过滤）
 
 **Claude Code 源码索引**：
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `tools/AgentTool/forkSubagent.ts` (210行) | `isForkSubagentEnabled()`、`FORK_AGENT` 定义、`buildForkedMessages()`、`buildChildMessage()`（10 条铁律） |
-| `tools/AgentTool/AgentTool.tsx` (1397行) | fork vs 常规决策树（L318-L356）、`override.systemPrompt` 传递 |
-| `tools/AgentTool/runAgent.ts` (973行) | `useExactTools: true`（跳过工具过滤）、thinking config 继承 |
-| `utils/forkedAgent.ts` (689行) | `CacheSafeParams` 类型、`saveCacheSafeParams()` |
+| `tools/AgentTool/forkSubagent.ts` (210行) | `isForkSubagentEnabled()`、`FORK_AGENT` 定义、`FORK_PLACEHOLDER_RESULT`、`buildForkedMessages()` |
+| `tools/AgentTool/AgentTool.tsx` (1397行) | fork vs 常规 Subagent 决策树（L318-L356） |
+| `utils/forkedAgent.ts` (689行) | `CacheSafeParams`（确保 cache 一致性）、`saveCacheSafeParams()` |
 
-**Qwen Code 修改方向**：`agent.ts` 中将 `subagent_type` 改为可选；新增 `forkSubagent.ts` 实现消息构建（克隆 assistant message + 统一占位 tool_result + 指令注入）。
+**Qwen Code 现状**：`AgentTool` 要求必须指定 `subagent_type`，Subagent 从零开始——不继承父对话历史，无 prompt cache 共享。5 个 Subagent = 5× 完整 prompt 费用。
+
+**Qwen Code 修改方向**：① `subagent_type` 改为可选——省略时触发 fork；② 新增 `forkSubagent.ts`——克隆父 assistant message + 统一占位 tool_result；③ `CacheSafeParams` 确保 fork 请求前缀一致；④ `isInForkChild()` 防止递归 fork。
 
 **相关文章**：[Fork Subagent Deep-Dive](./fork-subagent-deep-dive.md)
 
-**意义**：大型任务需拆分给多个Subagent并行处理，上下文传递效率决定成本和准确率。
-**缺失后果**：每个Subagent独立上下文 = N× 完整 prompt 费用，且需重复描述背景。
-**改进收益**：N 个Subagent共享一份 cache（省 80%+ token），继承完整对话零丢失。
+**意义**：大型任务需拆分给多个 Subagent 并行处理——上下文传递效率决定成本和准确率。
+**缺失后果**：每个 Subagent 独立上下文 = 5× 完整 prompt 费用 + 需重复描述背景 + 可能遗漏关键上下文。
+**改进收益**：Fork = 完整上下文继承（零丢失）+ prompt cache 共享（5 个 Subagent 省 80%+ token）。
 
 ---
 
