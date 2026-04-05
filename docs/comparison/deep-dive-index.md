@@ -1,4 +1,4 @@
-# Deep-Dive 文章索引（131 篇）
+# Deep-Dive 文章索引（132 篇）
 
 > 按主题分类的深度分析文章，每篇聚焦一个具体技术机制的 Claude Code vs Qwen Code 对比。
 >
@@ -94,10 +94,11 @@
 | [Feature Gates](./feature-gates-deep-dive.md) | GrowthBook A/B |
 | [Zip Bomb 防护](./zip-bomb-protection-deep-dive.md) | DXT/MCPB 插件包 |
 
-## 多 Agent 与编排（12 篇）
+## 多 Agent 与编排（13 篇）
 
 | 文章 | 主题 |
 |------|------|
+| [Kairos Always-On](./kairos-always-on-agent-deep-dive.md) | 自治 Agent + Cron 调度 |
 | [Fork Subagent](./fork-subagent-deep-dive.md) | 上下文继承 + cache 共享 |
 | [多 Agent](./multi-agent-deep-dive.md) | Swarm 系统 |
 | [Coordinator/Swarm](./coordinator-swarm-orchestration-deep-dive.md) | Leader/Worker 编排 |
