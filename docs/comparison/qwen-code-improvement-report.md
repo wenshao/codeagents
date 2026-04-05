@@ -37,7 +37,7 @@
 
 | 优先级 | 改进点 | Qwen Code 现状 | 难度 | 进展 |
 |:------:|--------|----------------|:----:|------|
-| **P0** | [Mid-Turn Queue Drain](./input-queue-deep-dive.md) — Agent 执行中途注入用户输入，无需等整轮结束 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-6) | 推理循环内无队列检查 | 中 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) |
+| **P0** | [[Mid-Turn Queue Drain](./command-queue-orchestration-deep-dive.md)](./input-queue-deep-dive.md) — Agent 执行中途注入用户输入，无需等整轮结束 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-6) | 推理循环内无队列检查 | 中 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) |
 | **P0** | [多层上下文压缩](./context-compression-deep-dive.md) — 自动裁剪旧工具结果 + 摘要，用户无需手动 /compress [↓](./qwen-code-improvement-report-p0-p1-core.md#item-1) | 仅单一 70% 手动压缩 | 中 | — |
 | **P0** | [Fork Subagent](./fork-subagent-deep-dive.md) — Subagent 继承完整对话上下文，共享 prompt cache 省 80%+ 费用 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-2) | Subagent 必须从零开始 | 中 | — |
 | **P0** | [会话崩溃恢复与中断检测](./crash-recovery-deep-dive.md) — 3 种中断状态检测 + 合成续行 + 全量恢复 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-7) | 无崩溃恢复 | 大 | — |
@@ -291,7 +291,7 @@
 
 | 维度 | Claude Code | Qwen Code | 差距评估 | 进展 |
 |------|-------------|-----------|----------|------|
-| **Mid-Turn Queue Drain** | `query.ts` 工具批次间 drain | 无 | 显著落后 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) |
+| **[Mid-Turn Queue Drain](./command-queue-orchestration-deep-dive.md)** | `query.ts` 工具批次间 drain | 无 | 显著落后 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) |
 | 压缩 (Compression) 策略 | 4 层分层压缩 | 单一阈值压缩 | 显著落后 | — |
 | Subagent | 支持 fork + 上下文继承 | 仅预定义类型 | 显著落后 | — |
 | **智能工具并行** | Kind-based batching（默认 10 并发） | Agent 并发 / 其他顺序 | 中等差距 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) |
@@ -347,7 +347,7 @@
 
 | 改进领域 | 文章 |
 |----------|------|
-| Mid-Turn Queue Drain | [输入队列与中断机制](./input-queue-deep-dive.md) |
+| [Mid-Turn Queue Drain](./command-queue-orchestration-deep-dive.md) | [输入队列与中断机制](./input-queue-deep-dive.md) |
 | 上下文压缩 | [上下文压缩算法](./context-compression-deep-dive.md) |
 | Fork Subagent | [Fork Subagent](./fork-subagent-deep-dive.md) |
 | 智能工具并行 | [工具并行执行](./tool-parallelism-deep-dive.md) |
