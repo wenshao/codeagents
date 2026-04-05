@@ -947,3 +947,46 @@ Subagent 启动 → 计时器开始 → 超过阈值 → 自动转后台 → 释
 **改进收益**：固定高度 Footer——最大化内容区域，小终端也舒适。
 
 ---
+
+<a id="item-25"></a>
+
+### 25. 会话标签与搜索（P2）
+
+**问题**：用户长期使用 Agent 积累数十甚至上百个会话，只能按时间顺序浏览。想找之前"重构认证模块"或"修复登录 bug"的会话，需要逐条翻看标题——效率极低。
+
+**Claude Code 的方案**：`/tag` 命令为会话打标签，支持按标签/仓库/标题搜索：
+
+```
+/tag add refactor        # 给当前会话加标签
+/tag add auth-module     # 可加多个标签
+/tag search refactor     # 搜索所有带 refactor 标签的会话
+/tag list                # 列出当前会话的所有标签
+/tag remove refactor     # 移除标签
+```
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `commands/tag/tag.tsx` (189行) | `/tag add`、`/tag remove`、`/tag list`、`/tag search` |
+| `utils/sessionStorage.ts` | `saveTag()`、`loadTags()`、`searchSessionsByTag()` |
+
+**Qwen Code 现状**：`sessionService.ts` 仅有 `listSessions()`（按 mtime 排序）和 `loadLastSession()`，无标签系统，无搜索能力。
+
+**Qwen Code 修改方向**：① `ChatSession` 接口新增 `tags: string[]` 字段；② JSONL transcript 中新增 `tag` 条目类型；③ 新建 `/tag` 命令（add/remove/list/search）；④ `listSessions()` 支持按标签过滤。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~150 行
+- 开发周期：~1 天（1 人）
+- 难点：标签持久化格式——建议 JSONL 追加而非修改文件头
+
+**改进前后对比**：
+- **改进前**：50 个历史会话 → 只能按时间逐条翻看 → 找不到上周的重构会话
+- **改进后**：`/tag search refactor` → 立即列出所有带"refactor"标签的会话
+
+**意义**：长期项目积累大量会话，按标签快速定位是基本的信息管理能力。
+**缺失后果**：只能按时间排序——上周的会话被今天的覆盖，无法快速回溯。
+**改进收益**：标签 + 搜索 = 秒级定位历史会话——比逐条浏览快 10×。
+
+---
