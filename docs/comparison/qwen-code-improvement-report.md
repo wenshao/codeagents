@@ -101,12 +101,12 @@
 | **P2** | [SendMessageTool](./multi-agent-deep-dive.md) — 多 Agent间消息传递、shutdown 请求、plan 审批 [↓](./qwen-code-improvement-report-p2-core.md#item-14) | 缺失 | 中 | — |
 | **P2** | FileIndex — fzf 风格模糊文件搜索 + 异步增量索引 [↓](./qwen-code-improvement-report-p2-core.md#item-15) | 依赖 rg/glob | 中 | — |
 | **P2** | Notebook Edit — Jupyter cell 编辑 + 自动 cell ID 追踪 + 文件历史快照 [↓](./qwen-code-improvement-report-p2-core.md#item-16) | 缺失 | 中 | — |
-| **P2** | 自定义快捷键 — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
+| **P2** |  [自定义快捷键](#custom-keybindings) — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
 | **P2** | Session Ingress Auth — 远程会话 bearer token 认证（企业多用户环境） [↓](./qwen-code-improvement-report-p2-core.md#item-18) | 缺失 | 中 | — |
 | **P2** | 企业代理 — CONNECT relay + CA cert 注入 + NO_PROXY allowlist（容器环境） [↓](./qwen-code-improvement-report-p2-core.md#item-19) | 缺失 | 大 | — |
 | **P2** | ConfigTool — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](./qwen-code-improvement-report-p2-core.md#item-20) | 仅 /settings 命令 | 小 | — |
-| **P2** | 终端主题检测 — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | — |
-| **P2** | 自动后台化 Agent — 超过阈值自动转后台执行，不阻塞用户交互 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | 需显式指定 | 小 | — |
+| **P2** |  [终端主题检测](#terminal-theme) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | — |
+| **P2** |  [自动后台化 Agent](#auto-background) — 超过阈值自动转后台执行，不阻塞用户交互 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | 需显式指定 | 小 | — |
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](./qwen-code-improvement-report-p2-core.md#item-7) | 缺失 | 小 | — |
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2-core.md#item-23) | 缺失 | 小 | [PR#2871](https://github.com/QwenLM/qwen-code/pull/2871) |
 | **P2** | 状态栏紧凑布局 — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2-core.md#item-24) | Footer 占用偏高 | 小 | — |
@@ -162,7 +162,7 @@
 | **P2** | 统一设计系统组件库 — 12 个语义 UI 原语 + ThemeProvider [↓](./qwen-code-improvement-report-p2-stability.md#item-9) | 组件分散 | 中 | — |
 | **P2** | Markdown 表格终端渲染 — ANSI-aware + CJK-aware 列宽计算 [↓](./qwen-code-improvement-report-p2-stability.md#item-10) | CJK 列错位 | 小 | — |
 | **P2** | 屏幕阅读器无障碍支持 — Diff/Spinner/Progress 纯文本替代渲染 [↓](./qwen-code-improvement-report-p2-stability.md#item-11) | hook 存在但使用有限 | 小 | — |
-| **P2** | 色觉无障碍主题 — daltonized 红绿→蓝橙 diff 色板 [↓](./qwen-code-improvement-report-p2-stability.md#item-12) | 无色觉主题 | 小 | — |
+| **P2** |  [色觉无障碍主题](#colorblind-theme) — daltonized 红绿→蓝橙 diff 色板 [↓](./qwen-code-improvement-report-p2-stability.md#item-12) | 无色觉主题 | 小 | — |
 | **P2** | 动画系统与卡顿状态检测 — shimmer 微光 + 30s 超时变红 [↓](./qwen-code-improvement-report-p2-stability.md#item-13) | 固定动画/无超时检测 | 小 | — |
 | **P2** | Agent 权限冒泡 — bubble 模式 + Leader 桥接 + 邮箱回退 [↓](./qwen-code-improvement-report-p2-stability.md#item-14) | 继承父级模式 | 中 | — |
 | **P2** | Agent 专属 MCP 服务器 — frontmatter mcpServers + 按需连接/清理 [↓](./qwen-code-improvement-report-p2-stability.md#item-15) | 共享全局 MCP | 小 | — |
@@ -205,8 +205,8 @@
 | **P2** | sandbox运行时集成 — seatbelt/bubblewrap/Docker + 文件/网络限制 [↓](./qwen-code-improvement-report-p2-stability.md#item-30) | 可选/非默认 | 大 | — |
 | **P2** | SSRF 防护 — 私有 IP 阻断 + IPv4-mapped + DNS rebinding 防护 [↓](./qwen-code-improvement-report-p2-stability.md#item-31) | 仅基础 isPrivateIp | 中 | — |
 | **P2** | WebFetch 域名allowlist — 130+ 预批准域名 + 路径段边界匹配 [↓](./qwen-code-improvement-report-p2-stability.md#item-32) | 无内置allowlist | 小 | — |
-| **P2** | 子进程环境变量清洗 — 30+ 敏感变量自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-33) | 继承完整环境 | 中 | — |
-| **P2** | 工具输出密钥扫描 — 50+ gitleaks 规则 + 写入阻断 [↓](./qwen-code-improvement-report-p2-stability.md#item-34) | 无扫描 | 中 | — |
+| **P2** |  [子进程环境变量清洗](#env-sanitization) — 30+ 敏感变量自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-33) | 继承完整环境 | 中 | — |
+| **P2** | 工具输出 [密钥扫描](#secret-scanning) — 50+ gitleaks 规则 + 写入阻断 [↓](./qwen-code-improvement-report-p2-stability.md#item-34) | 无扫描 | 中 | — |
 | **P2** | privilege escalation防护 — auto 模式 60+ 危险规则自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-35) | yolo 批准所有 | 中 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-1) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-2) | 缺失 | 大 | — |
@@ -219,31 +219,31 @@
 | **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-9) | 基础 vim.ts | 中 | — |
 | **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-10) | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-11) | 缺失 | 大 | — |
-| **P1** | 系统提示模块化 — sections 缓存 + dynamic boundary + uncached 标记  | 单一字符串拼接 | 中 | — |
-| **P1** | 消息规范化 — 合并连续 user + 修复孤立 tool_use/result  | 构造即正确，无需后处理 | 中 | — |
-| **P2** | Git Worktree — gitWorktreeService.ts 已实现(826行)  | 已实现 | 小 | — |
-| **P2** | REPL 沙箱 — AST 读写分类已覆盖  | 已覆盖 | 中 | — |
-| **P2** | 工作流脚本 — Hook 系统可替代  | 已覆盖 | 中 | — |
-| **P2** | 会话标签与搜索 — `/tag` 会话标签 + 按 repo/标题搜索  | 仅基础 load/save | 小 | — |
-| **P2** | MCP OAuth — oauth-provider.ts 已实现(960行)  | 已实现 | 中 | — |
-| **P2** | MCP 通道通知 — MCP channel notification 支持服务器主动推送  | mcp-client.ts 无 channel 概念 | 中 | — |
-| **P3** | 会话分支 — `/branch` 从历史会话创建分支  | 可用 sessionService 扩展 | 中 | — |
-| **P3** | 安全审查 — skill 可快速补齐  | skill 可补齐 | 小 | — |
-| **P3** | PR 评论 — GitHub Actions 可实现  | Actions 可实现 | 中 | — |
-| **P2** | @include 指令 — 递归引用 + 外部文件审批 + 40+ 文本类型白名单  | 缺失 | 中 | — |
-| **P2** | 附件协议 — 60+ 类型 + per-type token 预算 + 3 阶段有序执行  | 缺失 | 中 | — |
-| **P2** | 图片压缩流水线 — format→resize→quality 阶梯 + JPEG fallback  | 无压缩 | 中 | — |
-| **P2** | Git 状态自动注入 — gitBranch/cwd/fileCount 每轮自动注入系统提示  | 仅统计/不注入 | 小 | — |
-| **P2** | IDE 诊断注入 — LSP 诊断自动收集 + 选区自动注入  | 依赖 IDE 推送 | 中 | — |
-| **P2** | 终端主题检测 — OSC 11 dark/light + COLORFGBG 回退  | 缺失 | 小 | — |
-| **P2** | 自动后台化 Agent — 超时 15s 自动转后台 + Assistant 模式检测  | 需显式指定 | 小 | — |
-| **P2** | 密钥扫描 — 工具输出 50+ gitleaks 规则扫描 + 写入阻断  | 仅 Team Memory 场景需要 | 中 | — |
-| **P2** | 子进程环境变量清洗 — 30+ 敏感变量自动剥离  | OS 层职责 | 中 | — |
-| **P2** | 结构化 Diff — 纯 JS 快速着色 + 行号 gutter + 语法高亮  | 基础 inline diff | 中 | — |
-| **P2** | OSC 通知 — iTerm2/Kitty/Ghostty 通知 + 进度  | 仅 bell 响铃 | 小 | — |
-| **P2** | OSC 8 超链接 — Cmd+Click 打开文件/URL  | MarkdownRenderer.tsx 无 OSC 8 | 小 | — |
-| **P2** | 色觉无障碍主题 — daltonized 红绿→蓝橙 diff 色板  | 小众需求 | 小 | — |
-| **P2** | 自定义快捷键 — multi-chord + keybindings.json  | keyMatchers.ts 不可配置 | 中 | — |
+| **P1** |  [系统提示模块化](#system-prompt-modular) — sections 缓存 + dynamic boundary + uncached 标记  | 单一字符串拼接 | 中 | — |
+| **P1** |  [消息规范化](#message-normalization) — 合并连续 user + 修复孤立 tool_use/result  | 构造即正确，无需后处理 | 中 | — |
+| **P2** |  [Git Worktree](#git-worktree) — gitWorktreeService.ts 已实现(826行)  | 已实现 | 小 | — |
+| **P2** |  [REPL 沙箱](#repl-sandbox) — AST 读写分类已覆盖  | 已覆盖 | 中 | — |
+| **P2** |  [工作流脚本](#workflow-scripts) — Hook 系统可替代  | 已覆盖 | 中 | — |
+| **P2** |  [会话标签与搜索](#session-tags-search) — `/tag` 会话标签 + 按 repo/标题搜索  | 仅基础 load/save | 小 | — |
+| **P2** |  [MCP OAuth](#mcp-oauth) — oauth-provider.ts 已实现(960行)  | 已实现 | 中 | — |
+| **P2** |  [MCP 通道通知](#mcp-notification) — MCP channel notification 支持服务器主动推送  | mcp-client.ts 无 channel 概念 | 中 | — |
+| **P3** |  [会话分支](#session-branch) — `/branch` 从历史会话创建分支  | 可用 sessionService 扩展 | 中 | — |
+| **P3** |  [安全审查](#security-review) — skill 可快速补齐  | skill 可补齐 | 小 | — |
+| **P3** |  [PR 评论](#pr-comments) — GitHub Actions 可实现  | Actions 可实现 | 中 | — |
+| **P2** |  [@include 指令](#include-directive) — 递归引用 + 外部文件审批 + 40+ 文本类型白名单  | 缺失 | 中 | — |
+| **P2** |  [附件协议](#attachment-protocol) — 60+ 类型 + per-type token 预算 + 3 阶段有序执行  | 缺失 | 中 | — |
+| **P2** |  [图片压缩流水线](#image-compression) — format→resize→quality 阶梯 + JPEG fallback  | 无压缩 | 中 | — |
+| **P2** |  [Git 状态自动注入](#git-status-injection) — gitBranch/cwd/fileCount 每轮自动注入系统提示  | 仅统计/不注入 | 小 | — |
+| **P2** |  [IDE 诊断注入](#ide-diagnostics) — LSP 诊断自动收集 + 选区自动注入  | 依赖 IDE 推送 | 中 | — |
+| **P2** |  [终端主题检测](#terminal-theme) — OSC 11 dark/light + COLORFGBG 回退  | 缺失 | 小 | — |
+| **P2** |  [自动后台化 Agent](#auto-background) — 超时 15s 自动转后台 + Assistant 模式检测  | 需显式指定 | 小 | — |
+| **P2** |  [密钥扫描](#secret-scanning) — 工具输出 50+ gitleaks 规则扫描 + 写入阻断  | 仅 Team Memory 场景需要 | 中 | — |
+| **P2** |  [子进程环境变量清洗](#env-sanitization) — 30+ 敏感变量自动剥离  | OS 层职责 | 中 | — |
+| **P2** |  [结构化 Diff](#structured-diff) — 纯 JS 快速着色 + 行号 gutter + 语法高亮  | 基础 inline diff | 中 | — |
+| **P2** |  [OSC 通知](#osc-notifications) — iTerm2/Kitty/Ghostty 通知 + 进度  | 仅 bell 响铃 | 小 | — |
+| **P2** |  [OSC 8 超链接](#osc-8) — Cmd+Click 打开文件/URL  | MarkdownRenderer.tsx 无 OSC 8 | 小 | — |
+| **P2** |  [色觉无障碍主题](#colorblind-theme) — daltonized 红绿→蓝橙 diff 色板  | 小众需求 | 小 | — |
+| **P2** |  [自定义快捷键](#custom-keybindings) — multi-chord + keybindings.json  | keyMatchers.ts 不可配置 | 中 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
@@ -414,3 +414,377 @@
 | **/restore 命令** | 开源可验证的 checkpoint 恢复 | 闭源实现（不可审计） | **更透明** |
 
 > **总结**: Qwen Code 的核心优势在于 **透明性、可审计性、代码简洁度** 和 **LSP 功能完整性**。Claude Code 的优势在于 **功能丰富度**（101 vs 38 命令）和 **企业特性**（durable cron、teammate 等）。
+
+---
+
+## 八、新增改进点详细说明
+
+> 以下为五轮审计新增的 25 项改进点详细说明（原有改进点的详细说明见 [§三](#三全部改进点详细说明) 对应分文件）
+
+---
+
+<a id="git-worktree"></a>
+
+### 1. Git Worktree（P2，已实现）
+
+Claude Code 提供 `EnterWorktreeTool/ExitWorktreeTool` 支持 git worktree 操作，可在同一仓库的不同分支并行工作。Qwen Code 的 `gitWorktreeService.ts`（826行）已实现完整功能，无需额外改进。
+
+---
+
+<a id="repl-sandbox"></a>
+
+### 2. REPL 沙箱（P2，已覆盖）
+
+Claude Code 有 `REPLTool` 提供安全的交互式 REPL 环境。Qwen Code 通过 `shellAstParser.ts` 的 AST 读写分类已覆盖 REPL 安全防护，无需单独实现 REPL 工具。
+
+---
+
+<a id="workflow-scripts"></a>
+
+### 3. 工作流脚本（P2，Hook 可替代）
+
+Claude Code 的 `WorkflowTool` 支持预定义工作流自动化。Qwen Code 的 Hook 系统（13 种事件类型）已覆盖大部分场景，可通过 Hook 链实现类似工作流，无需单独实现。
+
+---
+
+<a id="session-tags-search"></a>
+
+### 4. 会话标签与搜索（P2）
+
+Claude Code 的 `/tag` 命令为会话添加标签，支持按标签/repo/标题搜索历史会话。Qwen Code 仅有基础的 `loadLastSession()`，无标签系统。
+
+**Claude Code 源码索引**：`commands/tag/tag.tsx`、`utils/sessionStorage.ts` 中 `saveTag()` / `loadTags()`
+
+**Qwen Code 修改方向**：`sessionService.ts` 新增 `tags` 字段和 `searchByTag()` 方法。
+
+**实现成本**：~150 行，~1 天。
+
+**意义**：长期项目积累大量会话，按标签快速定位。
+**缺失后果**：只能按时间排序，无法按主题/功能分类。
+**改进收益**：标签搜索 = 快速定位历史会话。
+
+---
+
+<a id="mcp-oauth"></a>
+
+### 5. MCP OAuth（P2，已实现）
+
+Claude Code 的 `McpAuthTool` 支持 MCP 服务器的 OAuth 认证，包括端口管理和 token 存储。Qwen Code 的 `oauth-provider.ts`（960行）+ `keychain-token-storage.ts` 已实现完整 OAuth 流程，甚至包含 Keychain 存储，功能不弱于 Claude Code。
+
+---
+
+<a id="mcp-notification"></a>
+
+### 6. MCP 通道通知（P2）
+
+Claude Code 支持 MCP channel notification，允许服务器主动向客户端推送通知（如资源变更）。Qwen Code 的 `mcp-client.ts` 无 channel 概念，仅支持客户端轮询。
+
+**Claude Code 源码索引**：`services/mcp/channelNotification.ts`、`services/mcp/channelPermissions.ts`
+
+**Qwen Code 修改方向**：`mcp-client.ts` 新增 channel 订阅和通知处理。
+
+**实现成本**：~200 行，~2 天。
+
+**意义**：MCP 服务器主动推送 = 实时响应，减少轮询开销。
+**缺失后果**：只能定期轮询，延迟高。
+**改进收益**：实时推送 = 低延迟 + 省 token。
+
+---
+
+<a id="include-directive"></a>
+
+### 7. @include 指令（P2）
+
+Claude Code 在 `claudemd.ts`（1479行）中实现 `@path` 递归引用，最大深度 5 层，外部文件需用户审批，支持 40+ 文本类型白名单。Qwen Code 无 `@include` 解析，指令文件仅支持直接引用。
+
+**Claude Code 源码索引**：`utils/claudemd.ts` 中 `processMemoryFile()` / `extractIncludePathsFromTokens()`
+
+**Qwen Code 修改方向**：指令加载器新增 `@include` 解析，递归深度限制 5，外部文件审批对话框。
+
+**实现成本**：~200 行，~2 天。
+
+**意义**：团队规范可模块化复用，避免巨型单文件。
+**缺失后果**：所有指令堆在一个文件中，难以维护。
+**改进收益**：模块化指令 = 可复用 + 可组合。
+
+---
+
+<a id="attachment-protocol"></a>
+
+### 8. 附件协议（P2）
+
+Claude Code 定义 60+ 附件类型（文件/IDE/内存/Hook/计划模式/Token/Agent 等），每类有独立 token 预算，3 阶段有序执行。Qwen Code 无附件类型注册表，所有附件统一处理。
+
+**Claude Code 源码索引**：`utils/attachments.ts`（3998行）、`constants/apiLimits.ts`
+
+**Qwen Code 修改方向**：新增附件类型枚举和预算配置，按需加载。
+
+**实现成本**：~300 行，~3 天。
+
+**意义**：精细控制各类附件的 token 消耗，防止单一类型溢出。
+**缺失后果**：无预算控制 = 附件可能撑爆上下文窗口。
+**改进收益**：per-type 预算 = 可控 token 用量。
+
+---
+
+<a id="image-compression"></a>
+
+### 9. 图片压缩流水线（P2）
+
+Claude Code 的 `imageResizer.ts`（881行）实现 format→resize→quality 三阶段压缩：PNG 调色板压缩 → JPEG 质量阶梯 [80,60,40,20] → 尺寸缩放到 2000x2000 → 激进压缩到 400x400。Qwen Code 以原始格式传递图片，无压缩。
+
+**Claude Code 源码索引**：`utils/imageResizer.ts` 中 `compressImageBuffer()` / 格式检测
+
+**Qwen Code 修改方向**：新增 `compressImage()` 函数，支持 PNG/JPEG 格式压缩。
+
+**实现成本**：~150 行，~1 天。
+
+**意义**：多图场景（如截图分析）节省大量 token。
+**缺失后果**：原图传递 = 大 token 消耗。
+**改进收益**：压缩后图片 = 省 50-80% 图片 token。
+
+---
+
+<a id="git-status-injection"></a>
+
+### 10. Git 状态自动注入（P2）
+
+Claude Code 每轮自动注入 gitBranch/cwd/platform/fileCount 到系统提示的 uncached section。Qwen Code 有 `getGitBranch()` 和 `geminiMdFileCount` 追踪，但仅用于统计，不注入到系统提示。
+
+**Claude Code 源码索引**：`utils/api.ts` 中 `countFilesRoundedRg()` / uncached section 注入
+
+**Qwen Code 修改方向**：系统提示新增动态段注入 git 状态。
+
+**实现成本**：~50 行，~0.5 天。
+
+**意义**：模型始终知道当前分支和项目规模。
+**缺失后果**：模型不知道自己在哪个分支，可能给错命令。
+**改进收益**：每轮自动注入 = 模型感知上下文。
+
+---
+
+<a id="ide-diagnostics"></a>
+
+### 11. IDE 诊断注入（P2）
+
+Claude Code 通过 `diagnosticTracker` 服务收集 LSP 诊断，以 `diagnostics` 附件类型每轮注入。Qwen Code 有 LSP 服务，但诊断仅依赖 IDE 插件主动推送，不自动收集。
+
+**Claude Code 源码索引**：`services/diagnosticTracking.ts`、`utils/attachments.ts`
+
+**Qwen Code 修改方向**：`lsp.ts` 新增诊断收集和注入。
+
+**实现成本**：~100 行，~1 天。
+
+**意义**：模型自动看到编译错误/警告，无需用户手动报告。
+**缺失后果**：用户需要手动粘贴错误信息 = 多一轮交互。
+**改进收益**：自动诊断注入 = 模型即时修复编译错误。
+
+---
+
+<a id="terminal-theme"></a>
+
+### 12. 终端主题检测（P2）
+
+Claude Code 通过 OSC 11 查询终端背景色，使用 ITU-R BT.709 计算亮度判断 dark/light，`COLORFGBG` 环境变量回退。Qwen Code 的 `semantic-colors.ts` 硬编码主题或依赖用户配置。
+
+**Claude Code 源码索引**：`utils/systemTheme.ts` 中 `resolveThemeSetting()` / `detectFromColorFgBg()`
+
+**Qwen Code 修改方向**：`semantic-colors.ts` 新增 `detectTheme()` 函数。
+
+**实现成本**：~80 行，~0.5 天。
+
+**意义**：自动适配终端背景色 = 颜色对比度始终正常。
+**缺失后果**：浅色终端启动 Agent → 浅黄色文字不可见。
+**改进收益**：自动检测 = UI 始终可读。
+
+---
+
+<a id="auto-background"></a>
+
+### 13. 自动后台化 Agent（P2）
+
+Claude Code 在 `BashTool.tsx` 中实现超时 15s 自动转后台 + Assistant 模式检测（`ASSISTANT_BLOCKING_BUDGET_MS = 15_000`）。Qwen Code 需用户显式设置 `isBackground`。
+
+**Claude Code 源码索引**：`tools/BashTool/BashTool.tsx` 中 `getAutoBackgroundMs()` / `onTimeout()`
+
+**Qwen Code 修改方向**：`agent.ts` 执行时启动 timer，超时自动转后台。
+
+**实现成本**：~100 行，~1 天。
+
+**意义**：长任务自动不阻塞前台交互。
+**缺失后果**：用户被阻塞等待长任务完成。
+**改进收益**：超时自动转后台 = 用户继续交互。
+
+---
+
+<a id="secret-scanning"></a>
+
+### 14. 密钥扫描（P2）
+
+Claude Code 的 29 条 gitleaks 规则用于 Team Memory 上传前扫描工具输出，防止密钥泄露。Qwen Code 无工具输出密钥扫描。
+
+**Claude Code 源码索引**：`services/teamMemory/gitleaks.ts`（29 条规则）
+
+**Qwen Code 修改方向**：工具输出后扫描，发现密钥则警告/阻断。
+
+**实现成本**：~150 行，~1 天。
+
+**意义**：防止模型意外输出 API 密钥/密码。
+**缺失后果**：工具输出可能包含密钥 → 写入日志/对话。
+**改进收益**：自动扫描 = 防意外泄露。
+
+---
+
+<a id="env-sanitization"></a>
+
+### 15. 子进程环境变量清洗（P2）
+
+Claude Code 自动剥离 30+ 敏感环境变量后启动子进程。Qwen Code 继承完整环境。
+
+**实现成本**：~50 行，~0.5 天。
+
+**意义**：防止敏感变量泄漏到子进程。
+**缺失后果**：API 密钥/凭证可能泄漏到工具输出。
+**改进收益**：环境变量清洗 = 更安全。
+
+---
+
+<a id="structured-diff"></a>
+
+### 16. 结构化 Diff（P2）
+
+Claude Code 用 Rust NAPI 实现快速着色 + 行号 gutter + 语法高亮的结构化 diff。Qwen Code 可用纯 JS 方案（ansi-diff / diff-match-patch）达到类似效果，无需引入原生模块。
+
+**Qwen Code 修改方向**：纯 JS 实现结构化 diff 渲染。
+
+**实现成本**：~200 行，~2 天。
+
+**意义**：代码变更一目了然。
+**缺失后果**：基础 inline diff = 难以阅读。
+**改进收益**：结构化渲染 = 可读性强。
+
+---
+
+<a id="osc-notifications"></a>
+
+### 17. OSC 通知（P2）
+
+Claude Code 支持 iTerm2/Kitty/Ghostty OSC 通知 + 进度百分比（`ITERM2.PROGRESS`）。Qwen Code 仅有基础 bell 响铃。
+
+**Claude Code 源码索引**：`ink/termio/osc.ts` 中 `OSC.ITERM2` / `OSC.KITTY` / `OSC.GHOSTTY`
+
+**Qwen Code 修改方向**：`attentionNotification.ts` 新增 OSC 序列生成。
+
+**实现成本**：~100 行，~1 天。
+
+**意义**：后台任务完成时推送通知 = 无需盯着终端。
+**缺失后果**：只能听到 bell 声，无进度信息。
+**改进收益**：OSC 通知 = 带进度条的系统通知。
+
+---
+
+<a id="osc-8"></a>
+
+### 18. OSC 8 超链接（P2）
+
+Claude Code 使用 OSC 8 协议生成可点击超链接，文件路径/URL 支持 Cmd+Click 直接打开。Qwen Code 的 `MarkdownRenderer.tsx` 无 OSC 8 实现，链接以纯文本显示。
+
+**Claude Code 源码索引**：`ink/termio/osc.ts` 中 `link()` / `LINK_END`
+
+**Qwen Code 修改方向**：链接渲染时添加 OSC 8 转义序列。
+
+**实现成本**：~50 行，~0.5 天。
+
+**意义**：文件路径/URL 可直接点击打开。
+**缺失后果**：需要手动复制路径。
+**改进收益**：Cmd+Click = 零复制打开文件。
+
+---
+
+<a id="colorblind-theme"></a>
+
+### 19. 色觉无障碍主题（P2）
+
+Claude Code 提供 daltonized 色板（红绿→蓝橙 diff 配色），适配红绿色盲用户。Qwen Code 无专门色觉无障碍主题。
+
+**Qwen Code 修改方向**：新增色觉无障碍主题，使用蓝橙替代红绿。
+
+**实现成本**：~50 行，~0.5 天。
+
+**意义**：无障碍 = 包容性设计。
+**缺失后果**：色盲用户难以区分 diff 中的增删。
+**改进收益**：色觉无障碍主题 = 所有人可用。
+
+---
+
+<a id="custom-keybindings"></a>
+
+### 20. 自定义快捷键（P2）
+
+Claude Code 支持 multi-chord 组合键 + `keybindings.json` 自定义，341 行默认绑定 + 验证器。Qwen Code 的 `keyMatchers.ts` 不可用户配置。
+
+**Claude Code 源码索引**：`keybindings/` 目录（defaultBindings.ts / parser.ts / resolver.ts / validate.ts）
+
+**Qwen Code 修改方向**：新增 `keybindings.json` 加载和解析。
+
+**实现成本**：~200 行，~2 天。
+
+**意义**：Vim/Emacs 用户自定义习惯键位。
+**缺失后果**：键位固定，无法自定义。
+**改进收益**：自定义快捷键 = 个人效率提升。
+
+---
+
+<a id="session-branch"></a>
+
+### 21. 会话分支（P3）
+
+Claude Code 的 `/branch` 命令从历史会话创建分支，探索替代方案。Qwen Code 可通过 `sessionService.ts` 扩展实现。
+
+**实现成本**：~150 行，~1 天。
+
+**意义**：从任意节点分叉对话，探索不同方案。
+**缺失后果**：只能从头开始新会话。
+**改进收益**：会话分支 = 多路径探索。
+
+---
+
+<a id="security-review"></a>
+
+### 22. 安全审查（P3，skill 可补齐）
+
+Claude Code 的 `/security-review` 基于 git diff 审查安全问题。Qwen Code 可通过编写 SKILL.md 快速补齐，无需代码改动。
+
+**实现成本**：编写 SKILL.md，~0 代码改动。
+
+---
+
+<a id="pr-comments"></a>
+
+### 23. PR 评论（P3）
+
+Claude Code 的 `/pr_comments` 管理 GitHub PR 评论。Qwen Code 可通过 GitHub Actions skill 实现。
+
+**实现成本**：编写 skill，~0 代码改动。
+
+---
+
+<a id="thinking-retention"></a>
+
+### 24. Thinking 块保留（P2）
+
+Claude Code 的 thinking 块跨轮保留 + 1h 空闲清理 + latch 防缓存破坏。Qwen Code 的 thinking 块仅限当前轮。此功能仅适用于 Anthropic 模型，Qwen 使用其他模型时无直接对应物。
+
+**实现成本**：~100 行，~1 天（仅 Anthropic 模型适用）。
+
+---
+
+<a id="message-normalization"></a>
+
+### 25. 消息规范化（P1，Qwen 已优）
+
+Claude Code 的 `utils/messages.ts`（5000+ 行）实现消息规范化：合并连续 user 消息、修复孤立 tool_use/result、100 媒体上限。Qwen Code 采用"构造即正确"哲学，在构建消息时即保证格式正确，无需后处理修复层。Qwen 的 `cleanOrphanedToolCalls()` 和 `mergeConsecutiveAssistantMessages()` 是轻量级清理，非重度规范化。
+
+**结论**：Qwen Code 方案更简洁，无需改进。
+
+---
