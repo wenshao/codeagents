@@ -150,7 +150,7 @@
 
 - [架构深度对比](./docs/comparison/architecture-deep-dive.md) — 10 Agent 代理循环 + Mermaid 图
 - [功能性内部机制](./docs/comparison/functional-internals.md) — API 参数、编辑格式
-- [/review](./docs/comparison/review-command.md) | [/compact /plan /init](./docs/comparison/key-commands-deep-dive.md) | [/loop /schedule](./docs/comparison/loop-schedule.md) | [/simplify](./docs/comparison/simplify-command.md)
+- [/review](./docs/comparison/review-command.md) | [/security-review](./docs/comparison/security-review-command-deep-dive.md) | [/compact /plan /init](./docs/comparison/key-commands-deep-dive.md) | [/loop /schedule](./docs/comparison/loop-schedule.md) | [/simplify](./docs/comparison/simplify-command.md)
 - [/hooks /model /mcp](./docs/comparison/infra-commands.md) | [/btw /rewind](./docs/comparison/btw-rewind.md) | [/context 自动化诊断](./docs/comparison/context-usage-noninteractive-deep-dive.md) | [内置命令总览](./docs/comparison/slash-commands-deep-dive.md)
 
 </details>
