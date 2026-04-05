@@ -112,7 +112,7 @@
 | **P2** | 会话标签与搜索 — /tag 命令打标签 + 按标签/仓库/标题搜索历史会话 [↓](./qwen-code-improvement-report-p2-core.md#item-25) | 仅按时间排序 | 小 | — |
 | **P2** | Conditional Hooks — Hook `if` 字段用权限规则语法按工具/路径过滤 [↓](./qwen-code-improvement-report-p2-tools.md#item-1) | 缺失 | 小 | — |
 | **P2** | Transcript Search — 按 `/` 搜索会话记录，`n`/`N` 导航匹配项 [↓](./qwen-code-improvement-report-p2-tools.md#item-2) | 缺失 | 小 | — |
-| **P2** | Bash File Watcher — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](./qwen-code-improvement-report-p2-tools.md#item-3) | 缺失 | 小 | — |
+| **P2** | [Bash File Watcher](./file-watcher-stale-edit-deep-dive.md) — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](./qwen-code-improvement-report-p2-tools.md#item-3) | 缺失 | 小 | — |
 | **P2** | /batch 并行操作 — 编排大规模并行变更（多文件/多任务）[↓](./qwen-code-improvement-report-p2-tools.md#item-4) | 缺失 | 中 | — |
 | **P2** | Chrome Extension — 调试 live web 应用（读 DOM/Console/Network）[↓](./qwen-code-improvement-report-p2-tools.md#item-5) | 缺失 | 中 | — |
 | **P2** | MCP Auto-Reconnect — 连续 3 次错误自动重连 + SSE 断线恢复 [↓](./qwen-code-improvement-report-p2-tools.md#item-13) | 缺失 | 小 | — |
