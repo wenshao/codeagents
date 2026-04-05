@@ -246,6 +246,11 @@
 | **P3** | settingsSync 设置同步 — 跨设备设置同步到云端/git [↓](./qwen-code-improvement-report-p3.md#item-24) | 仅本地存储 | 中 | — |
 | **P3** | Auto Mode 子命令管理 — defaults/config/critique 三个子命令 [↓](./qwen-code-improvement-report-p3.md#item-25) | 无子命令 | 小 | — |
 | **P3** | useInboxPoller 收件箱轮询 — 多 Agent 邮箱定期检查 [↓](./qwen-code-improvement-report-p3.md#item-26) | 无统一轮询 | 小 | — |
+| **P3** | useRemoteSession 远程会话 Hook [↓](./qwen-code-improvement-report-p3.md#item-27) | 无 | 小 | — |
+| **P3** | useDiffInIDE IDE 差异查看 [↓](./qwen-code-improvement-report-p3.md#item-28) | 终端内 diff | 小 | — |
+| **P3** | useCancelRequest 取消请求 Hook [↓](./qwen-code-improvement-report-p3.md#item-29) | 分散处理 | 小 | — |
+| **P3** | AgentSummary 代理摘要 [↓](./qwen-code-improvement-report-p3.md#item-30) | 无 | 小 | — |
+| **P3** | useBackgroundTaskNavigation 后台任务导航 [↓](./qwen-code-improvement-report-p3.md#item-31) | 无 | 小 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
