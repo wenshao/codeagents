@@ -101,12 +101,12 @@
 | **P2** | [SendMessageTool](./multi-agent-deep-dive.md) — 多 Agent间消息传递、shutdown 请求、plan 审批 [↓](./qwen-code-improvement-report-p2-core.md#item-14) | 缺失 | 中 | — |
 | **P2** | FileIndex — fzf 风格模糊文件搜索 + 异步增量索引 [↓](./qwen-code-improvement-report-p2-core.md#item-15) | 依赖 rg/glob | 中 | — |
 | **P2** | Notebook Edit — Jupyter cell 编辑 + 自动 cell ID 追踪 + 文件历史快照 [↓](./qwen-code-improvement-report-p2-core.md#item-16) | 缺失 | 中 | — |
-| **P2** |  [自定义快捷键](./qwen-code-improvement-report-p2-core.md#item-34) — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
+| **P2** |  [自定义快捷键](./qwen-code-improvement-report-p2-core.md#item-34) [↓](./qwen-code-improvement-report-p2-core.md#item-34) — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
 | **P2** | Session Ingress Auth — 远程会话 bearer token 认证（企业多用户环境） [↓](./qwen-code-improvement-report-p2-core.md#item-18) | 缺失 | 中 | — |
 | **P2** | 企业代理 — CONNECT relay + CA cert 注入 + NO_PROXY allowlist（容器环境） [↓](./qwen-code-improvement-report-p2-core.md#item-19) | 缺失 | 大 | — |
 | **P2** | ConfigTool — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](./qwen-code-improvement-report-p2-core.md#item-20) | 仅 /settings 命令 | 小 | — |
-| **P2** |  [终端主题检测](./qwen-code-improvement-report-p2-core.md#item-30) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | — |
-| **P2** |  [自动后台化 Agent](./qwen-code-improvement-report-p2-core.md#item-31) — 超过阈值自动转后台执行，不阻塞用户交互 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | 需显式指定 | 小 | — |
+| **P2** |  [终端主题检测](./qwen-code-improvement-report-p2-core.md#item-30) [↓](./qwen-code-improvement-report-p2-core.md#item-30) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | — |
+| **P2** |  [自动后台化 Agent](./qwen-code-improvement-report-p2-core.md#item-31) [↓](./qwen-code-improvement-report-p2-core.md#item-31) — 超过阈值自动转后台执行，不阻塞用户交互 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | 需显式指定 | 小 | — |
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](./qwen-code-improvement-report-p2-core.md#item-7) | 缺失 | 小 | — |
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2-core.md#item-23) | 缺失 | 小 | [PR#2871](https://github.com/QwenLM/qwen-code/pull/2871) |
 | **P2** | 状态栏紧凑布局 — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2-core.md#item-24) | Footer 占用偏高 | 小 | — |
@@ -162,7 +162,7 @@
 | **P2** | 统一设计系统组件库 — 12 个语义 UI 原语 + ThemeProvider [↓](./qwen-code-improvement-report-p2-stability.md#item-9) | 组件分散 | 中 | — |
 | **P2** | Markdown 表格终端渲染 — ANSI-aware + CJK-aware 列宽计算 [↓](./qwen-code-improvement-report-p2-stability.md#item-10) | CJK 列错位 | 小 | — |
 | **P2** | 屏幕阅读器无障碍支持 — Diff/Spinner/Progress 纯文本替代渲染 [↓](./qwen-code-improvement-report-p2-stability.md#item-11) | hook 存在但使用有限 | 小 | — |
-| **P2** |  [色觉无障碍主题](./qwen-code-improvement-report-p2-stability.md#item-12) — daltonized 红绿→蓝橙 diff 色板 [↓](./qwen-code-improvement-report-p2-stability.md#item-12) | 无色觉主题 | 小 | — |
+| **P2** |  [色觉无障碍主题](./qwen-code-improvement-report-p2-stability.md#item-12) [↓](./qwen-code-improvement-report-p2-stability.md#item-12) — daltonized 红绿→蓝橙 diff 色板 [↓](./qwen-code-improvement-report-p2-stability.md#item-12) | 无色觉主题 | 小 | — |
 | **P2** | 动画系统与卡顿状态检测 — shimmer 微光 + 30s 超时变红 [↓](./qwen-code-improvement-report-p2-stability.md#item-13) | 固定动画/无超时检测 | 小 | — |
 | **P2** | Agent 权限冒泡 — bubble 模式 + Leader 桥接 + 邮箱回退 [↓](./qwen-code-improvement-report-p2-stability.md#item-14) | 继承父级模式 | 中 | — |
 | **P2** | Agent 专属 MCP 服务器 — frontmatter mcpServers + 按需连接/清理 [↓](./qwen-code-improvement-report-p2-stability.md#item-15) | 共享全局 MCP | 小 | — |
@@ -205,8 +205,8 @@
 | **P2** | sandbox运行时集成 — seatbelt/bubblewrap/Docker + 文件/网络限制 [↓](./qwen-code-improvement-report-p2-stability.md#item-30) | 可选/非默认 | 大 | — |
 | **P2** | SSRF 防护 — 私有 IP 阻断 + IPv4-mapped + DNS rebinding 防护 [↓](./qwen-code-improvement-report-p2-stability.md#item-31) | 仅基础 isPrivateIp | 中 | — |
 | **P2** | WebFetch 域名allowlist — 130+ 预批准域名 + 路径段边界匹配 [↓](./qwen-code-improvement-report-p2-stability.md#item-32) | 无内置allowlist | 小 | — |
-| **P2** |  [子进程环境变量清洗](./qwen-code-improvement-report-p2-core.md#item-33) — 30+ 敏感变量自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-33) | 继承完整环境 | 中 | — |
-| **P2** | 工具输出 [密钥扫描](./qwen-code-improvement-report-p2-core.md#item-32) — 50+ gitleaks 规则 + 写入阻断 [↓](./qwen-code-improvement-report-p2-stability.md#item-34) | 无扫描 | 中 | — |
+| **P2** |  [子进程环境变量清洗](./qwen-code-improvement-report-p2-core.md#item-33) [↓](./qwen-code-improvement-report-p2-core.md#item-33) — 30+ 敏感变量自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-33) | 继承完整环境 | 中 | — |
+| **P2** | 工具输出 [密钥扫描](./qwen-code-improvement-report-p2-core.md#item-32) [↓](./qwen-code-improvement-report-p2-core.md#item-32) — 50+ gitleaks 规则 + 写入阻断 [↓](./qwen-code-improvement-report-p2-stability.md#item-34) | 无扫描 | 中 | — |
 | **P2** | privilege escalation防护 — auto 模式 60+ 危险规则自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-35) | yolo 批准所有 | 中 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-1) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-2) | 缺失 | 大 | — |
@@ -219,31 +219,31 @@
 | **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-9) | 基础 vim.ts | 中 | — |
 | **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-10) | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-11) | 缺失 | 大 | — |
-| **P1** |  [系统提示模块化](./qwen-code-improvement-report-p0-p1-engine.md#item-26) — sections 缓存 + dynamic boundary + uncached 标记  | 单一字符串拼接 | 中 | — |
+| **P1** |  [系统提示模块化](./qwen-code-improvement-report-p0-p1-engine.md#item-26) [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-26) — sections 缓存 + dynamic boundary + uncached 标记  | 单一字符串拼接 | 中 | — |
 | **P1** |  [消息规范化](#message-normalization) — 合并连续 user + 修复孤立 tool_use/result  | 构造即正确，无需后处理 | 中 | — |
 | **P2** |  Git Worktree — gitWorktreeService.ts 已实现(826行)  | 已实现 | 小 | — |
 | **P2** |  REPL 沙箱 — AST 读写分类已覆盖  | 已覆盖 | 中 | — |
 | **P2** |  工作流脚本 — Hook 系统可替代  | 已覆盖 | 中 | — |
-| **P2** |  [会话标签与搜索](./qwen-code-improvement-report-p2-core.md#item-25) — `/tag` 会话标签 + 按 repo/标题搜索  | 仅基础 load/save | 小 | — |
+| **P2** |  [会话标签与搜索](./qwen-code-improvement-report-p2-core.md#item-25) [↓](./qwen-code-improvement-report-p2-core.md#item-25) — `/tag` 会话标签 + 按 repo/标题搜索  | 仅基础 load/save | 小 | — |
 | **P2** |  MCP OAuth — oauth-provider.ts 已实现(960行)  | 已实现 | 中 | — |
-| **P2** |  [MCP 通道通知](./qwen-code-improvement-report-p2-tools.md#item-13) — MCP channel notification 支持服务器主动推送  | mcp-client.ts 无 channel 概念 | 中 | — |
-| **P3** |  [会话分支](./qwen-code-improvement-report-p2-core.md#item-13) — `/branch` 从历史会话创建分支  | 可用 sessionService 扩展 | 中 | — |
-| **P3** |  [安全审查](./qwen-code-improvement-report-p3.md#item-6) — skill 可快速补齐  | skill 可补齐 | 小 | — |
-| **P3** |  [PR 评论](./qwen-code-improvement-report-p2-stability.md#item-22) — GitHub Actions 可实现  | Actions 可实现 | 中 | — |
-| **P2** |  [@include 指令](./qwen-code-improvement-report-p2-core.md#item-26) — 递归引用 + 外部文件审批 + 40+ 文本类型白名单  | 缺失 | 中 | — |
-| **P2** |  [附件协议](./qwen-code-improvement-report-p2-core.md#item-27) — 60+ 类型 + per-type token 预算 + 3 阶段有序执行  | 缺失 | 中 | — |
-| **P2** |  [图片压缩流水线](./qwen-code-improvement-report-p2-perf.md#item-17) — format→resize→quality 阶梯 + JPEG fallback  | 无压缩 | 中 | — |
-| **P2** |  [Git 状态自动注入](./qwen-code-improvement-report-p2-core.md#item-28) — gitBranch/cwd/fileCount 每轮自动注入系统提示  | 仅统计/不注入 | 小 | — |
-| **P2** |  [IDE 诊断注入](./qwen-code-improvement-report-p2-core.md#item-29) — LSP 诊断自动收集 + 选区自动注入  | 依赖 IDE 推送 | 中 | — |
-| **P2** |  [终端主题检测](./qwen-code-improvement-report-p2-core.md#item-30) — OSC 11 dark/light + COLORFGBG 回退  | 缺失 | 小 | — |
-| **P2** |  [自动后台化 Agent](./qwen-code-improvement-report-p2-core.md#item-31) — 超时 15s 自动转后台 + Assistant 模式检测  | 需显式指定 | 小 | — |
-| **P2** |  [密钥扫描](./qwen-code-improvement-report-p2-core.md#item-32) — 工具输出 50+ gitleaks 规则扫描 + 写入阻断  | 仅 Team Memory 场景需要 | 中 | — |
-| **P2** |  [子进程环境变量清洗](./qwen-code-improvement-report-p2-core.md#item-33) — 30+ 敏感变量自动剥离  | OS 层职责 | 中 | — |
-| **P2** |  [结构化 Diff](./qwen-code-improvement-report-p2-tools.md#item-29) — 纯 JS 快速着色 + 行号 gutter + 语法高亮  | 基础 inline diff | 中 | — |
-| **P2** |  [OSC 通知](./qwen-code-improvement-report-p2-tools.md#item-23) — iTerm2/Kitty/Ghostty 通知 + 进度  | 仅 bell 响铃 | 小 | — |
-| **P2** |  [OSC 8 超链接](./qwen-code-improvement-report-p2-stability.md#item-7) — Cmd+Click 打开文件/URL  | MarkdownRenderer.tsx 无 OSC 8 | 小 | — |
-| **P2** |  [色觉无障碍主题](./qwen-code-improvement-report-p2-stability.md#item-12) — daltonized 红绿→蓝橙 diff 色板  | 小众需求 | 小 | — |
-| **P2** |  [自定义快捷键](./qwen-code-improvement-report-p2-core.md#item-34) — multi-chord + keybindings.json  | keyMatchers.ts 不可配置 | 中 | — |
+| **P2** |  [MCP 通道通知](./qwen-code-improvement-report-p2-tools.md#item-13) [↓](./qwen-code-improvement-report-p2-tools.md#item-13) — MCP channel notification 支持服务器主动推送  | mcp-client.ts 无 channel 概念 | 中 | — |
+| **P3** |  [会话分支](./qwen-code-improvement-report-p2-core.md#item-13) [↓](./qwen-code-improvement-report-p2-core.md#item-13) — `/branch` 从历史会话创建分支  | 可用 sessionService 扩展 | 中 | — |
+| **P3** |  [安全审查](./qwen-code-improvement-report-p3.md#item-6) [↓](./qwen-code-improvement-report-p3.md#item-6) — skill 可快速补齐  | skill 可补齐 | 小 | — |
+| **P3** |  [PR 评论](./qwen-code-improvement-report-p2-stability.md#item-22) [↓](./qwen-code-improvement-report-p2-stability.md#item-22) — GitHub Actions 可实现  | Actions 可实现 | 中 | — |
+| **P2** |  [@include 指令](./qwen-code-improvement-report-p2-core.md#item-26) [↓](./qwen-code-improvement-report-p2-core.md#item-26) — 递归引用 + 外部文件审批 + 40+ 文本类型白名单  | 缺失 | 中 | — |
+| **P2** |  [附件协议](./qwen-code-improvement-report-p2-core.md#item-27) [↓](./qwen-code-improvement-report-p2-core.md#item-27) — 60+ 类型 + per-type token 预算 + 3 阶段有序执行  | 缺失 | 中 | — |
+| **P2** |  [图片压缩流水线](./qwen-code-improvement-report-p2-perf.md#item-17) [↓](./qwen-code-improvement-report-p2-perf.md#item-17) — format→resize→quality 阶梯 + JPEG fallback  | 无压缩 | 中 | — |
+| **P2** |  [Git 状态自动注入](./qwen-code-improvement-report-p2-core.md#item-28) [↓](./qwen-code-improvement-report-p2-core.md#item-28) — gitBranch/cwd/fileCount 每轮自动注入系统提示  | 仅统计/不注入 | 小 | — |
+| **P2** |  [IDE 诊断注入](./qwen-code-improvement-report-p2-core.md#item-29) [↓](./qwen-code-improvement-report-p2-core.md#item-29) — LSP 诊断自动收集 + 选区自动注入  | 依赖 IDE 推送 | 中 | — |
+| **P2** |  [终端主题检测](./qwen-code-improvement-report-p2-core.md#item-30) [↓](./qwen-code-improvement-report-p2-core.md#item-30) — OSC 11 dark/light + COLORFGBG 回退  | 缺失 | 小 | — |
+| **P2** |  [自动后台化 Agent](./qwen-code-improvement-report-p2-core.md#item-31) [↓](./qwen-code-improvement-report-p2-core.md#item-31) — 超时 15s 自动转后台 + Assistant 模式检测  | 需显式指定 | 小 | — |
+| **P2** |  [密钥扫描](./qwen-code-improvement-report-p2-core.md#item-32) [↓](./qwen-code-improvement-report-p2-core.md#item-32) — 工具输出 50+ gitleaks 规则扫描 + 写入阻断  | 仅 Team Memory 场景需要 | 中 | — |
+| **P2** |  [子进程环境变量清洗](./qwen-code-improvement-report-p2-core.md#item-33) [↓](./qwen-code-improvement-report-p2-core.md#item-33) — 30+ 敏感变量自动剥离  | OS 层职责 | 中 | — |
+| **P2** |  [结构化 Diff](./qwen-code-improvement-report-p2-tools.md#item-29) [↓](./qwen-code-improvement-report-p2-tools.md#item-29) — 纯 JS 快速着色 + 行号 gutter + 语法高亮  | 基础 inline diff | 中 | — |
+| **P2** |  [OSC 通知](./qwen-code-improvement-report-p2-tools.md#item-23) [↓](./qwen-code-improvement-report-p2-tools.md#item-23) — iTerm2/Kitty/Ghostty 通知 + 进度  | 仅 bell 响铃 | 小 | — |
+| **P2** |  [OSC 8 超链接](./qwen-code-improvement-report-p2-stability.md#item-7) [↓](./qwen-code-improvement-report-p2-stability.md#item-7) — Cmd+Click 打开文件/URL  | MarkdownRenderer.tsx 无 OSC 8 | 小 | — |
+| **P2** |  [色觉无障碍主题](./qwen-code-improvement-report-p2-stability.md#item-12) [↓](./qwen-code-improvement-report-p2-stability.md#item-12) — daltonized 红绿→蓝橙 diff 色板  | 小众需求 | 小 | — |
+| **P2** |  [自定义快捷键](./qwen-code-improvement-report-p2-core.md#item-34) [↓](./qwen-code-improvement-report-p2-core.md#item-34) — multi-chord + keybindings.json  | keyMatchers.ts 不可配置 | 中 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
