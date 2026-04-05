@@ -262,6 +262,13 @@
 | **P3** | useSearchInput 搜索输入 [↓](./qwen-code-improvement-report-p3.md#item-40) | 无 | 小 | — |
 | **P3** | usePasteHandler 粘贴处理 [↓](./qwen-code-improvement-report-p3.md#item-41) | 分散处理 | 小 | — |
 | **P3** | useScheduledTasks 定时任务 [↓](./qwen-code-improvement-report-p3.md#item-42) | 无 UI hook | 小 | — |
+| **P3** | useVimInput Vim 输入 [↓](./qwen-code-improvement-report-p3.md#item-43) | 基础 vim | 小 | — |
+| **P3** | useLspPluginRecommendation LSP 推荐 [↓](./qwen-code-improvement-report-p3.md#item-44) | 无 | 小 | — |
+| **P3** | unifiedSuggestions 统一建议 [↓](./qwen-code-improvement-report-p3.md#item-45) | 分散 | 小 | — |
+| **P3** | useInputBuffer 输入缓冲 [↓](./qwen-code-improvement-report-p3.md#item-46) | 无 | 小 | — |
+| **P3** | useIssueFlagBanner 问题通知 [↓](./qwen-code-improvement-report-p3.md#item-47) | 无 | 小 | — |
+| **P3** | useDiffData 差异数据 [↓](./qwen-code-improvement-report-p3.md#item-48) | 组件内部 | 小 | — |
+| **P3** | toolUseSummary 工具使用摘要 [↓](./qwen-code-improvement-report-p3.md#item-49) | 无 | 小 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
