@@ -551,3 +551,441 @@ const MemoizedAppHeader = memo(AppHeader);
 - 涉及文件：~2 个
 - 新增代码：~80 行
 - 开发周期：~1 天（1 人）
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~80 行
+- 开发周期：~1 天（1 人）
+
+---
+
+<a id="item-19"></a>
+
+### 19. 环境变量净化（P0）
+
+**问题**：Agent 执行 shell 命令时继承当前进程的全部环境变量。如果开发者的 `.env` 或 shell profile 中包含 `AWS_SECRET_ACCESS_KEY`、`GITHUB_TOKEN`、`DATABASE_URL` 等敏感信息，这些 secrets 会被传递到 Agent 执行的每一个子进程中——包括 `npm install`（可能运行 postinstall 脚本）、`curl`（可能泄漏到日志）等。
+
+**Gemini CLI 的解决方案**：`environmentSanitization.ts` 实现多层过滤：
+- **Always Allowed**（25+ 变量）：`PATH`、`HOME`、`LANG`、`SHELL`、`TERM`、`TMPDIR`、`USER` 等
+- **Never Allowed 名称**（11 个正则）：匹配 `TOKEN`、`SECRET`、`PASSWORD`、`KEY`、`AUTH`、`CREDENTIAL`、`PRIVATE`、`CERT` 等
+- **Never Allowed 值模式**（8 个正则）：RSA/PGP 私钥、GitHub token（`ghp_`/`gho_`/`ghu_`）、Google API key（`AIzaSy...`）、AWS Access Key（`AKIA...`）、OAuth/JWT token、Stripe/Slack token
+- GitHub Actions 严格模式：只放行 allowlist
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/services/environmentSanitization.ts` | `sanitizeEnvironment()` + 名称/值模式匹配 |
+
+**Qwen Code 现状**：无环境变量过滤。`environmentContext.ts` 仅提供工作区上下文信息，不做净化。
+
+**Qwen Code 修改方向**：① 新建 `environmentSanitization.ts`；② 在 shell 执行前调用 `sanitizeEnvironment(process.env)`；③ 配置允许/阻断自定义列表。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~200 行
+- 开发周期：~1.5 天（1 人）
+- 难点：平衡安全性和可用性——过度过滤会导致 shell 命令因缺少环境变量而失败
+
+**改进前后对比**：
+- **改进前**：`npm install` 的 postinstall 脚本能读到 `AWS_SECRET_ACCESS_KEY` → 供应链攻击风险
+- **改进后**：敏感变量被过滤 → postinstall 只能访问 `PATH`、`HOME` 等安全变量
+
+**意义**：环境变量泄漏是 CLI Agent 最常见的安全风险之一。
+**缺失后果**：每个子进程都能读取所有 secrets → 恶意 npm 包可窃取凭证。
+**改进收益**：环境净化 = 默认安全，secrets 不离开主进程。
+
+---
+
+<a id="item-20"></a>
+
+### 20. 危险命令黑名单（P0）
+
+**问题**：Qwen Code 用 AST 分析判断命令是否"只读"，但无法检测特定危险模式——`find . -exec rm {} \;`（AST 分析可能只看到 `find`）、`git -c core.hooksPath=/tmp/evil git pull`（通过 git config 注入代码）、`rg --pre 'evil.sh'`（ripgrep 的 `--pre` 执行任意脚本）。
+
+**Gemini CLI 的解决方案**：`commandSafety.ts` 维护深度验证规则：
+
+| 命令 | 黑名单模式 |
+|------|-----------|
+| `find` | `-exec`、`-execdir`、`-ok`、`-delete`、`-fls`、`-fprint*` |
+| `git` | `-c`、`--config-env`（代码执行）；允许只读子命令：`status`、`log`、`diff`、`show` |
+| `rg` | `--pre`、`--hostname-bin`（任意脚本执行） |
+| `sed` | 仅允许 `sed -n {N}p`（行打印），阻断脚本 |
+| `base64` | `-o`、`--output`（文件重定向） |
+| `rm` | `-rf`、`-f`（强制删除） |
+
+同时检测危险操作符：子 shell `()`、文件重定向 `>`/`>>`/`<`。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/sandbox/utils/commandSafety.ts` | `isKnownSafeCommand()` + `isDangerousCommand()` + 每工具深度验证 |
+| `packages/core/src/utils/shell-utils.ts` | `hasRedirection()` + `parseCommandDetails()` + `getCommandRoots()` |
+
+**Qwen Code 现状**：`shellAstParser.ts` 做 AST 只读分析，`shell-semantics.ts` 提取操作语义。无显式危险命令黑名单。
+
+**Qwen Code 修改方向**：① 新建 `commandSafety.ts`；② 在权限检查前增加黑名单过滤；③ 按工具深度验证参数。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~250 行
+- 开发周期：~2 天（1 人）
+- 难点：规则完整性——需要持续维护危险模式列表
+
+**改进前后对比**：
+- **改进前**：Agent 执行 `find . -exec rm -rf {} \;` → AST 只看到 `find` → 判为只读 → 直接执行
+- **改进后**：检测到 `find -exec` → 标记为危险 → 要求用户确认
+
+---
+
+<a id="item-21"></a>
+
+### 21. Edit 模糊匹配 — Levenshtein 距离恢复（P1）
+
+**问题**：Agent 生成的 `old_string` 经常与文件实际内容有微小差异——空格 vs Tab、尾部空格、引号风格。当前 Qwen Code 只支持精确匹配，任何差异都导致编辑失败 → Agent 重试 → 浪费 token。
+
+**Gemini CLI 的解决方案**：`edit.ts`（1333 行，Qwen 的 2 倍）实现 4 级匹配策略：
+1. **精确匹配**
+2. **柔性匹配**（空白变体）
+3. **正则匹配**
+4. **模糊匹配**（Levenshtein 距离，`FUZZY_MATCH_THRESHOLD=0.1` 允许 10% 差异，空白惩罚因子 0.1x）
+
+使用 `fast-levenshtein` 库计算编辑距离，匹配失败时还会尝试 LLM 修复（`FixLLMEditWithInstruction`）。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/tools/edit.ts#L55-77` | `FUZZY_MATCH_THRESHOLD=0.1` + `WHITESPACE_PENALTY_FACTOR=0.1` |
+| `packages/core/src/tools/edit.ts#L966-1190` | 模糊匹配实现 + Levenshtein |
+
+**Qwen Code 现状**：`edit.ts`（658 行）仅精确匹配 + 归一化字符串比较。
+
+**Qwen Code 修改方向**���① `npm install fast-levenshtein`；② 在精确匹配失败后增加模糊匹配回退；③ 可选 LLM 修复层。
+
+**实现成本评估**：
+- 涉及文件：~1 个
+- 新增代码：~250 行
+- 开发周期：~2 天（1 人）
+- 难点：模糊匹配阈值调优——太宽松可能错误匹配
+
+**改进前后对比**：
+- **改进前**：`old_string` 有 1 个空格差异 → 匹配失败 → Agent 重试 2-3 次 → 浪费 token
+- **改进后**：精确失败 → 模糊匹配（10% 容差）→ 找到正确位置 → 一次成功
+
+**意义**：编辑工具是 Agent 使用频率最高的工具——匹配成功率直接影响任务效率。
+**缺失后果**：空白差异导致编辑失败率高 → Agent 反复重试。
+**改进收益**：模糊匹配 = 首次编辑成功率从 ~80% 提升到 ~95%。
+
+---
+
+<a id="item-22"></a>
+
+### 22. 省略占位符检测（P1）
+
+**问题**：LLM 生成文件内容时经常偷懒——用 `// ... rest of methods` 或 `/* remaining implementation */` 等占位符代替实际代码。如果直接写入，会破坏文件完整性。
+
+**Gemini CLI 的解决方案**：`omissionPlaceholderDetector.ts` 检测占位符模式，在 `write-file.ts` 和 `edit.ts` 中拦截包含占位符的内容，返回错误提示要求 LLM 提供完整代码。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/tools/omissionPlaceholderDetector.ts` | `detectOmissionPlaceholders()` |
+| `packages/core/src/tools/write-file.ts#L519-522` | 写入前拦截 |
+| `packages/core/src/tools/edit.ts#L58` | 编辑前拦截 |
+
+**Qwen Code 现状**：无占位符检测。LLM 生成的 `// ... rest` 会被直接写入文件。
+
+**Qwen Code 修改方向**：① 新建 `omissionPlaceholderDetector.ts`（~50 行，正则匹配常见占位符模式）；② 在 write-file 和 edit 工具中调用检测。
+
+**实现成本评估**：
+- 涉及文件：~3 个（新建 1 个，修改 2 个）
+- 新增代码：~80 行
+- 开发周期：~0.5 天（1 人）
+- 难点：正则覆盖度——需要匹配多种语言的占位符风格
+
+**改进前后对比**：
+- **改进前**：LLM 写入 `// ... rest of the implementation` → 文件被截断 → 编译失败
+- **改进后**：检测到占位符 → 拒绝写入 → 提示 LLM 提供完整代码
+
+---
+
+<a id="item-23"></a>
+
+### 23. JIT 上下文发现（P1）
+
+**问题**：Agent 读取 `src/utils/auth.ts` 时，不知道同目录下还有 `README.md` 解释了认证架构、`types.ts` 定义了接口。如果 Agent 能自动获得这些上下文，就能更好地理解文件。
+
+**Gemini CLI 的解决方案**：`jit-context.ts` 在 read-file、write-file、edit 工具执行时，自动发现并附加当前文件所在目录的上下文（如 README、配置文件、类型定义）。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/tools/jit-context.ts` | `discoverJitContext()` + `appendJitContext()` |
+| `packages/core/src/tools/read-file.ts#L178-186` | 读取后附加 JIT 上下文 |
+| `packages/core/src/tools/write-file.ts#L408-416` | 写入后附加 JIT 上下文 |
+
+**Qwen Code 现状**：无 JIT 上下文发现。工具结果只返回文件本身内容。
+
+**实现成本评估**：
+- 涉及文件：~4 个（新建 1 个，修改 3 个）
+- 新增代码：~150 行
+- 开发周期：~1.5 天（1 人）
+
+**改进前后对比**：
+- **改进前**：Agent 读取 `auth.ts` → 只看到代码 → 不知道接口定义在 `types.ts`
+- **改进后**：Agent 读取 `auth.ts` → 自动获得同目录 README + types.ts 概要 → 理解更深
+
+---
+
+<a id="item-24"></a>
+
+### 24. OS 级 sandbox（P1）
+
+**问题**：Agent 执行的 shell 命令拥有与用户相同的全部系统权限——可以读写任意文件、访问网络、安装软件。一条恶意命令就能造成不可逆损害。
+
+**Gemini CLI 的解决方案**：平台级进程隔离：
+- **Linux**：Bubblewrap (bwrap) + seccomp BPF 过滤
+- **macOS**：Seatbelt profile（`sandbox-exec`）
+- **Windows**：受限 token + Job Object + Low Integrity Level
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/sandbox/linux/LinuxSandboxManager.ts` | bwrap namespace + seccomp |
+| `packages/core/src/sandbox/macos/MacOsSandboxManager.ts` | Seatbelt profile |
+| `packages/core/src/sandbox/windows/WindowsSandboxManager.ts` | 受限 token + Low IL |
+| `packages/core/src/sandbox/utils/commandSafety.ts` | 命令安全验证 |
+
+**Qwen Code 现状**：无 sandbox。shell 命令以用户全权限执行。
+
+**实现成本评估**：
+- 涉及文件：~10 个（每平台 ~3 个 + 共享工具）
+- 新增代码：~1500 行
+- 开发周期：~10 天（1 人）
+- 难点：跨平台兼容性、sandbox 逃逸防护、权限粒度控制
+
+**改进前后对比**：
+- **改进前**：Agent 执行 `rm -rf /` → 直接以用户权限运行 → 灾难
+- **改进后**：Agent 执行 `rm -rf /` → sandbox 限制文件系统访问范围 → 命令失败
+
+---
+
+<a id="item-25"></a>
+
+### 25. Folder Trust 发现（P2）
+
+**问题**：用户用 `cd malicious-repo && qwen-code` 打开一个不受信任的项目。该项目的 `.qwen/` 目录可能包含恶意 hooks、自动批准的工具 allowlist、甚至 sandbox 禁用配置。当前 Qwen Code 不扫描这些配置就直接信任。
+
+**Gemini CLI 的解决方案**：`FolderTrustDiscoveryService.ts` 在信任文件夹前扫描并警告：
+- 自定义命令、MCP 服务器、hooks、skills、agents
+- 工具 allowlist（自动审批工具 = 安全风险）
+- Sandbox 禁用尝试
+- Folder trust 禁用尝试
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/services/FolderTrustDiscoveryService.ts` | 预执行扫描 + 安全警告 |
+
+**Qwen Code 现状**：`trustedHooks.ts` 仅追踪已信任的 hooks，无预执行扫描。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~300 行
+- 开发周期：~2 天（1 人）
+
+---
+
+<a id="item-26"></a>
+
+### 26. Web Fetch 速率限制与 SSRF 加固（P2）
+
+**问题**：Agent 的 web-fetch 工具可能被 LLM 指令注入利用来扫描内网（SSRF）。当前 Qwen Code 仅做基础的私有 IP 检查。
+
+**Gemini CLI 的解决方案**：
+- **速率限制**：10 次/分钟/host
+- **Async DNS 验证**：解析后验证 IP 是否为私有地址（防 DNS rebinding）
+- **IANA 基准测试段阻断**：`198.18.0.0/15` 显式阻断
+- **IPv4-mapped IPv6 处理**：检测 `::ffff:10.0.0.1` 等绕过
+- **内容限制**：250KB + 截断警告
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/tools/web-fetch.ts` | 速率限制 + SSRF 防护 |
+| `packages/core/src/utils/fetch.ts` | `isPrivateIp()` + `isPrivateIpAsync()` + `isLoopbackHost()` |
+
+**Qwen Code 现状**：`web-fetch.ts` 有 `isPrivateIp()` 但无速率限制、无 async DNS 验证、无 IANA 段阻断。内容限制 100KB。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~150 行
+- 开发周期：~1.5 天（1 人）
+
+---
+
+<a id="item-27"></a>
+
+### 27. Grep 高级参数（P2）
+
+**问题**：Agent 搜索代码时经常需要"只在 `.ts` 文件中搜索"或"排除 `node_modules`"或"只要文件名"。当前 Qwen Code 的 grep 工具仅支持 `pattern`、`path`、`glob`、`limit`，缺少精细控制。
+
+**Gemini CLI 的解决方案**：新增参数：
+- `include_pattern`：文件 glob 过滤
+- `exclude_pattern`：正则排除匹配结果
+- `names_only`：只返回文件路径
+- `max_matches_per_file`：每文件匹配上限
+- `total_max_matches`：总结果上限
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/tools/grep.ts#L45-80` | 扩展参数定义 |
+| `packages/core/src/tools/grep-utils.ts` | `formatGrepResults()` 格式化输出 |
+
+**Qwen Code 现状**：`grep.ts` 仅 `pattern`/`path`/`glob`/`limit` 4 个参数。
+
+**实现成本评估**：
+- 涉及文件：~1 个
+- 新增代码：~100 行
+- 开发周期：~1 天（1 人）
+
+---
+
+<a id="item-28"></a>
+
+### 28. 高级 Vim 操作（P2）
+
+**问题**：Qwen Code 的 vim 模式仅支持基础词操作（`dw`/`db`/`de`/`cw`/`cb`/`ce`）。重度 vim 用户需要大词操作（`dW`/`cW`）、查找操作（`f`/`F`/`t`/`T`）、替换字符（`r`）、大小写切换（`~`）等。
+
+**Gemini CLI 的解决方案**：`vim.ts`（49KB，远大于 Qwen 版本）实现完整 vim 操作集：
+- 大词操作：`dW`/`dB`/`dE`/`cW`/`cB`/`cE`/`yW`/`yE`
+- 查找操作：`f`/`F`/`t`/`T` + `lastFind` 记忆重复
+- 替换字符：`r`
+- 大小写切换：`~`
+- 行操作：`d0`/`d^`/`dgg`/`dG`/`cgg`/`cG`
+- Yank 操作：`yy`/`yw`/`yW`/`ye`/`yE`/`y$` + paste `p`/`P`
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/cli/src/ui/hooks/vim.ts` | 完整 vim 模式实现（49KB） |
+
+**Qwen Code 现状**：`vim.ts` 仅基础操作。
+
+**实现成本评估**：
+- 涉及文件：~1 个
+- 新增代码：~500 行
+- 开发周期：~3 天（1 人）
+
+---
+
+<a id="item-29"></a>
+
+### 29. Footer 自定义（P2）
+
+**问题**：Footer 显示状态信息（cwd、vim 模式、审批模式等），但不同用户关注不同指标——有人想看内存，有人想看 context 用量，有人不需要 sandbox 状态。当前 Footer 是固定布局。
+
+**Gemini CLI 的解决方案**：`FooterConfigDialog` 允许用户选择显示哪些状态指示器，配置持久化到 settings。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/cli/src/ui/components/FooterConfigDialog.tsx` | 配置对话框 |
+| `packages/cli/src/ui/components/footerItems.ts` | 可配置项定义 |
+
+**Qwen Code 现状**：`Footer.tsx` 固定布局，不可自定义。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~200 行
+- 开发周期：~1.5 天（1 人）
+
+---
+
+<a id="item-30"></a>
+
+### 30. Write File LLM 内容修正（P2）
+
+**问题**：LLM 生成的文件内容可能包含错误的转义、缺失的闭合标签、JSON 语法错误等。直接写入会导致编译/解析失败。
+
+**Gemini CLI 的解决方案**：`write-file.ts` 中 `getCorrectedFileContent()` 在写入前调用 LLM 校正畸形内容（可选激进 unescape 模式）。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/tools/write-file.ts#L100-143` | `getCorrectedFileContent()` LLM 校正 |
+
+**Qwen Code 现状**：直接写入 LLM 输出，无校正层。
+
+**实现成本评估**：
+- 涉及文件：~1 个
+- 新增代码：~100 行
+- 开发周期：~1 天（1 人）
+- 难点：LLM 校正的额外延迟和 token 成本
+
+---
+
+<a id="item-31"></a>
+
+### 31. OAuth 流程重构（P3）
+
+**问题**：Qwen Code 的 MCP OAuth 实现是内联的——认证流程、PKCE 参数生成、token 交换全部写在 `oauth-provider.ts` 中。无法复用给其他 OAuth 场景（如 Agent-to-Agent 认证）。
+
+**Gemini CLI 的解决方案**：抽取共享 `oauth-flow.ts`（协议无关），支持 PKCE（64 字节 verifier）、RFC 9728 protected resource metadata、OIDC 路径发现（Keycloak 等）。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/utils/oauth-flow.ts` | 共享 OAuth 流程工具 |
+| `packages/core/src/mcp/oauth-utils.ts` | `ResourceMismatchError` + RFC 9728 |
+
+**Qwen Code 现状**：`oauth-provider.ts` 内联实现，不可复用。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~200 行
+- 开发周期：~2 天（1 人）
+
+---
+
+<a id="item-32"></a>
+
+### 32. Conseca 安全框架（P3）
+
+**问题**：缺少基于对话上下文的动态安全评估——同一条命令 `rm config.json` 在"清理测试文件"的上下文中是安全的，在"删除生产配置"的上下文中是危险的。静态规则无法区分。
+
+**Gemini CLI 的解决方案**：`safety/conseca/` 框架：
+- `policy-generator.ts`：根据用户意图和对话历史生成安全策略
+- `policy-enforcer.ts`：在工具调用时执行策略（ALLOW/DENY/ASK_USER）
+- `registry.ts`：可扩展的 checker 链，支持插件式安全检查器
+- `protocol.ts`：标准化输入/输出格式，支持外部 checker via stdin/stdout
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/safety/conseca/conseca.ts` | 安全检查单例 |
+| `packages/core/src/safety/conseca/policy-generator.ts` | 策略生成 |
+| `packages/core/src/safety/conseca/policy-enforcer.ts` | 策略执行 |
+| `packages/core/src/safety/registry.ts` | checker 注册 |
+
+**Qwen Code 现状**：无内容安全评估。依赖静态权限规则。
+
+**实现成本评估**：
+- 涉及文件：~5 个
+- 新增代码：~500 行
+- 开发周期：~5 天（1 人）
+- 难点：策略生成的 LLM 调用成本与延迟权衡

@@ -26,5 +26,19 @@
 | **P3** | [自定义 Ink 构建](#item-16) — `@jrichman/ink@6.6.7` 优化 fork | 标准 `ink@6.2.3` | 大 | — |
 | **P3** | [超长回复分片渲染](#item-17) — `GeminiMessageContent` 分片避免单组件过大 | 单组件渲染全部 | 中 | — |
 | **P3** | [闪烁检测器](#item-18) — `useFlickerDetector` 自动检测并缓解 | 缺失 | 小 | — |
+| **P0** | [环境变量净化](#item-19) — 25+ 模式过滤 secrets/API keys/credentials | 无净化，secrets 泄漏到 shell | 中 | — |
+| **P0** | [危险命令黑名单](#item-20) — `rm -rf`/`find -exec`/`git -c` 等深度验证 | 仅 AST 只读检测 | 中 | — |
+| **P1** | [Edit 模糊匹配（Levenshtein）](#item-21) — 10% 容差 + 空白低惩罚 + LLM 修复回退 | 仅精确匹配 | 中 | — |
+| **P1** | [省略占位符检测](#item-22) — 拦截 "rest of methods..." 等不完整内容 | 无检测 | 小 | — |
+| **P1** | [JIT 上下文发现](#item-23) — 读/写/编辑文件时自动附加子目录上下文 | 缺失 | 中 | — |
+| **P1** | [OS 级 sandbox](#item-24) — Linux bwrap + macOS Seatbelt + Windows 受限 token | 无进程隔离 | 大 | — |
+| **P2** | [Folder Trust 发现](#item-25) — 信任前扫描项目配置（hooks/agents/MCP/allowlist） | 无预执行扫描 | 中 | — |
+| **P2** | [Web Fetch 速率限制与 SSRF 加固](#item-26) — 10 次/分钟/host + async DNS 验证 + IANA 段阻断 | 最小 SSRF 检查 | 中 | — |
+| **P2** | [Grep 高级参数](#item-27) — `include_pattern`/`exclude_pattern`/`names_only`/per-file 上限 | 仅基础 pattern+path+glob | 小 | — |
+| **P2** | [高级 Vim 操作](#item-28) — 大词(dW/cW) + 查找(f/F/t/T) + 替换(r) + 大小写切换(~) | 仅基础词操作 | 中 | — |
+| **P2** | [Footer 自定义](#item-29) — `FooterConfigDialog` 可配置状态指示器 | 固定布局 | 中 | — |
+| **P2** | [Write File LLM 内容修正](#item-30) — 写入前 LLM 校正畸形内容 | 直接写入 | 中 | — |
+| **P3** | [OAuth 流程重构](#item-31) — 共享 `oauth-flow.ts` + RFC 9728 + OIDC 路径发现 | 内联实现 | 中 | — |
+| **P3** | [Conseca 安全框架](#item-32) — 策略生成 + 执行 + 可扩展 checker 链 | 无内容安全评估 | 大 | — |
 
 > 注：详情见 [回移建议详情](./qwen-code-gemini-upstream-report-details.md)
