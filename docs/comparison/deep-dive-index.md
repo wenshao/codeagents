@@ -1,4 +1,4 @@
-# Deep-Dive 文章索引（132 篇）
+# Deep-Dive 文章索引（133 篇）
 
 > 按主题分类的深度分析文章，每篇聚焦一个具体技术机制的 Claude Code vs Qwen Code 对比。
 >
@@ -59,6 +59,7 @@
 | [Memoize TTL 缓存](./memoize-ttl-cache-deep-dive.md) | write-through + 后台刷新 |
 | [同步 I/O 异步化](./sync-io-async-deep-dive.md) | 事件循环解阻塞 |
 | [Bun 原生 API](./bun-native-api-optimization-deep-dive.md) | stringWidth + JSONL |
+| [工具输出限高防闪烁](./tool-output-height-limiting-deep-dive.md) | SlicingMaxSizedBox + 15 行硬上限 |
 | [终端渲染池化](./terminal-rendering-string-pooling-deep-dive.md) | CharPool/StylePool |
 | [增量文件索引](./incremental-file-index-deep-dive.md) | FNV-1a 签名检测 |
 | [文件模糊搜索](./file-index-fuzzy-search-deep-dive.md) | fzf 风格搜索 |
