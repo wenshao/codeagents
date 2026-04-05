@@ -961,3 +961,42 @@ Agent 编辑文件后展示的 diff 是基础的 inline 格式——没有行号
 **改进收益**：行号 + 着色 + gutter——变更一目了然，审查效率提升。
 
 ---
+
+<a id="item-30"></a>
+
+### 30. Slash Command 命名空间治理（P2）
+
+**问题**：Qwen Code 的 slash command 已进入"平台化"阶段——至少 4 类来源会注入命令名：built-in commands、文件命令（user/project）、extension commands、MCP prompt commands。当来源越来越多时，问题不再是"怎么加载命令"，而是**谁能占用顶级命令名**：
+
+- 用户输入 `/deploy`——它来自 project file command？MCP server prompt？还是 extension？
+- MCP prompt 与 user 命令都占用了 `/review`——谁赢？
+- 企业管理员想禁用某些 extension 命令——怎么做？
+
+**Claude Code 的方案**：保守的合并策略——`uniqBy([...initialCommands, ...mcpCommands], 'name')` 保持命令名唯一（先注册的赢），插件命令走独立管理路径。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `hooks/useMergedCommands.ts` | `uniqBy()` 命令名去重 |
+| `services/plugins/pluginCliCommands.ts` | 插件命令独立管理入口 |
+
+**Qwen Code 现状**：`CommandService.ts` 并行加载所有 loader 的命令放入 `Map<string, SlashCommand>`。extension 命令冲突时自动改名为 `extensionName.commandName`，非 extension 命令按 loader 顺序"后者覆盖前者"。`McpPromptLoader.ts` 把 MCP prompt 直接暴露为 slash command 名，不带 server namespace。
+
+**Qwen Code 修改方向**：① 引入显式 source namespace（built-in → `/model`、extension → `/ext.foo.bar`、MCP prompt → `/mcp.github.review`）；② 常用命令保留短别名，由治理层决定而非"最后加载的赢"；③ 补全列表显示命令来源（built-in / extension / MCP / local）；④ reserved name 策略防止扩展抢占关键命令名。
+
+**实现成本评估**：
+- 涉及文件：~4 个
+- 新增代码：~300 行
+- 开发周期：~3 天（1 人）
+- 难点：命名空间前缀策略——太长影响易用性，太短不够隔离
+
+**改进前后对比**：
+- **改进前**：`/review` 来源不明——可能是 built-in，也可能是某个 MCP server 的 prompt
+- **改进后**：`/review`（built-in）vs `/mcp.github.review`（MCP）——来源一目了然
+
+**意义**：命令空间是用户与 Agent 交互的主入口——命名冲突导致不可预测行为。
+**缺失后果**：MCP prompt 抢占 `/deploy` → 用户以为执行 built-in deploy，实际执行了 MCP prompt。
+**改进收益**：命名空间治理 = 来源透明 + 冲突可控 + 企业可管理。
+
+---
