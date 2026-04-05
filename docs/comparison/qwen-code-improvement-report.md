@@ -254,6 +254,14 @@
 | **P3** | useTaskListWatcher 任务监控 [↓](./qwen-code-improvement-report-p3.md#item-32) | 无 | 小 | — |
 | **P3** | useDirectConnect 直连 [↓](./qwen-code-improvement-report-p3.md#item-33) | 无 | 小 | — |
 | **P3** | useAssistantHistory 代理历史 [↓](./qwen-code-improvement-report-p3.md#item-34) | 无 | 小 | — |
+| **P3** | useSSHSession SSH 会话 [↓](./qwen-code-improvement-report-p3.md#item-35) | 无 | 小 | — |
+| **P3** | useSwarmPermissionPoller 权限轮询 [↓](./qwen-code-improvement-report-p3.md#item-36) | 无 | 小 | — |
+| **P3** | useTasksV2 任务 Hook [↓](./qwen-code-improvement-report-p3.md#item-37) | 无 | 小 | — |
+| **P3** | useArrowKeyHistory 历史导航 [↓](./qwen-code-improvement-report-p3.md#item-38) | 无 | 小 | — |
+| **P3** | useCanUseTool 工具可用性 [↓](./qwen-code-improvement-report-p3.md#item-39) | 无 | 小 | — |
+| **P3** | useSearchInput 搜索输入 [↓](./qwen-code-improvement-report-p3.md#item-40) | 无 | 小 | — |
+| **P3** | usePasteHandler 粘贴处理 [↓](./qwen-code-improvement-report-p3.md#item-41) | 分散处理 | 小 | — |
+| **P3** | useScheduledTasks 定时任务 [↓](./qwen-code-improvement-report-p3.md#item-42) | 无 UI hook | 小 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
