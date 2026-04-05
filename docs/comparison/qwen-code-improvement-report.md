@@ -231,14 +231,14 @@
 | **P3** | [Vim 完整实现](./vim-emulation-deep-dive.md) — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-9) | 基础 vim.ts | 中 | — |
 | **P3** | [语音模式](./voice-mode-deep-dive.md) — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-10) | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-11) | 缺失 | 大 | — |
-| **P3** | sandbox excludedCommands — 安全命令排除 sandbox 限制 [↓](./qwen-code-improvement-report-p3.md#item-12) | 无排除机制 | 小 | — |
+| **P3** | [sandbox excludedCommands](./sandbox-excluded-commands-deep-dive.md) — 安全命令排除 sandbox 限制 [↓](./qwen-code-improvement-report-p3.md#item-12) | 无排除机制 | 小 | — |
 | **P3** | /privacy-settings 交互式隐私对话框 [↓](./qwen-code-improvement-report-p3.md#item-13) | 无交互 UI | 小 | — |
 | **P3** | /extra-usage 企业用量管理 [↓](./qwen-code-improvement-report-p3.md#item-14) | 仅 /cost | 中 | — |
 | **P3** | /rate-limit-options 限速选项菜单 [↓](./qwen-code-improvement-report-p3.md#item-15) | 仅错误消息 | 小 | — |
 | **P3** | /remote-setup CCR 远程环境设置 [↓](./qwen-code-improvement-report-p3.md#item-16) | 无远程配置 | 中 | — |
 | **P3** | Virtual Scrolling 虚拟滚动 — 仅渲染可视区域消息 [↓](./qwen-code-improvement-report-p3.md#item-17) | 全量渲染 | 中 | — |
-| **P3** | Feedback Survey 用户反馈 — 内置 /feedback 评分+文字表单 [↓](./qwen-code-improvement-report-p3.md#item-18) | 无内置反馈 | 小 | — |
-| **P3** | Turn Diffs 轮次差异统计 — 每轮变更文件数+增删行数汇总 [↓](./qwen-code-improvement-report-p3.md#item-19) | 仅 per-file diff | 小 | — |
+| **P3** | [Feedback Survey 用户反馈](./feedback-survey-deep-dive.md) — 内置 /feedback 评分+文字表单 [↓](./qwen-code-improvement-report-p3.md#item-18) | 无内置反馈 | 小 | — |
+| **P3** | [Turn Diffs 轮次差异统计](./turn-diffs-deep-dive.md) — 每轮变更文件数+增删行数汇总 [↓](./qwen-code-improvement-report-p3.md#item-19) | 仅 per-file diff | 小 | — |
 | **P3** | LogoV2 品牌标识 — ASCII art + 启动功能引导 [↓](./qwen-code-improvement-report-p3.md#item-20) | 纯文本 | 小 | — |
 | **P3** | Buddy 伴侣精灵 — 可见助手 + 状态动画 + 空闲引导 [↓](./qwen-code-improvement-report-p3.md#item-21) | 无 | 中 | — |
 | **P3** | useMoreRight 右面板 — 对话+文件预览并排显示 [↓](./qwen-code-improvement-report-p3.md#item-22) | 单列布局 | 中 | — |
