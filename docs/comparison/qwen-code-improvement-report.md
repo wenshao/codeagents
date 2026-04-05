@@ -230,6 +230,11 @@
 | **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-9) | 基础 vim.ts | 中 | — |
 | **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-10) | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-11) | 缺失 | 大 | — |
+| **P3** | sandbox excludedCommands — 安全命令排除 sandbox 限制 [↓](./qwen-code-improvement-report-p3.md#item-12) | 无排除机制 | 小 | — |
+| **P3** | /privacy-settings 交互式隐私对话框 [↓](./qwen-code-improvement-report-p3.md#item-13) | 无交互 UI | 小 | — |
+| **P3** | /extra-usage 企业用量管理 [↓](./qwen-code-improvement-report-p3.md#item-14) | 仅 /cost | 中 | — |
+| **P3** | /rate-limit-options 限速选项菜单 [↓](./qwen-code-improvement-report-p3.md#item-15) | 仅错误消息 | 小 | — |
+| **P3** | /remote-setup CCR 远程环境设置 [↓](./qwen-code-improvement-report-p3.md#item-16) | 无远程配置 | 中 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
