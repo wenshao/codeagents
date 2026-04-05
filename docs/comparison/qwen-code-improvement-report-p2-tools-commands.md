@@ -629,6 +629,8 @@ Agent 在 CI 容器、Docker 环境或资源受限的服务器上运行时，`rg
 - **改进前**：上下文用到 95% → 突然报错"上下文溢出" → 用户不知道有 `/compress`
 - **改进后**：上下文 80% 时自动提示"上下文已用 80%，试试 /compress 释放空间"
 
+**进展**：[PR#2904](https://github.com/QwenLM/qwen-code/pull/2904)（open）— 实现了 registry-based tips + LRU 跨会话轮转 + `useContextualTips` hook 监听 Responding→Idle 状态转换注入提示。
+
 **意义**：新用户不知道可用功能——提示系统引导功能发现。
 **缺失后果**：用户不知道 `/compress`、`/review` 等功能存在——使用率低。
 **改进收益**：上下文提示引导——"你的上下文已用 80%，试试 /compress"。
