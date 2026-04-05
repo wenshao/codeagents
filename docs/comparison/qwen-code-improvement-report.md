@@ -236,6 +236,10 @@
 | **P3** | /extra-usage 企业用量管理 [↓](./qwen-code-improvement-report-p3.md#item-14) | 仅 /cost | 中 | — |
 | **P3** | /rate-limit-options 限速选项菜单 [↓](./qwen-code-improvement-report-p3.md#item-15) | 仅错误消息 | 小 | — |
 | **P3** | /remote-setup CCR 远程环境设置 [↓](./qwen-code-improvement-report-p3.md#item-16) | 无远程配置 | 中 | — |
+| **P3** | Virtual Scrolling 虚拟滚动 — 仅渲染可视区域消息 [↓](./qwen-code-improvement-report-p3.md#item-17) | 全量渲染 | 中 | — |
+| **P3** | Feedback Survey 用户反馈 — 内置 /feedback 评分+文字表单 [↓](./qwen-code-improvement-report-p3.md#item-18) | 无内置反馈 | 小 | — |
+| **P3** | Turn Diffs 轮次差异统计 — 每轮变更文件数+增删行数汇总 [↓](./qwen-code-improvement-report-p3.md#item-19) | 仅 per-file diff | 小 | — |
+| **P3** | LogoV2 品牌标识 — ASCII art + 启动功能引导 [↓](./qwen-code-improvement-report-p3.md#item-20) | 纯文本 | 小 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
