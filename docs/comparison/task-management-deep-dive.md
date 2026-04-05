@@ -8,7 +8,7 @@
 
 ### 1. Claude Code 的任务协同架构
 Claude Code 的任务系统（位于 `utils/tasks.ts` 和相关 Tools）专门为多 Agent 协同设计：
-- **分布式锁与并发安全**：通过 `.highwatermark` 递增分配 ID，并通过文件锁（`lockfile.ts`）实现跨进程的任务并发安全读写，允许不同进程中的 Agent（Swarm）安全地认领和更新任务。
+- **任务状态管理与信号通知**：通过 `createSignal()` 实现进程内任务更新通知（`tasksUpdated.emit()`），UI 能实时刷新任务列表。任务通过 `owner` 字段标记归属 Agent，跨 Agent 协作通过 Teammate Mailbox 协调。
 - **任务依赖图谱 (Dependency Graph)**：任务模型包含 `blocks`（阻塞哪些任务）和 `blockedBy`（被哪些任务阻塞），Agent 可以精确推断任务执行顺序。
 - **归属与生命周期**：包含 `owner` 字段标记当前哪个 Agent 正在处理该任务，状态严格在 `pending`、`in_progress`、`completed` 之间流转。
 - **细粒度工具集**：提供了 6 个独立工具（`TaskCreateTool`、`TaskGetTool`、`TaskListTool`、`TaskOutputTool`、`TaskStopTool`、`TaskUpdateTool`），支持对任务树的增删改查。
