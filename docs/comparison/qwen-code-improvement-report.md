@@ -176,9 +176,9 @@
 | **P2** | 屏幕阅读器无障碍支持 — Diff/Spinner/Progress 纯文本替代渲染 [↓](./qwen-code-improvement-report-p2-stability.md#item-11) | hook 存在但使用有限 | 小 | — |
 | **P2** | 色觉无障碍主题 — daltonized 红绿→蓝橙 diff 色板 [↓](./qwen-code-improvement-report-p2-stability.md#item-12) | 无色觉主题 | 小 | — |
 | **P2** | 动画系统与卡顿状态检测 — shimmer 微光 + 30s 超时变红 [↓](./qwen-code-improvement-report-p2-stability.md#item-13) | 固定动画/无超时检测 | 小 | — |
-| **P2** | Agent 权限冒泡 — bubble 模式 + Leader 桥接 + 邮箱回退 [↓](./qwen-code-improvement-report-p2-stability.md#item-14) | 继承父级模式 | 中 | — |
+| **P2** | [Agent 权限冒泡](./agent-permission-bubble-deep-dive.md) — bubble 模式 + Leader 桥接 + 邮箱回退 [↓](./qwen-code-improvement-report-p2-stability.md#item-14) | 继承父级模式 | 中 | — |
 | **P2** | Agent 专属 MCP 服务器 — frontmatter mcpServers + 按需连接/清理 [↓](./qwen-code-improvement-report-p2-stability.md#item-15) | 共享全局 MCP | 小 | — |
-| **P2** | Agent 创建向导 — 11 步交互式向导 + AI 生成模式 [↓](./qwen-code-improvement-report-p2-stability.md#item-16) | 基础命令行创建 | 中 | — |
+| **P2** | [Agent 创建向导](./interactive-agent-creation-deep-dive.md) — 11 步交互式向导 + AI 生成模式 [↓](./qwen-code-improvement-report-p2-stability.md#item-16) | 基础命令行创建 | 中 | — |
 | **P2** | Agent 进度追踪与实时状态 — ProgressTracker + task-notification + kill 控制 [↓](./qwen-code-improvement-report-p2-stability.md#item-17) | 仅最终结果 | 中 | — |
 | **P2** | Agent 邮箱系统 — 文件 IPC + lockfile + 单播/广播 [↓](./qwen-code-improvement-report-p2-stability.md#item-18) | 仅 Arena 文件 IPC | 中 | — |
 | **P2** | cache_edits 增量缓存删除 — API 原地删除旧工具结果不破坏缓存前缀 [↓](./qwen-code-improvement-report-p2-perf.md#item-13) | 重建消息数组 | 小 | — |
@@ -233,13 +233,13 @@
 | **P3** | [插件市场](./plugin-marketplace-lifecycle-deep-dive.md) — 插件发现、安装、版本管理 + 生命周期治理 [↓](./qwen-code-improvement-report-p3.md#item-11) | 缺失 | 大 | — |
 | **P3** | [sandbox excludedCommands](./sandbox-excluded-commands-deep-dive.md) — 安全命令排除 sandbox 限制 [↓](./qwen-code-improvement-report-p3.md#item-12) | 无排除机制 | 小 | — |
 | **P3** | [/privacy-settings 交互式隐私对话框](./privacy-settings-dialog-deep-dive.md) [↓](./qwen-code-improvement-report-p3.md#item-13) | 无交互 UI | 小 | — |
-| **P3** | /extra-usage 企业用量管理 [↓](./qwen-code-improvement-report-p3.md#item-14) | 仅 /cost | 中 | — |
+| **P3** | [/extra-usage 企业用量管理](./enterprise-usage-management-deep-dive.md) [↓](./qwen-code-improvement-report-p3.md#item-14) | 仅 /cost | 中 | — |
 | **P3** | [/rate-limit-options 限速选项菜单](./rate-limit-options-deep-dive.md) [↓](./qwen-code-improvement-report-p3.md#item-15) | 仅错误消息 | 小 | — |
 | **P3** | [/remote-setup CCR 远程环境设置](./remote-ccr-setup-deep-dive.md) [↓](./qwen-code-improvement-report-p3.md#item-16) | 无远程配置 | 中 | — |
-| **P3** | Virtual Scrolling 虚拟滚动 — 仅渲染可视区域消息 [↓](./qwen-code-improvement-report-p3.md#item-17) | 全量渲染 | 中 | — |
+| **P3** | [Virtual Scrolling 虚拟滚动](./virtual-scrolling-deep-dive.md) — 仅渲染可视区域消息 [↓](./qwen-code-improvement-report-p3.md#item-17) | 全量渲染 | 中 | — |
 | **P3** | [Feedback Survey 用户反馈](./feedback-survey-deep-dive.md) — 内置 /feedback 评分+文字表单 [↓](./qwen-code-improvement-report-p3.md#item-18) | 无内置反馈 | 小 | — |
 | **P3** | [Turn Diffs 轮次差异统计](./turn-diffs-deep-dive.md) — 每轮变更文件数+增删行数汇总 [↓](./qwen-code-improvement-report-p3.md#item-19) | 仅 per-file diff | 小 | — |
-| **P3** | LogoV2 品牌标识 — ASCII art + 启动功能引导 [↓](./qwen-code-improvement-report-p3.md#item-20) | 纯文本 | 小 | — |
+| **P3** | [LogoV2 品牌标识](./logov2-brand-identity-deep-dive.md) — ASCII art + 启动功能引导 [↓](./qwen-code-improvement-report-p3.md#item-20) | 纯文本 | 小 | — |
 | **P3** | [Buddy 伴侣精灵](./buddy-companion-deep-dive.md) — 可见助手 + 状态动画 + 空闲引导 [↓](./qwen-code-improvement-report-p3.md#item-21) | 无 | 中 | — |
 | **P3** | [useMoreRight 右面板](./right-panel-ui-deep-dive.md) — 对话+文件预览并排显示 [↓](./qwen-code-improvement-report-p3.md#item-22) | 单列布局 | 中 | — |
 | **P3** | iTerm/Terminal 状态备份恢复 — 异常退出后终端状态自动修复 [↓](./qwen-code-improvement-report-p3.md#item-23) | 基础清理 | 小 | — |
@@ -355,4 +355,3 @@
 | 终端渲染 | [终端渲染与防闪烁](../tools/claude-code/11-terminal-rendering.md) |
 | 设置与安全 | [设置与安全](../tools/claude-code/06-settings.md) |
 | 会话与记忆 | [会话与记忆](../tools/claude-code/07-session.md) |
-on.md) |
