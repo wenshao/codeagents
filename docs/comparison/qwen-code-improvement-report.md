@@ -251,6 +251,9 @@
 | **P3** | useCancelRequest 取消请求 Hook [↓](./qwen-code-improvement-report-p3.md#item-29) | 分散处理 | 小 | — |
 | **P3** | AgentSummary 代理摘要 [↓](./qwen-code-improvement-report-p3.md#item-30) | 无 | 小 | — |
 | **P3** | useBackgroundTaskNavigation 后台任务导航 [↓](./qwen-code-improvement-report-p3.md#item-31) | 无 | 小 | — |
+| **P3** | useTaskListWatcher 任务监控 [↓](./qwen-code-improvement-report-p3.md#item-32) | 无 | 小 | — |
+| **P3** | useDirectConnect 直连 [↓](./qwen-code-improvement-report-p3.md#item-33) | 无 | 小 | — |
+| **P3** | useAssistantHistory 代理历史 [↓](./qwen-code-improvement-report-p3.md#item-34) | 无 | 小 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
