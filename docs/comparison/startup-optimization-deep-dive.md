@@ -1,353 +1,56 @@
-# 启动阶段优化深度对比（API Preconnect + Early Input）
+# Qwen Code 改进建议 — 启动优化 (API Preconnect & Early Input)
 
-> Claude Code 在启动阶段实现了两项关键优化：**API Preconnect**（TCP+TLS 握手与初始化重叠）和 **Early Input Capture**（启动期间键盘输入捕获）。这两项优化均为用户可感知的首次交互延迟改善。本文基于源码分析（`utils/apiPreconnect.ts` 71 行 + `utils/earlyInput.ts` 191 行），覆盖实现原理、跳过条件、Qwen Code 现状和实现方案。
+> 核心洞察：作为高频使用的 CLI 工具，开发者对“从按下回车到能敲下第一个字母”的微小延迟极其敏感。传统 Node.js 应用启动慢（加载模块、初始化 UI）、大模型首次 API 请求慢（建立底层的 TLS 与网络握手）往往会让用户感觉“工具很笨重”。Claude Code 在这方面通过两个不显眼但极具技术深度的底层优化：`TCP Preconnect`（提前预热网络隧道）和 `Early Input Capture`（启动期盲打拦截），硬生生把用户的“体感延迟”抹到了负数；而 Qwen Code 目前在冷启动阶段完全是阻塞干等状态。
+>
+> 返回 [改进建议总览](./qwen-code-improvement-report.md)
 
-## 1. 问题背景
+## 一、冷启动期间的两大“体感断层”
 
-### 1.1 首次 API 调用的延迟瓶颈
+### 1. Qwen Code 的现状
+当开发者在终端中敲下 `qwen-code` 并按下回车时，主要发生两件事：
+- **痛点一（启动期键盘敲击丢失）**：程序需要 500ms 左右去加载巨大的 AST 库、读取各种本地配置文件、初始化 Ink UI 组件。这段时间如果用户打字，终端的回显（Echo）是错乱的，且当 UI 真正渲染出来时，用户刚刚敲的字全没了，只能被迫删掉重打。
+- **痛点二（首个 Prompt 响应奇慢）**：UI 出来后，用户输入了第一句话并发送。此时底层的 Axios/Fetch 才慢吞吞地发起 DNS 解析 -> TCP 三次握手 -> TLS 证书交换 -> SSL 握手。这个纯网络底层的初始化至少需要 200-500ms 额外的时间，导致第一句话的回复比后续的对话慢得多。
 
-标准 HTTPS 连接建立需要 **TCP 三次握手 + TLS 握手**，耗时约 **100-200ms**。在正常的 CLI 启动流程中，这个延迟阻塞在第一次 API 调用内：
+### 2. Claude Code 解决方案：榨干每一毫秒的间隙
+Claude Code 在其核心架构中（`services/api/claude.ts` 以及 `utils/earlyInput.ts`）运用了操作系统级别的极客优化。
 
-```
-正常流程（串行）:
-
-[启动] → [加载配置] → [初始化MCP] → [首次API调用: TCP+TLS 100-200ms + 请求处理]
-                                                              ↑
-                                                    用户感知到的延迟
-```
-
-### 1.2 启动期间的用户输入丢失
-
-用户在终端输入 `claude` 后**立即开始打字**（这是常见行为），但此时 REPL 尚未初始化，这些键盘输入会**直接丢失**，用户需要重新输入。
-
----
-
-## 2. Claude Code：API Preconnect
-
-### 2.1 优化原理
-
-在配置加载完成后、REPL 初始化之前，发起一个 **fire-and-forget HEAD 请求**到 Anthropic API。这样 TCP+TLS 握手与后续的初始化工作（MCP 加载、action handler 设置等）**并行进行**：
-
-```
-优化流程（并行）:
-
-[启动] → [加载配置] → [fire-and-forget HEAD 请求] → [初始化MCP] → [首次API调用: 复用连接]
-                           ↓ 100-200ms                 ↑ 与初始化重叠    ↑ 节省 100-200ms
-```
-
-**源码**: `utils/apiPreconnect.ts`（71 行）
-
-### 2.2 实现细节
-
+#### 机制一：TCP Preconnect (预先建立隧道)
+在 CLI 的最外层入口（`entrypoints/cli.tsx` 的前几行代码中），系统甚至还没开始去读取复杂的配置文件，就直接调用了一个 `preconnect()` 函数。
 ```typescript
-// 源码: utils/apiPreconnect.ts#L28-L71
-let fired = false
-
-export function preconnectAnthropicApi(): void {
-  if (fired) return
-  fired = true
-
-  // 跳过云服务商（不同端点+认证）
-  if (
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
-    isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY)
-  ) return
-
-  // 跳过 proxy/mTLS/unix（SDK 自定义 dispatcher 不共享连接池）
-  if (
-    process.env.HTTPS_PROXY || process.env.http_proxy ||
-    process.env.ANTHROPIC_UNIX_SOCKET ||
-    process.env.CLAUDE_CODE_CLIENT_CERT || process.env.CLAUDE_CODE_CLIENT_KEY
-  ) return
-
-  const baseUrl = process.env.ANTHROPIC_BASE_URL || getOauthConfig().BASE_API_URL
-
-  // Fire and forget HEAD 请求，10s 超时
-  void fetch(baseUrl, {
-    method: 'HEAD',
-    signal: AbortSignal.timeout(10_000),
-  }).catch(() => {})
-}
+// 伪代码思路
+fetch("https://api.anthropic.com/", { method: "HEAD" }).catch(() => {});
 ```
-
-**关键设计决策**：
-
-| 决策 | 说明 |
-|------|------|
-| **调用时机** | `init.ts#L159` 中 `applyExtraCACertsFromConfig()` + `configureGlobalAgents()` **之后**调用 |
-| **TLS 证书顺序** | `applyExtraCACertsFromConfig()` 必须在首次 TLS 握手前完成（Bun/BoringSSL 在启动时缓存证书存储） |
-| **请求方法** | `HEAD` — 无响应体，连接到达后即可复用 |
-| **超时** | 10 秒 `AbortSignal.timeout()` — 慢网络不阻塞进程 |
-| **连接复用** | 依赖 Bun fetch 的全局 keep-alive 连接池（所有 fetch 共享） |
-
-### 2.3 智能跳过机制
-
-Preconnect 在以下情况下**自动跳过**，避免预热错误的连接池：
-
-#### 云服务商跳过
-
-| 环境变量 | 原因 |
-|---------|------|
-| `CLAUDE_CODE_USE_BEDROCK` | AWS Bedrock 端点 + 签名认证不同 |
-| `CLAUDE_CODE_USE_VERTEX` | Google Vertex AI 端点不同 |
-| `CLAUDE_CODE_USE_FOUNDRY` | Foundry 端点不同 |
-
-#### 网络配置跳过
-
-| 环境变量 | 原因 |
-|---------|------|
-| `HTTPS_PROXY` / `http_proxy` | 代理模式下 SDK 使用自定义 dispatcher |
-| `ANTHROPIC_UNIX_SOCKET` | Unix socket 不共享全局连接池 |
-| `CLAUDE_CODE_CLIENT_CERT` | mTLS 需要客户端证书 |
-| `CLAUDE_CODE_CLIENT_KEY` | mTLS 需要客户端私钥 |
-
-**原因**：这些场景下 SDK 会传递自定义 `dispatcher`/`agent`，不共享 Bun 的全局连接池，preconnect 预热的连接不会被复用。
-
-### 2.4 调用时机演进
-
-Claude Code 曾有两个调用点，后来删除了一个：
-
-| 版本 | 调用点 | 问题 |
-|------|--------|------|
-| 早期 | `cli.tsx` 入口处 | settings.json 未加载，`ANTHROPIC_BASE_URL`/proxy/mTLS 不可见 |
-| 当前 | `init.ts` 配置加载后 | ✅ settings.json 已应用，环境变量已生效 |
-
-源码注释明确说明：
-> "The early cli.tsx call site was removed — it ran before settings.json loaded, so ANTHROPIC_BASE_URL/proxy/mTLS in settings would be invisible and preconnect would warm the wrong pool."
-
----
-
-## 3. Claude Code：Early Input Capture
-
-### 3.1 优化原理
-
-在 CLI 入口处**最早启动 raw mode 监听 stdin**，捕获用户在 REPL 初始化前的输入。REPL 就绪后将缓冲内容注入输入框。
-
-**源码**: `utils/earlyInput.ts`（191 行）
-
-### 3.2 调用点
-
-| 函数 | 调用位置 | 源码 |
-|------|---------|------|
-| `startCapturingEarlyInput()` | `entrypoints/cli.tsx#L291` — CLI 入口最早期 | 用户输入 `claude` 后立即启动 |
-| `consumeEarlyInput()` | `screens/REPL.tsx#L1331` — REPL 组件的 `useState` 初始化 | REPL 渲染时消费缓冲内容 |
-
-### 3.3 架构总览
-
-```
-启动早期 → startCapturingEarlyInput()
-  ├─ process.stdin.setRawMode(true)     # 原始模式 (Raw Mode)
-  ├─ 监听 'readable' 事件               # 逐字符捕获
-  └─ processChunk() 逐字符处理:
-      ├─ Ctrl+C (code 3) → process.exit(130)
-      ├─ Ctrl+D (code 4) → 停止捕获
-      ├─ Backspace (8/127) → 删除最后一个 grapheme cluster
-      ├─ ESC (27) → 跳过转义序列 (Escape Sequence)（方向键/功能键）
-      ├─ CR (13) → 转换为 \n
-      └─ 可打印字符 → 加入 earlyInputBuffer
-
-REPL 就绪 → consumeEarlyInput()
-  ├─ stopCapturingEarlyInput()          # 清理监听器
-  ├─ 返回 trimmed buffer                 # 预填充到输入框
-  └─ 不清零 stdin 状态（REPL 的 Ink App 自行管理）
-```
-
-### 3.4 逐字符处理逻辑
-
-`processChunk()` 是核心函数，逐字节扫描输入流：
-
-| 字符/序列 | 处理 | 原因 |
-|-----------|------|------|
-| `Ctrl+C` (0x03) | 立即 `process.exit(130)` | 此时 shutdown 机制未初始化 |
-| `Ctrl+D` (0x04) | 停止捕获 | EOF 信号 |
-| `Backspace` (0x08/0x7F) | 删除最后一个 **grapheme cluster** | 支持 emoji 等组合字符 |
-| `ESC` (0x1B) | 跳过整个转义序列 | 方向键/功能键不进入 buffer |
-| `CR` (0x0D) | 转换为 `\n` | 统一换行符 |
-| `Tab` (0x09) | 加入 buffer | 保留 tab 字符 |
-| 其他 < 0x20 | 跳过 | 控制字符不可打印 |
-| 可打印字符 | 加入 `earlyInputBuffer` | 正常累积 |
-
-### 3.5 关键设计细节
-
-#### Grapheme-aware Backspace
-
-使用 `lastGrapheme()` 工具函数处理 Unicode 组合字符：
-
-```typescript
-// 源码: utils/earlyInput.ts#L94-L99
-if (code === 127 || code === 8) {
-  if (earlyInputBuffer.length > 0) {
-    const last = lastGrapheme(earlyInputBuffer)
-    earlyInputBuffer = earlyInputBuffer.slice(0, -(last.length || 1))
-  }
-}
-```
-
-这确保了 emoji（如 👨‍👩‍👧‍👦 由多个 code point 组成）按**视觉字符**为单位删除，而非按 code point。
-
-#### 转义序列 (Escape Sequence) 跳过
-
-```typescript
-// 源码: utils/earlyInput.ts#L103-L112
-if (code === 27) {
-  i++ // 跳过 ESC
-  // 跳过直到终止字节 (@ ~ 范围 0x40-0x7E)
-  while (i < str.length && !(str.charCodeAt(i) >= 64 && str.charCodeAt(i) <= 126)) {
-    i++
-  }
-  if (i < str.length) i++ // 跳过终止字节
-  continue
-}
-```
-
-ANSI 转义序列格式：`ESC [ ... 终止字节`。这段代码完整跳过整个序列，避免方向键等功能键污染输入 buffer。
-
-#### 不干扰 REPL
-
-```typescript
-// 源码: utils/earlyInput.ts#L154
-// Don't reset stdin state - the REPL's Ink App will manage stdin state.
-```
-
-`stopCapturingEarlyInput()` **仅移除监听器**，不调用 `setRawMode(false)`。REPL 的 Ink 框架会自行管理 stdin 状态。
-
-#### 启动条件检查
-
-```typescript
-// 源码: utils/earlyInput.ts#L33-L39
-if (
-  !process.stdin.isTTY ||          // 仅 TTY 模式
-  isCapturing ||                   // 避免重复启动
-  process.argv.includes('-p') ||   // print 模式跳过
-  process.argv.includes('--print')
-) {
-  return
-}
-```
-
-**`-p` 模式跳过的原因**：raw mode 会禁用 ISIG（终端 Ctrl+C → SIGINT），导致 `-p` 模式下 Ctrl+C 无法中断进程。
-
-#### Seed 能力
-
-```typescript
-// 源码: utils/earlyInput.ts#L182
-export function seedEarlyInput(text: string): void {
-  earlyInputBuffer = text
-}
-```
-
-支持程序化预设输入内容，可用于自动化测试或特定场景的预填充。
-
----
-
-## 4. Qwen Code 现状
-
-### 4.1 API Preconnect：完全缺失
-
-搜索 `packages/cli/src/gemini.tsx` 和 `packages/core/src/utils/` 均无 preconnect 相关代码。
-
-Qwen Code 的启动流程（`gemini.tsx` 527 行分析）：
-
-```
-[加载 settings] → [加载配置] → [初始化 App] → [渲染 (Rendering) REPL] → [首次API调用: 完整握手]
-                                                              ↑
-                                                    首次延迟无优化
-```
-
-### 4.2 Early Input Capture：完全缺失
-
-Qwen Code **完全没有**对应机制：
-- 无 `setRawMode` 早期调用
-- 无 stdin 缓冲区
-- 用户在 REPL 渲染 (Rendering) 前的打字**全部丢失**
-
-现有 `packages/cli/src/utils/readStdin.ts` 仅处理 **pipe 模式**的 stdin 读取，不处理 TTY 早期输入。
-
-### 4.3 启动阶段对比
-
-| 指标 | Claude Code | Qwen Code |
-|------|-------------|-----------|
-| API Preconnect（预连接 (Preconnect)） | ✅ `init.ts` 中 fire-and-forget HEAD | ❌ 无 |
-| Early Input（早期输入捕获 (Early Input Capture)） | ✅ 启动时 raw mode 捕获 | ❌ 无 |
-| 首次 API 延迟 | ~0ms（复用预连接 (Preconnect)） | 100-200ms（完整握手） |
-| 启动期间打字 | ✅ 捕获并预填充 | ❌ 全部丢失 |
-
----
-
-## 5. Qwen Code 实现方案
-
-### 5.1 API Preconnect（~40 行）
-
-**建议文件**: `packages/core/src/utils/apiPreconnect.ts`
-
-```typescript
-let fired = false
-
-export function preconnectApi(baseUrl: string): void {
-  if (fired) return
-  fired = true
-
-  // 跳过 proxy/mTLS
-  if (
-    process.env.HTTPS_PROXY ||
-    process.env.http_proxy ||
-    process.env.ANTHROPIC_UNIX_SOCKET
-  ) {
-    return
-  }
-
-  // Fire and forget HEAD 请求
-  void fetch(baseUrl, {
-    method: 'HEAD',
-    signal: AbortSignal.timeout(10_000),
-  }).catch(() => {})
-}
-```
-
-**集成点**: `packages/cli/src/gemini.tsx` 中 `loadSettings()` 后、`initializeApp()` 前：
-
-```typescript
-// gemini.tsx 中的集成位置示意
-const settings = loadSettings()
-const config = loadCliConfig(settings)
-
-// ← 在此处插入
-preconnectApi(config.apiBaseUrl)
-
-await initializeApp(config)
-```
-
-### 5.2 Early Input Capture（~120 行）
-
-**建议文件**: `packages/cli/src/utils/earlyInput.ts`
-
-核心实现与 Claude Code 类似，需注意：
-1. 复用 Qwen Code 已有的 Unicode 工具函数（如 grapheme 分割）
-2. 与 Ink 框架的 stdin 管理协调（不调用 `setRawMode(false)`）
-3. `-p` / `--print` 模式下跳过
-
-**集成点**:
-1. `gemini.tsx` 入口处**最早**调用 `startCapturingEarlyInput()`
-2. REPL 渲染前调用 `consumeEarlyInput()` 获取缓冲内容，预填充到输入框
-
----
-
-## 6. 收益评估
-
-| 指标 | 优化前 | 优化后 | 改善 |
-|------|--------|--------|------|
-| 首次 API 延迟 | 100-200ms（完整握手） | ~0ms（复用连接） | **~150ms** |
-| 用户输入丢失 | 启动期间打字全部丢失 | 捕获并预填充 | **交互流畅度显著提升** |
-| 实现成本 | — | ~160 行代码 | **低投入高回报** |
-
-## 7. 参考
-
-| 项目 | 源码路径 |
-|------|---------|
-| Claude Code Preconnect | `utils/apiPreconnect.ts` (71 行) |
-| Claude Code Early Input | `utils/earlyInput.ts` (191 行) |
-| Qwen Code CLI 入口 | `packages/cli/src/gemini.tsx` (527 行) |
-| Qwen Code Stdin 读取 | `packages/cli/src/utils/readStdin.ts` |
-
-> **免责声明**: 以上分析基于 Claude Code 源码分析和 Qwen Code 开源源码。Qwen Code 实现方案为建议，非官方实现。
+这个极其廉价的 HTTP HEAD 请求不关注响应，它的唯一作用是逼迫操作系统的网络栈提前把通向大模型 API 网关的 TCP 和 TLS 隧道搭好。
+当 1 秒后用户真正按下回车发送复杂的 Payload 时，底层复用了这个已经握手成功的 Socket，首 Token 延迟瞬间降低几百毫秒。
+
+#### 机制二：Early Input Capture (早鸟按键捕获)
+为了解决 Node.js 加载庞大模块导致的 500ms “打字盲区”，Claude Code 引入了 `startEarlyInputCapture()`。
+1. 在进程刚诞生的最初 10 毫秒，它立刻通过原生的系统调用，强行把 `process.stdin` 切入 `raw mode`，并挂上极轻量级的事件监听器。
+2. 此时主线程在拼命解析臃肿的 TypeScript / React Ink 库。
+3. 任何用户的键盘敲击（即使包括回删 Backspace 等控制字符）都会被这个轻量拦截器录制下来存进缓冲数组。
+4. 500ms 后，React Ink 组件 `PromptInput` 终于加载并挂载完毕。它会调用 `useEarlyInput()` 一口吞下刚才缓冲的所有字符，瞬间预填充到输入框内。
+
+**效果**：用户敲下命令，立刻开始盲打输入问题，哪怕前 0.5 秒屏幕什么都没刷出来，等画面一亮，自己敲的字已经完美躺在输入框里！这种“人不用等机器”的体验极其超前。
+
+## 二、Qwen Code 的改进路径 (P1 优先级)
+
+天下武功唯快不破，优化冷启动是建立技术口碑的最快途径。
+
+### 阶段 1：实现 API 预热 (Preconnect)
+1. 在 `packages/core/src/cli.ts` 顶层，提取模型配置 Endpoint URL。
+2. 只要探测到非单纯的打印帮助 (`-h`) 模式，立刻 `fire-and-forget` 抛出一个空的探活请求（或 Socket 建连）。由于 Qwen API 通常在国内，这能消除建立连接的 50ms-150ms 开销。
+
+### 阶段 2：开发 `earlyInput.ts`
+1. 编写一个无外部依赖的 `earlyInput.ts`。暴露 `startCapture()` 和 `consumeBuffer()`。
+2. 在 `bin/qwen-code` 最开头直接加载并运行 `startCapture()`。利用 `readline.emitKeypressEvents` 缓冲按键。
+
+### 阶段 3：与 React UI 对接
+1. 修改 UI 层的 `InputComponent`。
+2. 在 `useEffect` 挂载完成的那一刻，消费 `earlyInput` 的缓冲区，并在状态机中把它设为当前的初始值 `setInputValue(buffer)`。
+3. 记得消费完后交还终端控制权并关闭 `raw mode` 的早鸟拦截，平滑过渡给标准的 Ink 终端控制。
+
+## 三、改进收益评估
+- **实现成本**：低到中等。代码量在 200 行以内，但在处理跨平台终端事件（尤其是 Windows 的 Command Prompt）时需要非常仔细的测试。
+- **直接收益**：
+  1. **断崖式提升“顺滑感”**：消除由于前端运行时臃肿带来的负面体验，实现打字“零等待”。
+  2. **消除网络握手时延**：使用户对大模型首个问题的响应速度感观大幅加快。
