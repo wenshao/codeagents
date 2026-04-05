@@ -1000,3 +1000,137 @@ Agent 编辑文件后展示的 diff 是基础的 inline 格式——没有行号
 **改进收益**：命名空间治理 = 来源透明 + 冲突可控 + 企业可管理。
 
 ---
+
+<a id="item-31"></a>
+
+### 31. /plan 计划模式（P2）
+
+**问题**：复杂任务（如"重构整个认证模块"）直接让 Agent 动手可能走偏。开发者想先看 Agent 的计划——要改哪些文件、分几步、有什么风险——确认后再执行。
+
+**Claude Code 的方案**：`/plan` 命令进入计划模式——Agent 只分析不动手，输出结构化计划（步骤/文件/风险/依赖）。用户审阅后 `/plan execute` 开始执行，或修改计划后再执行。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `commands/plan/plan.ts` | `/plan` 命令入口、计划模式切换 |
+
+**Qwen Code 现状**：无 `/plan` 命令。Agent 收到复杂指令后直接开始执行——用户只能事后检查结果。
+
+**Qwen Code 修改方向**：① 新增 `/plan` 命令切换到计划模式；② 计划模式下 Agent 只输出分析不执行工具；③ `/plan execute` 确认后开始执行。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~200 行
+- 开发周期：~2 天（1 人）
+- 难点：计划模式下工具调用的拦截与过滤
+
+**改进前后对比**：
+- **改进前**：用户说"重构认证" → Agent 直接改代码 → 方向不对需要撤销
+- **改进后**：`/plan` → Agent 输出计划 → 用户确认/修改 → 按计划执行
+
+**意义**：复杂任务需要"先想后做"——计划模式降低风险。
+**缺失后果**：Agent 直接执行 → 方向错误时需大量撤销 → 浪费时间和 token。
+**改进收益**：先计划后执行 = 用户掌控方向，Agent 高效执行。
+
+---
+
+<a id="item-32"></a>
+
+### 32. /rename 重命名会话（P2）
+
+**问题**：Agent 自动生成的会话标题往往不够准确——"New Session" 或过于冗长。用户想给会话起个有意义的名字（如"auth-refactor-v2"）方便后续查找。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `commands/rename/rename.ts` | `/rename` 命令 + Bridge 同步 |
+
+**Qwen Code 现状**：无 `/rename` 命令。会话标题由 AI 自动生成，用户无法修改。
+
+**Qwen Code 修改方向**：① 新增 `/rename <new-name>` 命令；② 更新 session JSONL 中的 `custom-title` 条目；③ 如果有 Bridge 连接则同步到云端。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~50 行
+- 开发周期：~0.5 天（1 人）
+- 难点：无（最简单的命令之一）
+
+**改进前后对比**：
+- **改进前**：50 个会话全叫 "New Session" 或自动标题 → 找不到目标
+- **改进后**：`/rename auth-v2` → 精确命名 → 配合 `/tag` 快速定位
+
+**意义**：会话命名是信息管理基础。
+**缺失后果**：自动标题不准确 → 回溯历史困难。
+**改进收益**：手动重命名 = 会话标题有意义 → 搜索效率提升。
+
+---
+
+<a id="item-33"></a>
+
+### 33. /upgrade 版本升级（P2）
+
+**问题**：用户不知道当前版本是否最新、有哪些新功能。需要手动去 npm 查版本号、手动 `npm update`。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `commands/upgrade/upgrade.ts` | 版本检查 + 自动升级 |
+| `utils/releaseNotes.ts` | changelog 获取与展示 |
+
+**Qwen Code 现状**：无 `/upgrade` 命令。用户需手动 `npm update -g @anthropic-ai/claude-code` 升级。
+
+**Qwen Code 修改方向**：① 新增 `/upgrade` 命令；② 比较当前版本与 npm latest；③ 有新版本时展示 changelog + 一键升级。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~100 行
+- 开发周期：~1 天（1 人）
+- 难点：跨平台包管理器检测（npm/pnpm/yarn/bun）
+
+**改进前后对比**：
+- **改进前**：用户不知道有新版本 → 错过重要修复和新功能
+- **改进后**：`/upgrade` → 显示 changelog + 一键更新
+
+**意义**：版本管理自动化是 CLI 工具基本能力。
+**缺失后果**：用户使用旧版本 → 错过修复 → 可能遇到已修复的 bug。
+**改进收益**：一键升级 = 始终使用最新版本。
+
+---
+
+<a id="item-34"></a>
+
+### 34. Plugin 系统增强（P2）
+
+**问题**：Qwen Code 的 extension 系统支持加载 MCP servers/skills/subagents/hooks，但缺少统一的 Plugin 容器概念——将 commands + skills + hooks + MCP 打包为一个可安装/可卸载的插件单元。
+
+**Claude Code 的方案**：Plugin 是一个聚合容器——一个 Plugin 目录下可以包含 `commands/`、`skills/`、`hooks/`、`agents/`，还有 `manifest.json` 描述元数据。通过 `pluginLoader.ts` 统一加载，支持 marketplace 安装、版本管理、热重载。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/plugins/pluginLoader.ts` (3302行) | Plugin 加载 + marketplace 同步 |
+| `utils/plugins/pluginInstaller.ts` | 安装 + 版本管理 |
+
+**Qwen Code 现状**：`extensionManager.ts` 支持加载 MCP/skills/subagents/hooks，但没有"Plugin"作为聚合容器的概念——每种资源独立管理，无法一键安装/卸载整个功能包。
+
+**Qwen Code 修改方向**：① 定义 Plugin manifest 格式（name/version/commands/skills/hooks/mcp）；② Plugin 目录扫描与统一加载；③ `/plugin install/uninstall/list` 命令；④ 插件间依赖管理。
+
+**实现成本评估**：
+- 涉及文件：~6 个
+- 新增代码：~500 行
+- 开发周期：~5 天（1 人）
+- 难点：Plugin 间依赖解析与版本兼容性
+
+**改进前后对比**：
+- **改进前**：安装一个功能需要分别配置 MCP server + skill + hook → 繁琐且易出错
+- **改进后**：`/plugin install code-review` → 一键安装包含 MCP+skill+hook 的功能包
+
+**意义**：Plugin 是平台化的基础——社区可以打包分发完整功能。
+**缺失后果**：资源分散管理 → 安装/卸载/更新不原子 → 状态不一致。
+**改进收益**：Plugin 聚合 = 一键安装/卸载完整功能包 → 生态可持续增长。
+
+---
