@@ -275,6 +275,8 @@
 | **P3** | useSkillImprovementSurvey Skill 反馈 [↓](./qwen-code-improvement-report-p3.md#item-53) | 无 | 小 | — |
 | **P3** | usePrStatus PR 状态 [↓](./qwen-code-improvement-report-p3.md#item-54) | 无 | 小 | — |
 | **P3** | useLogMessages 日志消息 [↓](./qwen-code-improvement-report-p3.md#item-55) | 分散 | 小 | — |
+| **P3** | useClaudeCodeHintRecommendation 提示推荐 [↓](./qwen-code-improvement-report-p3.md#item-56) | 无 | 小 | — |
+| **P3** | /sandbox-toggle sandbox 切换 [↓](./qwen-code-improvement-report-p3.md#item-57) | 需重启 | 小 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
