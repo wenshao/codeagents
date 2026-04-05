@@ -123,10 +123,9 @@
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `commands/review/review.ts` | `/review` 命令、`gh` CLI 集成 |
-| `commands/review/review.tsx` | Ink UI（PR 选择 + 审查报告） |
-| `review.ts` | review / ultrareview 实现 |
-| `commands/ultrareview/` | UltraReview 远程审查 |
+| `commands/review/` | `/review` 命令目录（reviewRemote.ts、ultrareviewCommand.tsx 等） |
+| `commands/review/reviewRemote.ts` | 远程 review 实现、`gh` CLI 集成 |
+| `commands/review/ultrareviewCommand.tsx` | UltraReview 远程审查 UI |
 
 **Qwen Code 现状**：无 `/review` 命令。用户需手动获取 PR diff 再交给 Agent 分析。Qwen Code 有 `/insight` 命令做会话分析，但没有 PR 专用审查工具。
 
@@ -258,7 +257,8 @@ All checks passed.
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `commands/doctor/doctor.ts` | `/doctor` 命令实现、检查清单 |
+| `commands/doctor/doctor.tsx` | `/doctor` 命令入口 |
+| `screens/Doctor.tsx` | 诊断 UI 组件、检查清单实现 |
 
 **Qwen Code 现状**：无 `/doctor` 命令。用户遇到环境问题时，需手动排查——费时且可能遗漏关键检查项。
 
@@ -312,8 +312,8 @@ Pricing: $30/$15 per Mtok (input/output)
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `commands/cost/cost.tsx` | `/cost` 命令、Ink UI |
-| `utils/costTracking.ts` | 费用计算、模型定价表 |
+| `commands/cost/cost.ts` | `/cost` 命令实现、费用计算 |
+| `commands/cost/index.ts` | 命令入口 |
 
 **Qwen Code 现状**：无 `/cost` 命令。用户无法直接查看 session 费用——只能通过 `/stats` 查看基础统计（不含费用估算）。对于按 token 计费的 DashScope API 用户，成本黑盒。
 
@@ -431,7 +431,7 @@ https://claude.ai/share/<session-id>
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `commands/share/share.ts` | `/share` 命令、云端上传 |
+| `commands/share/index.js` | `/share` 命令、云端上传 |
 
 **Qwen Code 现状**：无 `/share` 命令。用户无法直接分享 session——只能手动复制对话历史。Qwen Code 有 `/export` 命令导出对话到文件，但没有云端分享链接。
 
@@ -492,7 +492,8 @@ https://claude.ai/share/<session-id>
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `commands/diff/diff.tsx` | `/diff` 命令、Ink UI |
+| `commands/diff/diff.tsx` | `/diff` 命令入口 |
+| `components/diff/DiffDialog.tsx` | Diff 对话框 UI 组件 |
 | `utils/gitDiff.ts` (532行) | diff 解析、限制逻辑 |
 
 **Qwen Code 现状**：无 `/diff` 命令。用户需手动执行 `git diff`——无语法高亮、无文件过滤、无行数限制。
