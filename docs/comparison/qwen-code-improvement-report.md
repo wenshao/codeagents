@@ -174,7 +174,7 @@
 | **P2** | Git 状态自动注入上下文 — gitBranch/cwd/platform/fileCount 每轮注入 [↓](./qwen-code-improvement-report-p2-perf.md#item-15) | 仅平台和日期 | 小 | — |
 | **P2** | IDE 上下文注入与嵌套记忆触发 — 选区→目录规范自动注入 + 诊断双源收集 [↓](./qwen-code-improvement-report-p2-perf.md#item-16) | 无嵌套记忆触发 | 中 | — |
 | **P2** | 图片压缩多策略流水线 — format→resize→quality 阶梯 + JPEG fallback [↓](./qwen-code-improvement-report-p2-perf.md#item-17) | 仅计算 token/不压缩 | 中 | — |
-| **P2** | WeakRef/WeakMap 防止 GC 保留 — AbortController/渲染缓存/span 自动释放 [↓](./qwen-code-improvement-report-p2-perf.md#item-18) | 全部强引用 Map | 小 | — |
+| **P2** | WeakRef/WeakMap 防止 GC 保留 — Claude 13 处 AbortController/渲染缓存/span 自动释放，Qwen 仅 4 处 WeakSet/WeakMap [↓](./qwen-code-improvement-report-p2-perf.md#item-18) | Qwen 仅 4 处 WeakSet/WeakMap | 小 | — |
 | **P2** | 环形缓冲区与磁盘溢出 — CircularBuffer + BoundedUUIDSet + 8MB 溢出 [↓](./qwen-code-improvement-report-p2-perf.md#item-19) | 无上限数据结构 | 小 | — |
 | **P2** | 终端渲染字符串池化 — CharPool/StylePool 整数 ID 替代字符串 [↓](./qwen-code-improvement-report-p2-perf.md#item-20) | Ink 标准渲染 | 小 | — |
 | **P2** | 文件描述符与句柄追踪 — >100 handles / >500 fd 预警 [↓](./qwen-code-improvement-report-p2-perf.md#item-21) | 无追踪 | 小 | — |
@@ -202,6 +202,22 @@
 | **P2** | 破坏性命令警告系统 — 8 种高风险 git 操作 + 权限对话框风险说明 [↓](./qwen-code-improvement-report-p2-stability.md#item-27) | 仅读写分类/无风险说明 | 小 | — |
 | **P2** | 系统提示危险操作行为指导 — 4 类危险操作列举 + 行为准则 + 审批范围限定 [↓](./qwen-code-improvement-report-p2-stability.md#item-28) | 仅 "never push" 一条 | 小 | [PR#2889](https://github.com/QwenLM/qwen-code/pull/2889) |
 | **P2** | Unicode sanitization与 ASCII 走私防御 — NFKC + 不可见字符剥离 + 递归sanitization [↓](./qwen-code-improvement-report-p2-stability.md#item-29) | 无sanitization | 中 | — |
+| **P2** | [上下文感知键绑定系统](./qwen-code-improvement-report-p4.md#item-1) — 18 个键绑定上下文 + chord 支持 + 用户自定义 [↓](./qwen-code-improvement-report-p4.md#item-1) | 扁平 Command 枚举 | 中 | — |
+| **P2** | [Chord 组合键支持](./qwen-code-improvement-report-p4.md#item-2) — `ctrl+x ctrl+k` 组合键序列扩展快捷键空间 [↓](./qwen-code-improvement-report-p4.md#item-2) | 不支持 | 小 | — |
+| **P2** | [终端内文本选择与复制](./qwen-code-improvement-report-p4.md#item-3) — 应用内鼠标选择 + 词选/行选 + ANSI 剥离 [↓](./qwen-code-improvement-report-p4.md#item-3) | 依赖终端模拟器 | 大 | — |
+| **P2** | [文件编辑引号风格保留](./qwen-code-improvement-report-p4.md#item-4) — `preserveQuoteStyle()` 弯引号风格自动转换 [↓](./qwen-code-improvement-report-p4.md#item-4) | Unicode 归一化但不保留风格 | 小 | — |
+| **P2** | [Hook 事件扩展](./qwen-code-improvement-report-p4.md#item-6) — PostCompact / FileChanged / ConfigChange / CwdChanged 等新增事件 [↓](./qwen-code-improvement-report-p4.md#item-6) | 12 种事件（vs Claude 27 种） | 小 | — |
+| **P2** | [统一错误分类体系](./qwen-code-improvement-report-p4.md#item-7) — 25 种 API 错误分类 + 用户友好消息 [↓](./qwen-code-improvement-report-p4.md#item-7) | 异常类继承（8 种） | 中 | — |
+| **P2** | [MCP 通道权限管理](./qwen-code-improvement-report-p4.md#item-10) — MCP 频道插件注册白名单 + 工具过滤 [↓](./qwen-code-improvement-report-p4.md#item-10) | 全有或全无 | 小 | — |
+| **P2** | [WeakRef/WeakMap 防内存泄漏](./qwen-code-improvement-report-p4.md#item-13) — Claude 13 处使用弱引用，Qwen 仅 4 处 WeakSet/WeakMap（无 WeakRef） [↓](./qwen-code-improvement-report-p4.md#item-13) | 仅 WeakSet/WeakMap | 小 | — |
+| **P1** | [统一 Graceful Shutdown](./qwen-code-improvement-report-p4.md#item-8) — 529 行独立模块 + 终端恢复 + 会话持久化 + 5s failsafe [↓](./qwen-code-improvement-report-p4.md#item-8) | 分散在 5+ 文件 | 中 | — |
+| **P1** | [API 客户端认证自动恢复](./qwen-code-improvement-report-p4.md#item-14) — 401 → OAuth token 刷新 → 透明重试 [↓](./qwen-code-improvement-report-p4.md#item-14) | 401 直接 FatalAuthenticationError | 小 | — |
+| **P2** | [文件编辑等价性判断](./qwen-code-improvement-report-p4.md#item-5) — `areFileEditsInputsEquivalent()` 语义去重 [↓](./qwen-code-improvement-report-p4.md#item-5) | 无去重 | 小 | — |
+| **P3** | [终端渲染增量优化](./qwen-code-improvement-report-p4.md#item-9) — screen buffer diff + patch + 帧合并 [↓](./qwen-code-improvement-report-p4.md#item-9) | Ink 全量重绘 | 大 | — |
+| **P3** | [FuzzyPicker 通用选择器](./qwen-code-improvement-report-p4.md#item-11) — 模糊搜索 + 预览 + 键盘导航 [↓](./qwen-code-improvement-report-p4.md#item-11) | 多个独立选择组件 | 中 | — |
+| **P3** | [消息类型丰富化](./qwen-code-improvement-report-p4.md#item-12) — RateLimit / SystemAPIError / Thinking / CompactBoundary 等 [↓](./qwen-code-improvement-report-p4.md#item-12) | ~11 种（vs Claude 30+ 种） | 中 | — |
+| **P3** | [React.memo 精细优化](./qwen-code-improvement-report-p4.md#item-15) — 消息组件浅比较，渲染从 O(n) 到 O(1) [↓](./qwen-code-improvement-report-p4.md#item-15) | 需确认覆盖度 | 小 | — |
+| **P3** | [Shell 环境快照](./qwen-code-improvement-report-p4.md#item-16) — 一次性捕获 aliases/functions/PATH + 会话级缓存 [↓](./qwen-code-improvement-report-p4.md#item-16) | 每次 spawn 干净环境 | 小 | — |
 | **P2** | sandbox运行时集成 — seatbelt/bubblewrap/Docker + 文件/网络限制 [↓](./qwen-code-improvement-report-p2-stability.md#item-30) | 可选/非默认 | 大 | — |
 | **P2** | SSRF 防护 — 私有 IP 阻断 + IPv4-mapped + DNS rebinding 防护 [↓](./qwen-code-improvement-report-p2-stability.md#item-31) | 仅基础 isPrivateIp | 中 | — |
 | **P2** | WebFetch 域名allowlist — 130+ 预批准域名 + 路径段边界匹配 [↓](./qwen-code-improvement-report-p2-stability.md#item-32) | 无内置allowlist | 小 | — |
