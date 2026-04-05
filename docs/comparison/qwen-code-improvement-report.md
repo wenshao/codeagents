@@ -228,7 +228,7 @@
 | **P3** | /security-review — 基于 git diff 的安全审查命令，聚焦漏洞检测 [↓](./qwen-code-improvement-report-p3.md#item-6) | 缺失 | 小 | — |
 | **P3** | Ultraplan — 启动远程 CCR 会话，用更强模型深度规划后回传结果 [↓](./qwen-code-improvement-report-p3.md#item-7) | 缺失 | 大 | — |
 | **P3** | Advisor 顾问模型 — /advisor 配置副模型审查主模型输出，多模型协作 [↓](./qwen-code-improvement-report-p3.md#item-8) | 缺失 | 中 | — |
-| **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-9) | 基础 vim.ts | 中 | — |
+| **P3** | [Vim 完整实现](./vim-emulation-deep-dive.md) — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-9) | 基础 vim.ts | 中 | — |
 | **P3** | [语音模式](./voice-mode-deep-dive.md) — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-10) | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-11) | 缺失 | 大 | — |
 | **P3** | sandbox excludedCommands — 安全命令排除 sandbox 限制 [↓](./qwen-code-improvement-report-p3.md#item-12) | 无排除机制 | 小 | — |
@@ -356,4 +356,3 @@ on.md) |
 -session.md) |
 on.md) |
 md) |
- |

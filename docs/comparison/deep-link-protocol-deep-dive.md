@@ -1,57 +1,156 @@
-# Qwen Code 改进建议 — Deep Link 协议与端外唤起 (Deep Link URI Routing)
+# Deep Link 协议 Deep-Dive
 
-> 核心洞察：现代开发流极其碎片化。当你正在浏览器里看着一个 GitHub 上的 Bug 报告，或者在 Jira 里看着一张需求工单，要让 CLI Agent 介入，你必须：打开终端 -> `cd` 到项目 -> 输入启动命令 -> 复制粘贴网页上的需求描述。这套跨应用切换（Context Switching）极其拖沓。Claude Code 实现了系统底层的 `claude-cli://` Deep Link URI 协议，支持直接点击网页链接，瞬间拉起本地终端、定位项目并填好 Prompt；而 Qwen Code 目前只能依靠完全的纯手工命令行启动。
->
-> 返回 [改进建议总览](./qwen-code-improvement-report.md)
+> 如何从浏览器、IDE 或 Slack 一键启动 AI Agent 并预填充 prompt？本文基于 Claude Code（v2.1.89 源码分析）的源码分析，介绍其 `claude-cli://` URI scheme 的完整架构：协议解析、终端自动检测、GitHub 仓库解析和安全模型。Qwen Code 目前无此功能。
 
-## 一、跨应用信息断层的摩擦力
+---
 
-### 1. Qwen Code 的现状：孤立的命令行
-作为一个纯正的 CLI 工具，Qwen Code 的入口被死死锁在了终端窗口里。
-- **痛点**：假设团队做了一个飞书/钉钉内部的工单面板。工单上写着“请将登录页按钮的红色改为蓝色”。如果想让 Qwen 帮我干活，我必须手工充当“人肉搬运工”，将工单信息粘进终端，有时候甚至还要把附件图片下载到本地再传给它。这与“高度自动化”的愿景背道而驰。
+## 1. 架构总览
 
-### 2. Claude Code 解决方案：打通 OS 协议层的任意门
-Claude Code 在 `utils/deepLink/registerProtocol.ts` 中，硬核地将自己注册到了操作系统的协议栈中。
+```
+浏览器/IDE/Slack → claude-cli://open?q=...&cwd=...&repo=...
+  ↓ OS Protocol Handler
+URL Handler App（macOS .app / Linux .desktop / Windows Registry）
+  ↓ --handle-uri
+Claude Code CLI → parseDeepLink() → 解析参数
+  ↓
+terminalLauncher → 检测/启动终端
+  ↓ 终端内启动
+Claude Code REPL（预填充 prompt + 工作目录）
+```
 
-#### 机制一：系统级 URI Scheme 注册
-当用户首次安装或运行带有类似 `/install-deep-link` 的指令时，Claude Code 会通过极其硬核的 OS API 调用：
-- **macOS**: 创建一个微型的 AppleScript 或 App Wrapper (`Claude Code.app`) 注册到 LaunchServices。
-- **Windows**: 在注册表中写入 `HKEY_CURRENT_USER\Software\Classes\claude-cli`。
-- **Linux**: 写入 `~/.local/share/applications/claude-cli.desktop` 并绑定 x-scheme-handler。
+---
 
-一旦注册成功，操作系统就认识了 `claude-cli://` 这个协议。
+## 2. URI Scheme
 
-#### 机制二：智能的路由解析与预填充
-当你在网页中点击了一个类似：
-`claude-cli://open?cwd=/Users/dev/my-app&q=Fix+the+login+button+color` 的链接。
+**协议**：`claude-cli://`
 
-浏览器会弹出一个小提示框，确认后：
-1. 操作系统会自动唤醒或聚焦你设置的默认终端模拟器（如 iTerm2, Kitty 或 Windows Terminal）。
-2. 在这个新建的终端 Tab 里，Agent 启动时读取传递过来的参数。
-3. 它自动将工作目录切换到 `/Users/dev/my-app`。
-4. 它自动将 `Fix the login button color` 这段文本预填充到屏幕最下方的 Prompt 输入框里，甚至可能还会自动附加一层悬浮的来源 Banner：`[Request from Jira Ticket #1024]`。
-5. 处于安全考虑，它**不会**立刻自动按下回车，而是等待用户的最后一眼审阅和确认。
+**格式**：`claude-cli://open?q=<prompt>&cwd=<path>&repo=<owner/repo>`
 
-## 二、Qwen Code 的改进路径 (P2 优先级)
+| 参数 | 类型 | 说明 | 限制 |
+|------|------|------|------|
+| `q` | string | 预填充 prompt | ≤5,000 字符，无控制字符 |
+| `cwd` | string | 工作目录 | 绝对路径，≤4,096 字符 |
+| `repo` | string | GitHub 仓库 slug | `owner/repo` 格式 |
 
-让 Qwen Code 的触角延伸出终端沙盒，嵌入企业的每一个 Web 面板。
+**安全**：所有参数 URL-decoded + Unicode 清理 + 控制字符拒绝 + shell-quoted。
 
-### 阶段 1：开发参数解析与引导拦截
-1. 在 `packages/cli` 增加 CLI 启动参数 `--uri` 或捕获深链接的 Payload。
-2. 编写 `parseDeepLink.ts`，解析 URI Query 中的 `q` (Prompt), `cwd` (目录), 和 `context` (额外的只读文件路径)。
-3. 在 `InputPrompt` 中将其填入初始 `value` 状态。
+> 源码: `utils/deepLink/parseDeepLink.ts`
 
-### 阶段 2：OS 协议注册机
-1. 借助现成的开源包（如 `appdmg` 或手动写 Registry/Desktop 文件工具类），为 Qwen Code 编写跨平台的协议注册代码 `register-protocol.ts`。
-2. 将协议名定为 `qwen-code://`。
+---
 
-### 阶段 3：构建安全的承接 UI
-为了防止跨站脚本请求伪造（CSRF 变种，比如黑客在网页放一个 `qwen-code://open?q=rm -rf /`），必须设计严苛的确认屏障。
-1. 深链接带进来的 Prompt 必须以明显不同的高亮颜色显示（比如虚线框）。
-2. 弹出 `[Security Warning] An external application wants to populate your prompt. Press Enter to accept.`
+## 3. 终端自动检测与启动
 
-## 三、改进收益评估
-- **实现成本**：中偏高。协议注册在三大 OS（尤其是带有严格沙盒的 macOS）上适配需要耗费一定的踩坑时间。
-- **直接收益**：
-  1. **极 致 的 Web 联动体验**：彻底盘活企业内部工具生态。可以在 GitHub PR 的 Web 页面上加个书签插件，一点就让 Qwen 在本地终端里自动 Review 那个代码分支。
-  2. **破圈效应**：使得网页文档中能直接带有“运行示例”的超级链接，用户点一下就能在本地跑起来。
+### 3.1 macOS（优先级从高到低）
+
+| 终端 | 启动方式 | CWD 方法 |
+|------|----------|----------|
+| **iTerm** | AppleScript `create window` + `write text` | AppleScript 内置 |
+| **Ghostty** | `open -na --args` | `--working-directory=<cwd>` |
+| **Kitty** | `open -na --args` | `--directory <cwd>` |
+| **Alacritty** | `open -na --args` | `--working-directory <cwd>` |
+| **WezTerm** | `open -na --args` | `start --cwd <cwd>` |
+| **Terminal.app** | AppleScript `do script` | AppleScript 内置 |
+
+**检测顺序**：
+1. 用户保存的偏好（`deepLinkTerminal` 配置）
+2. `TERM_PROGRAM` 环境变量
+3. Spotlight `mdfind` 查找 bundle ID
+4. `/Applications/` 目录回退
+5. Terminal.app（始终可用）
+
+### 3.2 Linux
+
+| 终端 | CWD 方法 |
+|------|----------|
+| ghostty, kitty, alacritty, wezterm | `--working-directory` / `--directory` / `--cwd` |
+| gnome-terminal, konsole | `--working-directory` |
+| xfce4-terminal, mate-terminal, tilix | `--working-directory` |
+| xterm | `spawn({cwd})` |
+
+**检测**：`$TERMINAL` → `x-terminal-emulator` → 优先级列表 `which()` 遍历
+
+### 3.3 Windows
+
+| 终端 | 启动方式 |
+|------|----------|
+| Windows Terminal (`wt.exe`) | `-d <cwd> -- cmd args` |
+| PowerShell 7+ (`pwsh.exe`) | `-NoExit -Command "Set-Location; &"` |
+| PowerShell 5.1 | 同上 |
+| cmd.exe | `/k "cd /d '<cwd>' && <cmd>"` |
+
+> 源码: `utils/deepLink/terminalLauncher.ts`
+
+---
+
+## 4. GitHub 仓库解析
+
+```typescript
+// 源码: utils/deepLink/protocolHandler.ts#L36-L75
+// 优先级: 显式 cwd > repo 查找 > home 目录
+
+// repo 查找:
+getKnownPathsForRepo('owner/repo')
+  → 扫描已知克隆路径（githubRepoPathMapping.ts）
+  → filterExistingPaths()
+  → 返回 MRU（最近使用）的克隆目录
+```
+
+**新鲜度检查**（源码: `utils/deepLink/banner.ts#L88-L102`）：
+- 读取 `FETCH_HEAD` mtime
+- 超过 7 天显示过期警告
+
+---
+
+## 5. 安全模型
+
+### 5.1 来源警告 Banner
+
+```
+⚠ External deep link
+Working directory: /path/to/project
+Repo: owner/repo (last fetched 3 days ago)
+
+Review the prompt below, then press Enter to submit.
+```
+
+- 用户必须按 Enter 确认——不自动执行
+- Prompt 超过 1,000 字符时提示"scroll down to review"
+
+### 5.2 协议注册
+
+| 平台 | 注册方式 | 位置 |
+|------|----------|------|
+| macOS | `.app` bundle + LaunchServices | `~/Applications/Claude Code URL Handler.app/` |
+| Linux | `.desktop` 文件 + xdg-mime | `$XDG_DATA_HOME/applications/` |
+| Windows | Registry HKCU | `HKCU\Software\Classes\claude-cli` |
+
+**自动注册**：后台 housekeeping 中 fire-and-forget，GrowthBook `tengu_lodestone_enabled` 门控，失败 24h 退避。
+
+> 源码: `utils/deepLink/registerProtocol.ts`
+
+---
+
+## 6. CLI 参数
+
+| 参数 | 用途 |
+|------|------|
+| `--handle-uri <url>` | OS 协议分发入口 |
+| `--deep-link-origin` | 标记从 deep link 启动 |
+| `--deep-link-repo <repo>` | 已解析的 GitHub slug |
+| `--deep-link-last-fetch <ms>` | FETCH_HEAD mtime（显示新鲜度） |
+| `--prefill <query>` | 预填充 prompt |
+
+---
+
+## 7. 关键源码文件
+
+| 文件 | 职责 |
+|------|------|
+| `utils/deepLink/parseDeepLink.ts` | URI 解析 + 参数验证 |
+| `utils/deepLink/protocolHandler.ts` | URI 分发 + repo 解析 |
+| `utils/deepLink/terminalLauncher.ts` | 终端检测 + 跨平台启动 |
+| `utils/deepLink/registerProtocol.ts` | 协议注册（macOS/Linux/Windows） |
+| `utils/deepLink/terminalPreference.ts` | 终端偏好存储 |
+| `utils/deepLink/banner.ts` | 来源安全警告 |
+
+> **免责声明**: 以上分析基于 2026 年 Q1 源码，后续版本可能已变更。
