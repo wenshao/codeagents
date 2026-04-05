@@ -383,8 +383,13 @@ API 请求消息结构：
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `services/api/params.ts` | `CacheSafeParams` 类、工具排序 |
-| `tools/AgentTool/forkSubagent.ts` | Fork 场景的 cache 一致性 |
+| `services/api/claude.ts` | prompt cache 管理、`cache_reference` 标记、缓存前缀优化 |
+| `services/api/promptCacheBreakDetection.ts` | 缓存失效检测、TTL 阈值监控 |
+| `services/api/withRetry.ts` | 重试时保留模型名防止缓存失效 |
+
+> **注**：工具顺序稳定性是基于 Claude Code 架构的推断——工具注册层保证顺序一致，
+> API 层通过 `cache_reference` 标记缓存前缀。未发现显式的字母序排序代码，
+> 但 `tools` 数组顺序在请求间保持稳定是缓存命中的必要条件。
 
 **Qwen Code 现状**：工具注册顺序即 API 请求顺序——无稳定排序。MCP 工具动态发现后插入——可能改变缓存前缀。
 
@@ -533,7 +538,7 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 | `utils/gracefulShutdown.ts` | 信号处理、5 阶段关闭 |
 | `tasks/LocalShellTask/LocalShellTask.tsx` | 子进程清理 |
 
-**Qwen Code 现状**：无信号处理——`Ctrl+C` 直接退出，可能中断文件写入或子进程。
+**Qwen Code 现状**：non-interactive 模式（`nonInteractiveCli.ts`）有基础 SIGINT/SIGTERM 处理；interactive 模式（`useBracketedPaste.ts`）有 cleanup。但**缺少 5 阶段优雅关闭序列**（停止接收→清理子进程→保存状态→清理临时文件→failsafe），直接退出可能中断文件写入或子进程。
 
 **Qwen Code 修改方向**：① 新建 `utils/gracefulShutdown.ts`；② 注册 SIGINT/SIGTERM 处理函数；③ 关键操作注册清理回调；④ 5s failsafe 强制退出。
 
