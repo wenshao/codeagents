@@ -166,7 +166,7 @@ async function retryWithBackoff(
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `services/api/retry.ts` | 指数退避逻辑、`Retry-After` 头解析 |
+| `services/api/withRetry.ts` (822行) | 指数退避逻辑、`Retry-After` 头解析、`maxRetries`、`maxDelayMs` |
 | `services/api/client.ts` | 401/429/529 处理、模型降级 |
 
 **Qwen Code 现状**：`api.ts` 中有基础重试逻辑，但缺少指数退避、模型降级、401 刷新。
@@ -649,8 +649,9 @@ Agent 执行复杂任务时，token 使用量持续增长。当前 Qwen Code 在
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `services/compact/tokenBudget.ts` | Token Budget 管理、续行逻辑 |
-| `services/compact/autoCompact.ts` | 分层回退 |
+| `services/compact/autoCompact.ts` | 分层回退、`MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES = 3` |
+| `query/tokenBudget.ts` | Token Budget 管理、续行逻辑 |
+| `utils/tokenBudget.ts` | Token Budget 状态追踪 |
 
 **Qwen Code 现状**：70% 阈值一次性压缩——压缩后不检查 token 使用情况，可能很快再次触发。
 
@@ -702,7 +703,7 @@ API 返回 prompt_too_long
 
 | 文件 | 关键函数/常量 |
 |------|-------------|
-| `services/compact/reactiveCompact.ts` | 反应式压缩、重试逻辑 |
+| `services/compact/compact.ts` (1705行) | 反应式压缩、重试逻辑、`prompt_too_long` 处理 |
 
 **Qwen Code 现状**：API 返回错误时直接展示给用户——无自动恢复。
 
