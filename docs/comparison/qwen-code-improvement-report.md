@@ -3,8 +3,27 @@
 > 基于对 Claude Code（源码分析，56 个顶层模块，~1800 文件）与 Qwen Code（开源源码，~500 文件）的系统性源码对比分析。
 >
 > 如需查阅源码，可参考本地仓库（不在本文档库中）：
-> - Claude Code: `../claude-code/`（源码快照）
+> - Claude Code: `../claude-code-leaked/`（源码快照）
 > - Qwen Code: `../qwen-code/`
+
+## 分报告导航
+
+| 分报告 | 内容 | 改进项数 |
+|--------|------|:--------:|
+| [P0/P1 核心能力](./qwen-code-improvement-report-p0-p1-core.md) | 上下文压缩、Fork Subagent、Speculation、记忆系统、工具并行 | 13 |
+| [P0/P1 引擎优化](./qwen-code-improvement-report-p0-p1-engine.md) | 流式执行、文件缓存、Token Budget、API 重试、优雅关闭 | 19 |
+| [P0/P1 平台增强](./qwen-code-improvement-report-p0-p1-platform.md) | CI/CD、GitHub Review、HTTP Hooks、SDK、Remote Bridge | 10 |
+| **[P1 架构与性能](./qwen-code-improvement-report-p1-arch.md)** | **分层压缩、API 退避、异步 I/O、文件缓存、Prompt Cache** | **10** |
+| **[P2 用户体验](./qwen-code-improvement-report-p2-ux.md)** | **/plan、/review、/branch、/doctor、/cost、Plugin、Task** | **12** |
+| [P1 命令命名空间](./qwen-code-improvement-report-p1-command-namespace.md) | 内置/扩展/MCP 命令治理 | 1 |
+| [P1 Hooks 运行时](./qwen-code-improvement-report-p1-hooks-runtime.md) | HTTP/Prompt/LLM 语义 Hook | 1 |
+| [P1 权限可解释性](./qwen-code-improvement-report-p1-permission-explainability.md) | 权限决策 Trace | 1 |
+| [P1 Resume 发现](./qwen-code-improvement-report-p1-resume-discovery.md) | Worktree/Agentic Search | 1 |
+| [P2 核心功能](./qwen-code-improvement-report-p2-core.md) | Shell 安全、MDM、Token 计数、Fast Mode、Computer Use | 29 |
+| [P2 工具系统](./qwen-code-improvement-report-p2-tools.md) | Conditional Hooks、Transcript Search、MCP | 29 |
+| [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | MCP 并行、缓存、Lazy Loading、GC | 31 |
+| [P2 稳定性](./qwen-code-improvement-report-p2-stability.md) | 卡顿检测、TTY Orphan、心跳、无障碍 | 27 |
+| [P3 低优先级](./qwen-code-improvement-report-p3.md) | 边缘优化 | 若干 |
 
 ## 一、Claude Code 功能模块清单
 
