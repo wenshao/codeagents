@@ -170,7 +170,6 @@
 | **P2** | Agent 进度追踪与实时状态 — ProgressTracker + task-notification + kill 控制 [↓](./qwen-code-improvement-report-p2-stability.md#item-17) | 仅最终结果 | 中 | — |
 | **P2** | Agent 邮箱系统 — 文件 IPC + lockfile + 单播/广播 [↓](./qwen-code-improvement-report-p2-stability.md#item-18) | 仅 Arena 文件 IPC | 中 | — |
 | **P2** | cache_edits 增量缓存删除 — API 原地删除旧工具结果不破坏缓存前缀 [↓](./qwen-code-improvement-report-p2-perf.md#item-13) | 重建消息数组 | 小 | — |
-| **P2** | 消息规范化与配对修复 — 合并连续 user + 修复孤立 tool_use/result + 100 媒体上限 [↓](./qwen-code-improvement-report-p2-perf.md#item-14) | 格式转换/无修复 | 中 | — |
 | **P2** | Git 状态自动注入上下文 — gitBranch/cwd/platform/fileCount 每轮注入 [↓](./qwen-code-improvement-report-p2-perf.md#item-15) | 仅平台和日期 | 小 | — |
 | **P2** | IDE 上下文注入与嵌套记忆触发 — 选区→目录规范自动注入 + 诊断双源收集 [↓](./qwen-code-improvement-report-p2-perf.md#item-16) | 无嵌套记忆触发 | 中 | — |
 | **P2** | 图片压缩多策略流水线 — format→resize→quality 阶梯 + JPEG fallback [↓](./qwen-code-improvement-report-p2-perf.md#item-17) | 仅计算 token/不压缩 | 中 | — |
@@ -220,12 +219,7 @@
 | **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-10) | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-11) | 缺失 | 大 | — |
 | **P1** |  系统提示模块化 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-26) — sections 缓存 + dynamic boundary + uncached 标记  | 单一字符串拼接 | 中 | — |
-| **P1** |  [消息规范化](#message-normalization) — 合并连续 user + 修复孤立 tool_use/result  | 构造即正确，无需后处理 | 中 | — |
-| **P2** |  Git Worktree — gitWorktreeService.ts 已实现(826行)  | 已实现 | 小 | — |
-| **P2** |  REPL 沙箱 — AST 读写分类已覆盖  | 已覆盖 | 中 | — |
-| **P2** |  工作流脚本 — Hook 系统可替代  | 已覆盖 | 中 | — |
 | **P2** |  会话标签与搜索 [↓](./qwen-code-improvement-report-p2-core.md#item-25) — `/tag` 会话标签 + 按 repo/标题搜索  | 仅基础 load/save | 小 | — |
-| **P2** |  MCP OAuth — oauth-provider.ts 已实现(960行)  | 已实现 | 中 | — |
 | **P2** |  MCP 通道通知 [↓](./qwen-code-improvement-report-p2-tools.md#item-13) — MCP channel notification 支持服务器主动推送  | mcp-client.ts 无 channel 概念 | 中 | — |
 | **P3** |  会话分支 [↓](./qwen-code-improvement-report-p2-core.md#item-13) — `/branch` 从历史会话创建分支  | 可用 sessionService 扩展 | 中 | — |
 | **P3** |  安全审查 [↓](./qwen-code-improvement-report-p3.md#item-6) — skill 可快速补齐  | skill 可补齐 | 小 | — |
@@ -274,7 +268,6 @@
 | 启动优化 | API Preconnect + Early Input | 无 | 缺失 | — |
 | CLAUDE.md 条件规则 | frontmatter `paths:` + 惰加载 | 无条件加载 | 中等差距 | — |
 | 系统提示模块化 | sections 缓存 + dynamic boundary | 单一字符串拼接 | 中等差距 | — |
-| 消息规范化 | 合并连续 user + 修复孤立 tool_use | 构造即正确 | 小差距 | — |
 | MCP Channel Notification | Channel notification 服务器推送 | 无 channel 概念 | 中等差距 | — |
 | @include 指令 | 递归引用 + 外部审批 | 缺失 | 缺失 | — |
 | 会话记忆 (Session Memory) | SessionMemory + memdir | 简单笔记工具 | 显著落后 | — |
@@ -293,10 +286,6 @@
 | Output Styles | Learning / Explanatory 模式 | 无 | 缺失 | — |
 | Fast Mode | 速度/成本分级推理 | 无 | 缺失 | — |
 | 并发 Session | 多终端 PID 追踪 + 后台脱附 | 无 | 缺失 | — |
-| Git Worktree | gitWorktreeService.ts 已实现 | 已实现 | 无差距 | — |
-| REPL Sandbox | AST 读写分类已覆盖 | 已覆盖 | 无差距 | — |
-| Workflow Scripts | Hook 系统可替代 | 已覆盖 | 无差距 | — |
-| MCP OAuth | oauth-provider.ts 已实现(960行) | 已实现 | 无差距 | — |
 | Session Tags & Search | `/tag` + 搜索 | 仅基础 load/save | 中等差距 | — |
 | Git Status Auto-Injection | gitBranch/cwd/fileCount 每轮注入 | 仅统计/不注入 | 小差距 | — |
 | IDE Diagnostics Injection | LSP 诊断自动收集 + 选区注入 | 依赖 IDE 推送 | 中等差距 | — |
@@ -438,8 +427,3 @@
 | **P2** | Thinking 块保留 | [p2-core.md#item-35](./qwen-code-improvement-report-p2-core.md#item-35) |
 
 > 以下改进点经审计已在 Qwen Code 中实现或有更好方案，无需额外改动：
-> - Git Worktree（`gitWorktreeService.ts` 826行已实现）
-> - REPL 沙箱（`shellAstParser.ts` AST 读写分类已覆盖）
-> - 工作流脚本（Hook 系统 13 种事件类型可替代）
-> - MCP OAuth（`oauth-provider.ts` 960行已实现）
-> - 消息规范化（"构造即正确"哲学优于 Claude Code 的后处理修复）
