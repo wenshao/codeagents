@@ -137,6 +137,10 @@
 | **P2** | /rename 重命名会话 — 手动修改会话标题 [↓](./qwen-code-improvement-report-p2-tools.md#item-32) | AI 自动标题不可改 | 小 | — |
 | **P2** | /upgrade 版本升级 — changelog 展示 + 一键更新 [↓](./qwen-code-improvement-report-p2-tools.md#item-33) | 手动 npm update | 小 | — |
 | **P2** | Plugin 系统增强 — 聚合容器（commands+skills+hooks+MCP）+ 一键安装/卸载 [↓](./qwen-code-improvement-report-p2-tools.md#item-34) | extension 分散管理 | 中 | — |
+| **P2** | 文件编辑引号风格保留 — preserveQuoteStyle() 检测并保持原文件引号风格 [↓](./qwen-code-improvement-report-p2-tools.md#item-35) | 直接替换不保留 | 小 | — |
+| **P2** | 文件编辑等价性判断 — areFileEditsInputsEquivalent() 跳过重复编辑 [↓](./qwen-code-improvement-report-p2-tools.md#item-36) | 重复编辑也执行 | 小 | — |
+| **P2** | MCP 通道权限管理 — channel plugin allowlist + GrowthBook gate [↓](./qwen-code-improvement-report-p2-tools.md#item-37) | 无 plugin allowlist | 小 | — |
+| **P2** | 消息类型丰富化 — 11 种 → 30+ 种 SDK 消息类型 [↓](./qwen-code-improvement-report-p2-tools.md#item-38) | ~11 种 | 中 | — |
 | **P2** | /effort — 设置模型 effort 级别（○ 低 / ◐ 中 / ● 高）[↓](./qwen-code-improvement-report-p2-tools.md#item-6) | 缺失 | 小 | — |
 | **P2** | Status Line 自定义 — shell 脚本在状态栏展示自定义信息 [↓](./qwen-code-improvement-report-p2-tools.md#item-7) | 缺失 | 小 | — |
 | **P2** | 终端渲染优化 — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools.md#item-8) | 仅消息拆分防闪烁 | 大 | — |

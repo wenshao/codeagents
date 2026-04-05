@@ -1134,3 +1134,134 @@ Agent 编辑文件后展示的 diff 是基础的 inline 格式——没有行号
 **改进收益**：Plugin 聚合 = 一键安装/卸载完整功能包 → 生态可持续增长。
 
 ---
+
+<a id="item-35"></a>
+
+### 35. 文件编辑引号风格保留（P2）
+
+**问题**：Agent 修改 JSON/YAML/JS 文件时，可能把单引号改成双引号（或反过来），导致代码风格不一致——`git diff` 出现大量无意义的引号变更，污染真正的逻辑变更。
+
+**Claude Code 的方案**：`preserveQuoteStyle()` 函数检测原文件的引号风格（单引号/双引号），编辑时保持一致。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `tools/FileEditTool/utils.ts` | `preserveQuoteStyle()` |
+
+**Qwen Code 现状**：Edit 工具直接替换文本，不检测也不保留引号风格。
+
+**Qwen Code 修改方向**：① Edit 工具的 `old_string`/`new_string` 替换前检测原文件引号风格；② 如果新文本使用了不同引号风格，自动转换为原文件风格。
+
+**实现成本评估**：
+- 涉及文件：~1 个
+- 新增代码：~50 行
+- 开发周期：~0.5 天（1 人）
+- 难点：混合引号风格文件的处理策略
+
+**改进前后对比**：
+- **改进前**：Agent 把 `'hello'` 改成 `"hello"` → git diff 显示大量引号变更
+- **改进后**：保留原风格 → git diff 只显示逻辑变更
+
+**意义**：代码风格一致性是代码审查的基本要求。
+**缺失后果**：引号变更污染 diff → reviewer 需要逐行确认是否只是风格变化。
+**改进收益**：引号保留 = 干净 diff → 审查效率提升。
+
+---
+
+<a id="item-36"></a>
+
+### 36. 文件编辑等价性判断（P2）
+
+**问题**：Agent 可能对同一文件发起多次编辑请求——如果两次编辑的 `old_string`/`new_string` 在语义上等价（如仅空白差异），应跳过重复编辑避免权限对话框弹出。
+
+**Claude Code 的方案**：`areFileEditsInputsEquivalent()` 函数比较两次编辑请求是否语义等价——归一化空白后比较。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `tools/FileEditTool/utils.ts` | `areFileEditsInputsEquivalent()` |
+| `tools/FileEditTool/FileEditTool.ts` | 调用等价性判断跳过重复 |
+
+**Qwen Code 现状**：无编辑等价性判断——完全相同的编辑也会重新执行和弹出权限确认。
+
+**Qwen Code 修改方向**：① 新增 `areEditsEquivalent()` 函数；② Edit 工具执行前检查是否与上次编辑等价；③ 等价时跳过执行返回 "no changes needed"。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~80 行
+- 开发周期：~1 天（1 人）
+- 难点：语义等价的定义——仅空白？还是包括注释差异？
+
+**改进前后对比**：
+- **改进前**：相同编辑重复执行 → 弹两次权限对话框 → 用户困惑
+- **改进后**：检测等价 → 跳过 → "no changes needed"
+
+**意义**：减少不必要的权限弹窗和重复操作。
+**缺失后果**：重复编辑 → 重复弹窗 → 用户被无意义操作打断。
+**改进收益**：等价跳过 = 减少弹窗 + 提升交互流畅度。
+
+---
+
+<a id="item-37"></a>
+
+### 37. MCP 通道权限管理（P2）
+
+**问题**：当多个 MCP server 通过 channel plugin 注册时，需要控制哪些 channel plugin 可以注册——防止未经审核的 plugin 注入恶意 MCP 工具。
+
+**Claude Code 的方案**：`channelAllowlist.ts` 通过 GrowthBook feature gate 管理 channel plugin allowlist，只有白名单中的 plugin 可以注册 MCP 工具。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/mcp/channelAllowlist.ts` | Plugin-level allowlist, GrowthBook gate |
+
+**Qwen Code 现状**：Channel 系统（DingTalk/Telegram/WeChat）无 plugin allowlist——任何 channel 都可以注册 MCP 工具。
+
+**Qwen Code 修改方向**：① 配置文件新增 `channels.allowlist` 字段；② Channel plugin 注册时检查 allowlist；③ 未授权 plugin 的 MCP 工具注册被拒绝并记录日志。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~80 行
+- 开发周期：~1 天（1 人）
+- 难点：allowlist 的粒度——按 marketplace + plugin tuple 还是按 plugin name
+
+**改进前后对比**：
+- **改进前**：任何 channel plugin 可注册 MCP 工具 → 潜在安全风险
+- **改进后**：allowlist 控制 → 只有审核通过的 plugin 可注册
+
+**意义**：MCP 工具直接影响 Agent 能力——未审核的工具是安全漏洞。
+**缺失后果**：恶意 plugin 注入工具 → Agent 可能执行不安全操作。
+**改进收益**：allowlist = 只有可信 plugin 的工具可用 → 安全可控。
+
+---
+
+<a id="item-38"></a>
+
+### 38. 消息类型丰富化（P2）
+
+**问题**：Agent 对话中不同类型的消息（用户输入、助手回复、工具调用、系统通知、压缩边界、进度更新等）需要不同的处理和渲染。类型越丰富，SDK 消费者和 UI 就能越精确地处理每种消息。
+
+**Claude Code 的方案**：30+ 种 SDK 消息类型——SDKUserMessage、SDKAssistantMessage、SDKPartialAssistantMessage、SDKToolProgressMessage、SDKResultMessage、SDKCompactBoundaryMessage、SDKStatusMessage、SDKControlRequest、SDKControlResponse、SDKKeepAliveMessage 等。
+
+**Qwen Code 现状**：消息类型较少（~11 种），SDK 消费者需要通过内容猜测消息语义。
+
+**Qwen Code 修改方向**：① 扩展消息类型枚举（新增 CompactBoundary、ToolProgress、Status、KeepAlive 等）；② SDK 输出格式区分每种消息类型；③ UI 层按类型差异化渲染。
+
+**实现成本评估**：
+- 涉及文件：~4 个
+- 新增代码：~200 行
+- 开发周期：~2 天（1 人）
+- 难点：新增类型不破坏现有 SDK 消费者的兼容性
+
+**改进前后对比**：
+- **改进前**：SDK 消费者收到消息 → 需要解析内容猜测类型 → 脆弱
+- **改进后**：每条消息有明确 type 字段 → SDK 消费者 switch(type) 精确处理
+
+**意义**：消息类型是 SDK 协议的基础——类型越精确，集成越可靠。
+**缺失后果**：类型不够 → SDK 消费者猜测语义 → 集成脆弱。
+**改进收益**：30+ 类型 = 每种消息精确标识 → SDK 集成稳健可靠。
+
+---
