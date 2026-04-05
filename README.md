@@ -151,7 +151,7 @@
 - [架构深度对比](./docs/comparison/architecture-deep-dive.md) — 10 Agent 代理循环 + Mermaid 图
 - [功能性内部机制](./docs/comparison/functional-internals.md) — API 参数、编辑格式
 - [/review](./docs/comparison/review-command.md) | [/security-review](./docs/comparison/security-review-command-deep-dive.md) | [/compact /plan /init](./docs/comparison/key-commands-deep-dive.md) | [/loop /schedule](./docs/comparison/loop-schedule.md) | [/simplify](./docs/comparison/simplify-command.md)
-- [/hooks /model /mcp](./docs/comparison/infra-commands.md) | [/btw /rewind](./docs/comparison/btw-rewind.md) | [插件 Marketplace 生命周期](./docs/comparison/plugin-marketplace-lifecycle-deep-dive.md) | [/context 自动化诊断](./docs/comparison/context-usage-noninteractive-deep-dive.md) | [内置命令总览](./docs/comparison/slash-commands-deep-dive.md)
+- [/hooks /model /mcp](./docs/comparison/infra-commands.md) | [/btw /rewind](./docs/comparison/btw-rewind.md) | [插件 Marketplace 生命周期](./docs/comparison/plugin-marketplace-lifecycle-deep-dive.md) | [BriefTool 异步消息](./docs/comparison/brieftool-async-user-messages-deep-dive.md) | [/context 自动化诊断](./docs/comparison/context-usage-noninteractive-deep-dive.md) | [内置命令总览](./docs/comparison/slash-commands-deep-dive.md)
 
 </details>
 
