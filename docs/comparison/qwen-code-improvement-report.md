@@ -219,31 +219,31 @@
 | **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-9) | 基础 vim.ts | 中 | — |
 | **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-10) | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-11) | 缺失 | 大 | — |
-| **P1** | [系统提示模块化](#system-prompt-modular) — sections 缓存 + dynamic boundary + uncached 标记 [↓](#system-prompt-modular) | 单一字符串拼接 | 中 | — |
-| **P1** | [消息规范化](#message-normalization) — 合并连续 user + 修复孤立 tool_use/result [↓](#message-normalization) | 构造即正确，无需后处理 | 中 | — |
-| **P2** | [Git Worktree](#git-worktree) — gitWorktreeService.ts 已实现(826行) [↓](#git-worktree) | 已实现 | 小 | — |
-| **P2** | [REPL 沙箱](#repl-sandbox) — AST 读写分类已覆盖 [↓](#repl-sandbox) | 已覆盖 | 中 | — |
-| **P2** | [工作流脚本](#workflow-scripts) — Hook 系统可替代 [↓](#workflow-scripts) | 已覆盖 | 中 | — |
-| **P2** | [会话标签与搜索](#session-tags-search) — `/tag` 会话标签 + 按 repo/标题搜索 [↓](#session-tags-search) | 仅基础 load/save | 小 | — |
-| **P2** | [MCP OAuth](#mcp-oauth) — oauth-provider.ts 已实现(960行) [↓](#mcp-oauth) | 已实现 | 中 | — |
-| **P2** | [MCP 通道通知](#mcp-notification) — MCP channel notification 支持服务器主动推送 [↓](#mcp-notification) | mcp-client.ts 无 channel 概念 | 中 | — |
-| **P3** | [会话分支](#session-branch) — `/branch` 从历史会话创建分支 [↓](#session-branch) | 可用 sessionService 扩展 | 中 | — |
-| **P3** | [安全审查](#security-review) — skill 可快速补齐 [↓](#security-review) | skill 可补齐 | 小 | — |
-| **P3** | [PR 评论](#pr-comments) — GitHub Actions 可实现 [↓](#pr-comments) | Actions 可实现 | 中 | — |
-| **P2** | [@include Directive](#include-directive) — 递归引用 + 外部文件审批 + 40+ 文本类型白名单 [↓](#include-directive) | 缺失 | 中 | — |
-| **P2** | [附件协议](#attachment-protocol) — 60+ 类型 + per-type token 预算 + 3 阶段有序执行 [↓](#attachment-protocol) | 缺失 | 中 | — |
-| **P2** | [图片压缩流水线](#image-compression) — format→resize→quality 阶梯 + JPEG fallback [↓](#image-compression) | 无压缩 | 中 | — |
-| **P2** | [Git 状态自动注入](#git-status-injection) — gitBranch/cwd/fileCount 每轮自动注入系统提示 [↓](#git-status-injection) | 仅统计/不注入 | 小 | — |
-| **P2** | [IDE 诊断注入](#ide-diagnostics) — LSP 诊断自动收集 + 选区自动注入 [↓](#ide-diagnostics) | 依赖 IDE 推送 | 中 | — |
-| **P2** | [终端主题检测](#terminal-theme) — OSC 11 dark/light + COLORFGBG 回退 [↓](#terminal-theme) | 缺失 | 小 | — |
-| **P2** | [自动后台化 Agent](#auto-background) — 超时 15s 自动转后台 + Assistant 模式检测 [↓](#auto-background) | 需显式指定 | 小 | — |
-| **P2** | [密钥扫描](#secret-scanning) — 工具输出 50+ gitleaks 规则扫描 + 写入阻断 [↓](#secret-scanning) | 仅 Team Memory 场景需要 | 中 | — |
-| **P2** | [子进程环境变量清洗](#env-sanitization) — 30+ 敏感变量自动剥离 [↓](#env-sanitization) | OS 层职责 | 中 | — |
-| **P2** | [结构化 Diff](#structured-diff) — 纯 JS 快速着色 + 行号 gutter + 语法高亮 [↓](#structured-diff) | 基础 inline diff | 中 | — |
-| **P2** | [OSC 通知](#osc-notifications) — iTerm2/Kitty/Ghostty 通知 + 进度 [↓](#osc-notifications) | 仅 bell 响铃 | 小 | — |
-| **P2** | [OSC 8 超链接](#osc-8) — Cmd+Click 打开文件/URL [↓](#osc-8) | MarkdownRenderer.tsx 无 OSC 8 | 小 | — |
-| **P2** | [色觉无障碍主题](#colorblind-theme) — daltonized 红绿→蓝橙 diff 色板 [↓](#colorblind-theme) | 小众需求 | 小 | — |
-| **P2** | [自定义快捷键](#custom-keybindings) — multi-chord + keybindings.json [↓](#custom-keybindings) | keyMatchers.ts 不可配置 | 中 | — |
+| **P1** | 系统提示模块化 — sections 缓存 + dynamic boundary + uncached 标记  | 单一字符串拼接 | 中 | — |
+| **P1** | 消息规范化 — 合并连续 user + 修复孤立 tool_use/result  | 构造即正确，无需后处理 | 中 | — |
+| **P2** | Git Worktree — gitWorktreeService.ts 已实现(826行)  | 已实现 | 小 | — |
+| **P2** | REPL 沙箱 — AST 读写分类已覆盖  | 已覆盖 | 中 | — |
+| **P2** | 工作流脚本 — Hook 系统可替代  | 已覆盖 | 中 | — |
+| **P2** | 会话标签与搜索 — `/tag` 会话标签 + 按 repo/标题搜索  | 仅基础 load/save | 小 | — |
+| **P2** | MCP OAuth — oauth-provider.ts 已实现(960行)  | 已实现 | 中 | — |
+| **P2** | MCP 通道通知 — MCP channel notification 支持服务器主动推送  | mcp-client.ts 无 channel 概念 | 中 | — |
+| **P3** | 会话分支 — `/branch` 从历史会话创建分支  | 可用 sessionService 扩展 | 中 | — |
+| **P3** | 安全审查 — skill 可快速补齐  | skill 可补齐 | 小 | — |
+| **P3** | PR 评论 — GitHub Actions 可实现  | Actions 可实现 | 中 | — |
+| **P2** | @include 指令 — 递归引用 + 外部文件审批 + 40+ 文本类型白名单  | 缺失 | 中 | — |
+| **P2** | 附件协议 — 60+ 类型 + per-type token 预算 + 3 阶段有序执行  | 缺失 | 中 | — |
+| **P2** | 图片压缩流水线 — format→resize→quality 阶梯 + JPEG fallback  | 无压缩 | 中 | — |
+| **P2** | Git 状态自动注入 — gitBranch/cwd/fileCount 每轮自动注入系统提示  | 仅统计/不注入 | 小 | — |
+| **P2** | IDE 诊断注入 — LSP 诊断自动收集 + 选区自动注入  | 依赖 IDE 推送 | 中 | — |
+| **P2** | 终端主题检测 — OSC 11 dark/light + COLORFGBG 回退  | 缺失 | 小 | — |
+| **P2** | 自动后台化 Agent — 超时 15s 自动转后台 + Assistant 模式检测  | 需显式指定 | 小 | — |
+| **P2** | 密钥扫描 — 工具输出 50+ gitleaks 规则扫描 + 写入阻断  | 仅 Team Memory 场景需要 | 中 | — |
+| **P2** | 子进程环境变量清洗 — 30+ 敏感变量自动剥离  | OS 层职责 | 中 | — |
+| **P2** | 结构化 Diff — 纯 JS 快速着色 + 行号 gutter + 语法高亮  | 基础 inline diff | 中 | — |
+| **P2** | OSC 通知 — iTerm2/Kitty/Ghostty 通知 + 进度  | 仅 bell 响铃 | 小 | — |
+| **P2** | OSC 8 超链接 — Cmd+Click 打开文件/URL  | MarkdownRenderer.tsx 无 OSC 8 | 小 | — |
+| **P2** | 色觉无障碍主题 — daltonized 红绿→蓝橙 diff 色板  | 小众需求 | 小 | — |
+| **P2** | 自定义快捷键 — multi-chord + keybindings.json  | keyMatchers.ts 不可配置 | 中 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
