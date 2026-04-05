@@ -22,7 +22,7 @@
 - **跨平台兼容性差**：`curl` 在 Windows 上可能不可用或语法不同。
 
 ### 2. Claude Code 解决方案：原生 HTTP 协议驱动
-Claude Code 在其 Hook 系统 (`utils/hooks/hookRunner.ts` 和 `types/hooks.ts`) 中，原生支持了 `http` 类型的 Hook：
+Claude Code 在其 Hook 系统 (`utils/hooks.ts` 和 `schemas/hooks.ts`) 中，原生支持了 `http` 类型的 Hook：
 
 ```json
 {
