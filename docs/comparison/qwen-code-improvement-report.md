@@ -240,7 +240,7 @@
 | **P3** | [Feedback Survey 用户反馈](./feedback-survey-deep-dive.md) — 内置 /feedback 评分+文字表单 [↓](./qwen-code-improvement-report-p3.md#item-18) | 无内置反馈 | 小 | — |
 | **P3** | [Turn Diffs 轮次差异统计](./turn-diffs-deep-dive.md) — 每轮变更文件数+增删行数汇总 [↓](./qwen-code-improvement-report-p3.md#item-19) | 仅 per-file diff | 小 | — |
 | **P3** | LogoV2 品牌标识 — ASCII art + 启动功能引导 [↓](./qwen-code-improvement-report-p3.md#item-20) | 纯文本 | 小 | — |
-| **P3** | Buddy 伴侣精灵 — 可见助手 + 状态动画 + 空闲引导 [↓](./qwen-code-improvement-report-p3.md#item-21) | 无 | 中 | — |
+| **P3** | [Buddy 伴侣精灵](./buddy-companion-deep-dive.md) — 可见助手 + 状态动画 + 空闲引导 [↓](./qwen-code-improvement-report-p3.md#item-21) | 无 | 中 | — |
 | **P3** | useMoreRight 右面板 — 对话+文件预览并排显示 [↓](./qwen-code-improvement-report-p3.md#item-22) | 单列布局 | 中 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
