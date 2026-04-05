@@ -1,231 +1,49 @@
-# Token 估算与 Thinking 模型 Deep-Dive
+# Qwen Code 改进建议 — API 实时 Token 计数与精确回退 (Token Count Estimation)
 
-> Agent 如何在发送 API 请求前估算 token 数？如何支持模型的扩展思维能力？本文基于 Claude Code（v2.1.89 源码分析）和 Qwen Code（v0.15.0 开源）的源码分析，对比两者在 token 计数、thinking 预算管理和多 Provider 适配方面的差异。
+> 核心洞察：长上下文管理是 AI Agent 的生存基石。如果不知道自己到底花了多少 Token，Agent 就不知道什么时候该把旧日志压缩，什么时候该阻断请求以防爆炸。而在混合了 CJK 字符（中日韩汉字）、Base64 图片附件以及复杂 JSON Schema 的情况下，传统的通过“字符串长度除以 4”来估算 Token 的方式误差极大。Claude Code 构建了基于 API 层级精确统计结合本地分层降级回退（3-Tier Fallback）的极致计数器；而 Qwen Code 目前主要依赖粗糙的本地静态匹配法则，这在中文环境下会频繁导致过度压缩或溢出崩溃。
+>
+> 返回 [改进建议总览](./qwen-code-improvement-report.md)
 
----
+## 一、静态估算带来的致命误差
 
-## 1. 架构总览
+### 1. Qwen Code 的现状：粗估之痛
+在目前的 `packages/core/src/utils/tokenLimits.ts` 中，Qwen Code 主要使用静态字符模式或正则来估算 Token 消耗：
+- **痛点一（截断时机误判）**：假设你发了一大段中文报错，由于中文在不同 Tokenizer（分词器）下 1 个汉字可能被切分为 2 个甚至 3 个 Token，而传统的简单算法可能会认为它只有 1 个 Token。这会导致 Qwen 认为自己还没碰到 70% 的危险红线，于是把这个其实已经超载的包砸向服务器，直接收到 `HTTP 400 Prompt Too Long` 的死锁报错。
+- **痛点二（成本统计失真）**：当你的终端提示你“本轮消耗了 200 Token”时，月底你看着阿里云平台上的账单发现扣了相当于 400 Token 的钱。这会极大地伤害企业用户的信任。
 
-| 维度 | Claude Code | Qwen Code |
-|------|------------|-----------|
-| **Token 计数方式** | API 实时计数（主路径）+ 粗估回退 | 静态模式匹配（配置时） |
-| **Thinking 支持** | 3 模式（adaptive/enabled/disabled）+ token 预算 | 3 档 effort（low/medium/high） |
-| **Provider 适配** | 4 种（Direct/Bedrock/Vertex/Foundry） | 多 Provider 抽象（Anthropic/Gemini/OpenAI/DashScope） |
-| **Token 缓存** | ✅ VCR fixture 系统（hash-based） | ❌ |
-| **预算解析** | ✅ 自然语言（"+500k", "spend 2M tokens"） | ❌ |
+### 2. Claude Code 解决方案：3 层金字塔回退模型
+在 Claude Code 的 `services/tokenEstimation.ts` 和网络调用底层，他们对这个数字的准确度到了吹毛求疵的地步。
 
----
+#### 机制一：金字塔层级 (3-Tier Strategy)
+为了绝对的精准，它在计数时会采取如下优先级的层级回退（Fallback）策略：
+1. **Tier 1 - 精确调用 API (`countTokensWithAPI`)**：直接将准备发送的消息体（不带实际推理任务）发送到模型提供商自带的 `count_tokens` HTTP 接口。这保证了哪怕包含复杂的图表，数字也是 100% 服务端权威对齐的。
+2. **Tier 2 - 小型模型/本地分词器推算**：如果在断网或者 API 限流时，调用本地包含相同词表的 WASM / Node.js 扩展包进行切分。
+3. **Tier 3 - 经验粗估兜底**：最糟糕的情况，按照英文 `~4 bytes/token`，中文额外加权的经验公式凑合估算。
 
-## 2. Claude Code：API 实时计数
+#### 机制二：请求去重与 SHA1 散列缓存 (`withTokenCountVCR`)
+调用 API 去数 Token 虽然准，但会增加巨大的网络延迟，岂不是拖慢了整个应用？
+Claude Code 极其巧妙地引入了一层 `VCR (Video Cassette Recorder)` 缓存。它将需要测算的巨型系统提示词、长代码字符串利用高效率的 `SHA-1` 算法进行 Hash，并将 `[Hash -> Token Count]` 的结果缓存在内存里。
+由于大段的 System Prompt 几个小时都不会变，它几乎永远是 `0ms` 命中缓存返回绝对精确的 Token 数量，兼顾了快与准。
 
-### 2.1 计数策略分层
+## 二、Qwen Code 的改进路径 (P2 优先级)
 
-```
-首选: countTokensWithAPI()         → Anthropic beta.messages.countTokens()
-      ↓ 不可用时
-回退: countTokensViaHaikuFallback() → 使用 Haiku 4.5 计数（避免 Bedrock 限制）
-      ↓ 不可用时
-粗估: roughTokenCountEstimation()   → 4 字节/token（JSON 文件 2 字节/token）
-```
+给大模型 Agent 挂上最精准的仪表盘。
 
-> 源码: `services/tokenEstimation.ts`（496 行）
+### 阶段 1：对接官方的 Count Token API
+1. 查阅通义千问 / DashScope API 文档，找出专门用于计算 Token 的端点。
+2. 在 `packages/core/src/core/client.ts` 抽象出 `countTokens(messages): Promise<number>` 的异步方法。
 
-### 2.2 API 计数实现
+### 阶段 2：构建防抖 Hash 缓存池
+1. 在 `packages/core/src/utils/` 下增加 `tokenEstimationCache.ts`。
+2. 利用 Node.js 内置的 `crypto.createHash('sha1')` 将长文本散列化。
+3. 把散列后的摘要和向 API 请求回来的精准数字进行 LRU (Least Recently Used) 缓存绑定。
 
-```typescript
-// 源码: services/tokenEstimation.ts#L124-L201
-// 调用 Anthropic SDK: anthropic.beta.messages.countTokens()
-// 参数: model, system prompt, messages, tools, thinking config
-// 返回: { input_tokens: number }
-```
+### 阶段 3：替换全局计数器
+找到所有曾经调用静态计数逻辑（比如触发上下文压缩截断阈值判断、以及 `Footer` 状态栏打印当前花销）的地方。
+将老旧的静态算法全部更换为由上述异步 Promise 返回的精准度极高的数值。
 
-**Thinking 计数常量**：
-
-```typescript
-// 源码: services/tokenEstimation.ts#L32-L33
-const TOKEN_COUNT_THINKING_BUDGET = 1024    // 最小 thinking 预算
-const TOKEN_COUNT_MAX_TOKENS = 2048         // 开启 thinking 时最低 max_tokens
-```
-
-**工具 Schema 预处理**（源码: `tokenEstimation.ts#L59-L122`）：
-- 计数前剥离 `caller` 字段（ToolSearch 专用）
-- 剥离 `tool_reference` 字段（ToolResult 内部引用）
-- 防止内部元数据膨胀 token 计数
-
-### 2.3 多 Provider 适配
-
-| Provider | 计数方式 | 特殊处理 |
-|----------|----------|----------|
-| **Direct API** | `beta.messages.countTokens()` | 完整支持 |
-| **Bedrock** | `CountTokensCommand`（动态加载 AWS SDK ~279KB） | 推理配置文件 → 底层模型解析 |
-| **Vertex** | 1P API（过滤 web-search beta 防 400） | Beta header 兼容处理 |
-| **Foundry** | 同 Direct API | — |
-
-> 源码: `tokenEstimation.ts#L437-L495`（Bedrock）, `L150-L170`（Vertex）
-
-### 2.4 粗估算法
-
-```typescript
-// 源码: tokenEstimation.ts#L203-L224
-function roughTokenCountEstimation(text: string): number {
-  // 默认: 4 bytes per token
-  // JSON 文件: 2 bytes per token（JSON 更密集）
-  return Math.ceil(Buffer.byteLength(text) / bytesPerToken)
-}
-```
-
-### 2.5 Token VCR（缓存/录制）
-
-```typescript
-// 源码: services/vcr.ts#L382-L406
-// withTokenCountVCR():
-// - 用 SHA1 hash 键缓存 token 计数结果
-// - 脱水: 移除 UUID、时间戳、工作目录 slug
-// - 存储: fixtures/token-count-{hash}.json
-// - 启用条件: 测试模式 或 FORCE_VCR=1（ant-only）
-```
-
-### 2.6 Token 预算自然语言解析
-
-```typescript
-// 源码: query/tokenBudget.ts#L21-L29
-// 支持格式:
-// "+500k"           → 500,000 tokens
-// "spend 2M tokens" → 2,000,000 tokens
-// "use 1b"          → 1,000,000,000 tokens
-// 乘数: k=1K, m=1M, b=1B
-//
-// 继续条件: 已用 < 90% 预算，或 3 次以上连续增量 < 500 tokens
-```
-
----
-
-## 3. Claude Code：Thinking 模型支持
-
-### 3.1 三种模式
-
-```typescript
-// 源码: utils/thinking.ts
-type ThinkingConfig =
-  | { type: 'adaptive' }                           // 模型自行决定
-  | { type: 'enabled'; budgetTokens: number }       // 强制启用 + 预算
-  | { type: 'disabled' }                            // 完全禁用
-```
-
-### 3.2 模型兼容性检测
-
-```typescript
-// 源码: utils/thinking.ts#L90-L144
-// 1P/Foundry: 所有 Claude 4+ 模型（含 Haiku 4.5）
-// 3P (Bedrock/Vertex): 仅 Opus 4+ 和 Sonnet 4+
-//
-// Adaptive Thinking: 仅 Opus 4.6、Sonnet 4.6 及更新（Claude 4.6+ 系列）
-```
-
-### 3.3 默认行为
-
-```typescript
-// 源码: utils/thinking.ts#L146-L162
-function shouldEnableThinkingByDefault(): boolean {
-  // 可通过 MAX_THINKING_TOKENS 环境变量覆盖
-  // 可通过 alwaysThinkingEnabled 设置覆盖
-  // 否则: 支持 adaptive → adaptive, 支持 enabled → enabled(budget), 不支持 → disabled
-}
-```
-
----
-
-## 4. Qwen Code：静态模式匹配
-
-### 4.1 Token 限制注册表
-
-```typescript
-// 源码: qwen-code/packages/core/src/core/tokenLimits.ts#L11-L12
-DEFAULT_TOKEN_LIMIT = 131_072      // 128K（默认输入）
-DEFAULT_OUTPUT_TOKEN_LIMIT = 32_000 // 32K（默认输出）
-```
-
-**模式匹配算法**（源码: `tokenLimits.ts#L20-L144`）：
-
-```typescript
-// 模型名规范化:
-// "google/gemini-1.5-pro-20250219" → "gemini-1.5-pro" → 1M tokens
-// "qwen-plus-latest" → 保留（特殊模型）
-// 规范化: 剥离 provider 前缀、版本、日期、量化后缀
-```
-
-**部分模型映射（82 种模式）**：
-
-| 模型 | 输入上限 | 输出上限 |
-|------|:--------:|:--------:|
-| Gemini 3.x | 1M | — |
-| Claude 全系列 | 200K | 128K（Opus 4.6） |
-| Qwen 3.x（商业 API） | 1M | 32K |
-| Qwen 3.x（开源） | 256K | 32K |
-| DeepSeek | 128K | — |
-
-### 4.2 自动检测
-
-```typescript
-// 源码: modelsConfig.ts#L777-L780
-if (gc.contextWindowSize === undefined) {
-  this._generationConfig.contextWindowSize = tokenLimit(model.id, 'input')
-}
-// 在配置时自动从注册表查询，而非运行时 API 调用
-```
-
-### 4.3 Thinking/Reasoning 支持
-
-```typescript
-// 源码: qwen-code/packages/core/src/core/contentGenerator.ts#L96-L101
-reasoning?: false | {
-  effort?: 'low' | 'medium' | 'high';
-  budget_tokens?: number;
-}
-```
-
-**Provider 映射**：
-
-| Provider | effort 映射 |
-|----------|-----------|
-| **Anthropic** | effort → beta header; `thinking: { type: 'enabled', budget_tokens }` |
-| **Gemini** | `low → THINKING_MODE_OFF`, `medium → STANDARD`, `high → EXTENDED` |
-
----
-
-## 5. 对比
-
-| 维度 | Claude Code | Qwen Code |
-|------|------------|-----------|
-| Token 计数精度 | **精确**（API 实时） | **估算**（静态注册表） |
-| 计数时机 | 运行时（每次 API 调用前） | 配置时（初始化） |
-| 回退策略 | 3 层（API → Haiku → 粗估） | 单一默认值 |
-| Thinking 模式 | 3 种（adaptive/enabled/disabled） | 3 档 effort（low/medium/high） |
-| Thinking 预算 | 显式 token 数（`budget_tokens`） | effort 级别（无精确 token 控制） |
-| Adaptive Thinking | ✅（Claude 4.6+ 独有） | ❌ |
-| Token 缓存 | ✅ VCR fixture | ❌ |
-| 预算语言解析 | ✅ "+500k"、"spend 2M" | ❌ |
-| 多 Provider | 4 种，各有适配 | 多 Provider 抽象层 |
-
----
-
-## 6. 关键源码文件
-
-### Claude Code
-
-| 文件 | 行数 | 职责 |
-|------|------|------|
-| `services/tokenEstimation.ts` | 496 | Token 计数（API + Haiku + 粗估） |
-| `utils/thinking.ts` | 163 | Thinking 配置（模式/兼容性/默认值） |
-| `query/tokenBudget.ts` | 94 | Token 预算自然语言解析 |
-| `services/vcr.ts` | L382-L406 | Token 计数缓存（VCR fixture） |
-
-### Qwen Code
-
-| 文件 | 行数 | 职责 |
-|------|------|------|
-| `packages/core/src/core/tokenLimits.ts` | 233 | 静态 token 限制注册表（82 模式） |
-| `packages/core/src/core/contentGenerator.ts` | L96-L101 | Reasoning 配置接口 |
-| `packages/core/src/models/modelsConfig.ts` | L777-L780 | Token 限制自动检测 |
-
-> **免责声明**: 以上分析基于 2026 年 Q1 源码（Claude Code v2.1.89、Qwen Code v0.15.0），后续版本可能已变更。
+## 三、改进收益评估
+- **实现成本**：中等。核心是重写一个带有散列缓存的异步获取类，代码量约 150-200 行。
+- **直接收益**：
+  1. **终结不可预知的 400 崩溃**：让 Agent 可以极其自信地在上下文窗口的 99% 的刀尖上跳舞，绝不多浪费一丝内存，也绝不会发生物理溢出。
+  2. **透明的信任感**：在终端打出的每一个计费消耗，都和次日去阿里云控制台查看到的最终账单分毫不差。
