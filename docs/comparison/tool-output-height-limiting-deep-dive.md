@@ -223,7 +223,40 @@ const lastLines = data.slice(
 
 ANSI 输出（含颜色代码）在进入 React 渲染树前就被裁剪到最后 N 行，避免 Ink 解析数千行 ANSI 转义序列。
 
-## 五、Qwen Code 改进方案
+## 五、Qwen Code PR#2770：compact/verbose 模式（互补方案）
+
+[PR#2770](https://github.com/QwenLM/qwen-code/pull/2770) 从另一个角度解决了同一个问题——不限制输出高度，而是在 compact 模式下**完全隐藏**工具输出：
+
+```
+Compact 模式（默认，Ctrl+O 切换）：
+  ✓ ReadFile src/index.ts          ← 仅工具名 + 状态图标
+  ✓ Edit src/index.ts
+  ✓ Bash npm run build
+
+Verbose 模式：
+  ✓ ReadFile src/index.ts
+    1  import React from 'react';   ← 完整输出可见
+    ...
+  ✓ Bash npm run build
+  ▎ tsc --project tsconfig.json
+  ▎ Done in 2.3s
+```
+
+**实现机制**：通过 `VerboseModeContext`（React Context）在渲染层过滤——compact 模式下 `ToolMessage` 返回 `{ type: 'none' }`，不渲染输出内容。`frozenSnapshot` 在流式传输期间冻结 pending items 视口，防止切换模式时的布局抖动。设置持久化到 `~/.qwen/settings.json`。
+
+**与 Gemini CLI 方案的互补关系**：
+
+| 维度 | Gemini CLI 高度限制 | PR#2770 compact/verbose |
+|------|-------------------|----------------------|
+| 解决的问题 | "输出太多行"→ 限制到 15 行 | "要不要看输出"→ 完全隐藏 |
+| 默认可见输出 | 15 行（带溢出指示） | 0 行（仅状态图标） |
+| 信息密度 | 中（能看到部分输出） | 低（看不到任何输出内容） |
+| 防闪烁效果 | 完全解决（渲染前裁剪） | 完全解决（不渲染） |
+| 用户操作 | Ctrl+S 展开/折叠 | Ctrl+O 切换模式 |
+
+**最佳方案是两者结合**：compact 模式解决"要不要看"，height limiting 解决 verbose 模式下"看多少"。当前 PR#2770 的 verbose 模式仍然没有高度限制——切换到 verbose 后，大输出的闪烁问题依然存在。
+
+## 六、Qwen Code 改进方案
 
 ### 阶段 1：添加硬上限常量和计算函数（最高优先级）
 
@@ -293,7 +326,7 @@ if (output.length > MAX_SHELL_OUTPUT_SIZE + TRUNCATION_BUFFER) {
 
 添加 Ctrl+S 展开/折叠快捷键，以及 "X lines hidden" 溢出指示。Qwen Code 已有 `constrainHeight` 状态和 `ShowMoreLines` 组件（从 Gemini CLI fork 而来），但需要确保与阶段 1 的硬上限联动。
 
-## 六、改进收益评估
+## 七、改进收益评估
 
 - **实现成本**：小。核心改动集中在 `ToolMessage.tsx`（添加硬上限 + 预裁剪）和新建 `toolLayoutUtils.ts`（~50 行）。总计 ~200 行代码。
 - **改进效果**：
@@ -303,7 +336,7 @@ if (output.length > MAX_SHELL_OUTPUT_SIZE + TRUNCATION_BUFFER) {
   4. Subagent 输出不再无限增长——固定 15 行 + 折叠
 - **风险**：低。硬上限 + 用户可展开 = 默认安全 + 需要时可查看全部。
 
-## 七、与现有深度文章的关系
+## 八、与现有深度文章的关系
 
 | 相关文章 | 关联点 |
 |---------|-------|
