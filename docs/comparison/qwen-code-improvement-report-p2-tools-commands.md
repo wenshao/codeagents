@@ -597,6 +597,8 @@ Agent 在 CI 容器、Docker 环境或资源受限的服务器上运行时，`rg
 - **改进前**：手动输入 `src/components/auth/LoginForm.tsx`——打字 40+ 个字符
 - **改进后**：输入 `src/comp` + Tab → 补全为 `src/components/` → 继续 Tab 导航子目录
 
+**进展**：[PR#2879](https://github.com/QwenLM/qwen-code/pull/2879)（open）— 新建 `directoryCompletion.ts`（348 行，`SimpleLRUCache` 500 条/5min TTL）+ `usePathCompletion.ts`（167 行，100ms debounce + AbortController）；支持 `/`、`./`、`../`、`~/` 前缀触发；24 个单测覆盖 Unicode 边缘情况。
+
 **意义**：文件路径是 Agent 交互中最常输入的内容——补全直接提升效率。
 **缺失后果**：用户需完整输入文件路径——深层目录路径打字量大。
 **改进收益**：Tab 补全路径——减少打字量，避免路径拼写错误。
