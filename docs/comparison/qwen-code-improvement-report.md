@@ -269,6 +269,12 @@
 | **P3** | useIssueFlagBanner 问题通知 [↓](./qwen-code-improvement-report-p3.md#item-47) | 无 | 小 | — |
 | **P3** | useDiffData 差异数据 [↓](./qwen-code-improvement-report-p3.md#item-48) | 组件内部 | 小 | — |
 | **P3** | toolUseSummary 工具使用摘要 [↓](./qwen-code-improvement-report-p3.md#item-49) | 无 | 小 | — |
+| **P3** | useAwaySummary 离开摘要 [↓](./qwen-code-improvement-report-p3.md#item-50) | 无 | 小 | — |
+| **P3** | useCommandKeybindings 命令快捷键 [↓](./qwen-code-improvement-report-p3.md#item-51) | 分离管理 | 小 | — |
+| **P3** | usePluginRecommendationBase 插件推荐 [↓](./qwen-code-improvement-report-p3.md#item-52) | 无 | 小 | — |
+| **P3** | useSkillImprovementSurvey Skill 反馈 [↓](./qwen-code-improvement-report-p3.md#item-53) | 无 | 小 | — |
+| **P3** | usePrStatus PR 状态 [↓](./qwen-code-improvement-report-p3.md#item-54) | 无 | 小 | — |
+| **P3** | useLogMessages 日志消息 [↓](./qwen-code-improvement-report-p3.md#item-55) | 分散 | 小 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
