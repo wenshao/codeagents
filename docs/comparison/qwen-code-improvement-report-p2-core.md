@@ -947,3 +947,331 @@ Subagent 启动 → 计时器开始 → 超过阈值 → 自动转后台 → 释
 **改进收益**：固定高度 Footer——最大化内容区域，小终端也舒适。
 
 ---
+
+---
+
+<a id="item-25"></a>
+
+### 25. 会话标签与搜索（P2）
+
+**问题**：用户长期使用 Agent 会积累大量会话（几十甚至上百个），只能按时间顺序浏览。想找之前某个功能（如"重构"、"登录 bug"）的会话，需要逐条翻看标题。Claude Code 的 `/tag` 命令支持为会话打标签，按标签/repo/标题搜索。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `commands/tag/tag.tsx` (189行) | `/tag add`、`/tag remove`、`/tag list`、`/tag search` |
+| `utils/sessionStorage.ts` | `saveTag()`、`loadTags()`、`searchSessionsByTag()` |
+
+**Qwen Code 现状**：`sessionService.ts` 仅有 `listSessions()`（按 mtime 排序）和 `loadLastSession()`，无标签系统。
+
+**Qwen Code 修改方向**：① `ChatSession` 接口新增 `tags: string[]` 字段；② 新增 `searchByTags()` 方法；③ 新建 `/tag` 命令。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~150 行
+- 开发周期：~1 天（1 人）
+- 难点：标签持久化存储格式（建议 JSONL 每行追加）
+
+**意义**：长期项目积累大量会话，按标签快速定位。
+**缺失后果**：只能按时间排序，无法按主题/功能分类。
+**改进收益**：标签搜索 = 快速定位历史会话。
+
+---
+
+<a id="item-26"></a>
+
+### 26. @include 指令（P2）
+
+**问题**：团队规范（CLAUDE.md/AGENTS.md）随着项目增长可能变成巨型单文件（500+ 行），难以维护。Claude Code 支持 `@path` 递归引用其他文件，最大深度 5 层，外部文件需用户审批。
+
+**关键设计细节**：
+
+- **正则匹配**：`/(?:^|\s)@((?:[^\s\\]|\\ )+)/g` — 支持 `@path`、`@./path`、`@~/path`
+- **最大深度**：`MAX_INCLUDE_DEPTH = 5` — 防止循环引用
+- **外部文件审批**：不在原始 cwd 目录下的文件需弹窗审批
+- **文本类型白名单**：40+ 种扩展名（`.md`、`.txt`、`.js`、`.ts` 等）
+- **循环引用防护**：`processedPaths` Set 去重
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/claudemd.ts` (1480行) | `processMemoryFile()`、`extractIncludePathsFromTokens()`、`MAX_INCLUDE_DEPTH` |
+
+**Qwen Code 现状**：指令加载器直接读取 CLAUDE.md/AGENTS.md 全文，无 `@include` 解析。
+
+**Qwen Code 修改方向**：① 指令加载器新增 `@path` 正则解析；② 递归加载（深度限制 5）；③ 外部文件审批对话框；④ 文本类型白名单过滤。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~200 行
+- 开发周期：~2 天（1 人）
+- 难点：外部文件审批流程与现有权限系统集成
+
+**意义**：团队规范可模块化复用，避免巨型单文件。
+**缺失后果**：所有指令堆在一个文件中，难以维护。
+**改进收益**：模块化指令 = 可复用 + 可组合。
+
+---
+
+<a id="item-27"></a>
+
+### 27. 附件协议（P2）
+
+**问题**：Agent 每轮对话会注入大量附件（IDE 选区、诊断信息、记忆、Hook 输出等），如果不加控制可能撑爆上下文窗口。Claude Code 定义 60+ 附件类型，每类独立 token 预算，3 阶段有序执行。
+
+**关键设计细节**：
+
+- **60+ 附件类型**：文件（file/compact_file_reference/pdf_reference）、IDE（selected_lines_in_ide/opened_file_in_ide）、内存（nested_memory/relevant_memories）、Hook（hook_blocking_error/hook_success）、Agent（agent_mention/teammate_mailbox）等
+- **Per-type 预算**：`MAX_MEMORY_LINES = 200`、`MAX_MEMORY_BYTES = 4096`、`RELEVANT_MEMORIES_CONFIG.MAX_SESSION_BYTES = 60KB`
+- **3 阶段有序执行**：① userInput 附件 → ② thread 附件 → ③ queuedCommand 附件
+- **媒体上限**：`API_MAX_MEDIA_PER_REQUEST = 100`
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/attachments.ts` (3998行) | 60+ AttachmentType 定义、`getAttachments()` 3 阶段流程 |
+| `constants/apiLimits.ts` | `API_MAX_MEDIA_PER_REQUEST = 100` |
+| `utils/tokenBudget.ts` | per-type 预算配置 |
+
+**Qwen Code 现状**：无附件类型注册表，所有附件统一处理，无 per-type 预算控制。
+
+**Qwen Code 修改方向**：① 新增 `AttachmentType` 枚举；② 新增预算配置；③ 收集附件时按预算截断；④ 3 阶段有序执行。
+
+**实现成本评估**：
+- 涉及文件：~4 个
+- 新增代码：~300 行
+- 开发周期：~3 天（1 人）
+- 难点：预算配置与实际 token 计算的精确对齐
+
+**意义**：精细控制各类附件的 token 消耗，防止单一类型溢出。
+**缺失后果**：无预算控制 = 附件可能撑爆上下文窗口。
+**改进收益**：per-type 预算 = 可控 token 用量。
+
+---
+
+<a id="item-28"></a>
+
+### 28. Git 状态自动注入（P2）
+
+**问题**：模型不知道自己在哪个分支、项目规模多大，可能给错命令（如在 feature 分支上执行 merge）。Claude Code 每轮自动注入 gitBranch/cwd/platform/fileCount 到系统提示。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/api.ts` | `countFilesRoundedRg()` — rg 扫描项目返回约数 |
+| `constants/prompts.ts` | uncached section 中注入 git 状态 |
+
+**Qwen Code 现状**：`getGitBranch()` 和 `geminiMdFileCount` 仅用于统计，不注入到系统提示。模型需自行执行 `git status` 获取。
+
+**Qwen Code 修改方向**：`prompts.ts` 系统提示中新增动态段注入 git 状态（每轮重新计算）。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~50 行
+- 开发周期：~0.5 天（1 人）
+- 难点：fileCount 计算性能（建议复用 rg 结果）
+
+**意义**：模型始终知道当前分支和项目规模。
+**缺失后果**：模型不知道自己在哪个分支，可能给错命令。
+**改进收益**：每轮自动注入 = 模型感知上下文。
+
+---
+
+<a id="item-29"></a>
+
+### 29. IDE 诊断注入（P2）
+
+**问题**：用户让模型修复编译错误，需要先手动粘贴错误信息——多一轮交互。Claude Code 通过 `diagnosticTracker` 服务自动收集 LSP 诊断，每轮注入到系统提示。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/diagnosticTracking.ts` | `LSPDiagnosticRegistry` — 收集/存储诊断 |
+| `utils/attachments.ts` | `diagnostics` 附件类型注入 |
+
+**Qwen Code 现状**：LSP 服务（`lsp.ts`）存在，但诊断仅依赖 IDE 插件主动推送，不自动收集注入。
+
+**Qwen Code 修改方向**：① `lsp.ts` 新增诊断收集（`onDiagnostics` 回调）；② 获取活跃诊断（最近 10 个 error/warning）；③ `prompts.ts` 注入诊断到系统提示。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~100 行
+- 开发周期：~1 天（1 人）
+- 难点：诊断去重和时效性（只注入最新的）
+
+**意义**：模型自动看到编译错误/警告，无需用户手动报告。
+**缺失后果**：用户需要手动粘贴错误信息 = 多一轮交互。
+**改进收益**：自动诊断注入 = 模型即时修复编译错误。
+
+---
+
+<a id="item-30"></a>
+
+### 30. 终端主题检测（P2）
+
+**问题**：浅色终端启动 Agent 后，浅黄色文字在白色背景上不可见——用户需要手动 `/theme light`。Claude Code 自动通过 OSC 11 查询终端背景色，`COLORFGBG` 环境变量回退。
+
+**关键设计细节**：
+
+- **OSC 11 查询**：解析 `rgb:R/G/B` 或 `#RRGGBB` 格式
+- **亮度计算**：ITU-R BT.709 — `0.2126*r + 0.7152*g + 0.0722*b`，>0.5 为 light
+- **COLORFGBG 回退**：ANSI 色号 0-6/8 为暗，7/9-15 为亮
+- **模块级缓存**：`cachedSystemTheme` 避免重复查询
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/systemTheme.ts` | `resolveThemeSetting()`、`detectFromColorFgBg()`、`cachedSystemTheme` |
+| `ink/terminal-querier.ts` | OSC 11 查询实现 |
+
+**Qwen Code 现状**：`semantic-colors.ts` 硬编码主题或依赖用户配置，无自动检测。
+
+**Qwen Code 修改方向**：`semantic-colors.ts` 新增 `detectTheme()` 函数，启动时调用。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~80 行
+- 开发周期：~0.5 天（1 人）
+- 难点：OSC 11 在不同终端（iTerm/Kitty/Alacritty/Windows Terminal）的兼容性
+
+**意义**：自动适配终端背景色 = 颜色对比度始终正常。
+**缺失后果**：浅色终端启动 Agent → 浅黄色文字不可见。
+**改进收益**：自动检测 = UI 始终可读。
+
+---
+
+<a id="item-31"></a>
+
+### 31. 自动后台化 Agent（P2）
+
+**问题**：Subagent 执行长任务（如批量修改 10 个文件），主 Agent 被阻塞——用户无法输入新指令。Claude Code 超时 15s 自动转后台 + Assistant 模式检测。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `tools/BashTool/BashTool.tsx` | `getAutoBackgroundMs()`、`ASSISTANT_BLOCKING_BUDGET_MS = 15_000`、`onTimeout()` |
+
+**Qwen Code 现状**：需用户显式设置 `isBackground`，无超时自动转后台。
+
+**Qwen Code 修改方向**：`agent.ts` 执行时启动 timer，超时自动将任务标记为 background 并释放前台。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~100 行
+- 开发周期：~1 天（1 人）
+- 难点：后台任务完成后的通知机制
+
+**意义**：长任务自动不阻塞前台交互。
+**缺失后果**：用户被阻塞等待长任务完成。
+**改进收益**：超时自动转后台 = 用户继续交互。
+
+---
+
+<a id="item-32"></a>
+
+### 32. 密钥扫描（P2）
+
+**问题**：模型执行工具可能意外输出 API 密钥/密码到对话中。Claude Code 在 Team Memory 上传前用 29 条 gitleaks 规则扫描，防止密钥泄露。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `services/teamMemory/gitleaks.ts` | 29 条 gitleaks 规则（AWS Key、Generic API Key 等） |
+
+**Qwen Code 现状**：无工具输出密钥扫描。
+
+**Qwen Code 修改方向**：① 新建 `secretScanner.ts`，定义 50+ 正则规则；② 工具输出后调用扫描；③ 发现密钥则警告/阻断。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~150 行
+- 开发周期：~1 天（1 人）
+- 难点：规则覆盖率和误报率平衡
+
+**意义**：防止模型意外输出 API 密钥/密码。
+**缺失后果**：工具输出可能包含密钥 → 写入日志/对话。
+**改进收益**：自动扫描 = 防意外泄露。
+
+---
+
+<a id="item-33"></a>
+
+### 33. 子进程环境变量清洗（P2）
+
+**问题**：敏感环境变量（如 `AWS_SECRET_ACCESS_KEY`、`GITHUB_TOKEN`）可能泄漏到工具执行的子进程中。Claude Code 自动剥离 30+ 敏感变量后启动子进程。
+
+**Qwen Code 现状**：继承完整环境。
+
+**Qwen Code 修改方向**：① 新建 `envSanitizer.ts`，定义 30+ 敏感变量集合；② 启动子进程前调用 `sanitizeEnv()` 清洗。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~50 行
+- 开发周期：~0.5 天（1 人）
+- 难点：敏感变量清单的完整性
+
+**意义**：防止敏感变量泄漏到子进程。
+**缺失后果**：API 密钥/凭证可能泄漏到工具输出。
+**改进收益**：环境变量清洗 = 更安全。
+
+---
+
+<a id="item-34"></a>
+
+### 34. 自定义快捷键（P2）
+
+**问题**：Vim/Emacs 用户无法自定义 Agent 的键盘快捷键——键位固定。Claude Code 支持 multi-chord 组合键 + `keybindings.json` 自定义，341 行默认绑定 + 验证器。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `keybindings/defaultBindings.ts` (341行) | 默认键绑定 |
+| `keybindings/parser.ts`、`resolver.ts`、`validate.ts` | 解析/验证框架 |
+| `keybindings/loadUserBindings.ts` | 加载 `keybindings.json` |
+
+**Qwen Code 现状**：`keyMatchers.ts` 不可用户配置，无 `keybindings.json` 支持。
+
+**Qwen Code 修改方向**：① 新增 `keybindings.json` schema；② 加载和解析用户配置；③ 与默认绑定合并。
+
+**实现成本评估**：
+- 涉及文件：~4 个
+- 新增代码：~200 行
+- 开发周期：~2 天（1 人）
+- 难点：multi-chord 组合键解析
+
+**意义**：Vim/Emacs 用户自定义习惯键位。
+**缺失后果**：键位固定，无法自定义。
+**改进收益**：自定义快捷键 = 个人效率提升。
+
+---
+
+<a id="item-35"></a>
+
+### 35. Thinking 块保留（P2）
+
+**问题**：复杂任务需要多轮推理，模型每轮的思考过程（thinking block）不应丢失。Claude Code 跨轮保留 thinking 块 + 1h 空闲自动清理 + latch 防缓存破坏。
+
+**Qwen Code 现状**：thinking 块仅限当前轮。
+
+**Qwen Code 修改方向**：`client.ts` 新增 `thinkingBlocks` 持久化 + 空闲清理（1h 阈值）。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~100 行
+- 开发周期：~1 天（1 人）
+- 难点：仅 Anthropic 模型适用，需 feature flag 控制
+
+**意义**：推理思考跨轮保留 = 复杂任务连续性。
+**缺失后果**：每轮思考丢失 = 重复推理。
+**改进收益**：Thinking 块保留 = 模型推理连贯性。
+
+---

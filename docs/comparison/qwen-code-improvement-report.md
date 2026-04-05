@@ -101,12 +101,12 @@
 | **P2** | [SendMessageTool](./multi-agent-deep-dive.md) — 多 Agent间消息传递、shutdown 请求、plan 审批 [↓](./qwen-code-improvement-report-p2-core.md#item-14) | 缺失 | 中 | — |
 | **P2** | FileIndex — fzf 风格模糊文件搜索 + 异步增量索引 [↓](./qwen-code-improvement-report-p2-core.md#item-15) | 依赖 rg/glob | 中 | — |
 | **P2** | Notebook Edit — Jupyter cell 编辑 + 自动 cell ID 追踪 + 文件历史快照 [↓](./qwen-code-improvement-report-p2-core.md#item-16) | 缺失 | 中 | — |
-| **P2** |  [自定义快捷键](#custom-keybindings) — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
+| **P2** |  [自定义快捷键](./qwen-code-improvement-report-p2-core.md#item-34) — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
 | **P2** | Session Ingress Auth — 远程会话 bearer token 认证（企业多用户环境） [↓](./qwen-code-improvement-report-p2-core.md#item-18) | 缺失 | 中 | — |
 | **P2** | 企业代理 — CONNECT relay + CA cert 注入 + NO_PROXY allowlist（容器环境） [↓](./qwen-code-improvement-report-p2-core.md#item-19) | 缺失 | 大 | — |
 | **P2** | ConfigTool — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](./qwen-code-improvement-report-p2-core.md#item-20) | 仅 /settings 命令 | 小 | — |
-| **P2** |  [终端主题检测](#terminal-theme) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | — |
-| **P2** |  [自动后台化 Agent](#auto-background) — 超过阈值自动转后台执行，不阻塞用户交互 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | 需显式指定 | 小 | — |
+| **P2** |  [终端主题检测](./qwen-code-improvement-report-p2-core.md#item-30) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | — |
+| **P2** |  [自动后台化 Agent](./qwen-code-improvement-report-p2-core.md#item-31) — 超过阈值自动转后台执行，不阻塞用户交互 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | 需显式指定 | 小 | — |
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](./qwen-code-improvement-report-p2-core.md#item-7) | 缺失 | 小 | — |
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2-core.md#item-23) | 缺失 | 小 | [PR#2871](https://github.com/QwenLM/qwen-code/pull/2871) |
 | **P2** | 状态栏紧凑布局 — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2-core.md#item-24) | Footer 占用偏高 | 小 | — |
@@ -162,7 +162,7 @@
 | **P2** | 统一设计系统组件库 — 12 个语义 UI 原语 + ThemeProvider [↓](./qwen-code-improvement-report-p2-stability.md#item-9) | 组件分散 | 中 | — |
 | **P2** | Markdown 表格终端渲染 — ANSI-aware + CJK-aware 列宽计算 [↓](./qwen-code-improvement-report-p2-stability.md#item-10) | CJK 列错位 | 小 | — |
 | **P2** | 屏幕阅读器无障碍支持 — Diff/Spinner/Progress 纯文本替代渲染 [↓](./qwen-code-improvement-report-p2-stability.md#item-11) | hook 存在但使用有限 | 小 | — |
-| **P2** |  [色觉无障碍主题](#colorblind-theme) — daltonized 红绿→蓝橙 diff 色板 [↓](./qwen-code-improvement-report-p2-stability.md#item-12) | 无色觉主题 | 小 | — |
+| **P2** |  [色觉无障碍主题](./qwen-code-improvement-report-p2-stability.md#item-12) — daltonized 红绿→蓝橙 diff 色板 [↓](./qwen-code-improvement-report-p2-stability.md#item-12) | 无色觉主题 | 小 | — |
 | **P2** | 动画系统与卡顿状态检测 — shimmer 微光 + 30s 超时变红 [↓](./qwen-code-improvement-report-p2-stability.md#item-13) | 固定动画/无超时检测 | 小 | — |
 | **P2** | Agent 权限冒泡 — bubble 模式 + Leader 桥接 + 邮箱回退 [↓](./qwen-code-improvement-report-p2-stability.md#item-14) | 继承父级模式 | 中 | — |
 | **P2** | Agent 专属 MCP 服务器 — frontmatter mcpServers + 按需连接/清理 [↓](./qwen-code-improvement-report-p2-stability.md#item-15) | 共享全局 MCP | 小 | — |
@@ -205,8 +205,8 @@
 | **P2** | sandbox运行时集成 — seatbelt/bubblewrap/Docker + 文件/网络限制 [↓](./qwen-code-improvement-report-p2-stability.md#item-30) | 可选/非默认 | 大 | — |
 | **P2** | SSRF 防护 — 私有 IP 阻断 + IPv4-mapped + DNS rebinding 防护 [↓](./qwen-code-improvement-report-p2-stability.md#item-31) | 仅基础 isPrivateIp | 中 | — |
 | **P2** | WebFetch 域名allowlist — 130+ 预批准域名 + 路径段边界匹配 [↓](./qwen-code-improvement-report-p2-stability.md#item-32) | 无内置allowlist | 小 | — |
-| **P2** |  [子进程环境变量清洗](#env-sanitization) — 30+ 敏感变量自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-33) | 继承完整环境 | 中 | — |
-| **P2** | 工具输出 [密钥扫描](#secret-scanning) — 50+ gitleaks 规则 + 写入阻断 [↓](./qwen-code-improvement-report-p2-stability.md#item-34) | 无扫描 | 中 | — |
+| **P2** |  [子进程环境变量清洗](./qwen-code-improvement-report-p2-core.md#item-33) — 30+ 敏感变量自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-33) | 继承完整环境 | 中 | — |
+| **P2** | 工具输出 [密钥扫描](./qwen-code-improvement-report-p2-core.md#item-32) — 50+ gitleaks 规则 + 写入阻断 [↓](./qwen-code-improvement-report-p2-stability.md#item-34) | 无扫描 | 中 | — |
 | **P2** | privilege escalation防护 — auto 模式 60+ 危险规则自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-35) | yolo 批准所有 | 中 | — |
 | **P3** | 动态状态栏 — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3.md#item-1) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-2) | 缺失 | 大 | — |
@@ -219,31 +219,31 @@
 | **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-9) | 基础 vim.ts | 中 | — |
 | **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-10) | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-11) | 缺失 | 大 | — |
-| **P1** |  [系统提示模块化](#system-prompt-modular) — sections 缓存 + dynamic boundary + uncached 标记  | 单一字符串拼接 | 中 | — |
+| **P1** |  [系统提示模块化](./qwen-code-improvement-report-p0-p1-engine.md#item-26) — sections 缓存 + dynamic boundary + uncached 标记  | 单一字符串拼接 | 中 | — |
 | **P1** |  [消息规范化](#message-normalization) — 合并连续 user + 修复孤立 tool_use/result  | 构造即正确，无需后处理 | 中 | — |
-| **P2** |  [Git Worktree](#git-worktree) — gitWorktreeService.ts 已实现(826行)  | 已实现 | 小 | — |
-| **P2** |  [REPL 沙箱](#repl-sandbox) — AST 读写分类已覆盖  | 已覆盖 | 中 | — |
-| **P2** |  [工作流脚本](#workflow-scripts) — Hook 系统可替代  | 已覆盖 | 中 | — |
-| **P2** |  [会话标签与搜索](#session-tags-search) — `/tag` 会话标签 + 按 repo/标题搜索  | 仅基础 load/save | 小 | — |
-| **P2** |  [MCP OAuth](#mcp-oauth) — oauth-provider.ts 已实现(960行)  | 已实现 | 中 | — |
-| **P2** |  [MCP 通道通知](#mcp-notification) — MCP channel notification 支持服务器主动推送  | mcp-client.ts 无 channel 概念 | 中 | — |
-| **P3** |  [会话分支](#session-branch) — `/branch` 从历史会话创建分支  | 可用 sessionService 扩展 | 中 | — |
-| **P3** |  [安全审查](#security-review) — skill 可快速补齐  | skill 可补齐 | 小 | — |
-| **P3** |  [PR 评论](#pr-comments) — GitHub Actions 可实现  | Actions 可实现 | 中 | — |
-| **P2** |  [@include 指令](#include-directive) — 递归引用 + 外部文件审批 + 40+ 文本类型白名单  | 缺失 | 中 | — |
-| **P2** |  [附件协议](#attachment-protocol) — 60+ 类型 + per-type token 预算 + 3 阶段有序执行  | 缺失 | 中 | — |
-| **P2** |  [图片压缩流水线](#image-compression) — format→resize→quality 阶梯 + JPEG fallback  | 无压缩 | 中 | — |
-| **P2** |  [Git 状态自动注入](#git-status-injection) — gitBranch/cwd/fileCount 每轮自动注入系统提示  | 仅统计/不注入 | 小 | — |
-| **P2** |  [IDE 诊断注入](#ide-diagnostics) — LSP 诊断自动收集 + 选区自动注入  | 依赖 IDE 推送 | 中 | — |
-| **P2** |  [终端主题检测](#terminal-theme) — OSC 11 dark/light + COLORFGBG 回退  | 缺失 | 小 | — |
-| **P2** |  [自动后台化 Agent](#auto-background) — 超时 15s 自动转后台 + Assistant 模式检测  | 需显式指定 | 小 | — |
-| **P2** |  [密钥扫描](#secret-scanning) — 工具输出 50+ gitleaks 规则扫描 + 写入阻断  | 仅 Team Memory 场景需要 | 中 | — |
-| **P2** |  [子进程环境变量清洗](#env-sanitization) — 30+ 敏感变量自动剥离  | OS 层职责 | 中 | — |
-| **P2** |  [结构化 Diff](#structured-diff) — 纯 JS 快速着色 + 行号 gutter + 语法高亮  | 基础 inline diff | 中 | — |
-| **P2** |  [OSC 通知](#osc-notifications) — iTerm2/Kitty/Ghostty 通知 + 进度  | 仅 bell 响铃 | 小 | — |
-| **P2** |  [OSC 8 超链接](#osc-8) — Cmd+Click 打开文件/URL  | MarkdownRenderer.tsx 无 OSC 8 | 小 | — |
-| **P2** |  [色觉无障碍主题](#colorblind-theme) — daltonized 红绿→蓝橙 diff 色板  | 小众需求 | 小 | — |
-| **P2** |  [自定义快捷键](#custom-keybindings) — multi-chord + keybindings.json  | keyMatchers.ts 不可配置 | 中 | — |
+| **P2** |  Git Worktree — gitWorktreeService.ts 已实现(826行)  | 已实现 | 小 | — |
+| **P2** |  REPL 沙箱 — AST 读写分类已覆盖  | 已覆盖 | 中 | — |
+| **P2** |  工作流脚本 — Hook 系统可替代  | 已覆盖 | 中 | — |
+| **P2** |  [会话标签与搜索](./qwen-code-improvement-report-p2-core.md#item-25) — `/tag` 会话标签 + 按 repo/标题搜索  | 仅基础 load/save | 小 | — |
+| **P2** |  MCP OAuth — oauth-provider.ts 已实现(960行)  | 已实现 | 中 | — |
+| **P2** |  [MCP 通道通知](./qwen-code-improvement-report-p2-tools.md#item-13) — MCP channel notification 支持服务器主动推送  | mcp-client.ts 无 channel 概念 | 中 | — |
+| **P3** |  [会话分支](./qwen-code-improvement-report-p2-core.md#item-13) — `/branch` 从历史会话创建分支  | 可用 sessionService 扩展 | 中 | — |
+| **P3** |  [安全审查](./qwen-code-improvement-report-p3.md#item-6) — skill 可快速补齐  | skill 可补齐 | 小 | — |
+| **P3** |  [PR 评论](./qwen-code-improvement-report-p2-stability.md#item-22) — GitHub Actions 可实现  | Actions 可实现 | 中 | — |
+| **P2** |  [@include 指令](./qwen-code-improvement-report-p2-core.md#item-26) — 递归引用 + 外部文件审批 + 40+ 文本类型白名单  | 缺失 | 中 | — |
+| **P2** |  [附件协议](./qwen-code-improvement-report-p2-core.md#item-27) — 60+ 类型 + per-type token 预算 + 3 阶段有序执行  | 缺失 | 中 | — |
+| **P2** |  [图片压缩流水线](./qwen-code-improvement-report-p2-perf.md#item-17) — format→resize→quality 阶梯 + JPEG fallback  | 无压缩 | 中 | — |
+| **P2** |  [Git 状态自动注入](./qwen-code-improvement-report-p2-core.md#item-28) — gitBranch/cwd/fileCount 每轮自动注入系统提示  | 仅统计/不注入 | 小 | — |
+| **P2** |  [IDE 诊断注入](./qwen-code-improvement-report-p2-core.md#item-29) — LSP 诊断自动收集 + 选区自动注入  | 依赖 IDE 推送 | 中 | — |
+| **P2** |  [终端主题检测](./qwen-code-improvement-report-p2-core.md#item-30) — OSC 11 dark/light + COLORFGBG 回退  | 缺失 | 小 | — |
+| **P2** |  [自动后台化 Agent](./qwen-code-improvement-report-p2-core.md#item-31) — 超时 15s 自动转后台 + Assistant 模式检测  | 需显式指定 | 小 | — |
+| **P2** |  [密钥扫描](./qwen-code-improvement-report-p2-core.md#item-32) — 工具输出 50+ gitleaks 规则扫描 + 写入阻断  | 仅 Team Memory 场景需要 | 中 | — |
+| **P2** |  [子进程环境变量清洗](./qwen-code-improvement-report-p2-core.md#item-33) — 30+ 敏感变量自动剥离  | OS 层职责 | 中 | — |
+| **P2** |  [结构化 Diff](./qwen-code-improvement-report-p2-tools.md#item-29) — 纯 JS 快速着色 + 行号 gutter + 语法高亮  | 基础 inline diff | 中 | — |
+| **P2** |  [OSC 通知](./qwen-code-improvement-report-p2-tools.md#item-23) — iTerm2/Kitty/Ghostty 通知 + 进度  | 仅 bell 响铃 | 小 | — |
+| **P2** |  [OSC 8 超链接](./qwen-code-improvement-report-p2-stability.md#item-7) — Cmd+Click 打开文件/URL  | MarkdownRenderer.tsx 无 OSC 8 | 小 | — |
+| **P2** |  [色觉无障碍主题](./qwen-code-improvement-report-p2-stability.md#item-12) — daltonized 红绿→蓝橙 diff 色板  | 小众需求 | 小 | — |
+| **P2** |  [自定义快捷键](./qwen-code-improvement-report-p2-core.md#item-34) — multi-chord + keybindings.json  | keyMatchers.ts 不可配置 | 中 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
@@ -420,663 +420,26 @@
 
 ## 八、新增改进点详细说明
 
-> 以下为五轮审计新增的 25 项改进点详细说明。**每项告诉你：改哪些文件、怎么改。**
-> 原有改进点的详细说明见 [§三](#三全部改进点详细说明) 对应分文件。
-
----
-
-<a id="git-worktree"></a>
-
-### 1. Git Worktree（P2，已实现）
-
-**结论**：`packages/core/src/services/gitWorktreeService.ts`（826行）已实现完整功能，无需改动。
-
----
-
-<a id="repl-sandbox"></a>
-
-### 2. REPL 沙箱（P2，已覆盖）
-
-**结论**：`packages/core/src/utils/shellAstParser.ts` 的 AST 读写分类已覆盖 REPL 安全防护，无需单独实现 REPL 工具。
-
----
-
-<a id="workflow-scripts"></a>
-
-### 3. 工作流脚本（P2，Hook 可替代）
-
-**结论**：`packages/core/src/hooks/` 已有 13 种 Hook 事件类型，可通过 Hook 链实现工作流，无需单独实现。
-
----
-
-<a id="mcp-oauth"></a>
-
-### 4. MCP OAuth（P2，已实现）
-
-**结论**：`packages/core/src/tools/mcp-server-manager.ts` 中的 `oauth-provider.ts`（960行）+ `keychain-token-storage.ts` 已实现完整 OAuth，无需改动。
-
----
-
-<a id="message-normalization"></a>
-
-### 5. 消息规范化（P1，Qwen 已优）
-
-**结论**：Qwen 采用"构造即正确"哲学，`converter.ts` 中 `cleanOrphanedToolCalls()` + `mergeConsecutiveAssistantMessages()` 已做轻量清理，无需重度规范化。
-
----
-
-### 6. 会话标签与搜索（P2）
-
-**做什么**：给会话打标签，支持按标签快速搜索。
-
-**改哪些文件**：
-- `packages/core/src/services/sessionService.ts` — 新增 `tags` 字段和搜索方法
-- `packages/cli/src/ui/commands/tagCommand.ts` — 新建命令
-
-**怎么改**：
-```typescript
-// sessionService.ts — 在 ChatSession 接口加 tags 字段
-interface ChatSession {
-  // ... 现有字段
-  tags: string[];  // 新增
-}
-
-// 新增搜索方法
-async searchByTags(tags: string[]): Promise<ChatSession[]> {
-  const sessions = await this.listSessions();
-  return sessions.filter(s => tags.every(t => s.tags.includes(t)));
-}
-```
-```typescript
-// cli/src/ui/commands/tagCommand.ts — 新建
-// /tag add <tag> / /tag remove <tag> / /tag list / /tag search <tag>
-// 复用现有 permissionsCommand 的模式
-```
-
-**改完后效果**：用户执行 `/tag add 重构` 后，会话被标记。后续 `/tag search 重构` 可快速找到所有重构相关会话。
-
----
-
-### 7. MCP 通道通知（P2）
-
-**做什么**：让 MCP 服务器能主动向客户端推送通知（如资源变更），减少轮询。
-
-**改哪些文件**：
-- `packages/core/src/tools/mcp-client.ts` — 新增 channel 订阅和通知处理
-
-**怎么改**：
-```typescript
-// mcp-client.ts — 在 McpClient 类中新增
-private notificationHandlers = new Map<string, (data: any) => void>();
-
-// 订阅通知
-subscribe(channel: string, handler: (data: any) => void) {
-  this.notificationHandlers.set(channel, handler);
-}
-
-// 处理服务器推送
-private handleNotification(method: string, params: any) {
-  const handler = this.notificationHandlers.get(method);
-  handler?.(params);
-}
-```
-
-**改完后效果**：MCP 服务器资源变更时主动推送，延迟从轮询间隔（通常 30s）降到 <1s。
-
----
-
-### 8. @include 指令（P2）
-
-**做什么**：CLAUDE.md/AGENTS.md 中用 `@path` 引用其他文件，递归加载，最大深度 5 层。
-
-**改哪些文件**：
-- `packages/core/src/config/` — 指令加载器（具体文件名待确认，搜索 `CLAUDE.md` 加载逻辑）
-- `packages/cli/src/ui/components/` — 外部文件审批对话框
-
-**怎么改**：
-```typescript
-// 在指令加载器中新增 @include 解析
-const INCLUDE_RE = /(?:^|\s)@((?:[^\s\\]|\\ )+)/g;
-
-async function processIncludes(content: string, basePath: string, depth = 0): Promise<string> {
-  if (depth >= 5) return content;  // 最大深度限制
-  
-  const includes = content.matchAll(INCLUDE_RE);
-  for (const match of includes) {
-    const path = match[1];
-    const fullPath = resolve(basePath, path);
-    // 外部文件需用户审批
-    if (!isWithinProject(fullPath)) {
-      const approved = await askUserApproval(fullPath);
-      if (!approved) continue;
-    }
-    const included = await readFile(fullPath, 'utf-8');
-    const processed = await processIncludes(included, fullPath, depth + 1);
-    content = content.replace(match[0], processed);
-  }
-  return content;
-}
-```
-
-**改完后效果**：团队规范可拆分为多个文件，用 `@coding-style.md` 引用，避免巨型单文件。
-
----
-
-### 9. 附件协议（P2）
-
-**做什么**：定义 60+ 附件类型（文件/IDE/内存/Hook 等），每类独立 token 预算，3 阶段有序执行。
-
-**改哪些文件**：
-- `packages/core/src/core/` — 附件类型枚举和预算配置
-- `packages/core/src/core/client.ts` — 附件收集和执行流程
-
-**怎么改**：
-```typescript
-// 新增附件类型枚举
-enum AttachmentType {
-  File = 'file',
-  SelectedLines = 'selected_lines_in_ide',
-  Diagnostics = 'diagnostics',
-  Memory = 'nested_memory',
-  // ... 60+ 类型
-}
-
-// 新增预算配置
-const ATTACHMENT_BUDGETS = {
-  [AttachmentType.File]: { maxLines: 200, maxBytes: 4096 },
-  [AttachmentType.Memory]: { maxSessionBytes: 60 * 1024 },
-  // ...
-};
-
-// 客户端收集附件时按预算截断
-function collectAttachments(session: Session) {
-  const budget = ATTACHMENT_BUDGETS[type];
-  return truncateToBudget(rawContent, budget);
-}
-```
-
-**改完后效果**：防止单一附件类型（如大量诊断信息）撑爆上下文窗口。
-
----
-
-### 10. 图片压缩流水线（P2）
-
-**做什么**：上传前压缩图片：PNG 调色板 → JPEG 质量阶梯 → 尺寸缩放。
-
-**改哪些文件**：
-- `packages/core/src/utils/imageUtils.ts` — 新建
-
-**怎么改**：
-```typescript
-// 新建 imageUtils.ts
-import sharp from 'sharp';
-
-export async function compressImage(buffer: Buffer): Promise<Buffer> {
-  // 阶段1：格式保留压缩
-  let result = await sharp(buffer).png({ compressionLevel: 9, palette: true }).toBuffer();
-  
-  if (result.length > budget) {
-    // 阶段2：尺寸缩放
-    result = await sharp(buffer)
-      .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 80 })
-      .toBuffer();
-  }
-  
-  if (result.length > budget) {
-    // 阶段3：激进压缩
-    result = await sharp(buffer)
-      .resize(400, 400)
-      .jpeg({ quality: 20 })
-      .toBuffer();
-  }
-  
-  return result;
-}
-```
-
-**改完后效果**：多图场景（截图分析）省 50-80% 图片 token。
-
----
-
-### 11. Git 状态自动注入（P2）
-
-**做什么**：每轮自动把 gitBranch/cwd/fileCount 注入系统提示，模型始终知道当前上下文。
-
-**改哪些文件**：
-- `packages/core/src/core/prompts.ts` — 系统提示中新增动态段
-- `packages/core/src/utils/gitUtils.ts` — 复用现有 git 工具
-
-**怎么改**：
-```typescript
-// prompts.ts — 在 getMainSessionSystemInstruction() 中新增
-async function getGitContextSection(): Promise<string> {
-  const branch = await getGitBranch();
-  const fileCount = await countProjectFiles();
-  return `## Current Context
-Branch: ${branch}
-Working directory: ${cwd}
-Project files: ~${fileCount}`;
-}
-```
-
-**改完后效果**：模型知道自己在哪个分支、项目规模，不再给错命令。
-
----
-
-### 12. IDE 诊断注入（P2）
-
-**做什么**：自动收集 LSP 诊断（编译错误/警告）注入到系统提示，模型即时修复。
-
-**改哪些文件**：
-- `packages/core/src/tools/lsp.ts` — 新增诊断收集
-- `packages/core/src/core/prompts.ts` — 注入诊断到系统提示
-
-**怎么改**：
-```typescript
-// lsp.ts — 在 LSP 服务中新增诊断收集
-private diagnostics = new Map<string, Diagnostic[]>();
-
-onDiagnostics(uri: string, diags: Diagnostic[]) {
-  this.diagnostics.set(uri, diags);
-}
-
-// 获取活跃诊断（最近 10 个）
-getActiveDiagnostics(): Diagnostic[] {
-  return [...this.diagnostics.values()]
-    .flat()
-    .filter(d => d.severity <= 2)  // 仅 error/warning
-    .slice(-10);
-}
-```
-```typescript
-// prompts.ts — 在系统提示中注入
-const diags = lspService.getActiveDiagnostics();
-if (diags.length > 0) {
-  context += `\n## Current Diagnostics\n${formatDiagnostics(diags)}`;
-}
-```
-
-**改完后效果**：模型自动看到编译错误，无需用户手动粘贴。
-
----
-
-### 13. 终端主题检测（P2）
-
-**做什么**：启动时通过 OSC 11 查询终端背景色，自动适配 dark/light 主题。
-
-**改哪些文件**：
-- `packages/cli/src/utils/theme.ts` — 新建或修改现有主题工具
-
-**怎么改**：
-```typescript
-// theme.ts — 新增自动检测
-import { queryTerminal } from './terminal-utils';
-
-export async function detectTheme(): Promise<'dark' | 'light'> {
-  // 尝试 OSC 11 查询
-  const bgColor = await queryTerminal('OSC 11');
-  if (bgColor) {
-    const brightness = parseBrightness(bgColor);
-    return brightness > 0.5 ? 'light' : 'dark';
-  }
-  
-  // 回退：COLORFGBG 环境变量
-  const colorfgbg = process.env.COLORFGBG;
-  if (colorfgbg) {
-    const bg = parseInt(colorfgbg.split(';').pop());
-    return bg >= 7 && bg !== 8 ? 'light' : 'dark';
-  }
-  
-  return 'dark';  // 默认
-}
-```
-
-**改完后效果**：浅色终端启动 Agent 不再出现浅黄色文字不可见。
-
----
-
-### 14. 自动后台化 Agent（P2）
-
-**做什么**：Agent 任务超过 15s 自动转后台，不阻塞用户交互。
-
-**改哪些文件**：
-- `packages/core/src/tools/agent.ts` — 执行流程中加 timer
-
-**怎么改**：
-```typescript
-// agent.ts — 在执行函数中新增
-const AUTO_BACKGROUND_MS = 15_000;
-
-async function executeAgent(agent: Agent) {
-  const timeout = setTimeout(() => {
-    agent.markAsBackground();  // 转后台
-    notifyUser('Agent moved to background after 15s');
-  }, AUTO_BACKGROUND_MS);
-  
-  try {
-    await agent.run();
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-```
-
-**改完后效果**：长任务执行 15s 后自动释放前台，用户可继续交互。
-
----
-
-### 15. 密钥扫描（P2）
-
-**做什么**：工具输出后扫描是否包含 API 密钥/密码，发现则警告或阻断。
-
-**改哪些文件**：
-- `packages/core/src/utils/secretScanner.ts` — 新建
-- `packages/core/src/tools/shell.ts` — 输出后调用扫描
-
-**怎么改**：
-```typescript
-// secretScanner.ts — 新建，参考 gitleaks 规则
-const SECRET_PATTERNS = [
-  { name: 'AWS Key',     re: /AKIA[0-9A-Z]{16}/ },
-  { name: 'Generic API', re: /api[_-]?key["']?\s*[:=]\s*["']?[A-Za-z0-9]{20,}/ },
-  // ... 50+ 规则
-];
-
-export function scanForSecrets(text: string): string[] {
-  const found: string[] = [];
-  for (const { name, re } of SECRET_PATTERNS) {
-    if (re.test(text)) found.push(name);
-  }
-  return found;
-}
-```
-```typescript
-// shell.ts — 在工具输出后调用
-const output = await runCommand(cmd);
-const secrets = scanForSecrets(output);
-if (secrets.length > 0) {
-  warnUser(`Potential secrets detected: ${secrets.join(', ')}`);
-  return redactSecrets(output);
-}
-```
-
-**改完后效果**：防止模型意外输出 API 密钥到对话中。
-
----
-
-### 16. 子进程环境变量清洗（P2）
-
-**做什么**：启动子进程前剥离 30+ 敏感环境变量。
-
-**改哪些文件**：
-- `packages/core/src/utils/envSanitizer.ts` — 新建
-- `packages/core/src/tools/shell.ts` — 启动子进程时调用
-
-**怎么改**：
-```typescript
-// envSanitizer.ts — 新建
-const SENSITIVE_VARS = new Set([
-  'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN',
-  'GITHUB_TOKEN', 'GH_TOKEN',
-  'OPENAI_API_KEY', 'ANTHROPIC_API_KEY',
-  // ... 30+ 敏感变量
-]);
-
-export function sanitizeEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  const clean = { ...env };
-  for (const key of SENSITIVE_VARS) {
-    delete clean[key];
-  }
-  return clean;
-}
-```
-
-**改完后效果**：敏感环境变量不泄漏到工具执行的子进程中。
-
----
-
-### 17. 结构化 Diff（P2）
-
-**做什么**：Diff 渲染带行号 gutter + 语法高亮 + 上下文分隔线。
-
-**改哪些文件**：
-- `packages/cli/src/ui/components/DiffRenderer.tsx` — 已有，增强渲染
-- `packages/cli/src/ui/utils/diffFormatter.ts` — 新建
-
-**怎么改**：
-```typescript
-// diffFormatter.ts — 新建
-import { diffLines } from 'diff';
-import { highlight } from 'cli-highlight';
-
-export function formatStructuredDiff(oldStr: string, newStr: string, lang: string): string {
-  const changes = diffLines(oldStr, newStr);
-  let oldLine = 1, newLine = 1;
-  let output = '';
-  
-  for (const change of changes) {
-    if (change.added) {
-      for (const line of change.value.split('\n')) {
-        output += `+ ${newLine++} | ${highlight(line, { language: lang })}\n`;
-      }
-    } else if (change.removed) {
-      for (const line of change.value.split('\n')) {
-        output += `- ${oldLine++} | ${highlight(line, { language: lang })}\n`;
-      }
-    } else {
-      // 上下文行
-      oldLine += change.value.split('\n').length - 1;
-      newLine += change.value.split('\n').length - 1;
-    }
-  }
-  return output;
-}
-```
-
-**改完后效果**：代码变更带行号 + 语法高亮，可读性大幅提升。
-
----
-
-### 18. OSC 通知（P2）
-
-**做什么**：后台任务完成时推送系统通知（iTerm2/Kitty/Ghostty），带进度百分比。
-
-**改哪些文件**：
-- `packages/cli/src/utils/notifications.ts` — 新建
-
-**怎么改**：
-```typescript
-// notifications.ts — 新建
-export function sendTerminalNotification(type: 'complete' | 'progress', message: string, progress?: number) {
-  if (process.env.TERM_PROGRAM === 'iTerm.app') {
-    // iTerm2
-    process.stdout.write(`\x1b]9;4;${progress || 100};${message}\x07`);
-  } else if (process.env.KITTY_LISTEN_ON) {
-    // Kitty
-    process.stdout.write(`\x1b]99;i=1:${message}\x1b\\`);
-  } else {
-    // 回退：bell
-    process.stdout.write('\x07');
-  }
-}
-```
-
-**改完后效果**：后台任务完成时收到带进度的系统通知，无需盯着终端。
-
----
-
-### 19. OSC 8 超链接（P2）
-
-**做什么**：文件路径和 URL 渲染为可点击超链接，Cmd+Click 直接打开。
-
-**改哪些文件**：
-- `packages/cli/src/ui/components/MarkdownRenderer.tsx` — 链接渲染处
-
-**怎么改**：
-```typescript
-// MarkdownRenderer.tsx — 在链接渲染处修改
-function renderLink(text: string, url: string): string {
-  // OSC 8 超链接格式: ESC ] 8 ; params ; uri ST text ESC ] 8 ; ; ST
-  return `\x1b]8;;${url}\x1b\\${text}\x1b]8;;\x1b\\`;
-}
-
-// 使用示例
-renderLink('src/index.ts', 'file:///path/to/src/index.ts');
-renderLink('github.com', 'https://github.com');
-```
-
-**改完后效果**：终端中文件路径/URL 可直接 Cmd+Click 打开，零复制。
-
----
-
-### 20. 色觉无障碍主题（P2）
-
-**做什么**：新增色觉无障碍主题，diff 配色红绿→蓝橙，适配红绿色盲用户。
-
-**改哪些文件**：
-- `packages/cli/src/ui/themes/theme-manager.ts` — 新增主题
-
-**怎么改**：
-```typescript
-// theme-manager.ts — 新增主题
-const COLORBLIND_SAFE = {
-  name: 'Colorblind Safe',
-  diff: {
-    added:   '#0066CC',  // 蓝（非绿）
-    removed: '#CC6600',  // 橙（非红）
-  },
-  // 其他颜色使用 daltonized 调色板
-};
-```
-
-**改完后效果**：色盲用户能清晰区分 diff 中的增删行。
-
----
-
-### 21. 自定义快捷键（P2）
-
-**做什么**：支持 `keybindings.json` 自定义快捷键配置。
-
-**改哪些文件**：
-- `packages/cli/src/config/keyBindings.ts` — 已有基础架构，新增加载和解析
-- `packages/cli/src/ui/keyboard/` — 新建快捷键处理
-
-**怎么改**：
-```typescript
-// keyBindings.ts — 新增用户配置加载
-interface KeyBinding {
-  key: string;
-  command: string;
-  when?: string;
-}
-
-async function loadUserKeyBindings(): Promise<KeyBinding[]> {
-  const configPath = path.join(getConfigDir(), 'keybindings.json');
-  try {
-    const content = await fs.readFile(configPath, 'utf-8');
-    return JSON.parse(content).keybindings;
-  } catch {
-    return [];  // 无用户配置，使用默认
-  }
-}
-```
-
-**改完后效果**：Vim/Emacs 用户可自定义习惯键位。
-
----
-
-### 22. 会话分支（P3）
-
-**做什么**：从历史会话任意节点分叉，探索不同方案。
-
-**改哪些文件**：
-- `packages/core/src/services/sessionService.ts` — 新增 fork 方法
-- `packages/cli/src/ui/commands/branchCommand.ts` — 新建命令
-
-**怎么改**：
-```typescript
-// sessionService.ts
-async forkSession(sessionId: string, fromMessageId: string, newTitle: string): Promise<string> {
-  const source = await this.loadSession(sessionId);
-  const messages = source.messages.slice(0, source.messages.findIndex(m => m.id === fromMessageId) + 1);
-  const newSessionId = uuid();
-  await this.createSession(newSessionId, newTitle, messages);
-  return newSessionId;
-}
-```
-
-**改完后效果**：用户可从任意对话节点分叉，并行探索多个方案。
-
----
-
-### 23. 安全审查（P3，skill 可补齐）
-
-**做什么**：编写 `SKILL.md` 即可实现，无需代码改动。
-
-**改哪些文件**：
-- `.qwen/skills/security-review/SKILL.md` — 新建
-
-**怎么改**：
-```markdown
----
-name: security-review
-description: 基于 git diff 进行安全审查
----
-
-# Security Review
-
-检查最近的 git diff，关注：
-1. 硬编码密钥/凭证
-2. SQL 注入/XSS 漏洞
-3. 权限绕过
-4. 不安全的反序列化
-...
-```
-
-**改完后效果**：用户执行 `/skills security-review` 即可自动审查代码安全。
-
----
-
-### 24. PR 评论（P3）
-
-**做什么**：通过 GitHub Actions skill 实现，无需核心代码改动。
-
-**改哪些文件**：
-- `.qwen/skills/pr-review/SKILL.md` — 新建 skill
-- `.github/workflows/pr-review.yml` — 新建 workflow
-
-**改完后效果**：PR 提交时自动 review 并添加 inline 评论。
-
----
-
-### 25. Thinking 块保留（P2）
-
-**做什么**：thinking 块跨轮保留，1h 空闲自动清理。
-
-**改哪些文件**：
-- `packages/core/src/core/client.ts` — thinking 块存储和清理
-- 仅 Anthropic 模型适用
-
-**怎么改**：
-```typescript
-// client.ts — thinking 块持久化
-private thinkingBlocks: ThinkingBlock[] = [];
-private lastThinkingActivity = Date.now();
-
-function persistThinking(blocks: ThinkingBlock[]) {
-  this.thinkingBlocks = blocks;
-  this.lastThinkingActivity = Date.now();
-}
-
-// 空闲 1h 后清理
-function cleanupIdleThinking() {
-  if (Date.now() - this.lastThinkingActivity > 3600_000) {
-    this.thinkingBlocks = [];
-  }
-}
-```
-
-**改完后效果**：模型推理过程中的思考跨轮保留，提升复杂任务的连续性。
-
----
+> 以下为五轮审计新增的改进点，已追加到对应分文件中。点击跳转到详细说明（格式与 §三 一致：问题 → Claude Code 源码索引 → Qwen Code 现状 → 修改方向 → 实现成本 → 意义/缺失后果/改进收益）。
+
+| 优先级 | 改进点 | 详见 |
+|:------:|--------|------|
+| **P1** | 系统提示模块化 | [p0-p1-engine.md#item-26](./qwen-code-improvement-report-p0-p1-engine.md#item-26) |
+| **P2** | 会话标签与搜索 | [p2-core.md#item-25](./qwen-code-improvement-report-p2-core.md#item-25) |
+| **P2** | @include 指令 | [p2-core.md#item-26](./qwen-code-improvement-report-p2-core.md#item-26) |
+| **P2** | 附件协议 | [p2-core.md#item-27](./qwen-code-improvement-report-p2-core.md#item-27) |
+| **P2** | Git 状态自动注入 | [p2-core.md#item-28](./qwen-code-improvement-report-p2-core.md#item-28) |
+| **P2** | IDE 诊断注入 | [p2-core.md#item-29](./qwen-code-improvement-report-p2-core.md#item-29) |
+| **P2** | 终端主题检测 | [p2-core.md#item-30](./qwen-code-improvement-report-p2-core.md#item-30) |
+| **P2** | 自动后台化 Agent | [p2-core.md#item-31](./qwen-code-improvement-report-p2-core.md#item-31) |
+| **P2** | 密钥扫描 | [p2-core.md#item-32](./qwen-code-improvement-report-p2-core.md#item-32) |
+| **P2** | 子进程环境变量清洗 | [p2-core.md#item-33](./qwen-code-improvement-report-p2-core.md#item-33) |
+| **P2** | 自定义快捷键 | [p2-core.md#item-34](./qwen-code-improvement-report-p2-core.md#item-34) |
+| **P2** | Thinking 块保留 | [p2-core.md#item-35](./qwen-code-improvement-report-p2-core.md#item-35) |
+
+> 以下改进点经审计已在 Qwen Code 中实现或有更好方案，无需额外改动：
+> - Git Worktree（`gitWorktreeService.ts` 826行已实现）
+> - REPL 沙箱（`shellAstParser.ts` AST 读写分类已覆盖）
+> - 工作流脚本（Hook 系统 13 种事件类型可替代）
+> - MCP OAuth（`oauth-provider.ts` 960行已实现）
+> - 消息规范化（"构造即正确"哲学优于 Claude Code 的后处理修复）
