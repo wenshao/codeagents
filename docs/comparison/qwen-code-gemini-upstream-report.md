@@ -8,37 +8,37 @@
 
 | 优先级 | 改进点 | Qwen Code 现状 | 难度 | 上游 PR |
 |:------:|--------|----------------|:----:|---------|
-| **P0** | [渲染前数据裁剪（SlicingMaxSizedBox）](#item-1) — 渲染前 `.slice()` 到 maxLines，避免 Ink 布局全量内容 | 渲染后视觉裁剪（布局全部数据） | 小 | [#21416](https://github.com/google-gemini/gemini-cli/pull/21416) |
-| **P0** | [工具输出硬上限常量](#item-2) — `ACTIVE_SHELL_MAX_LINES=15` 等 4 个常量 + `calculateShellMaxLines()` | 无硬上限（=终端高度） | 小 | [#20378](https://github.com/google-gemini/gemini-cli/pull/20378) |
-| **P0** | [Shell buffer 摊销截断](#item-3) — 10MB 上限 + 1MB 摊销截断 + UTF-16 surrogate 保护 | 无 buffer 上限 | 小 | [#21416](https://github.com/google-gemini/gemini-cli/pull/21416) |
-| **P1** | [LRU 文本处理缓存](#item-4) — 字符串宽度 / codePoints / 高亮 token 三级缓存 | 无缓存，每次击键重新计算 | 小 | — |
-| **P1** | [紧凑工具视图（DenseToolMessage）](#item-5) — diff 折叠 + 15 行上限 + 紧凑布局 | 缺失 | 中 | [#20974](https://github.com/google-gemini/gemini-cli/pull/20974) |
-| **P1** | [组件 memo 化](#item-6) — `HistoryItemDisplay` / `AppHeader` 等高频组件 `React.memo()` | 未 memo 化 | 小 | — |
-| **P1** | [字符上限降级](#item-7) — `MAXIMUM_RESULT_DISPLAY_CHARACTERS` 从 1MB 降到 20KB | 1MB（Gemini 的 50 倍） | 小 | [#21416](https://github.com/google-gemini/gemini-cli/pull/21416) |
-| **P2** | [虚拟化列表（VirtualizedList）](#item-8) — 仅渲染可视区域 + `StaticRender` 离屏项 | 全量渲染 | 中 | — |
-| **P2** | [批量滚动（useBatchedScroll）](#item-9) — 同一 tick 内多次滚动合并为一次渲染 | 无批量滚动 | 小 | — |
-| **P2** | [Scrollable 滚动容器](#item-10) — ResizeObserver 锚定 + 动画滚动条 + backbuffer | 缺失 | 中 | — |
-| **P2** | [终端能力管理器](#item-11) — Kitty 键盘协议 + bracketed paste + 鼠标事件 | 缺失 | 中 | — |
-| **P2** | [URL 安全检测](#item-12) — Unicode 同形攻击 / Punycode 检测 | 缺失 | 小 | — |
-| **P2** | [ANSI-aware 表格渲染器](#item-13) — `TableRenderer` CJK 2-width + 列对齐 + 换行 | CJK 列错位 | 小 | — |
-| **P2** | [Shell 命令参数补全](#item-14) — git/npm 命令参数补全 provider | 缺失 | 中 | — |
-| **P2** | [任务追踪工具（trackerTools）](#item-15) — 6 个子工具：创建/更新/依赖/可视化 | 缺失 | 大 | — |
-| **P3** | [自定义 Ink 构建](#item-16) — `@jrichman/ink@6.6.7` 优化 fork | 标准 `ink@6.2.3` | 大 | — |
-| **P3** | [超长回复分片渲染](#item-17) — `GeminiMessageContent` 分片避免单组件过大 | 单组件渲染全部 | 中 | — |
-| **P3** | [闪烁检测器](#item-18) — `useFlickerDetector` 自动检测并缓解 | 缺失 | 小 | — |
-| **P0** | [环境变量净化](#item-19) — 25+ 模式过滤 secrets/API keys/credentials | 无净化，secrets 泄漏到 shell | 中 | — |
-| **P0** | [危险命令黑名单](#item-20) — `rm -rf`/`find -exec`/`git -c` 等深度验证 | 仅 AST 只读检测 | 中 | — |
-| **P1** | [Edit 模糊匹配（Levenshtein）](#item-21) — 10% 容差 + 空白低惩罚 + LLM 修复回退 | 仅精确匹配 | 中 | — |
-| **P1** | [省略占位符检测](#item-22) — 拦截 "rest of methods..." 等不完整内容 | 无检测 | 小 | — |
-| **P1** | [JIT 上下文发现](#item-23) — 读/写/编辑文件时自动附加子目录上下文 | 缺失 | 中 | — |
-| **P1** | [OS 级 sandbox](#item-24) — Linux bwrap + macOS Seatbelt + Windows 受限 token | 无进程隔离 | 大 | — |
-| **P2** | [Folder Trust 发现](#item-25) — 信任前扫描项目配置（hooks/agents/MCP/allowlist） | 无预执行扫描 | 中 | — |
-| **P2** | [Web Fetch 速率限制与 SSRF 加固](#item-26) — 10 次/分钟/host + async DNS 验证 + IANA 段阻断 | 最小 SSRF 检查 | 中 | — |
-| **P2** | [Grep 高级参数](#item-27) — `include_pattern`/`exclude_pattern`/`names_only`/per-file 上限 | 仅基础 pattern+path+glob | 小 | — |
-| **P2** | [高级 Vim 操作](#item-28) — 大词(dW/cW) + 查找(f/F/t/T) + 替换(r) + 大小写切换(~) | 仅基础词操作 | 中 | — |
-| **P2** | [Footer 自定义](#item-29) — `FooterConfigDialog` 可配置状态指示器 | 固定布局 | 中 | — |
-| **P2** | [Write File LLM 内容修正](#item-30) — 写入前 LLM 校正畸形内容 | 直接写入 | 中 | — |
-| **P3** | [OAuth 流程重构](#item-31) — 共享 `oauth-flow.ts` + RFC 9728 + OIDC 路径发现 | 内联实现 | 中 | — |
-| **P3** | [Conseca 安全框架](#item-32) — 策略生成 + 执行 + 可扩展 checker 链 | 无内容安全评估 | 大 | — |
+| **P0** | [渲染前数据裁剪（SlicingMaxSizedBox）](./qwen-code-gemini-upstream-report-details.md#item-1) — 渲染前 `.slice()` 到 maxLines，避免 Ink 布局全量内容 | 渲染后视觉裁剪（布局全部数据） | 小 | [#21416](https://github.com/google-gemini/gemini-cli/pull/21416) |
+| **P0** | [工具输出硬上限常量](./qwen-code-gemini-upstream-report-details.md#item-2) — `ACTIVE_SHELL_MAX_LINES=15` 等 4 个常量 + `calculateShellMaxLines()` | 无硬上限（=终端高度） | 小 | [#20378](https://github.com/google-gemini/gemini-cli/pull/20378) |
+| **P0** | [Shell buffer 摊销截断](./qwen-code-gemini-upstream-report-details.md#item-3) — 10MB 上限 + 1MB 摊销截断 + UTF-16 surrogate 保护 | 无 buffer 上限 | 小 | [#21416](https://github.com/google-gemini/gemini-cli/pull/21416) |
+| **P1** | [LRU 文本处理缓存](./qwen-code-gemini-upstream-report-details.md#item-4) — 字符串宽度 / codePoints / 高亮 token 三级缓存 | 无缓存，每次击键重新计算 | 小 | — |
+| **P1** | [紧凑工具视图（DenseToolMessage）](./qwen-code-gemini-upstream-report-details.md#item-5) — diff 折叠 + 15 行上限 + 紧凑布局 | 缺失 | 中 | [#20974](https://github.com/google-gemini/gemini-cli/pull/20974) |
+| **P1** | [组件 memo 化](./qwen-code-gemini-upstream-report-details.md#item-6) — `HistoryItemDisplay` / `AppHeader` 等高频组件 `React.memo()` | 未 memo 化 | 小 | — |
+| **P1** | [字符上限降级](./qwen-code-gemini-upstream-report-details.md#item-7) — `MAXIMUM_RESULT_DISPLAY_CHARACTERS` 从 1MB 降到 20KB | 1MB（Gemini 的 50 倍） | 小 | [#21416](https://github.com/google-gemini/gemini-cli/pull/21416) |
+| **P2** | [虚拟化列表（VirtualizedList）](./qwen-code-gemini-upstream-report-details.md#item-8) — 仅渲染可视区域 + `StaticRender` 离屏项 | 全量渲染 | 中 | — |
+| **P2** | [批量滚动（useBatchedScroll）](./qwen-code-gemini-upstream-report-details.md#item-9) — 同一 tick 内多次滚动合并为一次渲染 | 无批量滚动 | 小 | — |
+| **P2** | [Scrollable 滚动容器](./qwen-code-gemini-upstream-report-details.md#item-10) — ResizeObserver 锚定 + 动画滚动条 + backbuffer | 缺失 | 中 | — |
+| **P2** | [终端能力管理器](./qwen-code-gemini-upstream-report-details.md#item-11) — Kitty 键盘协议 + bracketed paste + 鼠标事件 | 缺失 | 中 | — |
+| **P2** | [URL 安全检测](./qwen-code-gemini-upstream-report-details.md#item-12) — Unicode 同形攻击 / Punycode 检测 | 缺失 | 小 | — |
+| **P2** | [ANSI-aware 表格渲染器](./qwen-code-gemini-upstream-report-details.md#item-13) — `TableRenderer` CJK 2-width + 列对齐 + 换行 | CJK 列错位 | 小 | — |
+| **P2** | [Shell 命令参数补全](./qwen-code-gemini-upstream-report-details.md#item-14) — git/npm 命令参数补全 provider | 缺失 | 中 | — |
+| **P2** | [任务追踪工具（trackerTools）](./qwen-code-gemini-upstream-report-details.md#item-15) — 6 个子工具：创建/更新/依赖/可视化 | 缺失 | 大 | — |
+| **P3** | [自定义 Ink 构建](./qwen-code-gemini-upstream-report-details.md#item-16) — `@jrichman/ink@6.6.7` 优化 fork | 标准 `ink@6.2.3` | 大 | — |
+| **P3** | [超长回复分片渲染](./qwen-code-gemini-upstream-report-details.md#item-17) — `GeminiMessageContent` 分片避免单组件过大 | 单组件渲染全部 | 中 | — |
+| **P3** | [闪烁检测器](./qwen-code-gemini-upstream-report-details.md#item-18) — `useFlickerDetector` 自动检测并缓解 | 缺失 | 小 | — |
+| **P0** | [环境变量净化](./qwen-code-gemini-upstream-report-details.md#item-19) — 25+ 模式过滤 secrets/API keys/credentials | 无净化，secrets 泄漏到 shell | 中 | — |
+| **P0** | [危险命令黑名单](./qwen-code-gemini-upstream-report-details.md#item-20) — `rm -rf`/`find -exec`/`git -c` 等深度验证 | 仅 AST 只读检测 | 中 | — |
+| **P1** | [Edit 模糊匹配（Levenshtein）](./qwen-code-gemini-upstream-report-details.md#item-21) — 10% 容差 + 空白低惩罚 + LLM 修复回退 | 仅精确匹配 | 中 | — |
+| **P1** | [省略占位符检测](./qwen-code-gemini-upstream-report-details.md#item-22) — 拦截 "rest of methods..." 等不完整内容 | 无检测 | 小 | — |
+| **P1** | [JIT 上下文发现](./qwen-code-gemini-upstream-report-details.md#item-23) — 读/写/编辑文件时自动附加子目录上下文 | 缺失 | 中 | — |
+| **P1** | [OS 级 sandbox](./qwen-code-gemini-upstream-report-details.md#item-24) — Linux bwrap + macOS Seatbelt + Windows 受限 token | 无进程隔离 | 大 | — |
+| **P2** | [Folder Trust 发现](./qwen-code-gemini-upstream-report-details.md#item-25) — 信任前扫描项目配置（hooks/agents/MCP/allowlist） | 无预执行扫描 | 中 | — |
+| **P2** | [Web Fetch 速率限制与 SSRF 加固](./qwen-code-gemini-upstream-report-details.md#item-26) — 10 次/分钟/host + async DNS 验证 + IANA 段阻断 | 最小 SSRF 检查 | 中 | — |
+| **P2** | [Grep 高级参数](./qwen-code-gemini-upstream-report-details.md#item-27) — `include_pattern`/`exclude_pattern`/`names_only`/per-file 上限 | 仅基础 pattern+path+glob | 小 | — |
+| **P2** | [高级 Vim 操作](./qwen-code-gemini-upstream-report-details.md#item-28) — 大词(dW/cW) + 查找(f/F/t/T) + 替换(r) + 大小写切换(~) | 仅基础词操作 | 中 | — |
+| **P2** | [Footer 自定义](./qwen-code-gemini-upstream-report-details.md#item-29) — `FooterConfigDialog` 可配置状态指示器 | 固定布局 | 中 | — |
+| **P2** | [Write File LLM 内容修正](./qwen-code-gemini-upstream-report-details.md#item-30) — 写入前 LLM 校正畸形内容 | 直接写入 | 中 | — |
+| **P3** | [OAuth 流程重构](./qwen-code-gemini-upstream-report-details.md#item-31) — 共享 `oauth-flow.ts` + RFC 9728 + OIDC 路径发现 | 内联实现 | 中 | — |
+| **P3** | [Conseca 安全框架](./qwen-code-gemini-upstream-report-details.md#item-32) — 策略生成 + 执行 + 可扩展 checker 链 | 无内容安全评估 | 大 | — |
 
 > 注：详情见 [回移建议详情](./qwen-code-gemini-upstream-report-details.md)
