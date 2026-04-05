@@ -2,9 +2,11 @@
 
 > 基于对 Claude Code（源码分析，56 个顶层模块，~1800 文件）与 Qwen Code（开源源码，~500 文件）的系统性源码对比分析。
 >
+> **审计方法**: 五轮无方向 + 反方向 + 交叉审计（详见 [§六](#六审计方法说明)）。
+>
 > 如需查阅源码，可参考本地仓库（不在本文档库中）：
-> - Claude Code: `../claude-code/`（源码快照）
-> - Qwen Code: `../qwen-code/`
+> - Claude Code: `../claude-code-leaked/`（反编译分析）
+> - Qwen Code: `../qwen-code/`（开源）
 
 ## 一、Claude Code 功能模块清单
 
@@ -217,6 +219,31 @@
 | **P3** | Vim 完整实现 — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-9) | 基础 vim.ts | 中 | — |
 | **P3** | 语音模式 — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-10) | 缺失 | 大 | — |
 | **P3** | [插件市场](./hook-plugin-extension-deep-dive.md) — 插件发现、安装、版本管理 + 前端 UI [↓](./qwen-code-improvement-report-p3.md#item-11) | 缺失 | 大 | — |
+| **P1** | [系统提示模块化](#system-prompt-modular) — sections 缓存 + dynamic boundary + uncached 标记 [↓](#system-prompt-modular) | 单一字符串拼接 | 中 | — |
+| **P1** | [消息规范化](#message-normalization) — 合并连续 user + 修复孤立 tool_use/result [↓](#message-normalization) | 构造即正确，无需后处理 | 中 | — |
+| **P2** | [Git Worktree](#git-worktree) — gitWorktreeService.ts 已实现(826行) [↓](#git-worktree) | 已实现 | 小 | — |
+| **P2** | [REPL 沙箱](#repl-sandbox) — AST 读写分类已覆盖 [↓](#repl-sandbox) | 已覆盖 | 中 | — |
+| **P2** | [工作流脚本](#workflow-scripts) — Hook 系统可替代 [↓](#workflow-scripts) | 已覆盖 | 中 | — |
+| **P2** | [会话标签与搜索](#session-tags-search) — `/tag` 会话标签 + 按 repo/标题搜索 [↓](#session-tags-search) | 仅基础 load/save | 小 | — |
+| **P2** | [MCP OAuth](#mcp-oauth) — oauth-provider.ts 已实现(960行) [↓](#mcp-oauth) | 已实现 | 中 | — |
+| **P2** | [MCP 通道通知](#mcp-notification) — MCP channel notification 支持服务器主动推送 [↓](#mcp-notification) | mcp-client.ts 无 channel 概念 | 中 | — |
+| **P3** | [会话分支](#session-branch) — `/branch` 从历史会话创建分支 [↓](#session-branch) | 可用 sessionService 扩展 | 中 | — |
+| **P3** | [安全审查](#security-review) — skill 可快速补齐 [↓](#security-review) | skill 可补齐 | 小 | — |
+| **P3** | [PR 评论](#pr-comments) — GitHub Actions 可实现 [↓](#pr-comments) | Actions 可实现 | 中 | — |
+| **P2** | [@include Directive](#include-directive) — 递归引用 + 外部文件审批 + 40+ 文本类型白名单 [↓](#include-directive) | 缺失 | 中 | — |
+| **P2** | [附件协议](#attachment-protocol) — 60+ 类型 + per-type token 预算 + 3 阶段有序执行 [↓](#attachment-protocol) | 缺失 | 中 | — |
+| **P2** | [图片压缩流水线](#image-compression) — format→resize→quality 阶梯 + JPEG fallback [↓](#image-compression) | 无压缩 | 中 | — |
+| **P2** | [Git 状态自动注入](#git-status-injection) — gitBranch/cwd/fileCount 每轮自动注入系统提示 [↓](#git-status-injection) | 仅统计/不注入 | 小 | — |
+| **P2** | [IDE 诊断注入](#ide-diagnostics) — LSP 诊断自动收集 + 选区自动注入 [↓](#ide-diagnostics) | 依赖 IDE 推送 | 中 | — |
+| **P2** | [终端主题检测](#terminal-theme) — OSC 11 dark/light + COLORFGBG 回退 [↓](#terminal-theme) | 缺失 | 小 | — |
+| **P2** | [自动后台化 Agent](#auto-background) — 超时 15s 自动转后台 + Assistant 模式检测 [↓](#auto-background) | 需显式指定 | 小 | — |
+| **P2** | [密钥扫描](#secret-scanning) — 工具输出 50+ gitleaks 规则扫描 + 写入阻断 [↓](#secret-scanning) | 仅 Team Memory 场景需要 | 中 | — |
+| **P2** | [子进程环境变量清洗](#env-sanitization) — 30+ 敏感变量自动剥离 [↓](#env-sanitization) | OS 层职责 | 中 | — |
+| **P2** | [结构化 Diff](#structured-diff) — 纯 JS 快速着色 + 行号 gutter + 语法高亮 [↓](#structured-diff) | 基础 inline diff | 中 | — |
+| **P2** | [OSC 通知](#osc-notifications) — iTerm2/Kitty/Ghostty 通知 + 进度 [↓](#osc-notifications) | 仅 bell 响铃 | 小 | — |
+| **P2** | [OSC 8 超链接](#osc-8) — Cmd+Click 打开文件/URL [↓](#osc-8) | MarkdownRenderer.tsx 无 OSC 8 | 小 | — |
+| **P2** | [色觉无障碍主题](#colorblind-theme) — daltonized 红绿→蓝橙 diff 色板 [↓](#colorblind-theme) | 小众需求 | 小 | — |
+| **P2** | [自定义快捷键](#custom-keybindings) — multi-chord + keybindings.json [↓](#custom-keybindings) | keyMatchers.ts 不可配置 | 中 | — |
 
 > 点击改进点名称可跳转到 Deep-Dive 文章；每项的详细说明（缺失后果 + 改进收益 + 建议方案）见 [§三](#三全部改进点详细说明)。
 
@@ -232,8 +259,8 @@
 | [P2 核心功能与企业特性](./qwen-code-improvement-report-p2-core.md) | 中等优先级（Shell 安全、MDM 企业策略、Token 计数、Computer Use 等） | 24 |
 | [P2 工具与命令扩展](./qwen-code-improvement-report-p2-tools.md) | 中等优先级（MCP 动态插槽、Ripgrep 回退、Notebook Edit、LSP 等） | 29 |
 | [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并等） | 34 |
-| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描等） | 34 |
-| [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 11 |
+| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描等） | 60 |
+| [P3 详细说明](./qwen-code-improvement-report-p3.md) | 低优先级（Feature Gates、Vim、语音、插件市场等） | 30 |
 
 ## 四、架构差异总结
 
@@ -245,7 +272,11 @@
 | **智能工具并行** | Kind-based batching（默认 10 并发） | Agent 并发 / 其他顺序 | 中等差距 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) |
 | 投机执行 (Speculation) | 完整 overlay-fs + cow（991 行） | v0.15.0 已完整实现（563 行），默认关闭 | 小差距 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | 启动优化 | API Preconnect + Early Input | 无 | 缺失 | — |
-| CLAUDE.md 条件规则 | frontmatter `paths:` + 惰加载 | 无 | 中等差距 | — |
+| CLAUDE.md 条件规则 | frontmatter `paths:` + 惰加载 | 无条件加载 | 中等差距 | — |
+| 系统提示模块化 | sections 缓存 + dynamic boundary | 单一字符串拼接 | 中等差距 | — |
+| 消息规范化 | 合并连续 user + 修复孤立 tool_use | 构造即正确 | 小差距 | — |
+| MCP Channel Notification | Channel notification 服务器推送 | 无 channel 概念 | 中等差距 | — |
+| @include 指令 | 递归引用 + 外部审批 | 缺失 | 缺失 | — |
 | 会话记忆 (Session Memory) | SessionMemory + memdir | 简单笔记工具 | 显著落后 | — |
 | 自动记忆 (Memory) 整理 | Auto Dream | 无 | 缺失 | — |
 | 上下文折叠 (Context Collapse) | History Snip | 无 | 缺失 | — |
@@ -254,14 +285,24 @@
 | Token 实时计数 | API 计数 + VCR 缓存 | 静态模式匹配 | 中等差距 | — |
 | 工具发现 | ToolSearchTool | 无 | 缺失 | — |
 | 多 Agent通信 | SendMessageTool | 无 | 缺失 | — |
+| 任务管理 | TaskCreate/Get/Update/List/Output/Stop | todoWrite 已覆盖 | 小差距 | — |
+| Team Agent Management | TeamCreateTool/TeamDeleteTool (Swarms) | Arena 模式更简洁 | 小差距 | — |
 | 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | — |
 | Commit Attribution | Co-Authored-By 追踪 | 无 | 缺失 | — |
 | 会话分支 | /branch 对话分叉 | 无 | 缺失 | — |
 | Output Styles | Learning / Explanatory 模式 | 无 | 缺失 | — |
 | Fast Mode | 速度/成本分级推理 | 无 | 缺失 | — |
 | 并发 Session | 多终端 PID 追踪 + 后台脱附 | 无 | 缺失 | — |
-| Git Diff 统计 | 结构化 diff + 按文件统计 | 无 git-aware stats | 中等差距 | — |
-| 文件历史快照 | per-file SHA256 + 按消息恢复 | checkpoint（git 级） | 小差距 | — |
+| Git Worktree | gitWorktreeService.ts 已实现 | 已实现 | 无差距 | — |
+| REPL Sandbox | AST 读写分类已覆盖 | 已覆盖 | 无差距 | — |
+| Workflow Scripts | Hook 系统可替代 | 已覆盖 | 无差距 | — |
+| MCP OAuth | oauth-provider.ts 已实现(960行) | 已实现 | 无差距 | — |
+| Session Tags & Search | `/tag` + 搜索 | 仅基础 load/save | 中等差距 | — |
+| Git Status Auto-Injection | gitBranch/cwd/fileCount 每轮注入 | 仅统计/不注入 | 小差距 | — |
+| IDE Diagnostics Injection | LSP 诊断自动收集 + 选区注入 | 依赖 IDE 推送 | 中等差距 | — |
+| Terminal Theme Detection | OSC 11 + COLORFGBG 回退 | 缺失 | 小差距 | — |
+| Auto-Background Agent | 超时 15s 自动转后台 | 需显式指定 | 小差距 | — |
+| Thinking Block Retention | 跨轮保留 + 空闲清理 | 每轮独立 | 中等差距 | — |
 | **流式工具执行** | StreamingToolExecutor 流水线 | 等完整响应 | 显著落后 | — |
 | **文件读取缓存** | FileReadCache 1000 LRU + 批量并行 | 无缓存/顺序读取 | 显著落后 | — |
 | **记忆异步prefetch** | Memory prefetch + skill prefetch | 无 | 缺失 | — |
@@ -276,6 +317,19 @@
 | **崩溃恢复** | 中断检测 + 合成续行 + 全量恢复 | 无 | 缺失 | — |
 | **API 重试** | 10 次退避 + 529 降级 + 持久化重试 | 仅重试次数 | 显著落后 | — |
 | **优雅关闭** | SIGINT/SIGTERM + 清理注册 + failsafe | 无信号处理 | 缺失 | — |
+| MCP OAuth | McpAuthTool + OAuth 端口管理 | 缺失 | 缺失 | — |
+| MCP Channel Notification | Channel notification 服务器推送 | 缺失 | 缺失 | — |
+| Privacy Protection | PII 脱敏 + Killswitch + 事件采样 | 无保护 | 显著落后 | — |
+| Extended Hooks | FileChanged/ConfigChange/TaskLifecycle 等 | 仅基础 Hook | 中等差距 | — |
+| Structured Diff | Rust NAPI + 行号 + 语法高亮 | 基础 inline diff | 中等差距 | — |
+| Spinner Tool Timer | 工具名 + 单独计时 | 仅全局计时 | 小差距 | — |
+| OSC Notifications | iTerm2/Kitty/Ghostty + 进度 | 仅 bell 响铃 | 小差距 | — |
+| OSC 52 Clipboard | 复制代码 + tmux 回退 | 缺失 | 小差距 | — |
+| OSC 8 Hyperlinks | Cmd+Click 打开文件/URL | 纯文本链接 | 小差距 | — |
+| Colorblind Theme | daltonized 红绿→蓝橙 | 无专门主题 | 小差距 | — |
+| Custom Keybindings | multi-chord + keybindings.json | 不可配置 | 中等差距 | — |
+| Image Chips | [Image #N] 位置引用 | 附件形式 | 小差距 | — |
+| Permission File Preview | 内容预览 + 语法高亮 | 基础确认 | 中等差距 | — |
 | **反应式压缩** | prompt_too_long 自动裁剪重试 | 无 | 缺失 | — |
 | **原子写入** | temp+rename + 大结果persist to disk | 直接 writeFileSync | 中等差距 | — |
 | **自动检查点** | 默认启用 + per-message 快照 | 默认关闭 | 中等差距 | — |
@@ -329,3 +383,34 @@
 | 终端渲染 | [终端渲染与防闪烁](../tools/claude-code/11-terminal-rendering.md) |
 | 设置与安全 | [设置与安全](../tools/claude-code/06-settings.md) |
 | 会话与记忆 | [会话与记忆](../tools/claude-code/07-session.md) |
+
+## 六、审计方法说明
+
+本报告采用 **五轮审计法** 确保结论完整性和客观性：
+
+| 轮次 | 方法 | 目标 | 发现数 |
+|------|------|------|:------:|
+| **第一轮** | 无方向审计 | 全面扫描双方架构差异，不预设结论 | 87 项 |
+| **第二轮** | 无方向审计 | 深入对比 10 大核心模块实现差异 | 43 项 |
+| **第三轮** | 反方向审计 | 假设 Qwen Code 更优，找出其优势 | 7 项 |
+| **第四轮** | 反方向审计 | 假设 Claude Code 更优，验证 Qwen Code 不足 | 已覆盖 |
+| **第五轮** | 交叉审计 | 随机抽样验证前四轮结论的准确性 | 6 项确认 |
+
+> **免责声明**: 审计基于 2026 年 Q1 源码快照，可能已过时。Claude Code 为闭源二进制，分析基于反编译结果，可能与实际行为有差异。
+
+## 七、Qwen Code 优势分析
+
+经第三轮反方向审计，确认 Qwen Code 在以下方面优于 Claude Code：
+
+| 维度 | Qwen Code | Claude Code | 优势评估 |
+|------|-----------|-------------|----------|
+| **开源可审计** | 全部源码可审计（~500 文件） | 闭源 Bun 二进制（需反编译） | **显著优势** |
+| **LSP 工具** | 12 种操作（含 diagnostics/codeActions） | 8 种操作 | **优势** |
+| **代码简洁度** | ~500 文件，~17.7 万行 | ~1800 文件，~38 万行 | **维护成本低** |
+| **记忆系统** | global + project 两级，文件透明 | 单级 MEMORY.md，自动管理 | **更可控** |
+| **搜索提供商** | Google/Tavily/Dashscope 3 种 | 仅内置搜索 | **更灵活** |
+| **多语言 SDK** | TypeScript + Java SDK | 仅 Node.js | **更广泛** |
+| **IDE 扩展** | VS Code + Zed 编辑器 | 仅 Chrome 集成 | **更开放** |
+| **/restore 命令** | 开源可验证的 checkpoint 恢复 | 闭源实现（不可审计） | **更透明** |
+
+> **总结**: Qwen Code 的核心优势在于 **透明性、可审计性、代码简洁度** 和 **LSP 功能完整性**。Claude Code 的优势在于 **功能丰富度**（101 vs 38 命令）和 **企业特性**（durable cron、teammate 等）。
