@@ -109,7 +109,7 @@
 | **P2** | 自动后台化 Agent — 超过阈值自动转后台执行，不阻塞用户交互 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | 需显式指定 | 小 | — |
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](./qwen-code-improvement-report-p2-core.md#item-7) | 缺失 | 小 | — |
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2-core.md#item-23) | 缺失 | 小 | [PR#2871](https://github.com/QwenLM/qwen-code/pull/2871) |
-| **P2** | 状态栏紧凑布局 — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2-core.md#item-24) | Footer 占用偏高 | 小 | — |
+| **P2** | [状态栏紧凑布局](./compact-status-bar-deep-dive.md) — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2-core.md#item-24) | Footer 占用偏高 | 小 | — |
 | **P2** | [会话标签与搜索](./session-tags-search-deep-dive.md) — /tag 命令打标签 + 按标签/仓库/标题搜索历史会话 [↓](./qwen-code-improvement-report-p2-core.md#item-25) | 仅按时间排序 | 小 | — |
 | **P2** | Conditional Hooks — Hook `if` 字段用权限规则语法按工具/路径过滤 [↓](./qwen-code-improvement-report-p2-tools.md#item-1) | 缺失 | 小 | — |
 | **P2** | [Transcript Search 会话记录搜索](./transcript-search-navigation-deep-dive.md) — 按 `/` 搜索会话记录，`n`/`N` 导航匹配项 [↓](./qwen-code-improvement-report-p2-tools.md#item-2) | 缺失 | 小 | — |
@@ -224,9 +224,9 @@
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3.md#item-2) | 缺失 | 大 | — |
 | **P3** | [内存诊断](./memory-diagnostics-deep-dive.md) — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3.md#item-3) | 缺失 | 中 | — |
 | **P3** | [Feature Gates](./feature-gates-deep-dive.md) — GrowthBook 远程特性开关 + A/B 测试 + 按事件动态采样 [↓](./qwen-code-improvement-report-p3.md#item-4) | 缺失 | 中 | — |
-| **P3** | DXT/MCPB 插件包 — zip bomb 防护（512MB/文件，1GB 总量，50:1 压缩比限制） [↓](./qwen-code-improvement-report-p3.md#item-5) | 缺失 | 中 | — |
+| **P3** | [DXT/MCPB 插件包](./zip-bomb-protection-deep-dive.md) — zip bomb 防护（512MB/文件，1GB 总量，50:1 压缩比限制） [↓](./qwen-code-improvement-report-p3.md#item-5) | 缺失 | 中 | — |
 | **P3** | [/security-review](./security-review-command-deep-dive.md) — 基于 git diff 的安全审查命令，聚焦漏洞检测 [↓](./qwen-code-improvement-report-p3.md#item-6) | 缺失 | 小 | — |
-| **P3** | Ultraplan — 启动远程 CCR 会话，用更强模型深度规划后回传结果 [↓](./qwen-code-improvement-report-p3.md#item-7) | 缺失 | 大 | — |
+| **P3** | [Ultraplan](./ultraplan-remote-planning-deep-dive.md) — 启动远程 CCR 会话，用更强模型深度规划后回传结果 [↓](./qwen-code-improvement-report-p3.md#item-7) | 缺失 | 大 | — |
 | **P3** | [Advisor 顾问模型](./advisor-model-deep-dive.md) — /advisor 配置副模型审查主模型输出，多模型协作 [↓](./qwen-code-improvement-report-p3.md#item-8) | 缺失 | 中 | — |
 | **P3** | [Vim 完整实现](./vim-emulation-deep-dive.md) — motions + operators + textObjects + transitions 完整体系 [↓](./qwen-code-improvement-report-p3.md#item-9) | 基础 vim.ts | 中 | — |
 | **P3** | [语音模式](./voice-mode-deep-dive.md) — push-to-talk 语音输入 + 流式 STT 转录 + 可重绑快捷键 [↓](./qwen-code-improvement-report-p3.md#item-10) | 缺失 | 大 | — |
@@ -366,3 +366,4 @@
 | 终端渲染 | [终端渲染与防闪烁](../tools/claude-code/11-terminal-rendering.md) |
 | 设置与安全 | [设置与安全](../tools/claude-code/06-settings.md) |
 | 会话与记忆 | [会话与记忆](../tools/claude-code/07-session.md) |
+
