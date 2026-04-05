@@ -1348,3 +1348,40 @@ Agent 编辑文件后展示的 diff 是基础的 inline 格式——没有行号
 **改进收益**：时间线式回忆 = 长会话透明可追溯——"做了什么、什么时候、为什么"一目了然。
 
 ---
+
+<a id="item-41"></a>
+
+### 41. /context 非交互输出与自动化诊断（P2）
+
+**问题**：Qwen Code 的 `/context` 命令可以在终端中查看上下文 token 分布（system prompt / tools / memory / 消息历史各占多少），但这个能力只在交互式 TUI 中可用。CI 脚本、基准测试、IDE 插件和外部控制器无法程序化获取同样的诊断数据。
+
+**Claude Code 的方案**：将 `/context` 拆为两层——交互式（`context.tsx`）和非交互式（`context-noninteractive.ts`），共享 `collectContextData()` 数据采集路径。非交互输出为结构化文本（Markdown 表格或 JSON），可被脚本解析。SDK 控制协议也通过 `get_context_usage` 请求暴露同一套数据。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `commands/context/context-noninteractive.ts` | `collectContextData()` 共享采集路径 |
+| `commands/context/context.tsx` | 交互式 TUI 渲染 |
+
+**Qwen Code 现状**：`contextCommand.ts` 仅在交互式 TUI 中渲染 token 分布。`nonInteractiveCliCommands.ts` 中未包含 `/context`。
+
+**Qwen Code 修改方向**：① `contextCommand.ts` 抽取 `collectContextData()` 共享函数；② `nonInteractiveCliCommands.ts` 注册 `/context` 输出结构化文本；③ SDK 控制协议新增 `get_context_usage` 请求类型。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~150 行
+- 开发周期：~1 天（1 人）
+- 难点：确保交互和非交互路径的数据采集逻辑完全一致
+
+**相关文章**：[/context 非交互输出 Deep-Dive](./context-usage-noninteractive-deep-dive.md)
+
+**改进前后对比**：
+- **改进前**：CI 想知道 prompt 体积变化 → 无法获取 → 版本发布后才发现 token 膨胀
+- **改进后**：`qwen -p --context-usage --output-format json` → CI 自动比较 → 回归立即报警
+
+**意义**：上下文诊断是平台能力而非 UI 功能——脚本/CI/IDE 都需要访问。
+**缺失后果**：只有交互式入口 → 自动化场景无法获取上下文健康数据。
+**改进收益**：非交互输出 = CI 可观测 + IDE 可集成 + 基准可比较。
+
+---
