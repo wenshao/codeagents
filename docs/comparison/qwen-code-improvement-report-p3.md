@@ -834,3 +834,87 @@ Rate Limit Options
 - 涉及文件：~1 个
 - 新增代码：~30 行
 - 开发周期：~0.5 天（1 人）
+
+---
+
+<a id="item-27"></a>
+
+### 27. 启动性能分析器 startupProfiler（P3）
+
+**做什么**：Claude Code 内置启动性能分析器——测量各初始化阶段的耗时和内存占用，支持采样日志和详细 profiling 两种模式：
+
+**关键源码**：
+
+| 文件 | 行数 | 职责 |
+|------|------|------|
+| `utils/startupProfiler.ts` | 194 | checkpoint 记录、内存快照、报告生成 |
+| `utils/profilerBase.ts` | ~100 | 基础分析函数 |
+
+**总规模**：~294 行
+
+**Qwen Code 现状**：Qwen Code **完全没有启动性能分析器**。无法测量启动各阶段耗时，无法定位启动瓶颈。
+
+**Qwen Code 修改方向**：
+1. 新建 `utils/startupProfiler.ts`
+2. 在启动关键点插入 `profileCheckpoint()` 调用
+3. 支持 `QWEN_CODE_PROFILE_STARTUP=1` 环境变量
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~150 行
+- 开发周期：~1 天（1 人）
+
+---
+
+<a id="item-28"></a>
+
+### 28. iTerm/Apple Terminal 状态备份与恢复（P3）
+
+**做什么**：Claude Code 在启动时自动检测并恢复 iTerm2/Apple Terminal 的会话状态：
+
+**关键源码**：
+
+| 文件 | 行数 | 职责 |
+|------|------|------|
+| `utils/iTermBackup.ts` | ~200 | iTerm2 状态备份和恢复 |
+| `utils/appleTerminalBackup.ts` | ~150 | Apple Terminal 状态备份和恢复 |
+
+**总规模**：~350 行
+
+**Qwen Code 现状**：Qwen Code 完全没有终端状态备份和恢复功能。
+
+**Qwen Code 修改方向**：
+1. （仅 macOS）新建 `utils/iTermBackup.ts` 和 `utils/appleTerminalBackup.ts`
+2. 在启动流程中调用恢复函数
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~250 行
+- 开发周期：~2 天（1 人）
+
+---
+
+<a id="item-29"></a>
+
+### 29. Hook 文件变更监听 fileChangedWatcher（P3）
+
+**做什么**：Claude Code 实现了 Hook 文件的实时监听——修改 hook 配置文件时自动重新加载：
+
+**关键源码**：
+
+| 文件 | 行数 | 职责 |
+|------|------|------|
+| `utils/hooks/fileChangedWatcher.ts` | 191 | Hook 文件监听——chokidar + 防抖 + 重新加载 |
+
+**总规模**：~191 行
+
+**Qwen Code 现状**：Qwen Code 有 chokidar 用于 skill 文件监听，但**没有 hook 文件变更监听**。
+
+**Qwen Code 修改方向**：
+1. 新建 `utils/hooks/fileChangedWatcher.ts`
+2. 集成到 hook 加载流程
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~150 行
+- 开发周期：~1 天（1 人）
