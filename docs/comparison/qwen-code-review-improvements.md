@@ -84,6 +84,8 @@
 仅对 diff 中涉及的文件运行（不全量 lint）。
 ```
 
+**与排除标准的协同**：SKILL.md 排除标准已声明"Issues that a linter or type checker would catch automatically"不应由 LLM 报告。集成 linter 后两者形成闭环——linter 负责确定性问题，LLM 专注于 linter 无法捕获的逻辑/设计/安全问题，彼此不重复。
+
 **实现成本**：SKILL.md 增加 ~30 行指令，无代码改动。
 
 ### P1：运行构建和测试
@@ -106,6 +108,8 @@
 4. 输出格式同其他 Agent（File/Issue/Impact/Suggested fix/Severity）。
    构建失败和测试失败一律标为 **Critical**。
 ```
+
+**注意**：构建/测试失败是确定性事实，其 findings 应跳过 Step 2.5 的 LLM 验证，直接标为 confirmed Critical。
 
 **实现成本**：SKILL.md 增加 ~20 行指令。
 
@@ -234,7 +238,7 @@
 5. 更新 cache 文件
 ```
 
-**实现成本**：SKILL.md +15 行 cache 读写指令。
+**实现成本**：SKILL.md +15 行 cache 读写指令。需要确保 `.qwen/review-cache/` 在 `.gitignore` 中，防止 cache 文件被提交。
 
 ### P3：审查报告持久化
 
