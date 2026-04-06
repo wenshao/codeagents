@@ -37,29 +37,47 @@
 
 ## 二、与业界领先实现的差距
 
+### 竞品架构深度剖析
+
+1. **Copilot Code Review**:
+   - **Agentic 工作流**: 运行在 GitHub Actions 上，拥有 Repository-wide search、文件读取和符号跳转的能力。
+   - **CodeQL 深度集成**: 这是它最大的杀手锏。将 **大模型概率推理** 与 **CodeQL 确定性语义/安全分析** 融合。CodeQL 提供安全漏洞和复杂数据流的 Ground Truth（基础事实），LLM 负责解释并过滤噪音，这极大地降低了幻觉（Hallucination）。
+   - **Autofix 与配置化**: 提供 Autofix 自动修复建议，并且能够严格遵守通过 `.github/copilot-instructions.md` 注入的团队审查规范。
+2. **Gemini CLI (`async-pr-review` Skill)**:
+   - **Agentic Asynchronous Pattern（智能体异步模式）**: 通过 `is_background: true` 在后台分离执行任务。它甚至通过 `gemini -p`（无头模式）实现纯后台的 LLM 推理。
+   - **Ephemeral Worktrees（临时工作树）**: 为了不污染用户的主工作区，它会在 `.gemini/tmp/async-reviews/pr-<number>` 自动创建临时 `git worktree`。
+   - **闭环验证**: 后台自动运行构建、测试，并在最后将测试执行日志与大模型 Review 结果合成 `final-assessment.md`。
+3. **Claude Code (`commands/review.ts`)**:
+   - 采用较为基础的 Prompt 包装模式 (`LOCAL_REVIEW_PROMPT`)，使用 `gh pr diff` 获取差异并直接给出一个全面的单次 Prompt 审查要求（包括正确性、风格、性能、安全等）。
+   - 但也包含了调用远程 `Ultrareview` API 进行深度云端审查的能力。
+
 ### 对比矩阵
 
 | 能力 | Qwen Code | Copilot Code Review | Claude Code | Gemini CLI |
 |------|-----------|-------------------|-------------|-----------|
-| 并行审查 Agent | ✓ 4 个 | ✓ Agentic（单 agent 多工具）| ✓ 1 个（tools: *） | ✓ 5 个异步任务 |
-| 独立验证 | ✓ 每个 finding 独立验证 | — | — | — |
-| 确定性分析（linter/typecheck） | — | ✓ CodeQL + ESLint | — | ✓ `npm run preflight` |
-| 构建/测试执行 | — | ✓（CI 集成） | — | ✓ `npm run build && test` |
-| 跨文件影响分析 | — | ✓ 追踪 import 链 | — | ✓ `codebase_investigator` |
+| 并行审查 Agent | ✓ 4 个并行 | ✓ Agentic（单 agent 多工具）| ✓ 1 个 Prompt 包装 | ✓ 5 个异步任务 + Headless |
+| 独立验证 | ✓ 每个 finding 独立验证 | ✓ CodeQL 兜底验证 | — | — |
+| 确定性分析（linter/typecheck） | — | ✓ CodeQL + ESLint/PMD | — | ✓ 自动前置检查脚本 |
+| 构建/测试执行 | — | ✓（Actions CI 集成） | — | ✓ 临时工作树中跑测试 |
+| 跨文件影响分析 | — | ✓ 追踪 import 链与调用流 | — | ✓ `codebase_investigator` |
 | 重复代码检测 | — | — | — | ✓ `review-duplication` skill |
-| 异步/后台审查 | — | ✓ GitHub Actions | — | ✓ ephemeral worktree |
-| 项目规则自定义 | — | ✓ `copilot-instructions.md` | — | ✓ `strict-development-rules.md` |
+| 异步/后台审查 | — | ✓ GitHub Actions 后台 | — | ✓ Native Background Shells |
+| 项目规则自定义 | — | ✓ `copilot-instructions.md` | — | ✓ `.gemini/skills` 体系 |
 | 评论聚合 | — | ✓ 同模式合并 | — | — |
-| 增量审查 | — | ✓ 新 commit 触发 | — | — |
-| 跨 PR 记忆 | — | ✓ | — | — |
+| 自动修复 (Autofix) | — | ✓ 基于分析结果一键修复 | — | — |
 
 ### 关键差距
 
-1. **只靠 LLM，无确定性分析**——linter/typecheck 能捕捉的问题（类型错误、未使用变量、import 缺失），LLM 不稳定且浪费 token
-2. **不运行构建和测试**——无法验证代码是否编译通过、测试是否通过
-3. **不分析跨文件影响**——Agent 只看 diff，不追踪被修改函数的调用方
-4. **无项目自定义规则**——不同项目有不同代码规范，当前用统一 prompt
-5. **同步阻塞**——审查期间用户不能做其他事
+结合矩阵分析，当前 Qwen Code 主要在以下 8 个方面存在差距：
+
+1. **只靠 LLM，无确定性分析**——linter/typecheck 能轻易捕捉的问题（如类型错误、未使用变量），依赖 LLM 审查不仅慢，而且极易产生幻觉和漏报。
+2. **不运行构建和测试**——无法验证代码是否能够通过编译或破坏了现有测试。
+3. **不分析跨文件影响**——Agent 的视野局限于 Diff 变更本身，缺乏追踪被修改函数调用方（下游依赖）的能力。
+4. **无项目自定义规则**——缺乏像 `.github/copilot-instructions.md` 这样的项目级规范注入机制。
+5. **同步阻塞**——审查由于串行等待大模型响应，时间长达数分钟，期间完全阻塞 CLI。
+6. **缺少自动修复 (Autofix) 闭环**——仅提供文本建议，未利用工具能力直接生成或应用修复补丁。
+7. **评论缺乏聚合与置信度区分**——同一类问题会被重复报告多次，且所有问题均被视为"确定问题"，缺乏"疑似待确认"的灰度状态。
+8. **缺乏记忆与持久化**——再次运行 `/review` 会重复消耗 Token 审查未变更的代码，且终端关闭后审查结论即告丢失。
 
 ## 三、改进建议（按优先级）
 
@@ -67,7 +85,7 @@
 
 **问题**：4 个 LLM Agent 审查"变量未使用"比 ESLint 慢 100 倍且不可靠。
 
-**改进**：在 Step 2 之前增加 Step 1.5——运行项目已有的 linter/typecheck，将结果注入 Agent 的上下文。
+**改进**：在 Step 2 之前增加 Step 1.5——运行项目已有的 linter/typecheck，将结果注入后续流程。
 
 ```markdown
 ## Step 1.5: 运行确定性分析
@@ -84,7 +102,7 @@
 仅对 diff 中涉及的文件运行（不全量 lint）。
 ```
 
-**与排除标准的协同**：SKILL.md 排除标准已声明"Issues that a linter or type checker would catch automatically"不应由 LLM 报告。集成 linter 后两者形成闭环——linter 负责确定性问题，LLM 专注于 linter 无法捕获的逻辑/设计/安全问题，彼此不重复。
+**与排除标准的协同**：SKILL.md 排除标准已声明"Issues that a linter or type checker would catch automatically"不应由 LLM 报告。集成 linter 后两者形成闭环——linter 负责确定性问题，LLM 专注于 linter 无法捕获的逻辑/设计/安全问题，彼此互补。
 
 **实现成本**：SKILL.md 增加 ~30 行指令，无代码改动。
 
@@ -92,7 +110,7 @@
 
 **问题**：代码看起来正确但编译不通过、测试失败——这是最重要的反馈，但当前完全缺失。
 
-**改进**：在 Step 2 的 4 个 Agent 中增加第 5 个——Build & Test Agent。
+**改进**：在 Step 2 的 4 个 Agent 中增加第 5 个——Build & Test Agent。结合 Gemini CLI 的经验，在临时 Worktree 中执行构建测试，或者确保它不会破坏主环境的状态。
 
 ```markdown
 ## Agent 5: 构建 & 测试验证
@@ -117,7 +135,7 @@
 
 **问题**：修改了 `auth.ts` 的接口签名，但 10 个调用方没更新——当前 Agent 只看 diff 不会发现。
 
-**改进**：在审查 Agent 的指令中强调跨文件追踪。
+**改进**：在审查 Agent 的指令中强调跨文件追踪，或借鉴 Copilot 的 Agentic 探索能力。
 
 ```markdown
 ## 对每个被修改的函数/类/接口：
@@ -138,7 +156,7 @@
 
 **问题**：React 项目需要检查 hooks 规则，Go 项目需要检查 error 处理，但当前用统一 prompt。
 
-**改进**：支持 `.qwen/review-rules.md` 项目级审查规则。
+**改进**：支持 `.qwen/review-rules.md` 项目级审查规则（参考 Copilot 的 `copilot-instructions.md`）。
 
 ```markdown
 ## Step 0: 加载项目审查规则
@@ -154,6 +172,23 @@
 ```
 
 **实现成本**：SKILL.md 增加 ~10 行文件检测 + 注入指令。
+
+### P2：自动修复闭环 (Autofix)
+
+**问题**：发现问题后仅提供纯文本建议，用户仍需手动回到编辑器中修改，割裂了工作流。
+
+**改进**：利用 Agent 的写入能力，生成可以直接应用的修复。
+
+```markdown
+## Step 5: 生成并应用 Autofix
+
+对于审查得出的 Critical 和 Suggestion 级别问题，若修复方案明确：
+1. 生成补丁文件（如 `.qwen/tmp/autofix.patch`）或提供 `git apply` 就绪的差异内容。
+2. 询问用户："Review complete. Found 2 issues. Apply suggested auto-fixes? (y/n)"
+3. 如果用户同意，通过 `run_shell_command` 执行代码修正。
+```
+
+**实现成本**：SKILL.md 在最终输出阶段增加 ~15 行处理指令。
 
 ### P2：评论聚合（同模式合并）
 
@@ -179,9 +214,9 @@
 
 ### P2：异步审查（后台执行）
 
-**问题**：审查 15 个文件的 PR 需要 2-3 分钟，期间用户无法使用 CLI。
+**问题**：审查 15 个文件的 PR 需要数分钟，期间用户无法使用 CLI。
 
-**改进**：支持后台审查模式。
+**改进**：支持后台审查模式，借鉴 Gemini CLI 的 `async-pr-review` 模式。
 
 ```markdown
 ## 异步审查模式
@@ -191,14 +226,14 @@
 
 如果选择后台：
 1. 创建临时 worktree：`git worktree add .qwen/tmp/review-<pr> HEAD`
-2. 在 worktree 中执行审查
-3. 完成后通知用户
+2. 在 worktree 中以 Headless 模式或脱机 Shell 后台执行审查任务。
+3. 完成后将状态写入汇总文件并通知用户
 4. 清理 worktree
 
-优势：不阻塞主工作区，不影响用户当前工作。
+优势：不阻塞主工作区，避免修改状态冲突。
 ```
 
-**实现成本**：SKILL.md +20 行 worktree 指令 + `BundledSkillLoader` 支持后台执行（需代码改动）。
+**实现成本**：SKILL.md +20 行 worktree 指令 + `BundledSkillLoader` 支持后台执行（需一定代码改动）。
 
 ### P2：Severity 置信度标注
 
@@ -266,14 +301,15 @@
 
 | 优先级 | 改进 | 改动量 | 效果 |
 |--------|------|--------|------|
-| **P0** | 集成 linter/typecheck | SKILL.md +30 行 | 消除确定性问题的 LLM 浪费 |
-| **P1** | 构建 & 测试执行 | SKILL.md +20 行 | 发现编译/测试失败 |
-| **P1** | 跨文件影响分析 | SKILL.md +15 行 | 发现 breaking change |
-| **P1** | 项目自定义审查规则 | SKILL.md +10 行 | 适应不同项目规范 |
-| **P2** | 评论聚合 | SKILL.md +15 行 | 减少冗余评论 |
-| **P2** | 异步后台审查 | SKILL.md +20 行 + `BundledSkillLoader` 改动 | 不阻塞用户 |
-| **P2** | Severity 置信度 | SKILL.md +10 行 | 区分确定/不确定 |
-| **P3** | 增量审查 | SKILL.md +15 行 | 避免重复审查 |
-| **P3** | 报告持久化 | SKILL.md +10 行 | 审查结果可追溯 |
+| **P0** | 集成 linter/typecheck | SKILL.md +30 行 | 消除确定性问题的 LLM 浪费，提供可靠 Ground Truth |
+| **P1** | 构建 & 测试执行 | SKILL.md +20 行 | 发现编译与测试失败问题 |
+| **P1** | 跨文件影响分析 | SKILL.md +15 行 | 发现 API 修改带来的 Breaking Change |
+| **P1** | 项目自定义审查规则 | SKILL.md +10 行 | 适应不同项目的特有代码规范 |
+| **P2** | 自动修复闭环 (Autofix) | SKILL.md +15 行 | 补齐审查-修复的最后一步，体验大增 |
+| **P2** | 评论聚合 | SKILL.md +15 行 | 减少冗余同质化评论 |
+| **P2** | 异步后台审查 | SKILL.md +20 行 + 代码改动 | 不阻塞用户终端心流 |
+| **P2** | Severity 置信度 | SKILL.md +10 行 | 区分确定性 Bug 与疑似风险 |
+| **P3** | 增量审查 | SKILL.md +15 行 | 避免重复审查，节省 Token |
+| **P3** | 报告持久化 | SKILL.md +10 行 | 审查结果可追溯、可分享 |
 
-> **关键洞察**：所有 P0-P1 改进都只需要修改 `SKILL.md` 的 prompt 指令——**不需要改任何代码**。这是 Qwen Code skill 架构的优势——审查逻辑全部在 prompt 中，可以快速迭代。
+> **关键洞察**：除“异步后台审查”需改动底层调度逻辑外，**所有 P0-P2 核心功能改进均只需要修改 `SKILL.md` 的 prompt 指令，几乎不需要改动 TypeScript 源码**。这充分体现了 Qwen Code 基于 Agent 工具链架构的强大扩展性与灵活性。
