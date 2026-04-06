@@ -989,3 +989,332 @@ const MemoizedAppHeader = memo(AppHeader);
 - 新增代码：~500 行
 - 开发周期：~5 天（1 人）
 - 难点：策略生成的 LLM 调用成本与延迟权衡
+
+---
+
+<a id="item-33"></a>
+
+### 33. Tool Output Masking — 上下文窗口优化（P1）
+
+**问题**：Agent 执行 `cat large-file.json`（5000 行）或 `npm test`（输出 200 行），工具结果全量注入上下文窗口。几轮操作后，上下文被大量工具输出填满，挤压了 Agent 的推理空间和用户的 prompt。
+
+**Gemini CLI 的解决方案**：`toolOutputMaskingService.ts` 实现 "Hybrid Backward Scanned FIFO" 算法：
+- 保护最近 50k token 不被裁剪
+- 从最旧的大体积工具输出开始替换为"摘要 + 文件路径引用"
+- 豁免高信号工具（memory、ask_user、activate_skill）
+- 主要裁剪 shell 输出和文件读取结果
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/context/toolOutputMaskingService.ts` | Hybrid Backward Scanned FIFO 裁剪 |
+
+**Qwen Code 现状**：工具输出全量保留在上下文中，依赖压缩时统一处理。
+
+**Qwen Code 修改方向**：① 新建 `toolOutputMaskingService.ts`；② 在发送 API 请求前对历史消息中的大工具输出做预览替换；③ 配置保护区大小和豁免工具列表。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~300 行
+- 开发周期：~2 天（1 人）
+- 难点：确定裁剪阈值——太激进会丢失重要上下文
+
+**改进前后对比**：
+- **改进前**：5 轮工具调用 → 上下文被工具输出填满 → Agent 推理空间不足 → 频繁压缩
+- **改进后**：旧工具输出自动替换为摘要 → 上下文保持健康 → 压缩频率降低
+
+**意义**：上下文窗口是 Agent 最稀缺的资源——工具输出裁剪直接延长有效会话长度。
+**缺失后果**：大工具输出快速耗尽上下文 → 频繁压缩 → 丢失对话连贯性。
+**改进收益**：自动裁剪 = 上下文利用率提升 50%+。
+
+---
+
+<a id="item-34"></a>
+
+### 34. /rewind 检查点回退（P1）
+
+**问题**：Agent 在第 20 轮做了一个错误决策（比如重构了不该改的文件），用户想"回到第 18 轮的状态"。当前只能手动 `git checkout` 恢复文件，且对话历史无法回退。
+
+**Gemini CLI 的解决方案**：`/rewind` 命令 + `RewindViewer` 组件 + `rewindFileOps.ts`：
+- 可视化每轮的文件变化影响
+- 选择目标轮次后，恢复文件到该轮状态
+- 截断对话历史到目标轮次
+- 确认对话框防止误操作
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/cli/src/ui/hooks/useRewind.ts` | 回退逻辑 + 轮次统计 |
+| `packages/cli/src/ui/components/RewindViewer.tsx` | 回退可视化 |
+| `packages/cli/src/ui/utils/rewindFileOps.ts` | 文件恢复操作 |
+| `packages/cli/src/ui/commands/rewindCommand.tsx` | `/rewind` 命令 |
+
+**Qwen Code 现状**：无 `/rewind` 命令。用户只能手动恢复文件。
+
+**实现成本评估**：
+- 涉及文件：~4 个
+- 新增代码：~400 行
+- 开发周期：~3 天（1 人）
+- 难点：文件恢复的原子性——需要处理中间状态
+
+**改进前后对比**：
+- **改进前**：Agent 错误修改了 5 个文件 → 手动 `git diff` + `git checkout` 逐个恢复 → 5 分钟
+- **改进后**：`/rewind 18` → 确认 → 文件 + 对话自动回退到第 18 轮 → 5 秒
+
+---
+
+<a id="item-35"></a>
+
+### 35. Model Availability Service（P1）
+
+**问题**：模型可能因配额耗尽、容量不足、服务降级等原因临时不可用。当前 Qwen Code 在遇到 429/503 错误时简单重试，没有健康追踪和智能降级。
+
+**Gemini CLI 的解决方案**：`availability/` 模块追踪每个模型的健康状态：
+- **健康状态**：available / sticky_retry / terminal
+- **错误分类**：配额错误 vs 容量错误 vs 终端错误
+- **策略目录**：每个模型有独立的降级策略
+- **自动降级**：主模型不可用时自动切换到 fallback 模型
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/availability/modelAvailabilityService.ts` | 健康追踪 + 状态机 |
+| `packages/core/src/availability/errorClassification.ts` | 错误分类 |
+| `packages/core/src/availability/policyCatalog.ts` | 模型降级策略 |
+| `packages/core/src/availability/fallbackIntegration.ts` | 降级集成 |
+
+**Qwen Code 现状**：有分离的重试预算（内容/流异常/速率限制），但无模型健康追踪和自动降级。
+
+**实现成本评估**：
+- 涉及文件：~5 个
+- 新增代码：~500 行
+- 开发周期：~3 天（1 人）
+
+---
+
+<a id="item-36"></a>
+
+### 36. Markdown 渲染切换 — Alt+M（P2）
+
+**问题**：Agent 输出的 Markdown 经过渲染后（加粗、列表、代码块），有时用户想看原始 Markdown 源码——比如复制代码块时不想包含渲染字符，或者调试 Markdown 格式问题。
+
+**Gemini CLI 的解决方案**：Alt+M（macOS: Option+M）切换渲染/原始 Markdown 视图，`RawMarkdownIndicator` 组件显示当前模式。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/cli/src/ui/components/RawMarkdownIndicator.tsx` | 模式指示器 |
+| `packages/cli/src/ui/key/keyBindings.ts` | `Command.TOGGLE_MARKDOWN` + Alt+M |
+
+**Qwen Code 现状**：无 Markdown 渲染切换。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~50 行
+- 开发周期：~0.5 天（1 人）
+
+---
+
+<a id="item-37"></a>
+
+### 37. A2A Agent-to-Agent 协议（P2）
+
+**问题**：复杂任务可能需要多个专业 Agent 协作——代码 Agent 写代码，测试 Agent 跑测试，部署 Agent 发布。当前 Qwen Code 的 Subagent 是进程内的，无法与远程 Agent 通信。
+
+**Gemini CLI 的解决方案**：完整的 A2A 协议实现：
+- `a2a-client-manager.ts`：协议协商 + 认证 + 传输选择
+- 专用 `packages/a2a-server/` 包
+- 支持 gRPC / REST / JsonRpc 传输
+- 30 分钟超时（支持 Deep Research 等长任务）
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/agents/a2a-client-manager.ts` | 远程 Agent 通信管理 |
+| `packages/a2a-server/` | A2A 服务端 |
+
+**Qwen Code 现状**：仅进程内 Subagent 和 Arena 竞赛模式，无远程 Agent 通信。
+
+**实现成本评估**：
+- 涉及文件：~10 个
+- 新增代码：~1000 行
+- 开发周期：~7 天（1 人）
+- 难点：协议兼容性、认证、错误恢复
+
+---
+
+<a id="item-38"></a>
+
+### 38. Workspace TOML Policy（P2）
+
+**问题**：团队想对项目中 Agent 的行为设置统一规则——禁止修改 `production.config`、限制只能使用特定工具、要求所有 shell 命令需确认。当前只能通过权限规则逐条设置。
+
+**Gemini CLI 的解决方案**：项目根目录放置 `.gemini/policies/*.toml` 文件，定义策略规则。`PolicyEngine` 在运行时解析并执行策略，支持完整性校验防篡改。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/cli/src/config/policy.ts` | `createPolicyEngineConfig()` + 策略引擎 |
+| `packages/core/src/policy/` | 策略定义 + 完整性管理 |
+
+**Qwen Code 现状**：仅 `permission-manager.ts` 规则匹配，无 TOML 策略文件支持。
+
+**实现成本评估**：
+- 涉及文件：~5 个
+- 新增代码：~400 行
+- 开发周期：~3 天（1 人）
+
+---
+
+<a id="item-39"></a>
+
+### 39. 后台 Shell 管理工具（P2）
+
+**问题**：Agent 启动了 `npm run dev` 后台进程，但无法查看它的状态、读取输出、或终止它。当前 `is_background` 参数只能启动后台进程，没有后续管理能力。
+
+**Gemini CLI 的解决方案**：`shellBackgroundTools.ts` 提供 4 个专用工具：
+- `ListBackgroundProcesses`：列出所有后台进程
+- `GetBackgroundProcessStatus`：获取特定进程状态
+- `WaitForBackgroundProcess`：等待进程完成
+- `TerminateBackgroundProcess`：终止进程
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/tools/shellBackgroundTools.ts` | 4 个后台管理工具 |
+| `packages/cli/src/ui/hooks/useBackgroundTaskManager.ts` | UI 层后台任务管理 |
+
+**Qwen Code 现状**：仅 `is_background` 参数启动后台进程，无管理工具。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~300 行
+- 开发周期：~2 天（1 人）
+
+---
+
+<a id="item-40"></a>
+
+### 40. Wave-based 并行工具调度（P2）
+
+**问题**：Agent 一次返回多个工具调用（如 3 个 read_file + 1 个 write_file），当前按顺序执行。但只读工具之间没有依赖，可以并行。
+
+**Gemini CLI 的解决方案**：`scheduler/scheduler.ts` 将工具调用分成"波次"（wave），每波内的工具并发执行：
+- `[read, read, write, read]` → 波次 1: `[read, read]` 并发 → 波次 2: `[write]` → 波次 3: `[read]`
+- 自动检测读写依赖关系
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/scheduler/scheduler.ts` | 波次划分 + 并发执行 |
+| `integration-tests/parallel-tools.test.ts` | 并行工具集成测试 |
+
+**Qwen Code 现状**：`CoreToolScheduler` 仅对 Agent/Task 工具并行，其他工具串行。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~200 行
+- 开发周期：~2 天（1 人）
+- 难点：读写依赖分析——需要正确识别哪些工具是只读的
+
+---
+
+<a id="item-41"></a>
+
+### 41. Ctrl+Z 终端挂起（P3）
+
+**问题**：用户按 Ctrl+Z 期望像普通终端程序一样挂起到后台，但 Ink 框架默认不处理 SIGTSTP。
+
+**Gemini CLI 的解决方案**：`useSuspend.ts` hook 管理挂起/恢复流程：退出 raw mode → 退出 alternate screen → 发送 SIGTSTP → 恢复时重建终端状态。双击 Ctrl+Z 检测防误触。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/cli/src/ui/hooks/useSuspend.ts` | 挂起/恢复 + 终端状态管理 |
+
+**Qwen Code 现状**：无 Ctrl+Z 挂起支持。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~80 行
+- 开发周期：~0.5 天（1 人）
+
+---
+
+<a id="item-42"></a>
+
+### 42. Shell 不活跃超时（P3）
+
+**问题**：交互式 shell 命令（如 `python` REPL）可能在等待输入时看起来像"卡住了"。需要在标题栏显示不活跃状态提示。
+
+**Gemini CLI 的解决方案**：`useShellInactivityStatus.ts` 配合 `useInactivityTimer.ts`，在 shell 输出停止后显示 "Action required" 或 "Silently working" 标题。可通过 `shellInactivityTimeoutMs` 配置。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/cli/src/ui/hooks/useShellInactivityStatus.ts` | Shell 不活跃检测 |
+| `packages/cli/src/ui/hooks/useInactivityTimer.ts` | 通用不活跃计时器 |
+
+**Qwen Code 现状**：无 shell 不活跃检测。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~60 行
+- 开发周期：~0.5 天（1 人）
+
+---
+
+<a id="item-43"></a>
+
+### 43. Startup Profiler（P3）
+
+**问题**：CLI 启动慢但不知道瓶颈在哪——是 MCP 连接？配置加载？扩展初始化？需要分阶段计时。
+
+**Gemini CLI 的解决方案**：`StartupProfiler` 单例，track 每个启动阶段的 CPU 时间，通过 `DebugProfiler.tsx` 组件展示，集成到遥测系统。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/core/src/telemetry/startupProfiler.ts` | 阶段计时 + CPU 采样 |
+| `packages/cli/src/ui/components/DebugProfiler.tsx` | 性能数据展示 |
+
+**Qwen Code 现状**：无启动性能分析。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~100 行
+- 开发周期：~1 天（1 人）
+
+---
+
+<a id="item-44"></a>
+
+### 44. 大文本粘贴占位（P3）
+
+**问题**：用户粘贴一段 100 行的日志到输入框，输入框被撑开，编辑困难。而且这些内容通常应该作为附件而非 inline 文本。
+
+**Gemini CLI 的解决方案**：超过 `LARGE_PASTE_LINE_THRESHOLD=5` 行或 `LARGE_PASTE_CHAR_THRESHOLD=500` 字符的粘贴，自动替换为 `[Pasted Text: 100 lines]` 占位符。发送时展开为实际内容。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `packages/cli/src/ui/components/shared/text-buffer.ts` | `LARGE_PASTE_LINE_THRESHOLD=5` + 占位符生成 |
+
+**Qwen Code 现状**：粘贴内容直接展示在输入框中，无压缩。
+
+**实现成本评估**：
+- 涉及文件：~1 个
+- 新增代码：~50 行
+- 开发周期：~0.5 天（1 人）
