@@ -33,7 +33,7 @@
 
 **可用工具**：`agent`、`run_shell_command`、`grep_search`、`read_file`、`write_file`、`glob`。
 
-源码：`packages/core/src/skills/bundled/review/SKILL.md`（262 行）
+源码：`packages/core/src/skills/bundled/review/SKILL.md`（261 行）
 
 ## 二、与业界领先实现的差距
 
