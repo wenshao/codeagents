@@ -415,28 +415,6 @@ const MemoizedAppHeader = memo(AppHeader);
 
 ---
 
-<a id="item-13"></a>
-
-### 13. ANSI-aware 表格渲染器 — TableRenderer（P2）
-
-**问题**：Agent 输出 Markdown 表格时，CJK 字符占 2 列宽、ANSI 转义码不占宽但影响长度计算——标准 `stringWidth()` 不够用。表格列对不齐，中文内容基本不可读。
-
-**Gemini CLI 的解决方案**：`TableRenderer.tsx` 组件，ANSI-aware 列宽计算 + CJK 2-width + 对齐标记（`:---`/`:---:`/`---:`）+ cell 内容自动换行。
-
-> 注：Qwen Code 的 PR#2914 正在实现类似功能——可参考 Gemini CLI 的实现确保覆盖度。
-
-**Gemini CLI 源码索引**：
-
-| 文件 | 关键函数/常量 |
-|------|-------------|
-| `packages/cli/src/ui/utils/TableRenderer.tsx` | 完整表格渲染 React 组件 |
-
-**Qwen Code 现状**：`MarkdownDisplay.tsx` 的表格渲染 CJK/ANSI 列对齐不准确。PR#2914 正在修复。
-
-**进展**：[PR#2914](https://github.com/QwenLM/qwen-code/pull/2914)（open）
-
----
-
 <a id="item-14"></a>
 
 ### 14. Shell 命令参数补全（P2）
@@ -1296,25 +1274,3 @@ const MemoizedAppHeader = memo(AppHeader);
 - 新增代码：~100 行
 - 开发周期：~1 天（1 人）
 
----
-
-<a id="item-44"></a>
-
-### 44. 大文本粘贴占位（P3）
-
-**问题**：用户粘贴一段 100 行的日志到输入框，输入框被撑开，编辑困难。而且这些内容通常应该作为附件而非 inline 文本。
-
-**Gemini CLI 的解决方案**：超过 `LARGE_PASTE_LINE_THRESHOLD=5` 行或 `LARGE_PASTE_CHAR_THRESHOLD=500` 字符的粘贴，自动替换为 `[Pasted Text: 100 lines]` 占位符。发送时展开为实际内容。
-
-**Gemini CLI 源码索引**：
-
-| 文件 | 关键函数/常量 |
-|------|-------------|
-| `packages/cli/src/ui/components/shared/text-buffer.ts` | `LARGE_PASTE_LINE_THRESHOLD=5` + 占位符生成 |
-
-**Qwen Code 现状**：粘贴内容直接展示在输入框中，无压缩。
-
-**实现成本评估**：
-- 涉及文件：~1 个
-- 新增代码：~50 行
-- 开发周期：~0.5 天（1 人）

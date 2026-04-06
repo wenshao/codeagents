@@ -4,7 +4,7 @@
 >
 > 与 [Claude Code 改进建议报告](./qwen-code-improvement-report.md) 互补——Claude Code 报告关注"行业领先者有什么"，本报告关注"自己的上游已经做了什么"。
 
-## 一、回移建议矩阵（44 项，按优先级排序）
+## 一、回移建议矩阵（42 项，按优先级排序）
 
 | 优先级 | 改进点 | Qwen Code 现状 | 难度 | 上游 PR |
 |:------:|--------|----------------|:----:|---------|
@@ -29,7 +29,6 @@
 | **P2** | [Scrollable 滚动容器](./qwen-code-gemini-upstream-report-details.md#item-10) — ResizeObserver 锚定 + 动画滚动条 + backbuffer | 缺失 | 中 | — |
 | **P2** | [终端能力管理器](./qwen-code-gemini-upstream-report-details.md#item-11) — Kitty 键盘协议 + bracketed paste + 鼠标事件 | 缺失 | 中 | — |
 | **P2** | [URL 安全检测](./qwen-code-gemini-upstream-report-details.md#item-12) — Unicode 同形攻击 / Punycode 检测 | 缺失 | 小 | — |
-| **P2** | [ANSI-aware 表格渲染器](./qwen-code-gemini-upstream-report-details.md#item-13) — `TableRenderer` CJK 2-width + 列对齐 + 换行 | CJK 列错位 | 小 | — |
 | **P2** | [Shell 命令参数补全](./qwen-code-gemini-upstream-report-details.md#item-14) — git/npm 命令参数补全 provider | 缺失 | 中 | — |
 | **P2** | [任务追踪工具（trackerTools）](./qwen-code-gemini-upstream-report-details.md#item-15) — 6 个子工具：创建/更新/依赖/可视化 | 缺失 | 大 | — |
 | **P2** | [Folder Trust 发现](./qwen-code-gemini-upstream-report-details.md#item-25) — 信任前扫描项目配置（hooks/agents/MCP/allowlist） | 无预执行扫描 | 中 | — |
@@ -51,15 +50,13 @@
 | **P3** | [Ctrl+Z 终端挂起](./qwen-code-gemini-upstream-report-details.md#item-41) — 挂起/恢复 + 终端状态管理 | 缺失 | 小 | — |
 | **P3** | [Shell 不活跃超时](./qwen-code-gemini-upstream-report-details.md#item-42) — 可配置超时 + 状态标题变化 | 缺失 | 小 | — |
 | **P3** | [Startup Profiler](./qwen-code-gemini-upstream-report-details.md#item-43) — 启动阶段 CPU 计时 + 遥测集成 | 缺失 | 小 | — |
-| **P3** | [大文本粘贴占位](./qwen-code-gemini-upstream-report-details.md#item-44) — 超过 5 行/500 字符的粘贴替换为 `[Pasted Text]` | 缺失 | 小 | — |
-
 ## 二、优先级分布
 
 | 优先级 | 数量 | 核心主题 |
 |--------|------|---------|
 | P0 | 5 项 | 防闪烁（3）+ 安全加固（2） |
 | P1 | 11 项 | 渲染性能（4）+ 工具智能化（4）+ 上下文/会话管理（3） |
-| P2 | 19 项 | UI 组件（6）+ 安全（3）+ 工具增强（4）+ 调度/协议（3）+ UX（3） |
-| P3 | 9 项 | 底层优化（3）+ 终端特性（3）+ 安全框架（2）+ UX（1） |
+| P2 | 18 项 | UI 组件（5）+ 安全（3）+ 工具增强（4）+ 调度/协议（3）+ UX（3） |
+| P3 | 8 项 | 底层优化（3）+ 终端特性（3）+ 安全框架（2） |
 
 > 注：详情见 [回移建议详情](./qwen-code-gemini-upstream-report-details.md)
