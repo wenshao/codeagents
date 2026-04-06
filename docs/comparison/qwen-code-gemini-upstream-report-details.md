@@ -1,6 +1,6 @@
-# Qwen Code 上游回移建议详情（Gemini CLI 源码对比）
+# Qwen Code 上游backport建议详情（Gemini CLI 源码对比）
 
-> 返回 [回移建议矩阵](./qwen-code-gemini-upstream-report.md) | [Claude Code 改进建议](./qwen-code-improvement-report.md)
+> 返回 [backport建议矩阵](./qwen-code-gemini-upstream-report.md) | [Claude Code 改进建议](./qwen-code-improvement-report.md)
 
 ---
 

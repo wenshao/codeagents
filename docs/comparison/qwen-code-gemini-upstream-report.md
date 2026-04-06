@@ -1,10 +1,10 @@
-# Qwen Code 上游回移建议报告（Gemini CLI 源码对比）
+# Qwen Code 上游backport建议报告（Gemini CLI 源码对比）
 
-> 基于 Gemini CLI（开源，`../gemini-cli/`）与 Qwen Code（fork 分支，`../qwen-code/`）的源码对比。Qwen Code 最后同步上游为 2025-10-23（v0.8.2），此后 Gemini CLI 从 v0.9.0 演进到 v0.36.0（28 个大版本，2041 个 commit）。本报告梳理可回移的改进点。
+> 基于 Gemini CLI（开源，`../gemini-cli/`）与 Qwen Code（fork 分支，`../qwen-code/`）的源码对比。Qwen Code 最后同步上游为 2025-10-23（v0.8.2），此后 Gemini CLI 从 v0.9.0 演进到 v0.36.0（28 个大版本，2041 个 commit）。本报告梳理可backport的改进点。
 >
 > 与 [Claude Code 改进建议报告](./qwen-code-improvement-report.md) 互补——Claude Code 报告关注"行业领先者有什么"，本报告关注"自己的上游已经做了什么"。
 
-## 一、回移建议矩阵（42 项，按优先级排序）
+## 一、backport建议矩阵（42 项，按优先级排序）
 
 | 优先级 | 改进点 | Qwen Code 现状 | 难度 | 上游 PR |
 |:------:|--------|----------------|:----:|---------|
@@ -59,4 +59,4 @@
 | P2 | 18 项 | UI 组件（5）+ 安全（3）+ 工具增强（4）+ 调度/协议（3）+ UX（3） |
 | P3 | 8 项 | 底层优化（3）+ 终端特性（3）+ 安全框架（2） |
 
-> 注：详情见 [回移建议详情](./qwen-code-gemini-upstream-report-details.md)
+> 注：详情见 [backport建议详情](./qwen-code-gemini-upstream-report-details.md)
