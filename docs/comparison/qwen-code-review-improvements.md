@@ -35,7 +35,42 @@
 
 源码：`packages/core/src/skills/bundled/review/SKILL.md`（261 行）
 
-## 二、与业界领先实现的差距
+## 二、为什么 GitHub PR 里的 Copilot Code Review 体感更好
+
+Copilot Code Review 效果好，核心不只是模型能力，而是**任务约束 + 平台优势 + 确定性工具 + 高 precision 策略**四者叠加。
+
+### 1. PR review 是强约束任务
+
+PR review 天然比通用聊天更适合高质量输出，因为输入输出都被强约束：
+
+- 输入不是"整个仓库"，而是**这次 diff + base branch + PR 元数据**
+- 输出不是长篇解释，而是**具体文件/具体行的 review comment**
+- 目标不是开放式问答，而是**发现高风险问题**
+
+这意味着 Qwen Code 的 `/review` 天然也具备做好的条件——diff 是明确的，PR 元数据可以通过 `gh pr view` 获取。
+
+### 2. GitHub 平台拥有 CLI 不具备的原生上下文
+
+GitHub PR 页面上的 AI review 运行在更完整的平台工作流之上：PR title/body、评论历史、checks、code scanning alerts、merge gate 在同一个产品面中协同。CLI 虽然可以通过 `gh` 命令获取大部分信息，但缺少事件驱动（新 commit 自动触发）和持久化状态管理。
+
+### 3. CLI 能力 vs 平台能力需要区分
+
+从 Copilot CLI 二进制分析（见 `docs/tools/copilot-cli/EVIDENCE.md`）可确认 CLI 端存在 `code-review` agent，具备读取 diff、周边代码、build/test 验证的能力。但以下能力属于**平台级**，不在 CLI 中：
+
+- 自动在 PR 页面发起 inline review comments
+- 增量复审（新 commit 自动触发）
+- 跨 PR 持久记忆
+- CodeQL 深度集成的全部实现细节
+
+Qwen Code 的改进方向应分为两层：
+- **Prompt 层增强**（改 SKILL.md）：确定性分析、构建/测试、跨文件追踪、规则注入、评论聚合
+- **产品层增强**（改代码）：后台审查、结果持久化、增量缓存、Autofix pipeline
+
+### 4. 高 precision 优先
+
+Copilot CLI 的 `code-review` agent prompt 反复强调：只报真正重要的问题、不确定就不说、风格/格式/命名不提。PR review 场景里，**少量高价值评论**比大量泛化建议更有用。Qwen Code 的 SKILL.md 排除标准也有类似设计（"lean toward rejecting"），方向一致。
+
+## 三、与业界实现的差距
 
 ### 竞品架构深度剖析
 
@@ -79,7 +114,20 @@
 7. **评论缺乏聚合与置信度区分**——同一类问题被重复报告，且所有问题均被视为"确定问题"，缺乏"疑似待确认"的灰度状态
 8. **缺乏记忆与持久化**——再次运行 `/review` 会重复消耗 token 审查未变更的代码，终端关闭后审查结论丢失
 
-## 三、改进建议（按优先级）
+## 四、Qwen Code 已有的可复用基础设施
+
+改进并非从零开始，以下现有能力可直接复用：
+
+| 现有能力 | 源码 | 可支撑的改进 |
+|---------|------|------------|
+| `agent` 工具 + 并行 Subagent | `core/src/tools/agent.ts` | 多 Agent 审查（已用）、验证 Agent |
+| `run_shell_command` + 后台 shell | `core/src/tools/shell.ts` | linter/build/test 执行 |
+| `grep_search` + `read_file` | `core/src/tools/grep.ts` | 跨文件调用方搜索 |
+| `write_file` | `core/src/tools/write-file.ts` | Autofix 补丁、报告持久化 |
+| `gh` CLI 集成 | SKILL.md Step 4 已使用 | PR inline 评论、review verdict |
+| `/setup-github` workflow 分发 | `cli/src/ui/commands/setupGithubCommand.ts` | 未来 GitHub Actions 集成入口 |
+
+## 五、改进建议（按优先级）
 
 ### P0：集成确定性分析工具
 
@@ -298,19 +346,19 @@
 
 **实现成本**：SKILL.md +10 行文件保存指令。
 
-## 四、实现优先级总结
+## 六、实现优先级总结
 
-| 优先级 | 改进 | 改动量 | 效果 |
-|--------|------|--------|------|
-| **P0** | 集成 linter/typecheck | SKILL.md +30 行 | 消除确定性问题的 LLM 浪费 |
-| **P1** | 构建 & 测试执行 | SKILL.md +20 行 | 发现编译/测试失败 |
-| **P1** | 跨文件影响分析 | SKILL.md +15 行 | 发现 breaking change |
-| **P1** | 项目自定义审查规则 | SKILL.md +10 行 | 适应不同项目规范 |
-| **P2** | 自动修复闭环（Autofix） | SKILL.md +15 行 | 补齐审查-修复最后一步 |
-| **P2** | 评论聚合 | SKILL.md +15 行 | 减少冗余评论 |
-| **P2** | 异步后台审查 | SKILL.md +20 行 + `BundledSkillLoader` 改动 | 不阻塞用户 |
-| **P2** | Severity 置信度 | SKILL.md +10 行 | 区分确定/不确定 |
-| **P3** | 增量审查 | SKILL.md +15 行 | 避免重复审查 |
-| **P3** | 报告持久化 | SKILL.md +10 行 | 审查结果可追溯 |
+| 优先级 | 改进 | 改动量 | 仅改 SKILL.md？ | 效果 |
+|--------|------|--------|:---:|------|
+| **P0** | 集成 linter/typecheck | +30 行 | 是 | 消除确定性问题的 LLM 浪费 |
+| **P1** | 构建 & 测试执行 | +20 行 | 是 | 发现编译/测试失败 |
+| **P1** | 跨文件影响分析 | +15 行 | 是 | 发现 breaking change |
+| **P1** | 项目自定义审查规则 | +10 行 | 是 | 适应不同项目规范 |
+| **P2** | 自动修复闭环（Autofix） | +15 行 | 是（阶段 A）| 补齐审查-修复最后一步 |
+| **P2** | 评论聚合 | +15 行 | 是 | 减少冗余评论 |
+| **P2** | 异步后台审查 | +20 行 + 代码 | 否 | 不阻塞用户 |
+| **P2** | Severity 置信度 | +10 行 | 是 | 区分确定/不确定 |
+| **P3** | 增量审查 | +15 行 | 是（但需 .gitignore）| 避免重复审查 |
+| **P3** | 报告持久化 | +10 行 | 是 | 审查结果可追溯 |
 
-> **关键洞察**：所有 P0-P1 改进都只需要修改 `SKILL.md` 的 prompt 指令——**不需要改任何代码**。这是 Qwen Code skill 架构的优势——审查逻辑全部在 prompt 中，可以快速迭代。
+> **关键洞察**：P0-P1 改进都只需修改 `SKILL.md` 的 prompt 指令——不需要改 TypeScript 代码。P2 中仅"异步后台审查"需要代码改动（`BundledSkillLoader` 后台执行支持），其余均为 prompt 层增强。这是 Qwen Code skill 架构的优势——审查逻辑全部在 prompt 中，可以快速迭代。
