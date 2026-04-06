@@ -117,7 +117,7 @@ export const COMPACT_TOOL_SUBVIEW_MAX_LINES = 15;
 - **改进后**：buffer 超过 11MB → 截断到 10MB → 每 1MB 新输入截断一次 → 内存恒定
 
 **意义**：后台长命令是常见场景——无 buffer 限制 = 内存泄漏。
-**缺失��果**：长时间运行的 shell 命令耗尽内存。
+**缺失后果**：长时间运行的 shell 命令耗尽内存。
 **改进收益**：10MB 恒定 buffer = 内存可预测，摊销截断 = 无性能毛刺。
 
 ---
@@ -234,7 +234,7 @@ const MemoizedAppHeader = memo(AppHeader);
 **Qwen Code 修改方向**：① `HistoryItemDisplay` 包裹 `React.memo()`；② `AppHeader` 包裹 `React.memo()`；③ 确保 props 为引用稳定（避免内联对象/函数破坏 memo）。
 
 **实现成本评估**：
-- 涉��文件：~2 个
+- 涉及文件：~2 个
 - 新增代码：~5 行
 - 开发周期：~0.5 天（1 人）
 - 难点：确保 props 引用稳定——如果有内联对象/回调，需要提升到 `useMemo`/`useCallback`
@@ -530,11 +530,6 @@ const MemoizedAppHeader = memo(AppHeader);
 - 新增代码：~80 行
 - 开发周期：~1 天（1 人）
 
-**实现成本评估**：
-- 涉及文件：~2 个
-- 新增代码：~80 行
-- 开发周期：~1 天（1 人）
-
 ---
 
 <a id="item-19"></a>
@@ -640,7 +635,7 @@ const MemoizedAppHeader = memo(AppHeader);
 
 **Qwen Code 现状**：`edit.ts`（658 行）仅精确匹配 + 归一化字符串比较。
 
-**Qwen Code 修改方向**���① `npm install fast-levenshtein`；② 在精确匹配失败后增加模糊匹配回退；③ 可选 LLM 修复层。
+**Qwen Code 修改方向**：① `npm install fast-levenshtein`；② 在精确匹配失败后增加模糊匹配回退；③ 可选 LLM 修复层。
 
 **实现成本评估**：
 - 涉及文件：~1 个
