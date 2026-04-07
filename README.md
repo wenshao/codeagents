@@ -1,6 +1,6 @@
 # AI 编程 Code Agent 对比
 
-> 基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比 | 120+ 文件 | 36,000+ 行 | 21 篇 Deep-Dive | 9 个 EVIDENCE.md
+> 基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比 | 284 文件 | 72,000+ 行 | 134 篇 Deep-Dive | 10 个 EVIDENCE.md
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -26,7 +26,7 @@
 | **Claude Code** v2.1.84 | **50ms** | 225MB | Rust ELF |
 | **Copilot CLI** v1.0.10 | 72ms | 268MB | Node.js SEA |
 | **Codex CLI** | 76ms | 142MB | Node.js SEA |
-| **Qwen Code** v0.13.0 | 608ms | 48MB | Node.js npm |
+| **Qwen Code** v0.14.1 | 608ms | 48MB | Node.js npm |
 | **Gemini CLI** v0.34.0 | 1.5s（冷启动 4s） | 509MB | Node.js npm |
 
 > Rust 二进制（50ms）比 Node.js SEA（72ms）快 30%，比 npm 包（1.5s）快 **30 倍**。Qwen Code 作为 Gemini CLI 分叉，安装仅 48MB（上游 509MB 的 9%），启动快 2.5 倍。
@@ -123,17 +123,27 @@
 
 ## 文档导航
 
+### 高频入口
+
+| 入口 | 说明 |
+|------|------|
+| **[Deep-Dive 索引（134 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
+| **[Qwen Code 改进报告（240 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 22 个社区 PR 追踪 |
+| **[Gemini CLI backport（42 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 |
+| **[/review 改进建议](./docs/comparison/qwen-code-review-improvements.md)** | 审查功能 4 方对比 + 10 项改进 |
+| **[功能对比矩阵](./docs/comparison/features.md)** | 14 Agent × 多维度横向对比 |
+
 <details><summary><b>Agent 详情（源码级）— 8 个专题</b></summary>
 
 - **[Agent 索引](./docs/tools/)** — 18 个 Agent 的详细分析
-- **[Claude Code](./docs/tools/claude-code/)** — 8 篇（79 命令/架构/Skill+13 插件/24 Hook/会话/Remote Control）
+- **[Claude Code](./docs/tools/claude-code/)** — 20 篇（79 命令/架构/42 工具/14 Skill/27 Hook/会话/Remote Control/多 Agent/系统提示/MCP/遥测）
 - **[Copilot CLI](./docs/tools/copilot-cli/)** — 3 篇（34 命令 + 67 工具 + 3 代理）
 - **[Codex CLI](./docs/tools/codex-cli/)** — 3 篇（28 命令 + 三平台沙箱）
-- **[Gemini CLI](./docs/tools/gemini-cli/)** — 5 篇（39 命令/8 策略路由/策略引擎）
+- **[Gemini CLI](./docs/tools/gemini-cli/)** — 7 篇（41 命令/架构/23 工具/策略引擎 — Qwen Code 上游）
 - **[Kimi CLI](./docs/tools/kimi-cli/)** — 3 篇（28 命令/Wire 协议）
 - **[Aider](./docs/tools/aider/)** — 3 篇（42 命令/PageRank RepoMap）
-- **[OpenCode](./docs/tools/opencode/)** — 3 篇（18 工具+7 代理/多客户端）
-- **[Qwen Code](./docs/tools/qwen-code/)** — 4 篇（41 命令/16 工具/Arena+扩展系统）
+- **[OpenCode](./docs/tools/opencode/)** — 9 篇（18 工具/7 代理/18 Hook/Session Fork/多客户端）
+- **[Qwen Code](./docs/tools/qwen-code/)** — 8 篇（41 命令/16 工具/Arena/CoreToolScheduler/多 Provider）
 - **[Goose](./docs/tools/goose/)** — 4 篇（MCP 原生架构/11 Platform Extension/Recipe）
 
 </details>
@@ -152,6 +162,17 @@
 - [功能性内部机制](./docs/comparison/functional-internals.md) — API 参数、编辑格式
 - [/review](./docs/comparison/review-command.md) | [/security-review](./docs/comparison/security-review-command-deep-dive.md) | [/compact /plan /init](./docs/comparison/key-commands-deep-dive.md) | [/loop /schedule](./docs/comparison/loop-schedule.md) | [/simplify](./docs/comparison/simplify-command.md)
 - [/hooks /model /mcp](./docs/comparison/infra-commands.md) | [/btw /rewind](./docs/comparison/btw-rewind.md) | [插件 Marketplace 生命周期](./docs/comparison/plugin-marketplace-lifecycle-deep-dive.md) | [Plan 模式 Interview](./docs/comparison/plan-mode-interview-deep-dive.md) | [BriefTool 异步消息](./docs/comparison/brieftool-async-user-messages-deep-dive.md) | [Prompt Suggestion](./docs/comparison/prompt-suggestion-deep-dive.md) | [命令队列编排](./docs/comparison/command-queue-orchestration-deep-dive.md) | [自动后台化 Agent](./docs/comparison/session-backgrounding-deep-dive.md) | [/context 自动化诊断](./docs/comparison/context-usage-noninteractive-deep-dive.md) | [内置命令总览](./docs/comparison/slash-commands-deep-dive.md)
+
+</details>
+
+<details><summary><b>Qwen Code 改进报告（开发者必读）</b></summary>
+
+- **[Claude Code 对比改进报告](./docs/comparison/qwen-code-improvement-report.md)** — 240 项改进建议，22 个社区 PR 追踪（3 已合并）
+- **[Gemini CLI 上游 backport 报告](./docs/comparison/qwen-code-gemini-upstream-report.md)** — 42 项可 backport 改进（P0-P3 优先级）
+- **[/review 功能改进建议](./docs/comparison/qwen-code-review-improvements.md)** — 10 项改进（确定性分析 + Autofix + 竞品对比）
+- **[工具输出限高防闪烁](./docs/comparison/tool-output-height-limiting-deep-dive.md)** — Gemini CLI SlicingMaxSizedBox vs Qwen Code 渲染对比
+- **[Kairos Always-On Agent](./docs/comparison/kairos-always-on-agent-deep-dive.md)** — Claude Code 自治 Agent 模式分析
+- **[Deep-Dive 文章索引](./docs/comparison/deep-dive-index.md)** — 134 篇深度分析文章分类索引
 
 </details>
 
