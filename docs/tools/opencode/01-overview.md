@@ -1,140 +1,93 @@
-# 1. OpenCode 概述
+# 1. OpenCode 概述——Code Agent 开发者视角
 
-**开发者：** Anomaly Innovations（[anoma.ly](https://anoma.ly)）
-**许可证：** MIT
-**仓库：** [github.com/anomalyco/opencode](https://github.com/anomalyco/opencode)（npm: `opencode-ai`）
-**网站：** [opencode.ai](https://opencode.ai/)
-**Stars：** ~133k
-**最后更新：** 2026-03
+> **阅读对象**：正在开发 Qwen Code / Gemini CLI 等 CLI Code Agent 的工程师
+>
+> **核心问题**：OpenCode 做对了什么？哪些设计值得借鉴？哪些是其独有路线不适合复制？
 
-## 概述
+## 一、为什么要研究 OpenCode
 
-OpenCode 是一个功能丰富的 AI 编程平台。最初以 Go 项目知名，当前版本已完全重写为 TypeScript monorepo 架构，提供 TUI、Web 控制台和桌面应用（Tauri + Electron 双平台）三种客户端形态。其核心特色是多代理系统、插件 / Hook 架构、37 种主题、丰富的 LSP / Formatter 集成，以及通过 models.dev 动态加载 100+ LLM 提供商的统一支持。当前版本为 v1.3.0。
+OpenCode 是当前开源 Code Agent 中**架构最激进**的项目——19 个包的 monorepo、TUI + Web + Desktop 三客户端、37 种 LSP + 26 种 Formatter、100+ Provider 动态加载。它选择了一条与 Claude Code/Qwen Code 完全不同的路线：不是"做好一个终端 Agent"，而是"构建一个多客户端 AI 编程平台"。
 
-## 核心功能
+对于 Qwen Code 开发者，OpenCode 的价值在于：
+1. **17 种 Hook 类型**——比 Claude Code 的 Hook 更细粒度（工具定义修改、系统提示变换、会话压缩拦截）
+2. **37 种 LSP 集成**——展示了如何在 Agent 中深度集成语言服务器
+3. **models.dev 动态 Provider**——100+ Provider 零代码接入的统一接口
+4. **SQLite 持久化**——Drizzle ORM + WAL 模式，比 JSONL 文件更适合复杂查询
+
+## 二、能力矩阵速查
+
+| 能力领域 | OpenCode | Qwen Code | 差距 | 参考价值 |
+|---------|---------|-----------|------|---------|
+| **多客户端** | TUI + Web + Desktop | TUI + WebUI + VSCode | 小 | 共享后端架构 |
+| **Provider 数量** | 100+（models.dev 动态） | 10+（手动配置） | 大 | 动态 Provider 发现 |
+| **LSP 集成** | 37 种语言 | 实验性（--experimental-lsp） | 大 | LSP 诊断自动注入 |
+| **Formatter** | 26 种 | 无 | 大 | PostToolUse 自动格式化 |
+| **Hook 系统** | 17 种类型（npm 插件） | ~12 事件（command） | 中 | 工具定义修改 Hook |
+| **会话存储** | SQLite (Drizzle ORM) | JSONL 文件 | 中 | 结构化查询 |
+| **主题** | 37 种 | ~25 种 | 小 | — |
+| **权限系统** | Tree-sitter AST + Doom Loop | AST 只读检测 | 小 | Doom Loop 保护 |
+| **上下文压缩** | auto-compact + hook | 单一 70% 压缩 | 中 | 压缩 Hook 拦截 |
+| **会话管理** | Fork + Restore + Share + Review | 基础历史 | 大 | Session Fork/Restore |
+
+## 三、项目信息
+
+- **开发者**：Anomaly Innovations（[anoma.ly](https://anoma.ly)）
+- **许可证**：MIT
+- **仓库**：[github.com/anomalyco/opencode](https://github.com/anomalyco/opencode)
+- **Stars**：~133k
+- **贡献者**：454 人
+- **版本**：v1.3.0（2026-03）
+
+## 四、核心功能
 
 ### 基础能力
-- **多客户端**：TUI（终端）、Web 控制台、桌面应用（Tauri + Electron 双平台）
-- **多代理系统**：build、plan、general、explore 等 7 个内置代理，支持自定义
-- **18 种内置工具**（14 无条件 + 4 有条件）：文件编辑、Bash 执行、Grep/Glob 搜索、Web 抓取/搜索、代码搜索、Skill、Task、Todo、apply_patch 等；有条件工具包括 Question（需客户端支持）、LSP（实验性）、Batch（实验性）、PlanExit（实验性 + CLI）
-- **100+ LLM 提供商**：通过 [models.dev](https://models.dev) + Vercel AI SDK 动态加载（目前 models.dev 提供 104 个 provider），其中 11 个在代码中定义为 well-known：OpenCode、Anthropic、OpenAI、Google、Google Vertex、Amazon Bedrock、Azure、OpenRouter、Mistral、GitHub Copilot、GitLab
-- **MCP 支持**：完整的模型上下文协议集成（StreamableHTTP / SSE / Stdio），支持 OAuth 认证
-- **37 种 LSP 服务器**：TypeScript、Deno、Python (Pyright + Ty)、Go (gopls)、Rust (rust-analyzer)、Java (JDTLS)、C/C++ (clangd)、C#、F#、Ruby、Elixir、Zig (zls)、Kotlin、Swift (sourcekit-lsp)、Haskell、Dart、OCaml、Lua、PHP (Intelephense)、Bash、Terraform、LaTeX (texlab)、Dockerfile、Gleam、Clojure、Nix (nixd)、Typst (tinymist)、Julia、Vue、Svelte、Astro、Prisma、YAML、ESLint、Biome、OxLint
-- **26 种 Formatter**：Prettier、Biome、gofmt、mix (Elixir)、oxfmt、shfmt、latexindent、zig、clang-format、ktlint、ruff (Python)、air (R)、uv (Python)、rubocop (Ruby)、standardrb (Ruby)、htmlbeautifier (Ruby)、dart、ocamlformat、terraform、gleam、nixfmt、rustfmt、pint (PHP)、ormolu (Haskell)、cljfmt (Clojure)、dfmt (D)
-- **SQLite 持久化**：Drizzle ORM，会话/消息完整存储，WAL 模式
-- **37 种主题**：Nord、Catppuccin (3 variants)、Gruvbox、Kanagawa、Tokyo Night、Dracula、Monokai、One Dark、AMOLED、Ayu、Flexoki、Solarized、Rose Pine、Vercel、Material 等
+- **多客户端**：TUI（终端）、Web 控制台（SolidJS）、桌面应用（Tauri + Electron 双平台）
+- **多代理**：7 个内置代理（build、plan、general、explore 等），支持自定义
+- **18 种内置工具**：Read、Write、Edit、Bash、Grep、Glob、WebFetch、WebSearch、CodeSearch、Skill、Task、Todo、apply_patch 等
+- **100+ LLM 提供商**：通过 [models.dev](https://models.dev) + Vercel AI SDK 动态加载
+- **MCP 支持**：StreamableHTTP / SSE / Stdio 三种传输 + OAuth
+- **37 种 LSP 服务器**：覆盖 TypeScript、Python、Go、Rust、Java、C/C++、Ruby 等主流和小众语言
+- **26 种 Formatter**：Prettier、Biome、gofmt、rustfmt、ruff 等
+- **SQLite 持久化**：Drizzle ORM，WAL 模式
 
 ### 独特功能
-- **插件 / Hook 系统**：基于 Hook 的可扩展架构，支持 npm 包和文件插件。Hook 类型包括 event、config、auth、tool（工具定义）、tool.definition（修改工具描述/参数）、tool.execute.before/after、chat.message、chat.params、chat.headers、permission.ask、command.execute.before、shell.env、experimental.chat.messages.transform、experimental.chat.system.transform、experimental.session.compacting、experimental.text.complete 共 17 种
-- **Skill 系统**：原生 Agent Skill，带权限系统和 per-agent 过滤
-- **Tree-sitter Bash 分析**：AST 解析 bash 命令，智能权限判断
-- **Doom Loop 保护**：检测连续 3 次权限拒绝，自动中断无限循环
-- **文件时间锁**：检测编辑期间文件被外部修改，防止冲突
-- **会话压缩**：长对话自动压缩（auto-compact），支持配置化开关和 compacting hook
-- **Git Worktree 隔离**：每个会话可使用独立 worktree
-- **远程工作区**（实验性）：Adaptor 模式 + SSE 实时同步，支持 `workspace-serve` 命令
-- **Session Fork & Restore**：从任意消息点分叉会话，或回退到历史消息并恢复文件状态
-- **Git-backed Session Review**：基于 git 快照的变更追踪，侧面板 diff 可视化，支持行内注释
-- **Session 分享**：同步会话到云端生成公开链接，支持增量同步和 SSR 渲染的 diff
+- **17 种 Hook 类型**：event、config、auth、tool（工具定义）、tool.definition（修改描述/参数）、tool.execute.before/after、chat.message、chat.params、chat.headers、permission.ask、command.execute.before、shell.env、experimental.chat.messages.transform/system.transform/session.compacting/text.complete
+- **Doom Loop 保护**：连续 3 次权限拒绝自动中断
+- **Session Fork & Restore**：从任意消息点分叉会话或回退
+- **Session Share**：同步到云端生成公开链接
+- **Git-backed Session Review**：基于 git 快照的 diff 可视化
 
-## 安装
+## 五、可借鉴 vs 不适合复制
 
-```bash
-# npm / pnpm / bun
-npm install -g opencode-ai
+### 可借鉴的设计模式
 
-# Homebrew（推荐使用官方 tap）
-brew install anomalyco/tap/opencode
+| 模式 | 核心价值 | Qwen Code 适用性 |
+|------|---------|-----------------|
+| models.dev 动态 Provider | 零代码接入新 Provider | 高——Qwen Code 当前手动配置 Provider |
+| 37 种 LSP 集成 | 编译器级代码理解 | 高——诊断自动注入到 /review 和编辑流程 |
+| 17 种 Hook 类型 | 细粒度扩展性 | 中——`tool.definition` 修改工具描述是独特创新 |
+| SQLite 持久化 | 复杂会话查询 | 中——比 JSONL 适合大规模会话管理 |
+| Session Fork/Restore | 会话分叉和回退 | 中——类似 Claude Code 的 /rewind |
+| Doom Loop 保护 | 防止 Agent 陷入权限拒绝循环 | 高——简单有效，~30 行代码 |
+| 26 种 Formatter | 编辑后自动格式化 | 中——可通过 PostToolUse Hook 实现 |
 
-# Scoop (Windows)
-scoop install opencode
+### 不适合复制的设计
 
-# Arch Linux
-sudo pacman -S opencode
+| 设计 | 为什么不适合 |
+|------|------------|
+| 19 包 monorepo | 架构复杂度过高，Qwen Code 作为 Gemini CLI fork 不适合重构为 monorepo |
+| Tauri + Electron 双平台桌面 | 维护成本高，Qwen Code 专注 CLI + VSCode |
+| Bun 运行时 | Qwen Code 基于 Node.js，切换运行时风险大 |
+| Effect 框架 | 学习曲线陡峭，与现有 Qwen Code 代码风格差异大 |
 
-# 或使用安装脚本
-curl -fsSL https://opencode.ai/install | bash
-```
-
-## 支持的模型
-
-| 提供商 | 模型示例 | 说明 |
-|--------|---------|------|
-| Anthropic | Claude 4.5 Sonnet, Opus 4 | 专有 beta 头支持 |
-| OpenAI | GPT-4, GPT-5.4, o1 | 完整支持 + apply_patch |
-| Google | Gemini (Generative AI + Vertex AI) | 双通道 |
-| Amazon | Bedrock | 企业级 |
-| Azure | Azure OpenAI + Cognitive Services | 企业 |
-| xAI | Grok | Responses API |
-| Mistral, Groq, Cohere | 各类模型 | 通过统一接口 |
-| DeepInfra, Cerebras, Together AI | 各类模型 | OpenAI 兼容 |
-| Perplexity, OpenRouter | 各类模型 | 多模型聚合 |
-| Cloudflare | Workers AI + AI Gateway | 边缘推理 |
-| SAP | AI Core | 企业级 |
-| GitHub Copilot | 集成模型 | 插件认证 |
-| GitLab | Agent Platform | 插件认证 + workflow model discovery |
-| 自定义 | OpenAI 兼容端点 | 本地/私有部署 |
-
-模型数据通过 [models.dev](https://models.dev) API 动态拉取，自动获取最新模型信息和定价。
-
-## 优势
-
-1. **真正的多提供商**：100+ LLM 提供商通过 Vercel AI SDK + models.dev 动态统一接入
-2. **多客户端架构**：TUI + Web + 桌面（Tauri + Electron），共享同一后端
-3. **插件 + Skill 生态**：Hook 系统 + npm 插件 + MCP 服务器 + Agent Skill
-4. **智能权限**：Tree-sitter bash AST 分析 + Doom Loop 保护 + 文件时间锁
-5. **深度语言支持**：37 种 LSP 服务器 + 26 种 Formatter，覆盖主流和小众语言
-6. **Git-native 协作**：快照 review、session fork/restore、远程工作区
-7. **TypeScript 全栈**：类型安全，Zod 验证 + Effect 框架贯穿全栈
-8. **丰富的主题**：37 种精心设计的主题
-9. **开源 MIT**：企业友好许可
-
-## 劣势
-
-1. **架构复杂**：19 个包的 Monorepo + 多客户端，学习曲线较陡
-2. **Bun 依赖**：主要运行时非 Node.js 主流（已有 Node.js 兼容入口）
-3. **部分功能实验性**：远程工作区、batch tool、LSP tool 仍在实验阶段
-4. **TUI 无国际化**：TUI 界面仅英文，但 Web/桌面应用支持 16 种 UI 语言（中/英/日/韩/德/法/西/俄/阿拉伯/土耳其等）
-5. **模型数据外部依赖**：模型信息来自 models.dev，离线场景需预缓存（但构建时会生成 snapshot）
-
-## 使用场景
-
-- **最适合**：需要多 LLM 提供商切换、深度 LSP 集成、插件扩展的开发者
-- **适合**：终端原生工作流、多客户端需求、企业远程配置场景
-- **不太适合**：追求简单开箱即用的用户、纯终端 TUI 且需要非英语 UI 的场景
-
-## 付费计划
+## 六、付费计划
 
 | 计划 | 价格 | 包含内容 |
 |------|------|---------|
 | **免费 / 开源** | $0 | 自带 API Key 使用任意 provider |
-| **OpenCode Zen** | 按量付费（余额 < $5 时自动充值 $20） | 针对编码代理优化的模型列表，月度消费限额 |
-| **OpenCode Go** | $5 首月 → $10/月 | GLM-5、Kimi K2.5、MiniMax M2.5/M2.7；US/EU/SG 多区域 |
+| **OpenCode Zen** | 按量付费 | 编码优化模型，月度限额 |
+| **OpenCode Go** | $5 首月 → $10/月 | GLM-5、Kimi K2.5、MiniMax M2.5/M2.7 |
 
-## 企业功能
+## 七、资源链接
 
-- **集中配置**：通过 `.well-known/opencode` 远程下发组织级配置
-- **SSO 集成**：对接现有身份管理系统
-- **内部 AI 网关**：所有请求只走内部基础设施
-- **数据安全**：不存储代码和上下文数据
-- **禁用分享**：可为合规需求关闭 /share 功能
-- **私有 NPM Registry**：支持企业内部 npm 仓库（bun .npmrc）
-- **按席位定价**
-
-## 社区生态
-
-- **454 贡献者**，500 万月活开发者
-- **社区插件**：opencode-helicone-session（Helicone 追踪）等
-- **社区项目**：Remote-OpenCode（通过 Discord 远程控制）、agent-of-empires（多代理会话管理）
-- **安全事件**：曾披露未认证 RCE 漏洞（任何网站可在 OpenCode 安装的机器上执行任意代码），已修复
-
-## 资源链接
-
-- [网站](https://opencode.ai/)
-- [GitHub](https://github.com/anomalyco/opencode)
-- [Changelog](https://opencode.ai/changelog)
-- [桌面下载](https://opencode.ai/download)（Beta）
-- [models.dev](https://models.dev) — 模型数据源
-- [ACP 文档](https://opencode.ai/docs/acp/)
-- [Zen 计划](https://opencode.ai/zen)
-- [Go 计划](https://opencode.ai/go)
+- [网站](https://opencode.ai/) | [GitHub](https://github.com/anomalyco/opencode) | [Changelog](https://opencode.ai/changelog) | [models.dev](https://models.dev)

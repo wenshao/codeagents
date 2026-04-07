@@ -1,4 +1,43 @@
-# 3. 技术架构
+# 3. 技术架构——开发者参考
+
+> OpenCode 的技术栈选择与其他 Agent 差异最大：19 包 monorepo、Effect 框架、Drizzle ORM + SQLite、SolidJS Web 前端、Tauri + Electron 双平台桌面。本文分析其架构中对 Code Agent 开发者最有参考价值的设计。
+>
+> **Qwen Code 对标**：多客户端共享后端模式、SQLite 会话存储、17 种 Hook 类型、models.dev 动态 Provider 加载
+
+## 为什么 OpenCode 的架构值得研究
+
+### 核心差异
+
+OpenCode 选择了一条与 Claude Code / Qwen Code 完全不同的技术路线：
+
+| 设计决策 | OpenCode | Claude Code | Qwen Code |
+|---------|---------|-------------|-----------|
+| **项目结构** | 19 包 monorepo | 单体（~1800 文件） | 4 包 monorepo |
+| **运行时** | Bun（有 Node 入口） | Bun → Rust 原生 | Node.js |
+| **后端框架** | Effect（函数式编程） | 无框架（原生 TS） | 无框架 |
+| **数据库** | SQLite + Drizzle ORM | JSONL 文件 | JSONL 文件 |
+| **Web 前端** | SolidJS | 无（Remote Control 用 claude.ai） | React |
+| **桌面** | Tauri + Electron | 无 | 无 |
+| **模型加载** | models.dev 动态 | 硬编码 Claude 模型 | 手动配置 Provider |
+| **类型系统** | Zod + Effect Schema | Zod | Zod |
+
+### 对 Qwen Code 最有参考价值的 3 个设计
+
+**1. models.dev 动态 Provider 加载**
+- 通过 `models.dev` API 动态拉取 100+ Provider 的模型信息（名称、定价、上下文窗口）
+- 构建时生成 snapshot 供离线使用
+- **Qwen Code 启示**：当前手动配置 Provider，可考虑接入 models.dev 或自建模型注册中心
+
+**2. SQLite 会话持久化**
+- Drizzle ORM + WAL 模式
+- 支持复杂查询：按时间/项目/代理类型搜索历史会话
+- 支持 Session Fork（从任意消息点分叉）和 Restore
+- **Qwen Code 启示**：JSONL 文件难以支持复杂查询和分叉操作
+
+**3. 17 种 Hook 类型**
+- 比 Claude Code（27 事件但以工具生命周期为主）更聚焦扩展性
+- 独有能力：`tool.definition`（运行时修改工具 Schema）、`experimental.chat.system.transform`（修改系统提示）、`experimental.session.compacting`（拦截压缩）
+- **Qwen Code 启示**：`tool.definition` Hook 允许插件动态修改工具描述和参数——这是其他 Agent 都没有的能力
 
 ## 技术架构（源码分析）
 

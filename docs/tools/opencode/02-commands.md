@@ -1,4 +1,37 @@
-# 2. 命令与工具
+# 2. 命令与工具——开发者参考
+
+> OpenCode 的工具系统有两个独特设计：**7 个内置代理**（每个代理有独立的工具集和系统提示）和 **18 种工具**（含 4 个条件工具）。其代理分层比 Claude Code 的单一 Agent + Subagent 模式更结构化。
+>
+> **Qwen Code 对标**：OpenCode 的代理预设（build/plan/general/explore）可参考 Qwen Code 的 Subagent 类型设计。`tool.definition` Hook（运行时修改工具 Schema）是竞品中独有的能力。
+
+## 为什么需要多代理预设
+
+### 问题定义
+
+不同任务需要不同的工具集和行为模式：
+
+| 任务 | 需要的工具 | 需要的行为 |
+|------|-----------|-----------|
+| "构建这个功能" | Read + Write + Edit + Bash + Task | 主动编码，可修改文件 |
+| "分析这个架构" | Read + Grep + Glob | 只读，不应修改文件 |
+| "规划重构方案" | Read + Grep + Glob | 只输出计划，不执行 |
+| "探索这个代码库" | Read + Grep + Glob + CodeSearch | 深度搜索，不修改 |
+
+Claude Code 用**单一 Agent + 动态工具过滤**解决这个问题。OpenCode 选择了**预定义代理**模式——每个代理有固定的工具集和系统提示。两种方案各有优劣：
+
+| 方案 | 优点 | 缺点 |
+|------|------|------|
+| 单一 Agent + 动态过滤（Claude Code） | 灵活，用户不需要选择 | 模型可能误用不该用的工具 |
+| 预定义代理（OpenCode） | 安全边界清晰，行为可预测 | 用户需要手动选择代理 |
+
+### 竞品代理预设对比
+
+| Agent | 代理模式 | 预设数量 | 用户选择 |
+|-------|---------|---------|---------|
+| **OpenCode** | 7 个预定义代理 | build/plan/general/explore/coder/designer/sysadmin | 启动时 `--agent` 或运行时切换 |
+| **Claude Code** | 单一 Agent + Subagent 类型 | general-purpose/Explore/Plan | 模型自动选择 Subagent |
+| **Qwen Code** | 单一 Agent + Subagent 类型 | Explore（只读）/ general | 模型自动选择 |
+| **Gemini CLI** | 单一 Agent | — | — |
 
 ## CLI 命令
 
