@@ -248,12 +248,50 @@ export default defineConfig({
           text: 'Qwen 功能补全',
           collapsible: true,
           items: [
-            { text: '对标 Claude Code', link: '/comparison/qwen-code-feature-gaps' },
-            { text: '对标 Gemini CLI', link: '/comparison/qwen-code-vs-gemini-feature-gaps' },
-            { text: '对标 OpenCode', link: '/comparison/qwen-code-vs-opencode-feature-gaps' },
-            { text: 'vs Kimi CLI', link: '/comparison/qwen-code-vs-kimi-feature-gaps' },
             { text: '性能差距+改进路线图', link: '/comparison/claude-code-speed-qwen-improvements' },
             { text: '改进总报告', link: '/comparison/qwen-code-improvement-report' },
+            { text: 'Gemini 上游报告', link: '/comparison/qwen-code-gemini-upstream-report' },
+            { text: 'Gemini 上游详情', link: '/comparison/qwen-code-gemini-upstream-report-details' },
+            { text: 'Review 改进', link: '/comparison/qwen-code-review-improvements' },
+            {
+              text: '对标分析',
+              collapsible: true,
+              items: [
+                { text: '对标 Claude Code', link: '/comparison/qwen-code-feature-gaps' },
+                { text: '对标 Gemini CLI', link: '/comparison/qwen-code-vs-gemini-feature-gaps' },
+                { text: '对标 OpenCode', link: '/comparison/qwen-code-vs-opencode-feature-gaps' },
+                { text: '对标 Kimi CLI', link: '/comparison/qwen-code-vs-kimi-feature-gaps' },
+              ]
+            },
+            {
+              text: 'P0/P1 改进',
+              collapsible: true,
+              items: [
+                { text: '核心功能', link: '/comparison/qwen-code-improvement-report-p0-p1-core' },
+                { text: '引擎', link: '/comparison/qwen-code-improvement-report-p0-p1-engine' },
+                { text: '平台', link: '/comparison/qwen-code-improvement-report-p0-p1-platform' },
+              ]
+            },
+            {
+              text: 'P2 改进',
+              collapsible: true,
+              items: [
+                { text: '核心功能', link: '/comparison/qwen-code-improvement-report-p2-core' },
+                { text: '性能', link: '/comparison/qwen-code-improvement-report-p2-perf' },
+                { text: '稳定性', link: '/comparison/qwen-code-improvement-report-p2-stability' },
+                { text: '工具/命令', link: '/comparison/qwen-code-improvement-report-p2-tools-commands' },
+                { text: '工具/UI', link: '/comparison/qwen-code-improvement-report-p2-tools-ui' },
+              ]
+            },
+            {
+              text: 'P3 改进',
+              collapsible: true,
+              items: [
+                { text: '功能', link: '/comparison/qwen-code-improvement-report-p3-features' },
+                { text: 'Hooks', link: '/comparison/qwen-code-improvement-report-p3-hooks' },
+                { text: 'UX', link: '/comparison/qwen-code-improvement-report-p3-ux' },
+              ]
+            },
           ]
         },
         {
