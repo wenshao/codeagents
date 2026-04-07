@@ -1,11 +1,34 @@
-# 1. Gemini CLI 概述
+# 1. Gemini CLI 概述——开发者参考
 
-**开发者：** Google
-**许可证：** Apache-2.0
-**仓库：** [github.com/google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)（npm: `@google/gemini-cli`）
-**文档：** [geminicli.com](https://geminicli.com)
-**Stars：** ~100k（100+ 贡献者，12.5k Forks）
-**最后更新：** 2026-03
+> **核心定位**：Gemini CLI 是 Qwen Code 的上游项目。研究它的价值不在于"了解竞品"，而在于**了解自己的上游做了什么、哪些值得 backport**。
+>
+> **Qwen Code 对标**：Qwen Code 在 2025-10 从 Gemini CLI v0.8.2 fork，此后上游演进了 28 个大版本（v0.9.0→v0.36.0）、2041 个 commit。差距集中在：渲染性能（SlicingMaxSizedBox）、安全（sandbox/环境变量净化/危险命令黑名单）、工具智能化（Edit 模糊匹配/省略检测/JIT 上下文）。
+
+## 项目信息
+
+- **开发者**：Google
+- **许可证**：Apache-2.0
+- **仓库**：[github.com/google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)
+- **文档**：[geminicli.com](https://geminicli.com)
+- **Stars**：~100k（100+ 贡献者，12.5k Forks）
+- **版本**：v0.36.0（2026-03）
+
+## fork 后新增能力速查
+
+| 能力 | 添加版本 | 时间 | Qwen Code 状态 |
+|------|---------|------|----------------|
+| SlicingMaxSizedBox（防闪烁） | v0.34 | 2026-03-18 | 未 backport |
+| ACTIVE_SHELL_MAX_LINES=15 | v0.33 | 2026-03-09 | 未 backport |
+| OS 级 sandbox（bwrap/Seatbelt） | v0.30-v0.36 | 2026-02~03 | 未 backport |
+| Edit 模糊匹配（Levenshtein） | v0.35 | 2026-03-24 | 未 backport |
+| 环境变量净化 | v0.35 | 2026-03-24 | 未 backport |
+| /rewind 检查点回退 | v0.27 | 2026-02-04 | 未 backport |
+| trackerTools（任务追踪） | v0.34 | 2026-03-17 | 未 backport |
+| A2A Agent-to-Agent 协议 | v0.24-v0.36 | 2026-01~03 | 未 backport |
+| Wave-based 并行工具调度 | v0.35 | 2026-03-24 | 未 backport |
+| VirtualizedList + StaticRender | v0.32 | 2026-03-03 | 未 backport |
+
+> 完整 42 项 backport 分析见 [上游 backport 报告](../../comparison/qwen-code-gemini-upstream-report.md)
 
 ## 概述
 

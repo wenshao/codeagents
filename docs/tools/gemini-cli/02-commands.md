@@ -1,4 +1,8 @@
-# 2. Gemini CLI 命令详解（39 个命令文件，源码：packages/cli/src/ui/commands/）
+# 2. Gemini CLI 命令详解——开发者参考
+
+> 41 个斜杠命令。比 Qwen Code 多的关键命令：`/rewind`（检查点回退）、`/plan`（计划模式）、`/agents`（代理列表）、`/bug`（提交 issue）。
+>
+> **Qwen Code 对标**：/rewind 未 backport、/plan PR#2921 open。命令注册架构相同（FileCommandLoader + TOML 文件）。
 
 ## 命令基础架构
 

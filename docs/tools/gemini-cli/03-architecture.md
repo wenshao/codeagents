@@ -1,4 +1,8 @@
-# 3. 技术架构
+# 3. 技术架构——开发者参考
+
+> Gemini CLI 和 Qwen Code 共享同一个架构基础（fork 关系），但上游在 2025-10 之后做了大量改进：事件驱动调度器、模型路由器（7 种策略）、VirtualizedList、SlicingMaxSizedBox、自定义 Ink fork 等。
+>
+> **Qwen Code 对标**：核心循环（AgentSession → GeminiChat → Scheduler）与 Qwen Code 的 CoreToolScheduler 类似但更精细。上游新增的 SlicingMaxSizedBox、toolLayoutUtils、LRU 缓存是 P0-P1 backport 目标。
 
 ## 核心架构
 

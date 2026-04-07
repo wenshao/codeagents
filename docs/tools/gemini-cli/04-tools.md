@@ -1,4 +1,8 @@
-# 4. 工具与代理系统
+# 4. 工具与代理系统——开发者参考
+
+> 23 个内置工具（17 核心 + 6 任务追踪）+ 5 个内置代理 + MCP + A2A 协议。比 Qwen Code 多的关键工具：`trackerTools`（6 个任务追踪工具）、`shellBackgroundTools`（后台进程管理）、`web_search`（Web 搜索）。
+>
+> **Qwen Code 对标**：trackerTools（依赖拓扑 + 可视化）替代 TodoWriteTool（平面清单）；shellBackgroundTools 补齐后台进程管理；A2A 协议支持远程 Agent 通信。
 
 ## 工具系统
 

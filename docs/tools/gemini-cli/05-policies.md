@@ -1,4 +1,8 @@
-# 5. 策略引擎与安全
+# 5. 策略引擎与安全——开发者参考
+
+> Gemini CLI 的安全体系是所有 CLI Code Agent 中最完整的——TOML 策略引擎、OS 级 sandbox（bwrap/Seatbelt/Windows）、环境变量净化、危险命令黑名单、Folder Trust 发现。这也是 Qwen Code 与上游差距最大的领域。
+>
+> **Qwen Code 对标**：TOML 策略引擎（Qwen 无）、OS 级 sandbox（Qwen 无）、环境变量净化（Qwen 无）、危险命令黑名单（Qwen 仅 AST 只读）。这些是 P0-P1 backport 目标。
 
 ## 策略/权限系统
 
