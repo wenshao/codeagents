@@ -1,17 +1,43 @@
-# Qwen Code 文档
+# Qwen Code 架构文档（面向贡献者和开发者）
 
-> 阿里云 Qwen 团队 AI 编程代理（Gemini CLI 分叉，Apache-2.0，v0.13.0）
+> Qwen Code 是阿里云 Qwen 团队的开源 AI 编程代理（Apache-2.0），基于 Gemini CLI fork 并大幅增强。本系列文档面向**项目贡献者和开发者**——了解当前架构、已知差距和改进方向。
+>
+> **源码**：[github.com/QwenLM/qwen-code](https://github.com/QwenLM/qwen-code)
 
-| 文档 | 内容 |
-|------|------|
-| [01-overview.md](./01-overview.md) | 概述、核心功能、安装、模型支持 |
-| [02-commands.md](./02-commands.md) | 41 个斜杠命令、子命令、CLI 参数 |
-| [03-architecture.md](./03-architecture.md) | 技术架构、Agent Loop、Arena、扩展系统 |
-| [04-tools.md](./04-tools.md) | 16 个核心工具、MCP 动态工具、权限分类 |
-| [05-settings.md](./05-settings.md) | 完整配置参考（7 层优先级、settings.json 全字段） |
-| [06-extensions.md](./06-extensions.md) | 扩展系统（Claude/Gemini 跨平台兼容、qwen-extension.json） |
-| [EVIDENCE.md](./EVIDENCE.md) | 源码分析证据（遥测、认证、模型、Arena） |
-| [用户指南](../../guides/qwen-code-user-guide.md) | 安装、免费使用、Arena 模式 |
+## 文档索引
 
-**仓库：** [github.com/QwenLM/qwen-code](https://github.com/QwenLM/qwen-code)
-**Stars：** ~21k | **许可证：** Apache-2.0 | **语言：** TypeScript
+| 文档 | 内容 | 改进方向 |
+|------|------|---------|
+| [01-概述](./01-overview.md) | 核心能力、与上游差异、已知差距 | 差距速查 |
+| [02-命令](./02-commands.md) | 41 命令 + CLI 参数 | 命令差距 |
+| [03-架构](./03-architecture.md) | Agent Loop、Arena、CoreToolScheduler、多 Provider | 核心循环改进 |
+| [04-工具](./04-tools.md) | 16 核心工具 + MCP | 工具差距 |
+| [05-设置](./05-settings.md) | 7 层配置 + Hook 系统 | Hook 扩展 |
+| [06-扩展](./06-extensions.md) | 三格式扩展兼容 | 扩展生态 |
+
+## 当前状态速查
+
+| 维度 | Qwen Code 现状 | vs Claude Code | vs 上游 Gemini CLI |
+|------|----------------|---------------|-------------------|
+| 工具数 | 16 | 42（差 26） | 23（差 7） |
+| 命令数 | ~41 | ~79（差 38） | ~41（接近） |
+| Hook 事件 | ~12 | 27（差 15） | 11（接近） |
+| 上下文压缩 | 单一 70% | 5 层递增 | 单阈值 50% |
+| 记忆系统 | 简单笔记 | CLAUDE.md + Auto Dream | GEMINI.md |
+| 安全 | AST 只读检测 | 沙箱 + 23 项检查 | sandbox + 环境变量净化 |
+| 多 Agent | Arena + Agent Team | Coordinator/Swarm + Kairos | A2A + Subagent |
+| 渲染 | 标准 Ink（闪烁） | 自建 Ink fork（无闪烁） | SlicingMaxSizedBox |
+| 崩溃恢复 | 无 | 3 种检测 + 合成续行 | 无 |
+
+## 改进报告
+
+- [**Claude Code 对比改进报告**](../../comparison/qwen-code-improvement-report.md)——240 项改进建议，22 个社区 PR 追踪
+- [**Gemini CLI 上游 backport 报告**](../../comparison/qwen-code-gemini-upstream-report.md)——42 项可 backport 改进
+- [**/review 功能改进建议**](../../comparison/qwen-code-review-improvements.md)——9 项改进（P0 确定性分析 ~ P3 报告持久化）
+- [**工具输出限高防闪烁**](../../comparison/tool-output-height-limiting-deep-dive.md)——Gemini CLI vs Qwen Code 渲染对比
+
+## 活跃 PR 进展（22 个追踪中）
+
+已合并：#2525 ✓（Speculation）、#2854 ✓（Mid-Turn Queue Drain）、#2889 ✓（危险操作指导）
+
+关键 open PR：#2936（Fork Subagent）、#2932（/review 增强）、#2886（Agent Team）、#2921（/plan）

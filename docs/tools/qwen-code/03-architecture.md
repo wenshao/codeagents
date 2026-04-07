@@ -1,6 +1,8 @@
-# 3. Qwen Code 技术架构
+# 3. Qwen Code 技术架构——贡献者参考
 
-> 以下基于 v0.13.0 源码分析（commit `0b8ff03f8`，2026-03-26）。
+> 基于 Gemini CLI fork，新增 CoreToolScheduler（工具并行）、多 Provider 内容生成、Arena 竞赛等核心模块。
+>
+> **改进方向**：上下文压缩（仅单一 70% vs Claude Code 5 层）、渲染性能（标准 Ink vs 上游 SlicingMaxSizedBox）、启动优化（无 TCP preconnect）。详见 [架构改进建议](../../comparison/qwen-code-improvement-report-p0-p1-core.md)。
 
 ## Monorepo 结构
 

@@ -1,8 +1,10 @@
-# 2. Qwen Code 命令系统
+# 2. Qwen Code 命令系统——贡献者参考
 
-Qwen Code 提供 41 个内置斜杠命令，加上从 MCP prompts、bundled skills 和用户自定义文件动态加载的命令。
+> 41 个内置命令 + MCP prompts + bundled skills + 用户自定义。相比 Claude Code（~79 个）差距较大，相比上游 Gemini CLI（~41 个）接近但缺少 /rewind、/agents 等命令。
+>
+> **改进方向**：/plan（PR#2921 open）、/thinkback（PR#2917 open）、/clear --history（PR#2915 open）。缺少的命令见 [Claude Code 命令对比](../claude-code/02-commands.md)。
 
-> 源码: `packages/cli/src/services/BuiltinCommandLoader.ts`（注册所有内置命令）
+源码: `packages/cli/src/services/BuiltinCommandLoader.ts`（注册所有内置命令）
 >
 > **注**: 本文档统计为 41 个命令。v0.12 及更早版本为 40 个（39 斜杠 + 1 Skill `/review`），
 > v0.13.0 新增 `/loop` 命令（源码: `commands/loopCommand.ts`），增至 41。

@@ -1,8 +1,10 @@
-# 4. Qwen Code 工具系统
+# 4. Qwen Code 工具系统——贡献者参考
 
-Qwen Code 内置 16 个核心工具，加上通过 MCP 动态发现的工具和命令发现的工具。
+> 16 个核心工具 + MCP 动态工具。相比 Claude Code（42 个）差距显著——缺少 ToolSearch（延迟加载）、MultiEdit（批量编辑）、Cron 系列（定时）、NotebookEdit（Jupyter）等。
+>
+> **改进方向**：ToolSearch 延迟加载（减少 50% 系统提示 token）、ConfigTool（PR#2911 open）、路径补全（PR#2879 open）。详见 [工具改进建议](../../comparison/qwen-code-improvement-report-p2-tools-commands.md)。
 
-> 源码: `packages/core/src/config/config.ts`（L2146-2194 工具注册）
+源码: `packages/core/src/config/config.ts`（工具注册）
 > 工具名称定义: `packages/core/src/tools/tool-names.ts`
 
 ## 工具注册机制

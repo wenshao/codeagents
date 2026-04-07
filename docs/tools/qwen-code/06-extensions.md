@@ -1,6 +1,10 @@
-# 6. Qwen Code 扩展系统
+# 6. Qwen Code 扩展系统——贡献者参考
 
-> 来源：[官方文档](https://qwenlm.github.io/qwen-code-docs/zh/users/extension/introduction/)
+> 三格式扩展兼容（Qwen 原生 + Claude 插件转换 + Gemini 扩展转换）是 Qwen Code 的独有优势——竞品扩展不互通，Qwen Code 可以复用两个生态的扩展。
+>
+> **改进方向**：扩展 marketplace、Skill 数量扩展（当前 3 个 vs Claude Code 14 个）。详见 [Skill 系统分析](../claude-code/05-skills.md)。
+
+来源：[官方文档](https://qwenlm.github.io/qwen-code-docs/zh/users/extension/introduction/)
 
 ## 概述
 

@@ -1,6 +1,10 @@
-# 5. Qwen Code 配置系统
+# 5. Qwen Code 配置系统——贡献者参考
 
-> 来源：[官方文档](https://qwenlm.github.io/qwen-code-docs/zh/users/configuration/settings/)，v0.3.0+ 嵌套结构格式
+> 7 层配置优先级 + ~12 种 Hook 事件。相比 Claude Code（5 层设置 + 27 种 Hook + prompt/agent 类型）和 OpenCode（18 种 Hook + npm 插件）有差距。
+>
+> **改进方向**：Hook 事件扩展（SubagentStart/Stop、FileChanged 等）、if 条件过滤、prompt 类型 Hook（LLM 决策）。详见 [Hook 系统分析](../claude-code/12-hooks.md)。
+
+来源：[官方文档](https://qwenlm.github.io/qwen-code-docs/zh/users/configuration/settings/)
 
 ## 配置层级（7 层优先级）
 
