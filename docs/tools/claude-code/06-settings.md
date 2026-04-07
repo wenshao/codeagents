@@ -1,8 +1,33 @@
 # 6. 设置与安全——开发者参考
 
-> 5 层设置优先级、24 种 Hook 事件、沙箱隔离、权限模型。企业级 Code Agent 的安全与可配置性参考。
+> 5 层设置优先级、沙箱隔离、权限模型。企业级 Code Agent 的安全与可配置性参考。Hook 系统详见 [12-Hook 系统](./12-hooks.md)。
 >
-> **Qwen Code 对标**：Hook 事件覆盖度（Qwen 已有但类型较少）、设置优先级（Qwen 有 user/project 两层）、沙箱（Qwen 无 OS 级沙箱）
+> **Qwen Code 对标**：设置优先级（Qwen 有 user/project 两层 vs Claude Code 5 层）、沙箱（Qwen 无 OS 级沙箱，Gemini CLI 有 bwrap/Seatbelt）
+
+## 为什么需要 5 层设置
+
+### 问题定义
+
+Code Agent 的配置需求因使用场景而异：
+
+| 场景 | 配置要求 | 单层设置的问题 |
+|------|---------|--------------|
+| 企业安全团队 | 强制所有员工禁用 `rm -rf`、限制网络访问 | 无法强制，员工可以覆盖 |
+| 团队约定 | 项目使用 pnpm 不用 npm，Python 项目用 ruff | 每个成员需手动配置 |
+| 个人偏好 | 我喜欢 vim 模式、暗色主题 | 换项目后丢失 |
+| 临时覆盖 | 这次运行用 Opus 而非 Sonnet | 改了全局设置后忘记改回来 |
+
+Claude Code 的解决方案：**5 层优先级设置体系**，高层可以"锁定"低层无法覆盖。
+
+### 竞品设置层级对比
+
+| Agent | 设置层级 | 企业管控 | 远程下发 |
+|-------|---------|---------|---------|
+| **Claude Code** | 5 层（企业→组织→用户→项目→本地） | ✓ managed-settings 强制锁定 | ✓ |
+| **Gemini CLI** | 3 层（admin→user→workspace）+ TOML Policy | ✓ 通过 Policy 引擎 | — |
+| **Qwen Code** | 2 层（user→project） | — | — |
+| **Copilot CLI** | 3 层（organization→user→workspace） | ✓ 通过 GitHub org 设置 | ✓ |
+| **Cursor** | 2 层（user→workspace） | — | — |
 
 ## 5 层设置优先级体系
 

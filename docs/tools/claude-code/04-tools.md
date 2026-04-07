@@ -3,6 +3,40 @@
 > 42 个内置工具 + MCP 动态工具的架构设计、Zod Schema 校验、权限模型、安全机制。每个工具的 schema 和执行流程都经过大规模生产验证。
 >
 > **Qwen Code 对标**：ToolSearch 延迟加载（减少 50%+ 系统提示 token）、BashTool 23 项安全校验、StreamingToolExecutor、权限 3 层模型
+
+## 为什么工具系统设计是 Agent 的核心
+
+### 问题定义
+
+工具是 Agent 与外部世界交互的唯一接口——Agent 的一切能力（读写文件、执行命令、搜索代码）都通过工具实现。工具系统的设计直接决定：
+
+| 设计决策 | 影响 |
+|---------|------|
+| 工具数量和 Schema | 系统提示占用 token（42 个工具 ≈ 10K+ token） |
+| 权限模型 | 安全性——能否防止 Agent 执行危险操作 |
+| 执行架构 | 性能——工具是串行还是并行 |
+| Schema 校验 | 可靠性——模型生成错误参数时能否优雅处理 |
+
+### 关键设计创新：ToolSearch 延迟加载
+
+Claude Code 的 42 个工具中，只有 **10 个核心工具**始终加载到系统提示，其余 25+ 个通过 **ToolSearch** 按需激活：
+
+```
+系统提示 token 占用：
+  全量加载 42 工具：~15,000 token
+  核心 10 + ToolSearch：~6,000 token（节省 60%）
+```
+
+当模型需要不常用工具时，调用 `ToolSearch("notebook edit")` → 系统动态注入匹配工具的 Schema → 后续轮次可用。
+
+### 竞品工具系统对比
+
+| Agent | 工具数 | 延迟加载 | 安全校验 | 并行执行 |
+|-------|--------|---------|---------|---------|
+| **Claude Code** | 42 | ✓ ToolSearch | 23 项 Bash 安全检查 | StreamingToolExecutor |
+| **Gemini CLI** | ~25 | — | commandSafety.ts | Wave-based scheduler |
+| **Qwen Code** | ~30 | — | AST 只读检测 | Agent 工具并行 |
+| **Copilot CLI** | ~15 | — | 命令黑名单 | — |
 >
 > **计数规则**：39 = 10 核心（始终加载）+ 25 延迟（ToolSearch 按需加载）+ 3 内部 + 1 条件（Windows PowerShell）。不含 MCP 动态工具（数量由 MCP 服务器决定）。其中 TaskStop 含 KillShell 别名，Edit 含 replace_all 批量编辑模式，均非独立工具。用户常见/常驻工具约 10 个（核心工具），其余按功能需求动态激活。
 

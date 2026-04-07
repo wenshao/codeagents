@@ -2,7 +2,31 @@
 
 > 本文分析 Claude Code 的核心架构：Bootstrap 启动链、QueryEngine 推理循环、22 个 Feature Flag DCE、Prompt Cache 分区、5 层压缩策略、重试退避等。这些模式大多与模型无关，可在 Qwen Code 等 Agent 中复现。
 >
-> **Qwen Code 对标**：启动优化（TCP preconnect）、核心循环（Mid-Turn Queue Drain）、Prompt Cache 分区、API 重试策略
+> **Qwen Code 对标**：启动优化（TCP preconnect）、核心循环（Mid-Turn Queue Drain，PR#2854 ✓ 已合并）、Prompt Cache 分区、API 重试策略
+
+## 为什么架构设计比模型能力更具参考价值
+
+Claude Code 的模型能力（Claude Opus/Sonnet）是 Anthropic 独有的，不可复制。但它的**工程架构**——启动链、推理循环、缓存策略、重试退避——是通用模式，适用于任何模型的 Code Agent。
+
+### 关键架构差异
+
+| 架构领域 | Claude Code | Qwen Code | 差距影响 |
+|---------|-------------|-----------|---------|
+| 启动时间 | TCP preconnect + 键盘捕获（亚秒） | 无预连接优化 | 首次输入延迟 |
+| 核心循环 | StreamingToolExecutor + Mid-Turn Drain | 顺序工具执行 | 工具执行延迟 |
+| Prompt Cache | 静态/动态分区 + 工具 Schema 锁定 | 基础缓存 | 缓存命中率 |
+| API 重试 | 10 次 + 指数退避 + 529 降级 + 模型 fallback | 分离重试预算 | 可靠性 |
+| Feature 管理 | 22 个 Feature Flag + build-time DCE | 无 Feature Flag | 实验性功能管理 |
+
+### 竞品架构对比
+
+| 组件 | Claude Code | Gemini CLI | Qwen Code |
+|------|-------------|-----------|-----------|
+| 运行时 | Bun → Rust 原生 | Node.js + esbuild | Node.js |
+| UI 框架 | Ink (自建 fork) | Ink (`@jrichman/ink` fork) | Ink (标准) |
+| 工具执行 | StreamingToolExecutor | 顺序/波次并行 (scheduler) | CoreToolScheduler |
+| 缓存 | Prompt Cache 静态/动态分区 | 无 Prompt Cache 管理 | 基础缓存 |
+| 启动 | TCP preconnect + 键盘捕获 | Startup Profiler | 无优化 |
 
 ---
 

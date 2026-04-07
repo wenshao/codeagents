@@ -3,6 +3,39 @@
 > Leader-Worker 协作、Swarm 三后端（InProcess/tmux/iTerm2）、文件邮箱 IPC、任务管理、Kairos 自治模式。Code Agent 多 Agent 编排的最复杂实现（~20,500 行）。
 >
 > **Qwen Code 对标**：Agent Team（PR#2886）、Fork Subagent（PR#2936）正在实现类似能力。本文的 InProcess 隔离（AsyncLocalStorage）、邮箱通信、任务拓扑管理是核心参考。
+
+## 为什么需要多 Agent 系统
+
+### 问题定义：单 Agent 的天花板
+
+单个 Agent 的能力受限于**串行执行**和**单一上下文**：
+
+| 场景 | 单 Agent | 多 Agent |
+|------|---------|---------|
+| "重构 auth 模块 + 更新测试 + 修改文档" | 串行：重构 → 测试 → 文档，30 分钟 | 3 个 Agent 并行，10 分钟 |
+| "在 5 个文件中应用相同的迁移" | 串行处理每个文件 | 5 个 worktree Agent 并行 |
+| "持续监控 CI + 修复失败" | 用户手动循环 | Kairos 自治模式自动调度 |
+| "代码审查需要多视角" | 单一 prompt 审查 | 4 个维度 Agent 并行 + 验证 Agent |
+
+### 设计演进
+
+Claude Code 的多 Agent 系统经历了三个阶段：
+
+| 阶段 | 时间 | 能力 | 架构 |
+|------|------|------|------|
+| 1. 基础 Subagent | 2025 | Agent 工具派生子 Agent | 单一进程内执行 |
+| 2. Swarm 系统 | 2025 末 | Leader-Worker + 3 种后端 | tmux/iTerm2/InProcess |
+| 3. Kairos 自治 | 2026 | Cron 调度 + 主动行为 | Always-On daemon 模式 |
+
+### 竞品多 Agent 对比
+
+| Agent | 多 Agent 模式 | 隔离机制 | IPC | 自治调度 |
+|-------|-------------|---------|-----|---------|
+| **Claude Code** | Coordinator/Swarm + Fork + Kairos | AsyncLocalStorage + worktree | 文件邮箱 | ✓ Cron + Proactive Tick |
+| **Gemini CLI** | A2A Protocol + Subagent | 进程隔离 | gRPC/REST/JsonRpc | — |
+| **Qwen Code** | Arena + Agent Team + Fork (PR#2936) | CoreToolScheduler 并行 | 文件 IPC | — |
+| **Copilot CLI** | 插件 Agent + Background Agent | GitHub Actions runner | — | ✓ 通过 GitHub Actions |
+| **Cursor** | Background Agent | 云端沙箱 | — | — |
 >
 > **计数规则**：源码行数基于 TypeScript 文件的 `wc -l` 统计。
 

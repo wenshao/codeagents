@@ -1,8 +1,39 @@
 # 7. 会话、记忆与上下文管理——开发者参考
 
-> Claude Code 最核心的工程优势之一：5 层递增压缩、CLAUDE.md 分层记忆、Auto Dream 自动整理、Team Memory 团队同步、崩溃恢复。这是 Qwen Code 与 Claude Code 差距最大的领域。
+> Claude Code 最核心的工程优势之一：5 层递增压缩、CLAUDE.md 分层记忆、Auto Dream 自动整理、Team Memory 团队同步、崩溃恢复。这是 Qwen Code 与 Claude Code **差距最大**的领域（~73,000 行代码）。
 >
 > **Qwen Code 对标**：上下文压缩（仅单一 70% 手动压缩 vs 5 层自动）、记忆系统（简单笔记 vs CLAUDE.md + Auto Dream）、崩溃恢复（无 vs 3 种检测 + 合成续行）
+
+## 为什么上下文管理是 Code Agent 的核心竞争力
+
+### 问题定义
+
+Code Agent 的会话比聊天机器人**长 10-100 倍**——一个重构任务可能持续 200+ 轮、消耗 500K+ token。上下文窗口（即使是 100 万 token）最终会被填满。此时发生什么，决定了 Agent 的可用性：
+
+| 策略 | 做法 | 后果 |
+|------|------|------|
+| 无压缩 | 上下文满后报错终止 | 长任务无法完成 |
+| 单一压缩（Qwen Code 当前） | 超过 70% 时全量压缩 | 一次性丢失大量细节，可能遗忘关键决策 |
+| 5 层递增压缩（Claude Code） | 从轻量到重量逐级升级 | 最大限度保留信息，平滑过渡 |
+
+### 为什么"简单压缩"不够
+
+- 工具输出占上下文的 60-80%（一个 `npm test` 可能输出 500 行）
+- 旧工具输出的信息价值随时间递减（3 轮前的 `git diff` 结果已过时）
+- 但 Agent 的**决策推理**价值不递减（"我决定用策略 B 因为 A 有性能问题"）
+- 简单压缩无法区分"可丢弃的工具输出"和"不可丢弃的决策上下文"
+
+Claude Code 的 5 层压缩精确解决了这个问题——每一层针对不同类型的内容，从最低价值开始裁剪。
+
+### 竞品上下文管理对比
+
+| Agent | 压缩策略 | 记忆系统 | 崩溃恢复 |
+|-------|---------|---------|---------|
+| **Claude Code** | 5 层递增 + Tool Output Masking | CLAUDE.md + Auto Dream + Team Memory | 3 种检测 + 合成续行 |
+| **Gemini CLI** | 单阈值压缩（默认 50%） + Tool Output Masking | GEMINI.md | 无 |
+| **Qwen Code** | 单阈值压缩（70%） | QWEN.md + 简单笔记 | 无 |
+| **Copilot CLI** | 上下文管理 + 检查点 | copilot-instructions.md | 有限 |
+| **Cursor** | VS Code 会话管理 | .cursorrules | IDE 级恢复 |
 >
 > **计数规则**：源码行数基于 TypeScript 文件的 `wc -l` 统计。7.1.1 表格「目录总规模」列为子系统所有文件合计；括号内为核心文件精确 LOC。全文 ~73,000 行为所有 session/memory 相关目录（含 Token 管理、对话恢复、并发管理等辅助模块）的总计。
 

@@ -4,6 +4,31 @@
 >
 > **Qwen Code 对标**：命令注册机制（BuiltinCommandLoader vs 四种类型加载）、命令分类策略（prompt/local-jsx/local/skill）、权限控制粒度
 
+## 为什么需要四种命令类型
+
+### 问题定义
+
+Code Agent 的斜杠命令有截然不同的执行需求：
+
+| 需求 | 例子 | 需要 LLM？ | 需要 UI？ | 执行方式 |
+|------|------|-----------|---------|---------|
+| "帮我审查这个 PR" | `/review` | ✓ | — | 发送 prompt 给 LLM |
+| "切换模型" | `/model` | — | ✓ 选择对话框 | 本地 React 组件 |
+| "清屏" | `/clear` | — | — | 直接执行代码 |
+| "提交代码" | `/commit` | ✓ | — | 外部 Skill 定义 |
+
+如果只有一种命令类型，要么全部走 LLM（`/clear` 也调 API？），要么全部本地执行（`/review` 怎么推理？）。Claude Code 用 4 种类型解决这个问题。
+
+### 竞品命令系统对比
+
+| Agent | 命令数 | 命令类型 | 扩展机制 |
+|-------|--------|---------|---------|
+| **Claude Code** | ~79 | 4 种（prompt/local-jsx/local/skill） | Skill + Plugin |
+| **Gemini CLI** | ~30 | 2 种（内置 + TOML command） | TOML 文件 + Skill |
+| **Qwen Code** | ~40 | 2 种（内置 + Skill） | BundledSkillLoader |
+| **Copilot CLI** | ~20 | 2 种（内置 + Plugin） | Plugin 系统 |
+| **Cursor** | ~15 | 1 种（内置） | 无 |
+
 ---
 
 ## 命令类型说明

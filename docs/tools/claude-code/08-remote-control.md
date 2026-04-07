@@ -4,6 +4,35 @@
 >
 > **Qwen Code 对标**：Qwen Code 目前无远程控制能力。本文的 Bridge 架构可作为实现参考，但优先级较低（P2-P3）。
 
+## 为什么需要远程控制
+
+### 问题定义
+
+Code Agent 运行在开发者的终端中，但开发者不总是坐在那台电脑前：
+
+| 场景 | 痛点 | Remote Control 解决方案 |
+|------|------|----------------------|
+| Agent 跑长任务，开发者去开会 | 无法从手机查看进度/审批操作 | 手机浏览器远程操控 |
+| SSH 到远程服务器跑 Agent | 终端掉线 = 会话丢失 | Bridge 保持会话，任意设备重连 |
+| 结对编程远程演示 | 无法共享终端给同事看 | 通过链接实时共享 |
+
+### 设计决策：本地执行 + 远程 UI
+
+关键架构决策：**会话始终在本地执行**——远程端仅是交互窗口。这意味着：
+- 代码不离开本地机器（安全）
+- 网络断开不影响执行（鲁棒）
+- 远程端是"视图"不是"控制器"（权限可控）
+
+### 竞品远程能力对比
+
+| Agent | 远程能力 | 架构 | 安全模型 |
+|-------|---------|------|---------|
+| **Claude Code** | Remote Control + Claude Code on the Web | WebSocket/SSE Bridge，本地执行 | Bearer token + 会话密钥 |
+| **Gemini CLI** | 无独立远程控制 | — | — |
+| **Qwen Code** | 无 | — | — |
+| **Copilot CLI** | Background Agent（GitHub Actions） | 云端执行 | GitHub 认证 |
+| **Cursor** | 无独立远程（VS Code Remote 继承） | VS Code SSH/Tunnel | VS Code 认证 |
+
 ## 8.1 概述
 
 Remote Control 是 Claude Code 的跨设备会话桥接功能，在 18 款主流 AI 编程 Agent 中**为 Claude Code 独有**（[功能矩阵](../../comparison/features.md)）。它解决了开发者的一个核心痛点：启动了一个长时间的终端代理任务后，需要离开工位继续监控或干预。

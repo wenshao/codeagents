@@ -4,6 +4,40 @@
 >
 > **Qwen Code 对标**：Qwen Code 使用标准 Ink，存在大输出闪烁问题。Gemini CLI 已在上游实现了 SlicingMaxSizedBox + 硬上限等部分方案（见 [工具输出限高](../../comparison/tool-output-height-limiting-deep-dive.md)）。本文的 DEC 同步输出和差分渲染是更底层的解决方案。
 
+## 为什么需要自建渲染引擎
+
+### 核心问题
+
+标准 Ink 的渲染策略是"清屏 → 全量重绘"——每次 React 状态更新都写入完整的屏幕内容。对于简单 CLI 工具这没问题，但 Code Agent 的 TUI 面临独特挑战：
+
+| 场景 | 更新频率 | 标准 Ink | Claude Code Ink fork |
+|------|---------|---------|---------------------|
+| 流式 LLM 输出 | 每秒 10-30 次 | 每次全屏重绘 → 闪烁 | 差分渲染仅更新变化 cell |
+| Spinner 动画 | 每秒 4-8 次 | 全屏重绘只为转一个字符 | 损伤追踪精确到单个 cell |
+| 500 行 shell 输出 | 每行触发 | 布局 + 渲染 500 行 | 硬件滚动 + 仅渲染新增行 |
+| 终端 resize | 偶发 | 全量重排 → 撕裂 | BSU/ESU 原子包裹 |
+
+### 设计决策：为什么不用应用层限高替代
+
+Gemini CLI 和 Qwen Code 选择了应用层方案——`SlicingMaxSizedBox` 在渲染前裁剪数据到 15 行，避免 Ink 布局大量内容。这有效但不彻底：
+
+| 方案 | 层级 | 解决的问题 | 无法解决的问题 |
+|------|------|-----------|--------------|
+| 应用层限高（Gemini/Qwen） | React 组件 | 大输出 → 裁剪到 15 行 | Spinner、流式输出、resize 仍然全屏重绘 |
+| 自建渲染引擎（Claude Code） | Ink fork | 所有场景的闪烁 | 维护成本高、无法合并 Ink 上游更新 |
+
+**最佳方案是两者结合**——应用层限高降低数据量（Gemini CLI 已做），渲染引擎层优化降低重绘成本（Claude Code 已做，Qwen Code 待做）。
+
+### 竞品渲染方案对比
+
+| Agent | 渲染引擎 | 防闪烁机制 | 效果 |
+|-------|---------|-----------|------|
+| **Claude Code** | 自建 Ink fork（~6,800 行） | DEC 同步 + 差分渲染 + 硬件滚动 + 损伤追踪 | 最佳 |
+| **Gemini CLI** | `@jrichman/ink@6.6.7`（自定义 fork） | SlicingMaxSizedBox + 15 行硬上限 + VirtualizedList | 良好 |
+| **Qwen Code** | 标准 `ink@6.2.3` | MaxSizedBox 视觉裁剪（渲染后） | 大输出闪烁 |
+| **Cursor** | VS Code Webview | 浏览器 DOM + GPU 合成 | 无闪烁（Web 技术） |
+| **Copilot CLI** | 自建 Ink fork | 类似 Claude Code | 良好 |
+
 ## 问题背景
 
 终端 UI 不同于浏览器 DOM——没有硬件合成层、没有 `requestAnimationFrame`、没有 GPU 加速。每次输出都是往 stdout 写入 ANSI 转义序列的字节流，终端模拟器实时逐字解析并渲染。如果一次渲染涉及"清屏→重绘"两步，终端会先显示空白画面再显示新内容，产生可见闪烁。
