@@ -12,6 +12,7 @@
 | **[Qwen Code 改进报告（240 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 22 个社区 PR 追踪 |
 | **[Gemini CLI backport（42 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 |
 | **[/review 改进建议](./docs/comparison/qwen-code-review-improvements.md)** | 审查功能 4 方对比 + 10 项改进 |
+| **[OpenCode 对标改进（10 项）](./docs/comparison/qwen-code-opencode-improvements.md)** | 文件时间锁 + Session Fork + SQLite 持久化 |
 | **[功能对比矩阵](./docs/comparison/features.md)** | 14 Agent × 多维度横向对比 |
 | **[一页总结（选型速查）](./docs/SUMMARY.md)** | 给没时间看全部文档的人 |
 
@@ -79,6 +80,7 @@
 | [Gemini CLI backport（42 项）](./docs/comparison/qwen-code-gemini-upstream-report.md) | 上游可 backport 改进（P0-P3） |
 | [/review 改进建议](./docs/comparison/qwen-code-review-improvements.md) | 确定性分析 + Autofix + 4 方竞品对比 |
 | [工具输出限高](./docs/comparison/tool-output-height-limiting-deep-dive.md) | Gemini CLI SlicingMaxSizedBox vs Qwen Code |
+| [OpenCode 对标改进（10 项）](./docs/comparison/qwen-code-opencode-improvements.md) | 文件时间锁 + Session Fork + SQLite |
 | [Kairos Always-On](./docs/comparison/kairos-always-on-agent-deep-dive.md) | Claude Code 自治 Agent 模式 |
 
 ### 全局对比
