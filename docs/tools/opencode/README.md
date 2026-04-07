@@ -4,7 +4,7 @@
 >
 > **阅读对象**：正在开发或改进 CLI Code Agent 的工程师
 >
-> **OpenCode 的独特价值**：多客户端架构（TUI + Web + Desktop 共享后端）、17 种 Hook 类型、37 种 LSP 集成、100+ Provider 动态加载。这些是 Qwen Code 和 Claude Code 都没有的设计。
+> **OpenCode 的独特价值**：多客户端架构（TUI + Web + Desktop 共享后端）、18 种 Hook 类型、37 种 LSP 集成、100+ Provider 动态加载。这些是 Qwen Code 和 Claude Code 都没有的设计。
 
 ## 文档索引
 
@@ -13,7 +13,7 @@
 | [01-概述与对标](./01-overview.md) | 能力矩阵、架构差异、独特设计 | 功能差距 + 可借鉴模式 |
 | [02-命令与工具](./02-commands.md) | 18 工具 + 7 代理 + 命令面板 | 工具/代理架构 |
 | [03-技术架构](./03-architecture.md) | 多客户端、LSP 集成、认证、插件 Hook | 插件系统 + LSP + 多客户端路线 |
-| [04-Hook 与插件](./04-hooks-plugins.md) | 17 种 Hook 类型、npm 插件、tool.definition | Hook 扩展性 + 工具定义修改 |
+| [04-Hook 与插件](./04-hooks-plugins.md) | 18 种 Hook 类型、npm 插件、tool.definition | Hook 扩展性 + 工具定义修改 |
 | [05-会话与快照](./05-session-snapshot.md) | Session Fork/Restore、Git 快照、云端 Share、SQLite | Session 管理 + 文件状态追踪 |
 | [06-Provider 动态加载](./06-providers-models.md) | models.dev 动态发现、构建时快照、20 内置 Provider | 零代码接入新 Provider |
 | [07-权限系统](./07-permissions.md) | Tree-sitter AST、Doom Loop、文件时间锁 | 安全机制参考 |
@@ -28,7 +28,7 @@
 | **Provider 数** | 100+（models.dev 动态） | 1（Claude） | 10+（多 Provider） | 1（Gemini） |
 | **LSP 集成** | 37 种语言 | 实验性 | 实验性 | 无 |
 | **Formatter** | 26 种 | 无 | 无 | 无 |
-| **Hook 类型** | 17 种 | 27 事件 × 6 处理器 | ~12 事件 × command | ~11 事件 × command |
+| **Hook 类型** | 18 种 | 27 事件 × 6 处理器 | ~12 事件 × command | ~11 事件 × command |
 | **许可证** | MIT | 专有 | Apache 2.0 | Apache 2.0 |
 
 ## 源码位置

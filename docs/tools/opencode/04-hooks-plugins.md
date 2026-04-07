@@ -1,6 +1,6 @@
 # 4. Hook 与插件系统——开发者参考
 
-> OpenCode 的 Hook 系统有 17 种类型，通过 npm 包分发插件。其中 `tool.definition` Hook（运行时修改工具 Schema）和 `experimental.chat.system.transform`（修改系统提示）是竞品中独有的能力。
+> OpenCode 的 Hook 系统有 18 种类型，通过 npm 包分发插件。其中 `tool.definition` Hook（运行时修改工具 Schema）和 `experimental.chat.system.transform`（修改系统提示）是竞品中独有的能力。
 >
 > **Qwen Code 对标**：Qwen Code 有 ~12 种 Hook 事件（command 类型）。OpenCode 的 npm 插件加载、工具定义修改 Hook、系统提示变换 Hook 是主要参考。
 
@@ -11,13 +11,13 @@
 | Agent | Hook 数量 | 处理器类型 | 插件分发 | 独有能力 |
 |-------|----------|-----------|---------|---------|
 | **Claude Code** | 27 事件 | 6 种（含 prompt/agent） | Plugin marketplace | LLM 推理决策 |
-| **OpenCode** | 17 种 | npm 插件 + 回调 | npm registry | 工具定义修改、系统提示变换 |
+| **OpenCode** | 18 种 | npm 插件 + 回调 | npm registry | 工具定义修改、系统提示变换 |
 | **Gemini CLI** | 11 事件 | command + runtime | Extension | 模型层拦截 |
 | **Qwen Code** | ~12 事件 | command | — | MessageBus 集成 |
 
 **OpenCode 独有创新**：Claude Code 的 Hook 能拦截工具执行，但**不能修改工具本身的定义**。OpenCode 的 `tool.definition` Hook 允许插件在运行时改变工具的描述和参数 Schema——这意味着插件可以扩展或限制内置工具的能力，而不需要 fork 源码。
 
-## 二、17 种 Hook 类型详解
+## 二、18 种 Hook 类型详解
 
 ### 核心 Hook
 
