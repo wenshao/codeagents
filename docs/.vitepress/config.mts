@@ -3,9 +3,25 @@ import escapeXmlPlugin from './markdown-it-escape-xml'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+  base: '/codeagents/',
   lang: 'zh-CN',
   title: 'AI 编程 Code Agent 对比',
   description: '基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比',
+
+  rewrites: {
+    'tools/README.md': 'tools/index.md',
+    'tools/claude-code/README.md': 'tools/claude-code/index.md',
+    'tools/copilot-cli/README.md': 'tools/copilot-cli/index.md',
+    'tools/codex-cli/README.md': 'tools/codex-cli/index.md',
+    'tools/gemini-cli/README.md': 'tools/gemini-cli/index.md',
+    'tools/qwen-code/README.md': 'tools/qwen-code/index.md',
+    'tools/kimi-cli/README.md': 'tools/kimi-cli/index.md',
+    'tools/aider/README.md': 'tools/aider/index.md',
+    'tools/opencode/README.md': 'tools/opencode/index.md',
+    'tools/goose/README.md': 'tools/goose/index.md',
+    'tools/qoder-cli/README.md': 'tools/qoder-cli/index.md',
+    'data/README.md': 'data/index.md',
+  },
 
   markdown: {
     html: true,
@@ -40,11 +56,11 @@ export default defineConfig({
         },
         {
           text: '深度分析',
-          collapsible: true,
+          collapsed: false,
           items: [
             {
               text: 'Claude Code',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '概览', link: '/tools/claude-code/01-overview' },
                 { text: '命令', link: '/tools/claude-code/02-commands' },
@@ -61,7 +77,7 @@ export default defineConfig({
             },
             {
               text: 'Copilot CLI',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '概览', link: '/tools/copilot-cli/01-overview' },
                 { text: '命令', link: '/tools/copilot-cli/02-commands' },
@@ -70,7 +86,7 @@ export default defineConfig({
             },
             {
               text: 'Codex CLI',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '概览', link: '/tools/codex-cli/01-overview' },
                 { text: '命令', link: '/tools/codex-cli/02-commands' },
@@ -79,7 +95,7 @@ export default defineConfig({
             },
             {
               text: 'Gemini CLI',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '概览', link: '/tools/gemini-cli/01-overview' },
                 { text: '命令', link: '/tools/gemini-cli/02-commands' },
@@ -90,7 +106,7 @@ export default defineConfig({
             },
             {
               text: 'Qwen Code',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '概览', link: '/tools/qwen-code/01-overview' },
                 { text: '命令', link: '/tools/qwen-code/02-commands' },
@@ -102,7 +118,7 @@ export default defineConfig({
             },
             {
               text: 'Kimi CLI',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '概览', link: '/tools/kimi-cli/01-overview' },
                 { text: '命令', link: '/tools/kimi-cli/02-commands' },
@@ -111,7 +127,7 @@ export default defineConfig({
             },
             {
               text: 'Aider',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '概览', link: '/tools/aider/01-overview' },
                 { text: '命令', link: '/tools/aider/02-commands' },
@@ -120,7 +136,7 @@ export default defineConfig({
             },
             {
               text: 'OpenCode',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '概览', link: '/tools/opencode/01-overview' },
                 { text: '命令', link: '/tools/opencode/02-commands' },
@@ -129,7 +145,7 @@ export default defineConfig({
             },
             {
               text: 'Goose',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '概览', link: '/tools/goose/01-overview' },
                 { text: '命令', link: '/tools/goose/02-commands' },
@@ -139,7 +155,7 @@ export default defineConfig({
             },
             {
               text: 'Qoder CLI',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '概览', link: '/tools/qoder-cli/01-overview' },
                 { text: '架构', link: '/tools/qoder-cli/02-architecture' },
@@ -149,7 +165,7 @@ export default defineConfig({
         },
         {
           text: '单文件 Agent',
-          collapsible: true,
+          collapsed: false,
           items: [
             { text: 'Cline', link: '/tools/cline' },
             { text: 'Continue', link: '/tools/continue' },
@@ -177,7 +193,7 @@ export default defineConfig({
         },
         {
           text: '选型参考',
-          collapsible: true,
+          collapsed: false,
           items: [
             { text: '隐私与遥测', link: '/comparison/privacy-telemetry' },
             { text: '定价与成本', link: '/comparison/pricing' },
@@ -188,7 +204,7 @@ export default defineConfig({
         },
         {
           text: '命令详解',
-          collapsible: true,
+          collapsed: false,
           items: [
             { text: '/review 对比', link: '/comparison/review-command' },
             { text: '/security-review', link: '/comparison/security-review-command-deep-dive' },
@@ -201,7 +217,7 @@ export default defineConfig({
         },
         {
           text: '核心架构 Deep-Dive',
-          collapsible: true,
+          collapsed: false,
           items: [
             { text: '模型路由', link: '/comparison/model-routing' },
             { text: '上下文压缩', link: '/comparison/context-compression-deep-dive' },
@@ -213,7 +229,7 @@ export default defineConfig({
         },
         {
           text: '扩展系统 Deep-Dive',
-          collapsible: true,
+          collapsed: false,
           items: [
             { text: 'Hook/插件', link: '/comparison/hook-plugin-extension-deep-dive' },
             { text: 'Skill 技能系统', link: '/comparison/skill-system-deep-dive' },
@@ -222,7 +238,7 @@ export default defineConfig({
         },
         {
           text: '工程实践 Deep-Dive',
-          collapsible: true,
+          collapsed: false,
           items: [
             { text: '终端 UI', link: '/comparison/terminal-ui-deep-dive' },
             { text: 'Git 集成', link: '/comparison/git-integration-deep-dive' },
@@ -234,7 +250,7 @@ export default defineConfig({
         },
         {
           text: 'Agent 1v1 对比',
-          collapsible: true,
+          collapsed: false,
           items: [
             { text: 'Claude Code vs Cursor', link: '/comparison/claude-code-vs-cursor' },
             { text: 'Claude Code vs Copilot CLI', link: '/comparison/claude-code-vs-copilot-cli' },
@@ -246,7 +262,7 @@ export default defineConfig({
         },
         {
           text: 'Qwen 功能补全',
-          collapsible: true,
+          collapsed: false,
           items: [
             { text: '性能差距+改进路线图', link: '/comparison/claude-code-speed-qwen-improvements' },
             { text: '改进总报告', link: '/comparison/qwen-code-improvement-report' },
@@ -255,7 +271,7 @@ export default defineConfig({
             { text: 'Review 改进', link: '/comparison/qwen-code-review-improvements' },
             {
               text: '对标分析',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '对标 Claude Code', link: '/comparison/qwen-code-feature-gaps' },
                 { text: '对标 Gemini CLI', link: '/comparison/qwen-code-vs-gemini-feature-gaps' },
@@ -265,7 +281,7 @@ export default defineConfig({
             },
             {
               text: 'P0/P1 改进',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '核心功能', link: '/comparison/qwen-code-improvement-report-p0-p1-core' },
                 { text: '引擎', link: '/comparison/qwen-code-improvement-report-p0-p1-engine' },
@@ -274,7 +290,7 @@ export default defineConfig({
             },
             {
               text: 'P2 改进',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '核心功能', link: '/comparison/qwen-code-improvement-report-p2-core' },
                 { text: '性能', link: '/comparison/qwen-code-improvement-report-p2-perf' },
@@ -285,7 +301,7 @@ export default defineConfig({
             },
             {
               text: 'P3 改进',
-              collapsible: true,
+              collapsed: false,
               items: [
                 { text: '功能', link: '/comparison/qwen-code-improvement-report-p3-features' },
                 { text: 'Hooks', link: '/comparison/qwen-code-improvement-report-p3-hooks' },
@@ -296,7 +312,6 @@ export default defineConfig({
         },
         {
           text: '更多 Deep-Dive',
-          collapsible: true,
           collapsed: true,
           items: [
             { text: 'Plan 模式 Interview', link: '/comparison/plan-mode-interview-deep-dive' },
@@ -333,7 +348,7 @@ export default defineConfig({
         },
         {
           text: '深度配置',
-          collapsible: true,
+          collapsed: false,
           items: [
             { text: 'CLAUDE.md 写作', link: '/guides/writing-claude-md' },
             { text: 'AGENTS.md', link: '/guides/agents-md' },
@@ -346,7 +361,7 @@ export default defineConfig({
         },
         {
           text: '用户指南',
-          collapsible: true,
+          collapsed: false,
           items: [
             { text: 'Claude Code 用户指南', link: '/guides/claude-code-user-guide' },
             { text: 'Copilot CLI 用户指南', link: '/guides/copilot-cli-user-guide' },
@@ -355,7 +370,7 @@ export default defineConfig({
         },
         {
           text: '架构选型',
-          collapsible: true,
+          collapsed: false,
           items: [
             { text: '构建自己的 Agent', link: '/guides/build-your-own-agent' },
           ]
@@ -400,7 +415,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/anthropics/codeagents/edit/main/docs/:path',
+      pattern: 'https://github.com/wenshao/codeagents/edit/main/docs/:path',
       text: '在 GitHub 上编辑此页',
     },
 
@@ -435,6 +450,9 @@ export default defineConfig({
     '**/EVIDENCE.md',
   ],
 
-  // 暂时忽略死链接（Markdown 中指向 index、EVIDENCE 等不存在页面的链接）
-  ignoreDeadLinks: true,
+  // 白名单模式忽略已知的死链接
+  ignoreDeadLinks: [
+    /EVIDENCE/,
+    /index/,
+  ],
 })

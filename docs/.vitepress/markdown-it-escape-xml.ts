@@ -42,10 +42,9 @@ export default function escapeXmlPlugin(md: MarkdownIt): void {
     // 分离代码块，只转义非代码块部分
     const parts: string[] = []
     let lastEnd = 0
-    let inCode = false
 
-    // 匹配 ```...``` 代码块
-    const codeBlockRe = /```[\s\S]*?```/g
+    // 匹配围栏代码块（3+反引号）和行内代码（单反引号）
+    const codeBlockRe = /(`{3,})[\s\S]*?\1|`[^`]+`/g
     let match: RegExpExecArray | null
     while ((match = codeBlockRe.exec(src)) !== null) {
       // 处理代码块之前的文本
