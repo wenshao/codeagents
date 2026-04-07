@@ -21,6 +21,7 @@
 | [09-多 Agent 系统](./09-multi-agent.md) | Leader-Worker、Swarm 三后端、邮箱通信、任务管理、Kairos | 多 Agent 编排 |
 | [10-Prompt Suggestions](./10-prompt-suggestions.md) | 预测生成、12 条过滤规则、Speculation 推测执行 | 智能补全 |
 | [11-终端渲染](./11-terminal-rendering.md) | DEC 2026 同步输出、差分渲染、缓存池化 | 防闪烁 + 渲染性能 |
+| [12-Hook 系统](./12-hooks.md) | 27 种事件、6 种处理器（含 LLM 推理决策）、hookify 自动规则 | Hook 事件覆盖度 + prompt/agent Hook |
 | [EVIDENCE.md](./EVIDENCE.md) | 二进制分析原始证据 | — |
 
 ## 如何使用本系列
