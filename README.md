@@ -6,6 +6,16 @@
 
 **👉 [一页总结（选型速查）](./docs/SUMMARY.md)** — 给没时间看全部文档的人
 
+### 高频入口
+
+| 入口 | 说明 |
+|------|------|
+| **[Deep-Dive 索引（134 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
+| **[Qwen Code 改进报告（240 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 22 个社区 PR 追踪 |
+| **[Gemini CLI backport（42 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 |
+| **[/review 改进建议](./docs/comparison/qwen-code-review-improvements.md)** | 审查功能 4 方对比 + 10 项改进 |
+| **[功能对比矩阵](./docs/comparison/features.md)** | 14 Agent × 多维度横向对比 |
+
 > **维护说明**：高频变化的数据（Stars、下载量、价格、验证日期）开始统一沉淀到 [`docs/data/`](./docs/data/README.md)。证据完备度与验证状态见 [`docs/evidence-index.md`](./docs/evidence-index.md)。
 
 ## 核心发现
@@ -122,16 +132,6 @@
 ---
 
 ## 文档导航
-
-### 高频入口
-
-| 入口 | 说明 |
-|------|------|
-| **[Deep-Dive 索引（134 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
-| **[Qwen Code 改进报告（240 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 22 个社区 PR 追踪 |
-| **[Gemini CLI backport（42 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 |
-| **[/review 改进建议](./docs/comparison/qwen-code-review-improvements.md)** | 审查功能 4 方对比 + 10 项改进 |
-| **[功能对比矩阵](./docs/comparison/features.md)** | 14 Agent × 多维度横向对比 |
 
 <details><summary><b>Agent 详情（源码级）— 8 个专题</b></summary>
 
