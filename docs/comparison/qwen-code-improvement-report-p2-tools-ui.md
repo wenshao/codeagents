@@ -647,39 +647,7 @@ Agent 编辑文件后展示的 diff 是基础的 inline 格式——没有行号
 
 <a id="item-20"></a>
 
-### 20. 会话时间线回顾（P2）
-
-**问题**：长会话（50+ 轮）后，开发者经常想不起来"之前那个 API 设计决策是什么时候做的"或"哪一步引入了那个 bug"。当前只能手动向上滚动逐条查看——在几百条消息中定位目标极其低效。
-
-> **勘误**：本项最初标注为"对标 Claude Code 的 `/thinkback`"。经源码验证（`commands/thinkback/thinkback.tsx`），Claude Code 的 `/thinkback` 实际上是一个 **"Year in Review" 年度回顾动画功能**（加载 `year_in_review.js` + `player.js` 播放全屏动画），**不是**会话时间线回顾命令。Claude Code 没有等价的会话时间线回顾功能。
-
-**需求本身仍然有价值**——长会话回忆是真实痛点，只是这不是"对标 Claude Code"而是**原创功能**。
-
-**Qwen Code 现状**：有 `/summary` 命令（即时摘要当前状态），但没有时间线式的事件回顾能力。也有 Transcript Search（[p2-tools-commands #2](./qwen-code-improvement-report-p2-tools-commands.md#item-2)，关键词搜索），但搜索是"找特定内容"，时间线回顾是"回顾做了什么"。
-
-**实现方向**：① 新建命令（如 `/timeline`）；② 用 LLM 分析 session transcript 提取关键事件（文件修改、错误修复、决策点）；③ 按时间线排序输出；④ 支持 `--from` 时间范围和 `--topic` 主题过滤。
-
-**实现成本评估**：
-- 涉及文件：~3 个
-- 新增代码：~300 行
-- 开发周期：~2 天（1 人）
-- 难点：从 transcript 中识别"关键事件"（文件修改容易，决策点需要 LLM 辅助）
-
-**改进前后对比**：
-- **改进前**：想回忆 1 小时前的决策 → 手动滚动几百条消息 → 5 分钟找不到
-- **改进后**：时间线命令 → 列出所有关键事件 → 5 秒定位
-
-**进展**：[PR#2917](https://github.com/QwenLM/qwen-code/pull/2917)（open）— 实现了 `/thinkback` 命令，利用 LLM 分析 transcript 生成结构化时间线。注意：该 PR 的功能设计是有价值的原创功能，但 PR 描述中关于"对标 Claude Code /thinkback"的说法不准确。
-
-**意义**：长会话中回忆是核心需求——Agent 做了 20 步操作，用户需要快速了解"做了什么"。
-**缺失后果**：无回忆能力 → 长会话后用户"失忆" → 可能重复之前的错误决策。
-**改进收益**：时间线式回忆 = 长会话透明可追溯——"做了什么、什么时候、为什么"一目了然。
-
----
-
-<a id="item-21"></a>
-
-### 21. /context 非交互输出与自动化诊断（P2）
+### 20. /context 非交互输出与自动化诊断（P2）
 
 **问题**：Qwen Code 的 `/context` 命令可以在终端中查看上下文 token 分布（system prompt / tools / memory / 消息历史各占多少），但这个能力只在交互式 TUI 中可用。CI 脚本、基准测试、IDE 插件和外部控制器无法程序化获取同样的诊断数据。
 
