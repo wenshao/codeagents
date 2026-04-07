@@ -2,7 +2,10 @@
 
 > 基于 Gemini CLI（开源，`../gemini-cli/`）与 Qwen Code（fork 分支，`../qwen-code/`）的源码对比。Qwen Code 最后同步上游为 2025-10-23（v0.8.2），此后 Gemini CLI 从 v0.9.0 演进到 v0.36.0（28 个大版本，2041 个 commit）。本报告梳理可backport的改进点。
 >
-> 与 [Claude Code 改进建议报告](./qwen-code-improvement-report.md) 互补——Claude Code 报告关注"行业领先者有什么"，本报告关注"自己的上游已经做了什么"。
+> **相关报告**：
+> - [Claude Code 改进建议报告（240 项）](./qwen-code-improvement-report.md)——行业领先者有什么
+> - [OpenCode 对标改进报告（10 项）](./qwen-code-opencode-improvements.md)——文件时间锁、Session Fork、SQLite 等
+> - [/review 功能改进建议](./qwen-code-review-improvements.md)——审查功能改进
 
 ## 一、backport建议矩阵（42 项，按优先级排序）
 

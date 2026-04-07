@@ -2,9 +2,10 @@
 
 > 基于对 Claude Code（源码分析，56 个顶层模块，~1800 文件）与 Qwen Code（开源源码，~500 文件）的系统性源码对比分析。
 >
-> 如需查阅源码，可参考本地仓库（不在本文档库中）：
-> - Claude Code: `../claude-code/`（源码快照）
-> - Qwen Code: `../qwen-code/`
+> **相关报告**：
+> - [Gemini CLI 上游 backport 报告（42 项）](./qwen-code-gemini-upstream-report.md)——Qwen Code 上游的可 backport 改进
+> - [OpenCode 对标改进报告（10 项）](./qwen-code-opencode-improvements.md)——文件时间锁、Session Fork、SQLite 等
+> - [/review 功能改进建议](./qwen-code-review-improvements.md)——审查功能 4 方对比 + 10 项改进
 
 ## 一、Claude Code 功能模块清单
 
