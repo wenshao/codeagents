@@ -111,6 +111,8 @@ Fork C：[...消息N | 占位结果 | "请测试 C"]  ← 共享前缀 cache
 - 开发周期：~5 天（1 人）
 - 难点：保证 prompt cache 前缀字节一致性
 
+**进展**：[PR#2936](https://github.com/QwenLM/qwen-code/pull/2936)（open）— 省略 `subagent_type` 参数触发隐式 fork，继承父对话上下文并在后台运行。
+
 **相关文章**：[Fork Subagent Deep-Dive](./fork-subagent-deep-dive.md)
 
 **意义**：大型任务需拆分给多个 Subagent 并行处理——上下文传递效率决定成本和准确率。
