@@ -1,6 +1,8 @@
-# 2. Claude Code 命令详解（v2.1.81）
+# 2. Claude Code 命令系统——开发者参考
 
-> 基于 v2.1.81 二进制分析。Claude Code 共有四种命令类型、约 79 个斜杠命令。本文档逐一说明每个命令的功能、实现方式和使用示例。
+> Claude Code 共有四种命令类型、约 79 个斜杠命令——远超 Qwen Code 的 ~40 个。本文分析其命令注册/加载/权限设计，为 Code Agent 开发者提供命令系统架构参考。
+>
+> **Qwen Code 对标**：命令注册机制（BuiltinCommandLoader vs 四种类型加载）、命令分类策略（prompt/local-jsx/local/skill）、权限控制粒度
 
 ---
 

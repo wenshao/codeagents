@@ -1,8 +1,8 @@
-# 8. Claude Code Remote Control（远程控制）
+# 8. Remote Control（远程控制）——开发者参考
 
-> Remote Control 允许从手机、平板或任意浏览器远程操控本地运行的 Claude Code 终端会话。会话**始终在本地执行**，远程端仅作为交互窗口。
+> 从手机/浏览器远程操控本地终端 Agent——会话始终在本地执行，远程端仅为交互窗口。本文分析 WebSocket/SSE Bridge 架构、安全纵深设计。
 >
-> **数据来源**：CLI 子命令/参数和故障排查指南来自 [Anthropic 官方文档](https://docs.anthropic.com/en/docs/claude-code/remote-control)（2026-03）；环境变量名来自 [EVIDENCE.md](./EVIDENCE.md) 源码提取；**技术架构细节来自源码分析**（`bridge/`、`remote/`、`utils/`、`entrypoints/` 等目录，约 35,000 行 TypeScript）。
+> **Qwen Code 对标**：Qwen Code 目前无远程控制能力。本文的 Bridge 架构可作为实现参考，但优先级较低（P2-P3）。
 
 ## 8.1 概述
 

@@ -1,8 +1,8 @@
-# 4. Claude Code 工具系统：架构与实现参考
+# 4. Claude Code 工具系统——开发者参考
 
-> 工具系统是 Claude Code 与外部世界交互的核心接口。本文基于源码分析（`Tool.ts` 基类 + `tools/` 目录 ~163 文件、~50,000 行 TypeScript），覆盖 39 个显式工具 + MCP 动态工具的架构设计、权限模型、安全机制和实现细节。
+> 42 个内置工具 + MCP 动态工具的架构设计、Zod Schema 校验、权限模型、安全机制。每个工具的 schema 和执行流程都经过大规模生产验证。
 >
-> **适用场景**：其他 Code Agent 开发者设计工具系统时，可将本文作为架构参考。每个工具的 Zod schema、执行流程、安全检查都经过生产验证。
+> **Qwen Code 对标**：ToolSearch 延迟加载（减少 50%+ 系统提示 token）、BashTool 23 项安全校验、StreamingToolExecutor、权限 3 层模型
 >
 > **计数规则**：39 = 10 核心（始终加载）+ 25 延迟（ToolSearch 按需加载）+ 3 内部 + 1 条件（Windows PowerShell）。不含 MCP 动态工具（数量由 MCP 服务器决定）。其中 TaskStop 含 KillShell 别名，Edit 含 replace_all 批量编辑模式，均非独立工具。用户常见/常驻工具约 10 个（核心工具），其余按功能需求动态激活。
 

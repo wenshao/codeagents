@@ -1,12 +1,10 @@
-# 9. Claude Code 多代理系统（Swarm / Agent / Coordinator）
+# 9. 多 Agent 系统——开发者参考
 
-> Claude Code 的多代理系统实现了完整的 **Leader-Worker 协作模型**，支持进程内、终端分屏和独立窗口三种后端，通过文件邮箱实现跨进程通信。本文基于源码分析（`utils/swarm/` 7,548 LOC + `tools/AgentTool/` 6,782 LOC + `utils/teammateMailbox.ts` 1,183 LOC + `utils/tasks.ts` 862 LOC + `utils/teleport.tsx` + UI (2,020) + `tools/SendMessageTool/` 997 LOC + `tools/AgentTool/agentMemory*.ts` 374 + 其他共 ~20,500 行），覆盖 Agent 定义、Swarm 架构、协调模式、任务管理、邮箱通信、Agent Memory 和远程隔离。
+> Leader-Worker 协作、Swarm 三后端（InProcess/tmux/iTerm2）、文件邮箱 IPC、任务管理、Kairos 自治模式。Code Agent 多 Agent 编排的最复杂实现（~20,500 行）。
 >
-> **LOC 去重说明**：上表中 Swarm 后端/权限/团队含在 Swarm 核心，Agent 执行/UI/定义含在 Agent 工具。去重后主要模块合计 ~18,000 LOC，加上辅助模块（backends/registry.ts 464、spawnInProcess.ts 328 等）共 ~20,500 行。
+> **Qwen Code 对标**：Agent Team（PR#2886）、Fork Subagent（PR#2936）正在实现类似能力。本文的 InProcess 隔离（AsyncLocalStorage）、邮箱通信、任务拓扑管理是核心参考。
 >
-> **适用场景**：其他 Code Agent 开发者设计多代理协作系统时，可将本文作为架构参考。
->
-> **计数规则**：源码行数基于 `/root/git/claude-code-leaked/` 目录下 TypeScript 文件的 `wc -l` 统计。
+> **计数规则**：源码行数基于 TypeScript 文件的 `wc -l` 统计。
 
 ## 9.1 架构总览
 

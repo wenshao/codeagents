@@ -1,10 +1,10 @@
-# 7. Claude Code 会话、记忆与上下文管理
+# 7. 会话、记忆与上下文管理——开发者参考
 
-> 会话和记忆系统是 Claude Code 持久化的核心。本文基于源码分析（`utils/sessionStorage.ts` 5,105 LOC + `services/compact/` 3,960 LOC + `utils/claudemd.ts` 1,479 LOC + `memdir/` 1,736 LOC + `services/teamMemorySync/` 2,167 LOC + `utils/worktree.ts` 1,519 LOC + `utils/fileHistory.ts` 1,116 LOC 等共 ~73,000 行），覆盖会话生命周期、上下文压缩（5 层递增）、CLAUDE.md 分层记忆、自动记忆提取、团队记忆同步、Worktree 隔离和文件检查点回退。
+> Claude Code 最核心的工程优势之一：5 层递增压缩、CLAUDE.md 分层记忆、Auto Dream 自动整理、Team Memory 团队同步、崩溃恢复。这是 Qwen Code 与 Claude Code 差距最大的领域。
 >
-> **适用场景**：其他 Code Agent 开发者设计会话持久化和上下文管理时，可将本文作为架构参考。
+> **Qwen Code 对标**：上下文压缩（仅单一 70% 手动压缩 vs 5 层自动）、记忆系统（简单笔记 vs CLAUDE.md + Auto Dream）、崩溃恢复（无 vs 3 种检测 + 合成续行）
 >
-> **计数规则**：源码行数基于 `/root/git/claude-code-leaked/` 目录下 TypeScript 文件的 `wc -l` 统计。7.1.1 表格「目录总规模」列为子系统所有文件合计；括号内为核心文件精确 LOC。全文 ~73,000 行为所有 session/memory 相关目录（含 Token 管理、对话恢复、并发管理等辅助模块）的总计。
+> **计数规则**：源码行数基于 TypeScript 文件的 `wc -l` 统计。7.1.1 表格「目录总规模」列为子系统所有文件合计；括号内为核心文件精确 LOC。全文 ~73,000 行为所有 session/memory 相关目录（含 Token 管理、对话恢复、并发管理等辅助模块）的总计。
 
 ## 7.1 架构总览
 

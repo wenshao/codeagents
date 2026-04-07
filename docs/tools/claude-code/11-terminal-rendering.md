@@ -1,8 +1,8 @@
-# 11. 终端渲染与防闪烁
+# 11. 终端渲染与防闪烁——开发者参考
 
-> 本文基于 Claude Code v2.1.89 源码分析（`ink/` 目录 ~6,800 行 + `utils/bufferedWriter.ts` 100 行），覆盖差分渲染引擎、同步输出、双缓冲、硬件滚动、缓存池化、渲染节流等 13 项防闪烁机制。
+> DEC 2026 同步输出、差分渲染、双缓冲、硬件滚动、缓存池化、60fps 节流等 13 项防闪烁机制。Claude Code 自建 Ink fork 实现了这些底层优化。
 >
-> **数据来源**：文中所有源码路径和行号均引用自 Claude Code 应用源码（非本仓库文件），通过反编译 SEA 二进制获得。源码行数基于 TypeScript 文件的 `wc -l` 统计。
+> **Qwen Code 对标**：Qwen Code 使用标准 Ink，存在大输出闪烁问题。Gemini CLI 已在上游实现了 SlicingMaxSizedBox + 硬上限等部分方案（见 [工具输出限高](../../comparison/tool-output-height-limiting-deep-dive.md)）。本文的 DEC 同步输出和差分渲染是更底层的解决方案。
 
 ## 问题背景
 

@@ -1,6 +1,8 @@
-# 3. Claude Code 技术架构
+# 3. Claude Code 技术架构——开发者参考
 
-> 基于 v2.1.89 反编译源码分析。入口 `entrypoints/cli.tsx`，运行时 Bun 编译的单文件可执行。
+> 本文分析 Claude Code 的核心架构：Bootstrap 启动链、QueryEngine 推理循环、22 个 Feature Flag DCE、Prompt Cache 分区、5 层压缩策略、重试退避等。这些模式大多与模型无关，可在 Qwen Code 等 Agent 中复现。
+>
+> **Qwen Code 对标**：启动优化（TCP preconnect）、核心循环（Mid-Turn Queue Drain）、Prompt Cache 分区、API 重试策略
 
 ---
 
@@ -173,7 +175,7 @@ if (feature('ABLATION_BASELINE') && process.env.CLAUDE_CODE_ABLATION_BASELINE) {
 ## 3. 模块架构
 
 ```
-claude-code-leaked/
+claude-code/  # 源码目录结构
 ├── entrypoints/              # 入口点
 │   ├── cli.tsx               # Bootstrap 入口（快速路径分发）
 │   ├── init.ts               # 初始化（配置/遥测/安全）

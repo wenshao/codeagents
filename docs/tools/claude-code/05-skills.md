@@ -1,8 +1,10 @@
-# 5. Skill 与插件系统
+# 5. Skill 与插件系统——开发者参考
+
+> Skill 是 Claude Code 的命令扩展机制——`/commit`、`/review`、`/loop` 都是 Skill。本文分析 Skill 定义格式、加载优先级、插件打包，为 Code Agent 开发者设计可扩展命令系统提供参考。
+>
+> **Qwen Code 对标**：BundledSkillLoader 对比 Claude Code 的 4 层 Skill 加载（bundled → user → project → plugin）
 
 ## Skill 系统实现机制
-
-> 以下基于 v2.1.81 二进制逆向分析和运行时观察。Skill 是 Claude Code 的命令扩展机制——用户看到的 `/commit`、`/review`、`/loop` 等都是 Skill。
 
 ### Skill 定义格式（SKILL.md）
 

@@ -1,10 +1,10 @@
-# 10. Prompt Suggestions（下一步提示预测）
+# 10. Prompt Suggestions（智能补全）——开发者参考
 
-> 本文基于 Claude Code v2.1.89 源码分析（`services/PromptSuggestion/promptSuggestion.ts` 524 LOC + `services/PromptSuggestion/speculation.ts` 992 LOC + `hooks/usePromptSuggestion.ts` 178 LOC 等共 ~1,700 行），覆盖 suggestion 生成、过滤、交互、遥测和 Speculation 推测执行。
+> 预测用户下一步操作并提前生成建议，Tab 接受后零延迟执行（Speculation 推测执行）。Qwen Code 已实现但默认关闭（PR#2525 ✓ 已合并）。
 >
-> **数据来源**：文中所有源码路径和行号均引用自 Claude Code 应用源码（非本仓库文件），通过反编译 SEA 二进制获得。源码行数基于 TypeScript 文件的 `wc -l` 统计。
+> **Qwen Code 对标**：suggestion 生成流程、12 条过滤规则（避免低质量建议）、Speculation 推测执行（预测 Tab 接受并提前执行 API 调用）
 >
-> **功能内部代号**：`tengu_chomp_inflection`（GrowthBook feature flag 名称）。
+> **内部代号**：`tengu_chomp_inflection`（GrowthBook feature flag）
 
 ## 功能概述
 
