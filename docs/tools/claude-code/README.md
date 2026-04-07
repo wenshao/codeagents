@@ -22,6 +22,8 @@
 | [10-Prompt Suggestions](./10-prompt-suggestions.md) | 预测生成、12 条过滤规则、Speculation 推测执行 | 智能补全 |
 | [11-终端渲染](./11-terminal-rendering.md) | DEC 2026 同步输出、差分渲染、缓存池化 | 防闪烁 + 渲染性能 |
 | [12-Hook 系统](./12-hooks.md) | 27 种事件、6 种处理器（含 LLM 推理决策）、hookify 自动规则 | Hook 事件覆盖度 + prompt/agent Hook |
+| [13-系统提示](./13-system-prompt.md) | 动态拼装、静态/动态分区、Prompt Cache 优化、`<system-reminder>` 注入 | Prompt Cache 分区 + QWEN.md 注入方式 |
+| [14-MCP 集成](./14-mcp.md) | 6 种传输、OAuth + XAA、Channel 消息、断线重连、资源订阅 | MCP 资源/Prompt 支持 + 重连策略 |
 | [EVIDENCE.md](./EVIDENCE.md) | 二进制分析原始证据 | — |
 
 ## 如何使用本系列

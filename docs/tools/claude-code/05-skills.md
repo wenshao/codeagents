@@ -4,6 +4,33 @@
 >
 > **Qwen Code 对标**：Qwen Code 有 3 个 bundled skill（loop/review/qc-helper），Claude Code 有 14 个。本文的 Skill 设计模式（Feature Flag 门控、动态 prompt 生成、多 Agent 并行）可直接参考。
 
+## 为什么需要 Skill 系统
+
+### 问题定义
+
+Code Agent 的功能需求在持续增长——`/commit`、`/review`、`/batch`、`/loop`——但不是所有功能都需要编译进核心代码：
+
+| 需求类型 | 内置命令 | Skill |
+|---------|---------|-------|
+| 清屏、切换模型 | ✓（永远需要） | — |
+| 代码审查、提交 | — | ✓（可迭代 prompt 优化） |
+| 项目特定工作流 | — | ✓（用户自定义） |
+| 实验性功能 | — | ✓（Feature Flag 门控） |
+
+**核心优势**：Skill 是纯 Markdown——修改 SKILL.md 即可调整行为，**不需要重新编译或发布新版本**。这是 Qwen Code `/review` 能快速迭代的原因（见 [review 改进建议](../../comparison/qwen-code-review-improvements.md)）。
+
+### 竞品 Skill/扩展系统对比
+
+| Agent | 扩展机制 | 格式 | 内置数量 | 用户自定义 |
+|-------|---------|------|---------|-----------|
+| **Claude Code** | Skill（SKILL.md）+ Plugin（plugin.json） | Markdown + YAML Frontmatter | 14 Skill + 13 Plugin | ✓ 用户/项目级 |
+| **Gemini CLI** | Skill（SKILL.md）+ TOML Command | Markdown / TOML | 1 Skill (skill-creator) | ✓ .gemini/skills/ |
+| **Qwen Code** | Skill（SKILL.md） | Markdown + YAML Frontmatter | 3 Skill (loop/review/qc-helper) | ✓ 用户/项目级 |
+| **Copilot CLI** | Plugin（plugin.json 打包 agents/skills/hooks/MCP） | JSON + Markdown | 13+ Plugin | ✓ marketplace |
+| **Cursor** | 无独立扩展机制 | — | — | .cursorrules |
+
+**关键差异**：Claude Code 的 Skill 数量（14 个）远超竞品，且覆盖了从"大规模并行变更"（/batch，5-30 Agent）到"会话流程捕获"（/skillify，4 轮访谈）的广泛场景。Qwen Code 的 3 个 Skill 覆盖面有限。
+
 ## 一、Skill 定义格式（SKILL.md）
 
 每个 Skill 是一个 Markdown 文件，通过 YAML Frontmatter 声明元数据：
