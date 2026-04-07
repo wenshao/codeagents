@@ -13,6 +13,10 @@
 | [01-概述与对标](./01-overview.md) | 能力矩阵、架构差异、独特设计 | 功能差距 + 可借鉴模式 |
 | [02-命令与工具](./02-commands.md) | 18 工具 + 7 代理 + 命令面板 | 工具/代理架构 |
 | [03-技术架构](./03-architecture.md) | 多客户端、LSP 集成、认证、插件 Hook | 插件系统 + LSP + 多客户端路线 |
+| [04-Hook 与插件](./04-hooks-plugins.md) | 17 种 Hook 类型、npm 插件、tool.definition | Hook 扩展性 + 工具定义修改 |
+| [05-会话与快照](./05-session-snapshot.md) | Session Fork/Restore、Git 快照、云端 Share、SQLite | Session 管理 + 文件状态追踪 |
+| [06-Provider 动态加载](./06-providers-models.md) | models.dev 动态发现、构建时快照、20 内置 Provider | 零代码接入新 Provider |
+| [07-权限系统](./07-permissions.md) | Tree-sitter AST、Doom Loop、文件时间锁 | 安全机制参考 |
 | [EVIDENCE.md](./EVIDENCE.md) | 源码分析原始证据 | — |
 
 ## OpenCode vs 其他 Agent：定位差异
