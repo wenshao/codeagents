@@ -24,6 +24,10 @@
 | [12-Hook 系统](./12-hooks.md) | 27 种事件、6 种处理器（含 LLM 推理决策）、hookify 自动规则 | Hook 事件覆盖度 + prompt/agent Hook |
 | [13-系统提示](./13-system-prompt.md) | 动态拼装、静态/动态分区、Prompt Cache 优化、`<system-reminder>` 注入 | Prompt Cache 分区 + QWEN.md 注入方式 |
 | [14-MCP 集成](./14-mcp.md) | 6 种传输、OAuth + XAA、Channel 消息、断线重连、资源订阅 | MCP 资源/Prompt 支持 + 重连策略 |
+| [15-遥测与 Feature Flag](./15-telemetry-feature-flags.md) | 891+ 事件、GrowthBook 远程灰度、双 Sink 架构、隐私保护 | 远程 Feature Flag + 遥测扩展 |
+| [16-Auto Dream](./16-auto-dream.md) | 四阶段记忆整合、三门触发、与 Kairos 互斥 | 记忆自动整理 |
+| [17-LSP 客户端](./17-lsp.md) | 编译器级代码理解、诊断自动注入 | LSP 默认启用 + 诊断集成 |
+| [18-文件索引](./18-file-index.md) | Rust NAPI fzf 模糊搜索、异步增量索引 | 文件搜索性能优化 |
 | [EVIDENCE.md](./EVIDENCE.md) | 二进制分析原始证据 | — |
 
 ## 如何使用本系列
