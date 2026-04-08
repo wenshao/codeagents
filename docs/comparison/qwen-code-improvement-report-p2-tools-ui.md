@@ -364,7 +364,7 @@ Agent 编辑文件后展示的 diff 是基础的 inline 格式——没有行号
 - **改进前**：用户说"重构认证" → Agent 直接改代码 → 方向不对需要撤销
 - **改进后**：`/plan` → Agent 输出计划 → 用户确认/修改 → 按计划执行
 
-**进展**：[PR#2921](https://github.com/QwenLM/qwen-code/pull/2921)（open）— 实现了 `/plan` 命令切换计划模式，支持非交互环境（ACP/Headless），含完整单测和 6 语言 i18n。
+**进展**：[PR#2921](https://github.com/QwenLM/qwen-code/pull/2921) ✓ 已合并 — `/plan` 命令切换计划模式，支持非交互环境（ACP/Headless），含完整单测和 6 语言 i18n。
 
 **意义**：复杂任务需要"先想后做"——计划模式降低风险。
 **缺失后果**：Agent 直接执行 → 方向错误时需大量撤销 → 浪费时间和 token。
