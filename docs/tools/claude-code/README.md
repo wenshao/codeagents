@@ -28,6 +28,10 @@
 | [16-Auto Dream](./16-auto-dream.md) | 四阶段记忆整合、三门触发、与 Kairos 互斥 | 记忆自动整理 |
 | [17-LSP 客户端](./17-lsp.md) | 编译器级代码理解、诊断自动注入 | LSP 默认启用 + 诊断集成 |
 | [18-文件索引](./18-file-index.md) | Rust NAPI fzf 模糊搜索、异步增量索引 | 文件搜索性能优化 |
+| [19-参考速查](./19-reference.md) | 数据结构、术语表、实体关系图 | 概念速查 |
+| [20-查询状态转换](./20-query-transitions.md) | 6 种转换原因、状态机模型 | TransitionReason 枚举 |
+| [21-工具执行运行时](./21-tool-execution-runtime.md) | 并发分类、波次调度、进度消息 | Wave-based 并行 |
+| [22-消息管线](./22-message-pipeline.md) | 消息标准化、system-reminder 注入、Cache 分区 | QWEN.md 注入方式 |
 | [EVIDENCE.md](./EVIDENCE.md) | 二进制分析原始证据 | — |
 
 ## 如何使用本系列
