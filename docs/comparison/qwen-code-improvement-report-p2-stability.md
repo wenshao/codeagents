@@ -1179,7 +1179,17 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 
 **Claude Code 的解决方案**：每次跨轮时携带显式的 `TransitionReason`，区分 6 种转换原因。下一轮根据原因调整行为（如 COMPACTION 触发摘要注入，RETRY 触发退避延迟）。
 
-**Qwen Code 现状**：循环中通过 if-else 隐式判断转换原因，无显式枚举类型。
+**Claude Code 源码索引**：
+
+| 文件 | 行号 | 转换原因 |
+|------|------|---------|
+| `query.ts` | L1092 | `collapse_drain_retry` — 上下文折叠后重试 |
+| `query.ts` | L1162 | `reactive_compact_retry` — 响应式压缩后重试 |
+| `query.ts` | L1175 | `prompt_too_long` — 上下文溢出 |
+| `query.ts` | L1217 | `max_output_tokens_escalate` — 截断后升级 token 限制 |
+| `query.ts` | L1302 | `stop_hook_blocking` — Stop Hook 拦截 |
+
+**Qwen Code 现状**：`packages/core/src/core/client.ts` 循环中通过 if-else 隐式判断转换原因，无显式枚举类型。
 
 **Qwen Code 修改方向**：① 新增 `TransitionReason` 枚举（6 种原因）；② 每次跨轮记录原因到 `QueryTransition` 对象；③ 日志输出包含转换原因。
 
@@ -1199,9 +1209,17 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 
 **问题**：模型一次返回 5 个工具调用，哪些可以并行？当前 Qwen Code 仅按工具类型粗暴分类（Agent 工具并行，其他串行）。但 `read_file` 和 `grep` 也可以并行——它们不修改共享状态。
 
-**Claude Code 的解决方案**：`StreamingToolExecutor` 对每个工具标记并发安全性，分区后批量并发执行。读工具并行，写工具串行，上下文修改器（如改 CWD 的工具）必须单独执行。
+**Claude Code 的解决方案**：`StreamingToolExecutor`（530 行）对每个工具标记并发安全性，分区后批量并发执行。读工具并行，写工具串行，上下文修改器（如改 CWD 的工具）必须单独执行。
 
-**Qwen Code 现状**：`CoreToolScheduler` 仅 Agent/Task 工具并行，其他全部串行。
+**Claude Code 源码索引**：
+
+| 文件 | 行号 | 关键函数 |
+|------|------|---------|
+| `services/tools/StreamingToolExecutor.ts` | 530 行 | 完整并发执行引擎——分区 + 批量 + 进度 + 合并 |
+| `query.ts` | L563, L735 | `new StreamingToolExecutor(...)` — 实例化 |
+| `Tool.ts` | — | `ToolUseContext` 共享执行环境 |
+
+**Qwen Code 现状**：`packages/core/src/core/coreToolScheduler.ts` 仅 Agent/Task 工具并行（`Promise.all(taskCalls)`），其他全部 `for...await` 串行。
 
 **Qwen Code 修改方向**：① 对每个工具添加 `concurrencySafe: boolean` 属性；② 执行前按安全性分区；③ 安全工具 `Promise.all()` 并行。
 
@@ -1221,7 +1239,15 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 
 **问题**：`npm install` 执行 30 秒，用户看到的只是一个 Spinner 在转——不知道进度、不知道卡在哪。
 
-**Claude Code 的解决方案**：长时间工具发射进度事件（`TrackedTool` + `MessageUpdate`），UI 显示"正在安装依赖 42/100..."。
+**Claude Code 的解决方案**：长时间工具发射进度事件，UI 显示"正在安装依赖 42/100..."。
+
+**Claude Code 源码索引**：
+
+| 文件 | 行号 | 关键函数 |
+|------|------|---------|
+| `query/stopHooks.ts` | L204, L412 | `type === 'progress' && toolUseID` — 进度消息路由 |
+| `tools/AgentTool/agentToolUtils.ts` | L384 | `toolUses: progress.toolUseCount` — Agent 工具进度 |
+| `tools/SkillTool/SkillTool.ts` | L239 | `// Report progress for tool uses` — Skill 工具进度 |
 
 **Qwen Code 现状**：工具执行期间仅显示通用 Spinner（"Responding..."）。
 
@@ -1245,7 +1271,15 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 
 **问题**：Claude Code 区分两种"任务"——**work-graph task**（持久目标："重构 auth 模块"，有依赖关系）和 **runtime task**（执行槽："后台 npm install 进程 PID 12345"）。如果把两者混在一起，任务面板会混乱——用户看到"重构 auth"和"PID 12345"并列，分不清哪个是目标哪个是执行。
 
-**Claude Code 的解决方案**：`TaskRecord`（work-graph）和 `RuntimeTaskState`（execution slot）分离——不同的数据结构、不同的状态机、不同的 UI 展示。
+**Claude Code 的解决方案**：`TaskRecord`（work-graph）和 `RuntimeTaskState`（execution slot）分离。
+
+**Claude Code 源码索引**：
+
+| 文件 | 行号 | 关键函数 |
+|------|------|---------|
+| `utils/tasks.ts` | 862 行 | `TaskStatusSchema`、`blockedBy` 依赖、CRUD 操作 |
+| `utils/tasks.ts` | L71 | `TaskStatusSchema` — pending/in_progress/completed/cancelled/blocked |
+| `utils/tasks.ts` | L85 | `blockedBy: z.array(z.string())` — 依赖关系 |
 
 **Qwen Code 现状**：仅有 `TodoWriteTool`（平面清单），无 work-graph task 也无 runtime task。
 
@@ -1267,7 +1301,15 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 
 **问题**：后台任务（如 `npm install`）完成时，结果被放入通知队列。但如果主循环不在 LLM 调用前排空队列，模型在下一轮推理时看不到后台结果——以为任务还在运行。
 
-**Claude Code 的解决方案**：每次 LLM 调用前，先 `drain_notifications()` 将所有后台结果注入对话上下文，确保模型看到最新状态。
+**Claude Code 的解决方案**：每次 LLM 调用前，先排空后台通知队列注入对话上下文。
+
+**Claude Code 源码索引**：
+
+| 文件 | 行号 | 关键函数 |
+|------|------|---------|
+| `query.ts` | L1067 | `// drain first (cheap, keeps granular context)` — 排空注释 |
+| `query.ts` | L609 | `// context-collapse: its recoverFromOverflow drains` — 恢复排空 |
+| `utils/plugins/pluginAutoupdate.ts` | L42-59 | `pendingNotification` 队列 + `callback(pendingNotification)` 排空 |
 
 **Qwen Code 现状**：有后台 Shell 能力（`is_background` 参数），但无通知排空机制——后台任务完成后模型不知道。
 
@@ -1288,6 +1330,14 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 **问题**：长会话经过上下文压缩后，messages 数组可能只剩 2-3 条（压缩摘要 + 最新消息）。此时多 Agent 场景下的 Teammate 会"忘记自己是谁"——不知道自己的名字、角色、团队。
 
 **Claude Code 的解决方案**：当 `messages.length <= 3` 时，在消息开头注入 identity block（Agent 名称 + 角色 + 团队配置）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 行号 | 关键函数 |
+|------|------|---------|
+| `tools/shared/spawnMultiAgent.ts` | L399-403 | `// Build teammate identity CLI args` — 身份参数构建 |
+| `tools/shared/spawnMultiAgent.ts` | L606-610 | tmux 后端身份参数 |
+| `tools/shared/spawnMultiAgent.ts` | L1012 | `// In-process teammates receive the prompt directly` — InProcess 身份 |
 
 **Qwen Code 现状**：无身份重注入。压缩后 Subagent 可能丢失上下文身份。
 
