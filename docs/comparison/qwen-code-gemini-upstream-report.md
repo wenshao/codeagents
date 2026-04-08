@@ -1,13 +1,63 @@
-# Qwen Code 上游backport建议报告（Gemini CLI 源码对比）
+# Qwen Code 上游 backport 建议报告（Gemini CLI 源码对比）
 
-> 基于 Gemini CLI（开源，`../gemini-cli/`）与 Qwen Code（fork 分支，`../qwen-code/`）的源码对比。Qwen Code 最后同步上游为 2025-10-23（v0.8.2），此后 Gemini CLI 从 v0.9.0 演进到 v0.36.0（28 个大版本，2041 个 commit）。本报告梳理可backport的改进点。
+> Qwen Code 于 2025-10-23 从 Gemini CLI v0.8.2 fork。此后 Gemini CLI 独立演进了 **28 个大版本**（v0.9.0 → v0.36.0）、**2041 个 commit**——大量新功能和优化未被 backport。本报告系统梳理 42 项可 backport 的改进点。
 >
 > **相关报告**：
 > - [Claude Code 改进建议报告（240 项）](./qwen-code-improvement-report.md)——行业领先者有什么
 > - [OpenCode 对标改进报告（10 项）](./qwen-code-opencode-improvements.md)——文件时间锁、Session Fork、SQLite 等
 > - [/review 功能改进建议](./qwen-code-review-improvements.md)——审查功能改进
 
-## 一、backport建议矩阵（42 项，按优先级排序）
+## 一、为什么需要 backport
+
+### 1.1 fork 时间线
+
+```
+2025-06-25  Gemini CLI v0.1.0 首次发布
+2025-10-23  Qwen Code 最后同步上游（v0.8.2）← fork 点
+    ↓ (此后 Qwen Code 独立发展，未再同步上游)
+2025-11    Gemini CLI: Hook 引擎、模型路由器、会话恢复
+2025-12    Gemini CLI: Hook 默认启用、/rewind、事件驱动调度器
+2026-01    Gemini CLI: A2A 协议、远程 Agent、Plan 模式
+2026-02    Gemini CLI: 后台 Shell、Vim 增强、sandbox 加固
+2026-03    Gemini CLI: SlicingMaxSizedBox 防闪烁、Edit 模糊匹配、环境变量净化
+2026-04    Gemini CLI v0.36.0（当前最新）
+```
+
+### 1.2 差距的实际影响
+
+| 问题 | 根因 | 影响 |
+|------|------|------|
+| 大输出屏幕闪烁 | 无 SlicingMaxSizedBox + 无硬上限 | 用户体验差 |
+| 环境变量泄漏 | 无环境净化 | secrets 传递给 `npm install` 等命令 |
+| 编辑匹配失败率高 | 仅精确匹配 | Agent 反复重试浪费 token |
+| 长命令内存泄漏 | 无 Shell buffer 上限 | `tail -f` 等命令耗尽内存 |
+| 无 /rewind 回退 | 未 backport | 用户需手动 git checkout |
+
+### 1.3 Qwen Code 的独有优势（不受 backport 影响）
+
+backport 不会丢失 Qwen Code 独立发展的优势：
+
+| 能力 | 说明 |
+|------|------|
+| 多 Provider 内容生成 | Anthropic/OpenAI/DashScope/DeepSeek 等 |
+| CoreToolScheduler | Agent 工具并行执行 |
+| 规则权限系统 | L3→L4→L5 多层评估 |
+| Arena 多模型竞赛 | 竞品无 |
+| 免费 OAuth 额度 | 1000 次/天 |
+| 分离重试预算 | 内容/流异常/速率限制分别计数 |
+| 三格式扩展兼容 | Qwen + Claude + Gemini |
+
+### 1.4 backport 策略建议
+
+| 策略 | 适用场景 | 风险 |
+|------|---------|------|
+| **直接复制文件** | 新增功能（SlicingMaxSizedBox、toolLayoutUtils） | 低——不改现有代码 |
+| **改一个数字** | 字符上限降级（1MB→20KB） | 极低——改一行 |
+| **新增常量** | ACTIVE_SHELL_MAX_LINES=15 | 低——新增不影响 |
+| **参考实现重写** | Edit 模糊匹配 | 中——需适配 Qwen Code 的 edit 逻辑 |
+| **大型 backport** | OS 级 sandbox | 高——跨平台+安全边界 |
+
+## 二、backport 建议矩阵（42 项，按优先级排序）
 
 | 优先级 | 改进点 | Qwen Code 现状 | 难度 | 上游 PR |
 |:------:|--------|----------------|:----:|---------|
@@ -53,7 +103,7 @@
 | **P3** | [Ctrl+Z 终端挂起](./qwen-code-gemini-upstream-report-details.md#item-41) — 挂起/恢复 + 终端状态管理 | 缺失 | 小 | — |
 | **P3** | [Shell 不活跃超时](./qwen-code-gemini-upstream-report-details.md#item-42) — 可配置超时 + 状态标题变化 | 缺失 | 小 | — |
 | **P3** | [Startup Profiler](./qwen-code-gemini-upstream-report-details.md#item-43) — 启动阶段 CPU 计时 + 遥测集成 | 缺失 | 小 | — |
-## 二、优先级分布
+## 三、优先级分布
 
 | 优先级 | 数量 | 核心主题 |
 |--------|------|---------|
@@ -62,4 +112,35 @@
 | P2 | 18 项 | UI 组件（5）+ 安全（3）+ 工具增强（4）+ 调度/协议（3）+ UX（3） |
 | P3 | 8 项 | 底层优化（3）+ 终端特性（3）+ 安全框架（2） |
 
-> 注：详情见 [backport建议详情](./qwen-code-gemini-upstream-report-details.md)
+## 四、30 分钟快速见效——P0 实施指南
+
+如果只有 30 分钟，做这 3 件事立即改善用户体验：
+
+### 4.1 字符上限降级（5 分钟）
+
+```typescript
+// packages/cli/src/ui/components/messages/ToolMessage.tsx
+// 改一个数字：
+const MAXIMUM_RESULT_DISPLAY_CHARACTERS = 20000; // 原来是 1000000
+```
+
+### 4.2 添加硬上限常量（10 分钟）
+
+```typescript
+// packages/cli/src/ui/constants.ts — 新增：
+export const ACTIVE_SHELL_MAX_LINES = 15;
+export const COMPLETED_SHELL_MAX_LINES = 15;
+export const SUBAGENT_MAX_LINES = 15;
+```
+
+在 `ToolMessage.tsx` 中添加 `Math.min(计算值, ACTIVE_SHELL_MAX_LINES)`。
+
+### 4.3 从上游复制 SlicingMaxSizedBox（15 分钟）
+
+从 Gemini CLI 复制 `SlicingMaxSizedBox.tsx`（103 行），在 `ToolMessage.tsx` 中用它包裹工具输出——渲染前裁剪数据到 maxLines 行。
+
+**效果**：大输出闪烁问题基本消除。
+
+## 五、完整实施详情
+
+每项的完整实现细节（问题定义、源码索引、修改方向、成本评估、前后对比）见 **[backport 建议详情（1271 行）](./qwen-code-gemini-upstream-report-details.md)**。
