@@ -1168,3 +1168,93 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 **改进收益**：危险规则剥离 = auto 仅批准安全操作。
 
 ---
+
+---
+
+<a id="item-36"></a>
+
+### 36. Query TransitionReason 枚举（P2）
+
+**问题**：Agent 的核心循环在每轮结束后决定"是否继续"。但"继续"可能有 6 种完全不同的原因——工具完成、token 截断、上下文压缩、传输重试、Hook 拦截、预算允许。如果不区分原因，日志不可读、测试不精确、调试困难。
+
+**Claude Code 的解决方案**：每次跨轮时携带显式的 `TransitionReason`，区分 6 种转换原因。下一轮根据原因调整行为（如 COMPACTION 触发摘要注入，RETRY 触发退避延迟）。
+
+**Qwen Code 现状**：循环中通过 if-else 隐式判断转换原因，无显式枚举类型。
+
+**Qwen Code 修改方向**：① 新增 `TransitionReason` 枚举（6 种原因）；② 每次跨轮记录原因到 `QueryTransition` 对象；③ 日志输出包含转换原因。
+
+**实现成本评估**：~50 行枚举 + 日志改动，~0.5 天。
+
+**相关文章**：[查询状态转换模型](../tools/claude-code/20-query-transitions.md)
+
+**意义**：核心循环的可观测性——知道"为什么继续"才能调试"为什么不停"。
+**缺失后果**：循环不停时只能逐行读代码猜原因。
+**改进收益**：日志直接显示 `transition=COMPACTION` → 立即知道是压缩触发的继续。
+
+---
+
+<a id="item-37"></a>
+
+### 37. 工具并发安全分类（P2）
+
+**问题**：模型一次返回 5 个工具调用，哪些可以并行？当前 Qwen Code 仅按工具类型粗暴分类（Agent 工具并行，其他串行）。但 `read_file` 和 `grep` 也可以并行——它们不修改共享状态。
+
+**Claude Code 的解决方案**：`StreamingToolExecutor` 对每个工具标记并发安全性，分区后批量并发执行。读工具并行，写工具串行，上下文修改器（如改 CWD 的工具）必须单独执行。
+
+**Qwen Code 现状**：`CoreToolScheduler` 仅 Agent/Task 工具并行，其他全部串行。
+
+**Qwen Code 修改方向**：① 对每个工具添加 `concurrencySafe: boolean` 属性；② 执行前按安全性分区；③ 安全工具 `Promise.all()` 并行。
+
+**实现成本评估**：~100 行，~1 天。
+
+**相关文章**：[工具执行运行时](../tools/claude-code/21-tool-execution-runtime.md)
+
+**意义**：工具调用延迟是 Agent 执行时间的主要瓶颈。
+**缺失后果**：5 个 read_file 串行 = 5 秒；并行 = 1 秒。
+**改进收益**：只读工具并行化 → 代码探索阶段速度 3-5x 提升。
+
+---
+
+<a id="item-38"></a>
+
+### 38. 工具执行进度消息（P2）
+
+**问题**：`npm install` 执行 30 秒，用户看到的只是一个 Spinner 在转——不知道进度、不知道卡在哪。
+
+**Claude Code 的解决方案**：长时间工具发射进度事件（`TrackedTool` + `MessageUpdate`），UI 显示"正在安装依赖 42/100..."。
+
+**Qwen Code 现状**：工具执行期间仅显示通用 Spinner（"Responding..."）。
+
+**Qwen Code 修改方向**：① 工具执行超过 3 秒时开始发射进度事件；② Shell 工具解析 stdout 提取进度信息（如 npm 的包数量）；③ UI 展示工具名 + 进度。
+
+**实现成本评估**：~80 行，~1 天。
+
+**改进前后对比**：
+- **改进前**：`npm install` 30 秒 → 用户只看到 Spinner → 以为卡死
+- **改进后**：`npm install` → "Installing packages 42/100..." → 用户知道在进行中
+
+**意义**：用户信心——知道 Agent 在做什么 vs 怀疑 Agent 卡死。
+**缺失后果**：用户在长工具执行时按 Ctrl+C 打断——因为不知道还在工作。
+**改进收益**：进度消息 = 用户安心等待 = 更少的误打断。
+
+---
+
+<a id="item-39"></a>
+
+### 39. 运行时任务模型（P2）
+
+**问题**：Claude Code 区分两种"任务"——**work-graph task**（持久目标："重构 auth 模块"，有依赖关系）和 **runtime task**（执行槽："后台 npm install 进程 PID 12345"）。如果把两者混在一起，任务面板会混乱——用户看到"重构 auth"和"PID 12345"并列，分不清哪个是目标哪个是执行。
+
+**Claude Code 的解决方案**：`TaskRecord`（work-graph）和 `RuntimeTaskState`（execution slot）分离——不同的数据结构、不同的状态机、不同的 UI 展示。
+
+**Qwen Code 现状**：仅有 `TodoWriteTool`（平面清单），无 work-graph task 也无 runtime task。
+
+**Qwen Code 修改方向**：① 如果实现 trackerTools（改进报告已有），采用 work-graph task 模型；② 后台 Shell 进程采用 runtime task 模型；③ 两者分开展示。
+
+**实现成本评估**：需结合 trackerTools 和后台 Shell 管理一起实现。
+
+**相关文章**：[参考速查](../tools/claude-code/19-reference.md)
+
+**意义**：概念分离 = 代码清晰 + UI 清晰——用户和开发者都不困惑。
+**缺失后果**：任务和进程混在一个列表——用户不知道哪些可以"完成"哪些需要"终止"。
+**改进收益**：两种任务分离 = 目标追踪 + 执行监控各归其位。

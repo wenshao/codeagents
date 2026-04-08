@@ -333,3 +333,32 @@
 **Claude Code 源码**：`commands/sandbox-toggle/sandbox-toggle.tsx` — 运行时切换 sandbox 开关，无需修改配置文件重启。
 
 **Qwen Code 现状**：sandbox 需在配置中设置，运行时不可切换。**实现成本**：~2 文件，~80 行，~0.5 天。
+
+---
+
+<a id="item-33"></a>
+
+### 33. 团队通信协议（P3）
+
+**问题**：多 Agent 协作需要结构化的通信协议——不只是"发文件/读文件"的原始 IPC，还需要心跳、关闭请求、任务交接等协议级消息。
+
+**Claude Code 的解决方案**：`MessageEnvelope` 结构化消息 + `RequestRecord` 协议工作流（审批/关闭/交接）+ 心跳检测（Teammate 存活性）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/teammateMailbox.ts` (1,183 行) | 邮箱读写 + 消息序列化 |
+| `tools/SendMessageTool/` (997 行) | 队友间消息发送 |
+
+**Qwen Code 现状**：Agent Team（PR#2886）使用文件 IPC，但无结构化协议——没有心跳、没有关闭请求、没有任务交接。
+
+**Qwen Code 修改方向**：① 定义 `MessageEnvelope` 类型（sender/receiver/type/payload）；② 支持协议消息类型（heartbeat/shutdown/handoff/approval）；③ 心跳超时检测（Teammate 崩溃时自动清理）。
+
+**实现成本评估**：~200 行，~2 天。
+
+**相关文章**：[多 Agent 系统](../tools/claude-code/09-multi-agent.md)
+
+**意义**：多 Agent 的可靠性——没有心跳，不知道 Teammate 是否还活着；没有关闭协议，可能留下僵尸进程。
+**缺失后果**：Teammate 崩溃后其他 Teammate 不知道——继续给它发消息 → 消息丢失。
+**改进收益**：结构化协议 = 可靠通信 + 崩溃检测 + 优雅关闭。
