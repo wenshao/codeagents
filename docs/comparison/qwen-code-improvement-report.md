@@ -416,7 +416,10 @@
 
 | 日期 | 变更 |
 |------|------|
-| 2026-04-08 | 新增 9 项改进建议（来源：[learn-claude-code](https://github.com/shareAI-lab/learn-claude-code) 概念分析）：P1 system-reminder 注入（#26）+ 错误恢复分类路由（#27）；P2 TransitionReason 枚举（#36）+ 工具并发分类（#37）+ 进度消息（#38）+ 运行时任务模型（#39）+ drain-before-call（#40）+ 身份重注入（#41）；P3 团队通信协议（#33）。总项数 240→248 |
+| 2026-04-08 | 新增 9 项改进建议（来源：[learn-claude-code](https://github.com/shareAI-lab/learn-claude-code) 概念分析），总项数 240→248：|
+| | **P1**：system-reminder 注入（[engine#26](./qwen-code-improvement-report-p0-p1-engine.md#item-26)）、错误恢复分类路由（[engine#27](./qwen-code-improvement-report-p0-p1-engine.md#item-27)） |
+| | **P2**：TransitionReason 枚举（[stability#36](./qwen-code-improvement-report-p2-stability.md#item-36)）、工具并发分类（[#37](./qwen-code-improvement-report-p2-stability.md#item-37)）、进度消息（[#38](./qwen-code-improvement-report-p2-stability.md#item-38)）、运行时任务模型（[#39](./qwen-code-improvement-report-p2-stability.md#item-39)）、drain-before-call（[#40](./qwen-code-improvement-report-p2-stability.md#item-40)）、身份重注入（[#41](./qwen-code-improvement-report-p2-stability.md#item-41)） |
+| | **P3**：团队通信协议（[hooks#33](./qwen-code-improvement-report-p3-hooks.md#item-33)） |
 | 2026-04-08 | 删除 item-20（/thinkback）——经源码验证 Claude Code 的 /thinkback 是 Year in Review 动画，非会话时间线。原 item-21 重编号为 item-20 |
 | 2026-04-07 | 新增 PR 追踪：#2936（Fork Subagent）、#2932（/review 增强）；标记 #2854、#2889 已合并 |
 | 2026-04-06 | 新增 PR 追踪：#2921（/plan）、#2923（StatusLine）、#2914-#2917 等 6 个 PR |
