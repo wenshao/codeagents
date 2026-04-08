@@ -401,8 +401,23 @@
 | 终端渲染 | [终端渲染与防闪烁](../tools/claude-code/11-terminal-rendering.md) |
 | 设置与安全 | [设置与安全](../tools/claude-code/06-settings.md) |
 | 会话与记忆 | [会话与记忆](../tools/claude-code/07-session.md) |
+| Hook 系统 | [Hook 系统（27 事件）](../tools/claude-code/12-hooks.md) |
+| 系统提示 | [系统提示构建](../tools/claude-code/13-system-prompt.md) |
+| MCP 集成 | [MCP 集成（6 传输）](../tools/claude-code/14-mcp.md) |
+| 遥测与 Feature Flag | [遥测与 Feature Flag](../tools/claude-code/15-telemetry-feature-flags.md) |
+| 参考速查 | [数据结构 + 术语表](../tools/claude-code/19-reference.md) |
+| 查询状态转换 | [查询状态转换模型](../tools/claude-code/20-query-transitions.md) |
+| 工具执行运行时 | [工具执行运行时](../tools/claude-code/21-tool-execution-runtime.md) |
+| 消息管线 | [消息与提示管线](../tools/claude-code/22-message-pipeline.md) |
 
- |
+---
 
--session.md) |
+## 六、更新日志
 
+| 日期 | 变更 |
+|------|------|
+| 2026-04-08 | 新增 9 项改进建议（来源：[learn-claude-code](https://github.com/shareAI-lab/learn-claude-code) 概念分析）：P1 system-reminder 注入（#26）+ 错误恢复分类路由（#27）；P2 TransitionReason 枚举（#36）+ 工具并发分类（#37）+ 进度消息（#38）+ 运行时任务模型（#39）+ drain-before-call（#40）+ 身份重注入（#41）；P3 团队通信协议（#33）。总项数 240→248 |
+| 2026-04-08 | 删除 item-20（/thinkback）——经源码验证 Claude Code 的 /thinkback 是 Year in Review 动画，非会话时间线。原 item-21 重编号为 item-20 |
+| 2026-04-07 | 新增 PR 追踪：#2936（Fork Subagent）、#2932（/review 增强）；标记 #2854、#2889 已合并 |
+| 2026-04-06 | 新增 PR 追踪：#2921（/plan）、#2923（StatusLine）、#2914-#2917 等 6 个 PR |
+| 2026-04-05 | 初始版本：240 项改进建议 + 134 篇 Deep-Dive 索引 |
