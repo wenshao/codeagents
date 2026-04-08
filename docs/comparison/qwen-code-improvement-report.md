@@ -421,6 +421,6 @@
 | | **P2**：TransitionReason 枚举（[stability#36](./qwen-code-improvement-report-p2-stability.md#item-36)）、工具并发分类（[#37](./qwen-code-improvement-report-p2-stability.md#item-37)）、进度消息（[#38](./qwen-code-improvement-report-p2-stability.md#item-38)）、运行时任务模型（[#39](./qwen-code-improvement-report-p2-stability.md#item-39)）、drain-before-call（[#40](./qwen-code-improvement-report-p2-stability.md#item-40)）、身份重注入（[#41](./qwen-code-improvement-report-p2-stability.md#item-41)） |
 | | **P3**：团队通信协议（[hooks#33](./qwen-code-improvement-report-p3-hooks.md#item-33)） |
 | 2026-04-08 | 删除 item-20（/thinkback）——经源码验证 Claude Code 的 /thinkback 是 Year in Review 动画，非会话时间线。原 item-21 重编号为 item-20 |
-| 2026-04-07 | 新增 PR 追踪：#2936（Fork Subagent）、#2932（/review 增强）；标记 #2854、#2889 已合并 |
-| 2026-04-06 | 新增 PR 追踪：#2921（/plan）、#2923（StatusLine）、#2914-#2917 等 6 个 PR |
+| 2026-04-07 | 新增 PR 追踪：[#2936](https://github.com/QwenLM/qwen-code/pull/2936)（Fork Subagent）、[#2932](https://github.com/QwenLM/qwen-code/pull/2932)（/review 增强）；标记 [#2854](https://github.com/QwenLM/qwen-code/pull/2854) ✓、[#2889](https://github.com/QwenLM/qwen-code/pull/2889) ✓ 已合并 |
+| 2026-04-06 | 新增 PR 追踪：[#2921](https://github.com/QwenLM/qwen-code/pull/2921)（/plan）、[#2923](https://github.com/QwenLM/qwen-code/pull/2923)（StatusLine）、[#2914](https://github.com/QwenLM/qwen-code/pull/2914)（表格渲染）、[#2915](https://github.com/QwenLM/qwen-code/pull/2915)（/clear）、[#2916](https://github.com/QwenLM/qwen-code/pull/2916)（/context SDK）、[#2911](https://github.com/QwenLM/qwen-code/pull/2911)（ConfigTool）、[#2904](https://github.com/QwenLM/qwen-code/pull/2904)（Tips 系统） |
 | 2026-04-05 | 初始版本：240 项改进建议 + 134 篇 Deep-Dive 索引 |
