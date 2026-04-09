@@ -1,28 +1,45 @@
 # Qwen Code 改进建议 — 对标 OpenCode
 
-> 基于 OpenCode (anomalyco/opencode v1.3.0) 源码逐项比对，识别 Qwen Code 可借鉴的能力
+> 基于 OpenCode (anomalyco/opencode v1.3.0) 源码逐项比对，识别 Qwen Code 可借鉴的 **27 项**能力。OpenCode 共 44 个模块、373 文件、74,418 行——一个功能完备的多客户端 AI 平台。
 >
 > **相关报告**：
-> - [Claude Code 改进建议报告（240 项）](./qwen-code-improvement-report.md)——行业领先者对比
-> - [Gemini CLI 上游 backport 报告（42 项）](./qwen-code-gemini-upstream-report.md)——上游可 backport 改进
+> - [Claude Code 改进建议报告（248 项）](./qwen-code-improvement-report.md)——行业领先者对比
+> - [Gemini CLI 上游 backport 报告（53 项）](./qwen-code-gemini-upstream-report.md)——上游可 backport 改进
 > - [/review 功能改进建议](./qwen-code-review-improvements.md)——审查功能改进
 
 ---
 
 ## 改进项索引
 
-| # | 功能 | 优先级 | 工作量 | 来源文件 |
-|:-:|------|:------:|:------:|----------|
-| [1](#item-1) | 文件时间锁（外部修改检测） | **P0** | 1 天 | `file/time.ts` |
-| [2](#item-2) | apply_patch 工具（GPT 模型适配） | **P1** | 3 天 | `tool/apply_patch.ts` |
-| [3](#item-3) | MultiEdit 工具（单文件批量编辑） | **P1** | 1 天 | `tool/multiedit.ts` |
-| [4](#item-4) | Session 分叉与回退 | **P1** | 5 天 | `session/revert.ts` |
-| [5](#item-5) | SQLite 持久化 | **P1** | 2 周 | `session/session.sql.ts` |
-| [6](#item-6) | 语义代码搜索（Exa） | **P1** | 2 天 | `tool/codesearch.ts` |
-| [7](#item-7) | Batch 工具（并行工具调用） | **P2** | 3 天 | `tool/batch.ts` |
-| [8](#item-8) | HTTP 服务器（多客户端架构） | **P2** | 3 周 | `server/server.ts` |
-| [9](#item-9) | Instance 上下文隔离 | **P2** | 3 天 | `server/instance.ts` |
-| [10](#item-10) | MDNS 服务发现 | **P3** | 1 天 | `server/mdns.ts` |
+| # | 功能 | 优先级 | 工作量 | 来源模块 | 规模 |
+|:-:|------|:------:|:------:|----------|:----:|
+| [1](#item-1) | 文件时间锁（外部修改检测） | **P0** | 1 天 | `file/time.ts` | — |
+| [2](#item-2) | apply_patch 工具（GPT 模型适配） | **P1** | 3 天 | `tool/apply_patch.ts` | — |
+| [3](#item-3) | MultiEdit 工具（单文件批量编辑） | **P1** | 1 天 | `tool/multiedit.ts` | — |
+| [4](#item-4) | Session 分叉与回退 | **P1** | 5 天 | `session/revert.ts` | — |
+| [5](#item-5) | SQLite 持久化 | **P1** | 2 周 | `session/session.sql.ts` | — |
+| [6](#item-6) | 语义代码搜索（Exa） | **P1** | 2 天 | `tool/codesearch.ts` | — |
+| [11](#item-11) | Snapshot 会话快照与回滚 | **P1** | 5 天 | `snapshot/` | 726 行 |
+| [12](#item-12) | Provider 多模型提供商系统 | **P1** | 3 周 | `provider/` | 7,927 行 31 文件 |
+| [13](#item-13) | Plugin 插件系统（18 种 Hook） | **P1** | 3 周 | `plugin/` | 2,594 行 9 文件 |
+| [14](#item-14) | Worktree 增强管理 | **P1** | 3 天 | `worktree/` | 612 行 |
+| [7](#item-7) | Batch 工具（并行工具调用） | **P2** | 3 天 | `tool/batch.ts` | — |
+| [8](#item-8) | HTTP 服务器（多客户端架构） | **P2** | 3 周 | `server/server.ts` | — |
+| [9](#item-9) | Instance 上下文隔离 | **P2** | 3 天 | `server/instance.ts` | — |
+| [15](#item-15) | ACP Agent 协议服务端 | **P2** | 2 周 | `acp/` | 1,987 行 3 文件 |
+| [16](#item-16) | LSP 多语言服务器管理 | **P2** | 1 周 | `lsp/` | 2,919 行 5 文件 |
+| [17](#item-17) | NPM 动态包安装 | **P2** | 2 天 | `npm/` | 188 行 |
+| [18](#item-18) | Permission 规则引擎 | **P2** | 3 天 | `permission/` | 520 行 4 文件 |
+| [19](#item-19) | PTY 伪终端管理 | **P2** | 2 周 | `pty/` | 492 行 5 文件 |
+| [20](#item-20) | Skill 动态发现系统 | **P2** | 2 天 | `skill/` | 393 行 2 文件 |
+| [21](#item-21) | Git 操作抽象层 | **P2** | 2 天 | `git/` | 303 行 |
+| [22](#item-22) | Session Share 会话分享 | **P2** | 2 周 | `share/` | 382 行 2 文件 |
+| [23](#item-23) | Event Sync 事件溯源 | **P2** | 2 周 | `sync/` | 293 行 3 文件 |
+| [24](#item-24) | Control-Plane 多工作区 | **P2** | 2 周 | `control-plane/` | 362 行 7 文件 |
+| [10](#item-10) | MDNS 服务发现 | **P3** | 1 天 | `server/mdns.ts` | — |
+| [25](#item-25) | Format 代码格式化集成 | **P3** | 1 周 | `format/` | 616 行 2 文件 |
+| [26](#item-26) | Command 动态命令注册 | **P3** | 2 天 | `command/` | 195 行 |
+| [27](#item-27) | Effect 框架工具集 | **P3** | — | `effect/` | 851 行 6 文件 |
 
 ---
 
@@ -705,17 +722,449 @@ bonjour.publish({
 | **扩展格式转换** | ✅ Claude/Gemini 扩展自动转换 | ❌ |
 | **6 语言 CLI** | ✅ 中/英/日/韩/法/德 | ❌ TUI 仅英文 |
 | **Doom Loop 检测** | ✅ 工具 5 次 + 内容 10 次 | ⚠️ 仅权限拒绝 3 次 |
+| **多渠道部署** | ✅ DingTalk/Telegram/WeChat/Web | ❌ TUI + Web |
+| **Gemini CLI 兼容** | ✅ fork 自 Gemini CLI | ❌ 独立架构 |
 
 ---
 
-## 一句话总结
+<a id="item-11"></a>
 
-**1 个 P0（1 天）**：文件时间锁——防止 Agent 覆盖用户在 IDE 中的修改。
+### 11. Snapshot 会话快照与回滚（P1）
 
-**5 个 P1（~2 周 + 2 周 SQLite）**：apply_patch 提升多模型编辑准确性 + MultiEdit 5x 编辑速度 + Session 分叉支持多方案探索 + SQLite 奠定数据基础 + 语义代码搜索提升 API 理解。
+**问题**：Agent 修改代码后发现方向错误，用户需要手动 `git checkout` 回退。没有会话级别的快照和回滚。
 
-**P2/P3 是平台进化方向**：HTTP 服务器 → Web UI → 桌面应用 → 从 CLI 工具进化为开发平台。不急，但方向明确。
+**OpenCode 的解决方案**：`snapshot/index.ts`（726 行）——基于 Git 的隔离快照系统：
+
+| API | 功能 |
+|-----|------|
+| `track()` | 在关键操作后创建文件快照 |
+| `patch(hash)` | 获取两次快照间的文件变更 |
+| `restore(snapshot)` | 回滚到指定快照 |
+| `diff(hash)` / `diffFull(from, to)` | 行级变更对比（additions/deletions） |
+
+快照存储在 `Global.Path.data/snapshot/` 独立目录，与项目 Git 仓库隔离。
+
+**Qwen Code 现状**：无会话快照系统。检查点功能（checkpoint）默认关闭且不支持回滚。
+
+**Qwen Code 修改方向**：参考 OpenCode 的 Git 隔离快照模式，在每次工具执行后自动 track，提供 `/rewind` 回退命令。
+
+**实现成本**：~5 天（Git 快照管理 + 回滚逻辑 + UI 集成）
 
 ---
 
-*分析基于 OpenCode (anomalyco/opencode v1.3.0) 和 Qwen Code 源码，截至 2026 年 4 月。*
+<a id="item-12"></a>
+
+### 12. Provider 多模型提供商系统（P1）
+
+**问题**：Qwen Code 硬编码支持 Anthropic/Google/Qwen 等少数 Provider。添加新 Provider 需要修改核心代码。
+
+**OpenCode 的解决方案**：`provider/`（31 文件 7,927 行）——可扩展的多 Provider 架构：
+
+**内置 Provider**（25+）：
+
+| 类别 | Provider |
+|------|---------|
+| 大厂 | Anthropic、OpenAI、Azure、Google、Vertex |
+| 开源 | Groq、Together AI、Mistral、Cohere |
+| 平台 | GitHub Copilot、GitLab、Amazon Bedrock |
+| 其他 | XAI、Perplexity、Venice |
+
+**核心特性**：
+- 动态 Provider 发现（npm 包 + 插件加载）
+- Per-provider 认证（API Key / OAuth / Service Account）
+- 模型列表 + 模糊搜索
+- Provider 特定的响应转换（Copilot 分页、GitHub Models API 适配）
+- 速率限制 + SSE 超时处理
+
+**Qwen Code 现状**：`packages/core/src/content/` 中硬编码 3-4 个 Provider。
+
+**实现成本**：~3 周（Provider 插件框架 + 5-10 个主要 Provider 适配）
+
+---
+
+<a id="item-13"></a>
+
+### 13. Plugin 插件系统（P1）
+
+**问题**：Qwen Code 的 Hook 系统（~10 种）和扩展机制是硬编码的，无法通过 npm 包分发和加载第三方插件。
+
+**OpenCode 的解决方案**：`plugin/`（9 文件 2,594 行）——完整的插件基础设施：
+
+| 组件 | 功能 |
+|------|------|
+| `loader.ts` | npm 包 + 本地插件加载 |
+| `meta.ts` | 插件元数据管理 |
+| `shared.ts` | 插件间共享能力 |
+| 内置 auth 插件 | Codex、GitHub Copilot、GitLab、Poe、Cloudflare |
+
+**18 种 Hook 类型**（`packages/plugin/src/index.ts`）：
+
+| Hook 类别 | 示例 |
+|----------|------|
+| 工具 Hook | `tool.call`、`tool.result`、`tool.definition`（运行时 schema 修改） |
+| 事件 Hook | `config.changed`、`session.created` |
+| 认证 Hook | 登录流程扩展 |
+| 生命周期 | `load` → `init` → `dispose` |
+
+**Qwen Code 现状**：`hooks.ts` 约 10 种 Hook，不支持插件加载/分发。
+
+**实现成本**：~3 周（插件加载器 + npm 解析 + Hook 分发）
+
+---
+
+<a id="item-14"></a>
+
+### 14. Worktree 增强管理（P1）
+
+**问题**：Qwen Code 的 `gitWorktreeService.ts`（826 行）提供基础 worktree 支持，但缺少自动命名、子模块处理、fsmonitor 管理等。
+
+**OpenCode 的解决方案**：`worktree/index.ts`（612 行）——生产级 worktree 管理：
+
+| 功能 | OpenCode | Qwen Code |
+|------|---------|-----------|
+| 自动命名 | `opencode/slug-name` 格式 | 手动指定 |
+| 子模块处理 | `--recurse-submodules` | 无 |
+| fsmonitor | 自动管理 daemon | 无 |
+| 启动脚本 | 每 worktree 自动执行 | 无 |
+| 失败恢复 | 智能清理 + 重试 | 基础清理 |
+
+**实现成本**：~3 天（增强现有 worktree 服务）
+
+---
+
+<a id="item-15"></a>
+
+### 15. ACP Agent Client Protocol 服务端（P2）
+
+**问题**：Qwen Code 只能被用户直接操作，不能被其他 Agent 或应用程序以 API 形式调用。
+
+**OpenCode 的解决方案**：`acp/`（3 文件 1,987 行）——完整的 Agent Client Protocol 服务端实现：
+
+- `agent.ts`（1,847 行）：ACP agent 完整实现
+- Session fork/resume 支持
+- 模型中途切换
+- 权限请求/审批流程
+- 多 MCP 服务器支持
+- 流式响应 + 上下文限制管理
+
+**Qwen Code 现状**：有 ACP 客户端集成工具，但无 ACP 服务端。
+
+**实现成本**：~2 周（协议实现 + 会话管理）
+
+---
+
+<a id="item-16"></a>
+
+### 16. LSP 多语言服务器管理（P2）
+
+**问题**：代码智能依赖 AST 解析和 grep，缺少 LSP 提供的精确语义信息（go-to-definition、hover、diagnostics）。
+
+**OpenCode 的解决方案**：`lsp/`（5 文件 2,919 行）——完整 LSP 客户端：
+
+| 功能 | 说明 |
+|------|------|
+| 服务器生命周期 | 按语言自动启动/停止 Language Server |
+| 文档符号 | `documentSymbol` 查询 |
+| 跳转定义 | `gotoDefinition` |
+| Hover 信息 | 类型/文档提示 |
+| 诊断聚合 | 多服务器错误/警告汇总 |
+| 自动发现 | 从配置和 PATH 自动检测 Language Server |
+
+**Qwen Code 现状**：`packages/core/src/lsp/` 有基础 LSP 支持，但功能不如 OpenCode 全面。
+
+**实现成本**：~1 周（客户端增强 + 响应格式化）
+
+---
+
+<a id="item-17"></a>
+
+### 17. NPM 动态包安装（P2）
+
+**问题**：工具和 Provider 插件需要用户手动安装依赖，缺乏运行时动态安装能力。
+
+**OpenCode 的解决方案**：`npm/index.ts`（188 行）——使用 `@npmcli/arborist`（npm 官方库）：
+
+- 依赖解析 + 版本检查
+- 文件锁防止并发安装
+- 入口点解析（multi-bin 包）
+- 缓存到 `~/.opencode/cache/packages/`
+
+**Qwen Code 现状**：`extension/npm.ts`（~100 行）使用不同方案。
+
+**实现成本**：~2 天
+
+---
+
+<a id="item-18"></a>
+
+### 18. Permission 规则引擎（P2）
+
+**问题**：Qwen Code 的权限系统基于简单的请求/批准流程，缺少基于规则的自动化权限决策。
+
+**OpenCode 的解决方案**：`permission/`（4 文件 520 行）——规则驱动权限系统：
+
+| 组件 | 功能 |
+|------|------|
+| `evaluate.ts` | 规则求值引擎 |
+| `schema.ts` | 权限规则 Schema |
+| Actions | allow / deny / ask |
+| Pattern 匹配 | 通配符路径匹配 |
+| Bus 集成 | 权限请求发布为事件（UI/API 响应） |
+| 缓存 | always / once / never |
+
+**Qwen Code 现状**：L3→L4→L5 多层评估已存在，但规则定义不如 OpenCode 灵活。
+
+**实现成本**：~3 天
+
+---
+
+<a id="item-19"></a>
+
+### 19. PTY 伪终端管理（P2）
+
+**问题**：Qwen Code 的 Shell 执行是简单的 `spawn()`，不支持 PTY 分配和交互式命令。
+
+**OpenCode 的解决方案**：`pty/`（5 文件 492 行）：
+
+- PTY 分配 + 进程管理
+- WebSocket 多路复用（多客户端共享一个 PTY）
+- 光标位置追踪（0x00 + JSON 元数据）
+- 循环 buffer（2MB 上限）防止内存泄漏
+- Socket 订阅输出流
+
+**Qwen Code 现状**：基础终端执行，无 PTY 支持。
+
+**实现成本**：~2 周
+
+---
+
+<a id="item-20"></a>
+
+### 20. Skill 动态发现系统（P2）
+
+**问题**：Qwen Code 的 Skill 系统是打包内置的，缺少从项目目录动态发现用户定义 Skill 的能力。
+
+**OpenCode 的解决方案**：`skill/`（2 文件 393 行）——多路径 Skill 发现：
+
+- SKILL.md 文件格式扫描（`.claude/`、`.agents/`、项目目录）
+- Schema 验证
+- 权限检查
+- 缓存 + 热重载
+- 支持项目级、用户级、扩展级 Skill
+
+**Qwen Code 现状**：内置 Skill + SKILL.md 加载，但发现机制较简单。
+
+**实现成本**：~2 天
+
+---
+
+<a id="item-21"></a>
+
+### 21. Git 操作抽象层（P2）
+
+**问题**：Git 操作分散在多个文件中，缺少统一的错误处理和配置管理。
+
+**OpenCode 的解决方案**：`git/index.ts`（303 行）——集中式 Git 服务：
+
+- 统一 `spawn()` + 标准化 config flags（`autocrlf=false`、`longpaths=true`）
+- Status 查询（added/deleted/modified）
+- Diff 统计（additions/deletions）
+- Base branch 检测
+- NUL 分隔输出解析（处理文件名空格）
+
+**Qwen Code 现状**：Git 操作分散在多处。
+
+**实现成本**：~2 天
+
+---
+
+<a id="item-22"></a>
+
+### 22. Session Share 会话分享（P2）
+
+**问题**：无法将 Agent 会话分享给同事查看或协作。
+
+**OpenCode 的解决方案**：`share/`（2 文件 382 行）：
+
+- 生成可分享的会话 URL
+- 会话同步到云端（可选）
+- Share secrets 管理
+- 会话 diff 导出（`FileDiff[]`）
+- 队列化多客户端分享
+
+**Qwen Code 现状**：无会话分享功能。
+
+**实现成本**：~2 周（需要后端 API）
+
+---
+
+<a id="item-23"></a>
+
+### 23. Event Sync 事件溯源（P2）
+
+**问题**：会话状态是内存中的可变对象，难以审计、回放和分布式同步。
+
+**OpenCode 的解决方案**：`sync/`（3 文件 293 行）——Event Sourcing / CQRS 模式：
+
+- `SyncEvent.define()` 注册带版本的事件类型
+- 事件从数据库回放
+- Projector 模式（事件→状态映射）
+- 多版本事件迁移
+- 事件订阅
+
+**Qwen Code 现状**：EventEmitter 模式，非事件溯源。
+
+**实现成本**：~2 周
+
+---
+
+<a id="item-24"></a>
+
+### 24. Control-Plane 多工作区管理（P2）
+
+**问题**：单一工作区限制，难以同时管理多个项目。
+
+**OpenCode 的解决方案**：`control-plane/`（7 文件 362 行）：
+
+- Workspace 创建（类型/适配器模式）
+- 分支隔离
+- SSE 流式就绪通知
+- Adaptor 模式（不同工作区类型不同实现）
+
+**Qwen Code 现状**：单工作区上下文。
+
+**实现成本**：~2 周
+
+---
+
+<a id="item-25"></a>
+
+### 25. Format 代码格式化集成（P3）
+
+**问题**：Agent 生成的代码不一定符合项目的格式化规范。
+
+**OpenCode 的解决方案**：`format/`（2 文件 616 行）——可插拔格式化器：
+
+- 自动检测文件类型对应的格式化器（prettier / black / gofmt 等）
+- 配置驱动的格式化命令
+- 格式化器可用性检查
+- Per-session 格式化器状态
+
+**Qwen Code 现状**：有基础格式化，无可插拔系统。
+
+**实现成本**：~1 周
+
+---
+
+<a id="item-26"></a>
+
+### 26. Command 动态命令注册（P3）
+
+**问题**：命令（斜杠命令）是硬编码的，插件无法注册新命令。
+
+**OpenCode 的解决方案**：`command/index.ts`（195 行）——动态命令注册表：
+
+- Schema 驱动的命令注册
+- 参数解析
+- 帮助文档自动生成
+- 权限检查
+
+**Qwen Code 现状**：命令硬编码在 `commands/` 目录。
+
+**实现成本**：~2 天
+
+---
+
+<a id="item-27"></a>
+
+### 27. Effect 框架工具集（P3）
+
+**问题**：OpenCode 使用 Effect-ts 框架管理副作用，提供了一套完整的工具集。
+
+**OpenCode 的解决方案**：`effect/`（6 文件 851 行）——Effect-ts 基础设施：
+
+- Instance 状态管理
+- 服务运行时创建
+- 跨平台进程 spawn
+- Scoped 资源管理
+
+**Qwen Code 现状**：不使用 Effect 框架。此项仅在考虑 Effect-ts 迁移时参考。
+
+---
+
+## 模块级架构差异
+
+### OpenCode 独有模块（Qwen Code 无对应）
+
+| 模块 | 规模 | 功能 | backport 建议 |
+|------|:----:|------|:------------:|
+| `provider/` | 7,927 行 | 25+ LLM Provider 动态插件 | P1 |
+| `plugin/` | 2,594 行 | 18 种 Hook + npm 插件加载 | P1 |
+| `lsp/` | 2,919 行 | 多语言 Language Server 客户端 | P2 |
+| `acp/` | 1,987 行 | Agent Client Protocol 服务端 | P2 |
+| `snapshot/` | 726 行 | Git 隔离快照 + 回滚 | P1 |
+| `worktree/` | 612 行 | 增强 Worktree 管理 | P1 |
+| `format/` | 616 行 | 可插拔代码格式化 | P3 |
+| `permission/` | 520 行 | 规则驱动权限引擎 | P2 |
+| `pty/` | 492 行 | PTY + WebSocket 多路复用 | P2 |
+| `skill/` | 393 行 | 多路径 Skill 发现 | P2 |
+| `share/` | 382 行 | 会话分享/导出 | P2 |
+| `control-plane/` | 362 行 | 多工作区管理 | P2 |
+| `sync/` | 293 行 | Event Sourcing 事件溯源 | P2 |
+| `npm/` | 188 行 | 动态包安装 | P2 |
+
+### Qwen Code 独有能力（OpenCode 无对应）
+
+| 能力 | 说明 |
+|------|------|
+| **Agent Arena** | 多模型并行竞赛评估 |
+| **免费 OAuth** | 1000 次/天免费额度 |
+| **Gemini CLI 兼容** | fork 自 Gemini CLI，共享上游改进 |
+| **扩展格式转换** | Claude/Gemini 扩展自动转换 |
+| **多渠道部署** | DingTalk/Telegram/WeChat/Web |
+| **6 语言 i18n** | 中/英/日/韩/法/德 |
+| **Doom Loop 双重检测** | 工具 5 次 + 内容 10 次 |
+
+### 核心差异总结
+
+| 维度 | OpenCode | Qwen Code | 评估 |
+|------|---------|-----------|------|
+| **代码规模** | 74,418 行 373 文件 | ~50,000 行 ~500 文件 | 相当 |
+| **Provider 数** | 25+ 动态加载 | 3-4 硬编码 | OpenCode 领先 |
+| **插件生态** | npm 包分发 + 18 Hook | 内置 Hook ~10 种 | OpenCode 领先 |
+| **持久化** | SQLite + Event Sourcing | JSONL | OpenCode 领先 |
+| **多客户端** | TUI + Web + Desktop + Electron | CLI + Web + IDE | 相当 |
+| **会话管理** | Snapshot + Revert + Share | 基础 resume | OpenCode 领先 |
+| **多模型竞赛** | 无 | Arena | **Qwen Code 领先** |
+| **多渠道** | 无 | DingTalk/Telegram/WeChat | **Qwen Code 领先** |
+| **国际化** | 仅英文 | 6 语言 | **Qwen Code 领先** |
+
+## 实施路线图
+
+| 阶段 | 时间 | 内容 | 预期效果 |
+|------|------|------|---------|
+| **第一周** | 1 天 | FileTime 文件时间锁（#1） | 防止数据丢失 |
+| | 3 天 | Snapshot 快照（#11）+ Worktree 增强（#14） | 会话回滚 + 并行开发 |
+| **第二周** | 5 天 | apply_patch + MultiEdit + Batch（#2/#3/#7） | 多模型编辑能力 |
+| **第三至四周** | 2 周 | Provider 系统（#12） | 25+ 模型支持 |
+| **第五至六周** | 2 周 | Plugin 系统（#13） | 生态扩展能力 |
+| **第七至八周** | 2 周 | SQLite（#5）+ ACP（#15） | 持久化 + API 服务 |
+| **后续** | 按需 | LSP / PTY / Share / Control-Plane 等 | 平台进化 |
+
+## 更新日志
+
+### 2026-04-09
+
+- 扩充报告从 10 项到 27 项（+17 项新发现）
+- 新增模块级架构差异对比（OpenCode 14 独有模块 vs Qwen Code 7 独有能力）
+- 新增实施路线图（8 周阶段规划）
+- 扩展 Qwen Code 独有优势（+多渠道、Gemini CLI 兼容）
+- 更新相关报告引用（248 项、53 项）
+
+### 2026-04-05
+
+- 初始版本：10 项改进建议
+
+---
+
+*分析基于 OpenCode (anomalyco/opencode v1.3.0, 74,418 行) 和 Qwen Code 源码，截至 2026 年 4 月。*

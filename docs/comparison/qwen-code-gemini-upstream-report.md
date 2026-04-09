@@ -4,7 +4,7 @@
 >
 > **相关报告**：
 > - [Claude Code 改进建议报告（248 项）](./qwen-code-improvement-report.md)——行业领先者有什么
-> - [OpenCode 对标改进报告（10 项）](./qwen-code-opencode-improvements.md)——文件时间锁、Session Fork、SQLite 等
+> - [OpenCode 对标改进报告（27 项）](./qwen-code-opencode-improvements.md)——Provider 系统、Plugin 插件、Snapshot 快照等
 > - [/review 功能改进建议](./qwen-code-review-improvements.md)——审查功能改进
 > - [工具输出限高防闪烁](./tool-output-height-limiting-deep-dive.md)——Gemini CLI SlicingMaxSizedBox vs Qwen Code
 
