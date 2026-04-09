@@ -1269,3 +1269,291 @@ const MemoizedAppHeader = memo(AppHeader);
 - 新增代码：~100 行
 - 开发周期：~1 天（1 人）
 
+---
+
+<a id="item-44"></a>
+
+### 44. Model Routing 多策略路由（P1）
+
+**问题**：Qwen Code 直接使用用户指定的模型，没有智能路由层。当请求类型不同（代码生成 vs 问答 vs 审查）时，同一模型并非最优选择。也没有根据模型负载/容量自动切换的能力。
+
+**Gemini CLI 的解决方案**：`ModelRouterService`——可组合的多策略路由引擎，支持 8 种策略：
+
+| 策略 | 功能 |
+|------|------|
+| `DefaultStrategy` | 默认模型选择 |
+| `OverrideStrategy` | 用户/配置强制指定 |
+| `ApprovalModeStrategy` | 根据审批模式选择（ask/always） |
+| `ClassifierStrategy` | 基于 LLM 分类器选择最优模型 |
+| `GemmaClassifierStrategy` | Gemma 本地分类器快速路由 |
+| `NumericalClassifierStrategy` | 数值分类器（token 数/复杂度） |
+| `CompositeStrategy` | 组合多个策略 |
+| `FallbackStrategy` | 主策略失败时降级 |
+
+路由决策包含完整元数据（source、latencyMs、reasoning），集成遥测日志。
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/类 |
+|------|-------------|
+| `packages/core/src/routing/routingStrategy.ts` | `RoutingDecision`, `RoutingContext`, `RoutingStrategy` 接口 |
+| `packages/core/src/routing/modelRouterService.ts` | `ModelRouterService` 主服务 |
+| `packages/core/src/routing/strategies/` | 8 个策略实现文件 |
+
+**Qwen Code 现状**：无模型路由层。用户通过 `/model` 命令直接指定模型，不根据请求类型自动选择。
+
+**Qwen Code 修改方向**：实现简化版路由——至少支持 Default + Override + Fallback 三层策略。分类器路由需要本地小模型（Gemma），可作为进阶功能。
+
+**实现成本评估**：
+- 涉及文件：~8 个（新建路由层 + 修改模型选择入口）
+- 新增代码：~500 行（简化版）
+- 开发周期：~3 天（1 人）
+- 难点：策略组合的正确性 + 与现有多 Provider 系统的集成
+
+**改进前后对比**：
+- **改进前**：用户手动选模型 → 简单任务浪费高端模型配额
+- **改进后**：路由器自动选最优模型 → 省配额 + 更好匹配
+
+---
+
+<a id="item-45"></a>
+
+### 45. Agent Session 协议层（P1）
+
+**问题**：Qwen Code 的 Agent 通信是同步调用式——发请求、等结果。无法做事件回放、流中断恢复、多流并行管理。
+
+**Gemini CLI 的解决方案**：`AgentSession`——基于 AsyncIterable 的 Agent 通信协议，支持事件历史和重新附加：
+
+- `AgentSession`：AsyncIterable 包装，支持 streamId 追踪和事件历史
+- `EventTranslator`：协议事件格式转换
+- `ContentUtils`：Agent 消息内容类型转换
+- `LegacyAgentSession`：向后兼容旧协议
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数/类 |
+|------|-------------|
+| `packages/core/src/agent/agent-session.ts` | `AgentSession` 主类 |
+| `packages/core/src/agent/event-translator.ts` | 事件格式转换 |
+| `packages/core/src/agent/content-utils.ts` | 内容类型工具 |
+| `packages/core/src/agent/types.ts` | Agent 协议类型定义 |
+
+**Qwen Code 现状**：`packages/core/src/agents/` 存在但结构不同，无 AsyncIterable 协议、无事件回放、无流管理。
+
+**实现成本评估**：
+- 涉及文件：~6 个（新建协议层 + 适配现有 Agent 系统）
+- 新增代码：~400 行
+- 开发周期：~3 天（1 人）
+- 难点：与现有 Arena/Agent Team 系统的兼容
+
+---
+
+<a id="item-46"></a>
+
+### 46. Session Browser 会话浏览器（P1）
+
+**问题**：Qwen Code 的会话恢复依赖 `--resume` 命令行参数或 `/restore` 命令，需要用户记住会话 ID。无法在 TUI 内交互式浏览和搜索历史会话。
+
+**Gemini CLI 的解决方案**：完整的 Session Browser 组件系列：
+
+| 组件 | 功能 |
+|------|------|
+| `SessionBrowserNav` | 主导航组件（列表 + 键盘导航） |
+| `SessionBrowserSearchNav` | 搜索过滤（模糊匹配） |
+| `SessionListHeader` | 会话列表标题栏 |
+| `SessionBrowserLoading` | 加载状态 |
+| `SessionBrowserError` | 错误状态 |
+| `SessionBrowserEmpty` | 空状态 |
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 行数 |
+|------|:----:|
+| `packages/cli/src/ui/components/SessionBrowser/SessionBrowserNav.tsx` | ~120 |
+| `packages/cli/src/ui/components/SessionBrowser/SessionBrowserSearchNav.tsx` | ~80 |
+| `packages/cli/src/ui/components/SessionBrowser/SessionListHeader.tsx` | ~50 |
+
+**Qwen Code 现状**：仅有 `--resume`、`/restore`、`/resume` 命令行方式。无交互式会话浏览。
+
+**实现成本评估**：
+- 涉及文件：~6 个（新建组件 + 集成到命令系统）
+- 新增代码：~400 行
+- 开发周期：~2 天（1 人）
+- 难点：会话列表渲染性能（如果会话数很多）
+
+---
+
+<a id="item-47"></a>
+
+### 47. A2A Server 服务端包（P2）
+
+**问题**：item-37 已覆盖 A2A 客户端协议，但没有服务端实现——Agent 只能**调用**远程 Agent，不能**被调用**。
+
+**Gemini CLI 的解决方案**：独立的 `packages/a2a-server/` 包（33 文件 9,044 行），提供：
+- HTTP 应用服务器接受远程 Agent 请求
+- Agent 执行器管理远程任务生命周期
+- 超时管理（30 分钟默认）
+- 与 A2A 客户端配套形成双向 Agent 通信
+
+**Gemini CLI 源码索引**：`packages/a2a-server/src/` 目录
+
+**Qwen Code 现状**：无 A2A 支持（客户端和服务端均无）。
+
+**实现成本评估**：
+- 新增代码：~1000+ 行
+- 开发周期：~5 天（1 人）
+- 前置依赖：需先实现 Agent Session 协议层（item-45）
+
+---
+
+<a id="item-48"></a>
+
+### 48. DevTools Inspector 调试面板（P2）
+
+**问题**：Agent 在运行时的 API 调用、工具执行、错误日志无法实时观察。出问题时只能看最终输出，无法追溯过程。
+
+**Gemini CLI 的解决方案**：`packages/devtools/` 提供 Web 端实时调试面板：
+- WebSocket 服务器（端口 25417）
+- 网络日志（API 请求/响应）实时流式推送
+- 控制台日志收集和回放
+- 多 CLI 实例同时连接支持
+- 日志大小限制防止内存泄漏
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键函数 |
+|------|---------|
+| `packages/devtools/src/devtools-viewer.ts` | HTTP 服务器 + WebSocket 推送 |
+
+**Qwen Code 现状**：无调试面板。只有 `--verbose` 命令行日志。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~400 行
+- 开发周期：~2 天（1 人）
+
+---
+
+<a id="item-49"></a>
+
+### 49. MCP Resource Registry 资源注册表（P2）
+
+**问题**：MCP 服务器除了提供 tools 外，还可以暴露 resources（文档、数据库、文件等），但 Qwen Code 只消费 tools，忽略了 resources。
+
+**Gemini CLI 的解决方案**：`ResourceRegistry` 中央注册表：
+- 按 URI 查找资源（格式：`server-name/resource-uri`）
+- 按服务器过滤资源列表
+- 发现时间戳追踪（用于缓存失效）
+- 与 MCP 服务器生命周期集成
+
+**Gemini CLI 源码索引**：
+
+| 文件 | 关键类 |
+|------|--------|
+| `packages/core/src/resources/resource-registry.ts` | `ResourceRegistry` |
+
+**Qwen Code 现状**：MCP 客户端仅消费 tools，不处理 resources。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~150 行
+- 开发周期：~0.5 天（1 人）
+
+---
+
+<a id="item-50"></a>
+
+### 50. Voice Response Formatter 语音格式化（P2）
+
+**问题**：Agent 的 Markdown 输出包含代码块、ANSI 颜色码、表格等，直接用 TTS 朗读效果极差。
+
+**Gemini CLI 的解决方案**：`responseFormatter.ts`（473 行）将 Markdown 转为语音友好文本：
+- ANSI 颜色码剥离
+- 代码块折叠为 JSON 摘要
+- Stack trace 折叠
+- Markdown 语法移除（加粗/斜体/链接/列表/引用/标题）
+- 路径缩写（保留最后 N 段）
+- 长度截断 + 溢出提示
+
+**Gemini CLI 源码索引**：`packages/core/src/voice/responseFormatter.ts`
+
+**Qwen Code 现状**：无语音/TTS 支持。
+
+**实现成本评估**：
+- 涉及文件：~2 个
+- 新增代码：~200 行（可直接参考上游实现）
+- 开发周期：~1 天（1 人）
+
+---
+
+<a id="item-51"></a>
+
+### 51. Triage 代码问题检测（P2）
+
+**问题**：Agent 缺少主动的代码质量分析能力——无法自动识别 Issue 或检测重复代码模式。
+
+**Gemini CLI 的解决方案**：两个大型 UI 组件：
+- `TriageIssues.tsx`（~700 行）——代码问题识别与展示
+- `TriageDuplicates.tsx`（~1000 行）——重复代码模式检测与高亮
+
+**Gemini CLI 源码索引**：`packages/cli/src/ui/components/triage/`
+
+**Qwen Code 现状**：无专用代码分析 UI 组件。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~800 行
+- 开发周期：~3 天（1 人）
+- 难点：需要分析引擎（MCP 或内置）
+
+---
+
+<a id="item-52"></a>
+
+### 52. CodeAssist 企业集成（P2）
+
+**问题**：Qwen Code 面向个人开发者，缺少企业级管理能力——用户分层、管理员策略、MCP 管控。
+
+**Gemini CLI 的解决方案**：`packages/core/src/code_assist/`（26 文件 9,825 行），集成 Google Cloud CodeAssist：
+- 用户分层（免费/标准/付费）
+- 管理员控制（强制 MCP 服务器、工具白名单/黑名单）
+- 客户端元数据（IDE 类型、平台、版本）
+- 隐私通知管理
+- Onboarding 流程支持
+- OAuth2 服务账户凭据
+
+**Gemini CLI 源码索引**：`packages/core/src/code_assist/` 完整目录
+
+**Qwen Code 现状**：无企业集成。使用免费 OAuth 额度模型。
+
+**实现成本评估**：
+- 新增代码：~2000+ 行
+- 开发周期：~10 天（需要后端配合）
+- 难点：需要企业管理后端服务
+
+**意义**：商业化必经之路。Google 已经建好了这套基础设施，值得在需要时参考其 API 设计。
+
+---
+
+<a id="item-53"></a>
+
+### 53. Billing/Credits 计费系统（P2）
+
+**问题**：当用户免费额度耗尽时，没有优雅的处理方式——要么硬停止、要么不限制。
+
+**Gemini CLI 的解决方案**：`packages/core/src/billing/`（3 文件 449 行）：
+- 信用类型追踪（`GOOGLE_ONE_AI`）
+- 超额策略配置：`ask`（询问用户）/ `always`（自动付费）/ `never`（硬停止）
+- 模型付费资格检查
+- UTM 追踪用于信用购买流程
+- 与 CodeAssist 分层系统集成
+
+**Gemini CLI 源码索引**：`packages/core/src/billing/`
+
+**Qwen Code 现状**：免费模型，无计费系统。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~300 行
+- 开发周期：~2 天（1 人，不含后端）
+
