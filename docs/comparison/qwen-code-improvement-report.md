@@ -75,7 +75,7 @@
 | **P1** | [自动检查点默认启用](./automatic-checkpoint-restore-deep-dive.md) — 每轮工具执行后自动创建文件快照 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-13) | 检查点默认关闭 | 小 | — |
 | **P1** | [Coordinator/Swarm 多 Agent编排](./coordinator-swarm-orchestration-deep-dive.md) — Leader/Worker 团队 + 3 种执行后端 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-14) | 仅 Arena 竞赛 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) |
 | **P1** | [Task Management 任务协同与跨进程并发调度](./task-management-deep-dive.md) — 支持 blocks/blockedBy 的任务拓扑、跨进程安全锁与 Swarm 集成 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-25) | 仅提供简易无状态 TodoWriteTool | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) |
-| **P1** | [Agent 工具细粒度访问控制](./agent-tool-access-control-deep-dive.md) — 3 层allowlist/denylist + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-15) | 全部或指定列表 | 中 | — |
+| **P1** | [Agent 工具细粒度访问控制](./agent-tool-access-control-deep-dive.md) — 3 层allowlist/denylist + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-15) | 全部或指定列表 | 中 | [PR#3064](https://github.com/QwenLM/qwen-code/pull/3064) / [PR#3066](https://github.com/QwenLM/qwen-code/pull/3066) |
 | **P1** | [InProcess 同进程多 Agent隔离](./in-process-agent-isolation-deep-dive.md) — AsyncLocalStorage 上下文隔离 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-16) | 全局状态可能泄漏 | 中 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) |
 | **P1** | [Agent 记忆持久化](./agent-memory-persistence-deep-dive.md) — user/project/local 3 级跨 session 记忆 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-17) | 无跨 session 记忆 | 中 | — |
 | **P1** | [Agent 恢复与续行](./agent-resume-continuation-deep-dive.md) — SendMessage 继续已完成代理 + transcript 重建 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-18) | 执行完即销毁 | 中 | — |
@@ -97,7 +97,7 @@
 | **P2** | [文件历史快照](./git-workflow-session-deep-dive.md) — per-file SHA256 备份，按消息粒度恢复（100 个/session） [↓](./qwen-code-improvement-report-p2-core.md#item-10) | git-level checkpoint | 中 | — |
 | **P2** | [Computer Use](./computer-use-deep-dive.md) — macOS 截图 + 鼠标/键盘 + 剪贴板，通过 MCP 桥接 [↓](./qwen-code-improvement-report-p2-core.md#item-6) | 缺失 | 大 | — |
 | **P2** | [Deep Link](./deep-link-protocol-deep-dive.md) — `claude-cli://` 一键从浏览器/IDE 启动 Agent + 预填充 prompt [↓](./qwen-code-improvement-report-p2-core.md#item-11) | 缺失 | 中 | — |
-| **P2** | [`/context` 非交互输出](./context-usage-noninteractive-deep-dive.md) — 将上下文诊断暴露给脚本、CI 与外部控制器 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-20) | 仅交互式 | 小 | [PR#2916](https://github.com/QwenLM/qwen-code/pull/2916) |
+| **P2** | [`/context` 非交互输出](./context-usage-noninteractive-deep-dive.md) — 将上下文诊断暴露给脚本、CI 与外部控制器 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-20) | 仅交互式 | 小 | [PR#2916](https://github.com/QwenLM/qwen-code/pull/2916) / [PR#3042](https://github.com/QwenLM/qwen-code/pull/3042) |
 | **P1** | [Team Memory](./team-memory-deep-dive.md) — 团队共享项目知识 + 29 条 gitleaks 密钥扫描 + ETag 同步 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-10) | 缺失 | 大 | — |
 | **P2** | [Plan 模式 Interview](./plan-mode-interview-deep-dive.md) — 先澄清需求再形成计划，分离访谈/规划/执行阶段 [↓](./qwen-code-improvement-report-p2-core.md#item-12) | 无 interview 阶段 | 中 | — |
 | **P2** | [BriefTool 异步用户消息](./brieftool-async-user-messages-deep-dive.md) — Agent 主动发消息/附件给用户，不阻塞当前工具执行 [↓](./qwen-code-improvement-report-p2-core.md#item-13) | 缺失 | 中 | — |
@@ -137,7 +137,7 @@
 | **P2** | /doctor 诊断工具 — 系统环境检查（git/node/shell/权限/代理）[↓](./qwen-code-improvement-report-p2-tools-ui.md#item-8) | 缺失 | 小 | — |
 | **P2** | 结构化 Diff 渲染 — Rust NAPI 快速着色 + 行号 gutter + 语法高亮 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-9) | 基础 inline diff | 中 | — |
 | **P2** | Slash Command 命名空间治理 — source namespace + reserved names + 来源透明 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-10) | 后者覆盖前者 | 中 | — |
-| **P2** | /plan 计划模式 — Agent 只分析不动手 + 用户确认后执行 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-11) | 无计划模式 | 小 | [PR#2921](https://github.com/QwenLM/qwen-code/pull/2921) ✓ |
+| **P2** | /plan 计划模式 — Agent 只分析不动手 + 用户确认后执行 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-11) | 无计划模式 | 小 | [PR#2921](https://github.com/QwenLM/qwen-code/pull/2921) ✓ / [PR#3008](https://github.com/QwenLM/qwen-code/pull/3008) ✓ |
 | **P2** | /rename 重命名会话 — 手动修改会话标题 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-12) | AI 自动标题不可改 | 小 | — |
 | **P2** | /upgrade 版本升级 — changelog 展示 + 一键更新 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-13) | 手动 npm update | 小 | — |
 | **P2** | Plugin 系统增强 — 聚合容器（commands+skills+hooks+MCP）+ 一键安装/卸载 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-14) | extension 分散管理 | 中 | — |
@@ -147,7 +147,7 @@
 | **P2** | 消息类型丰富化 — 11 种 → 30+ 种 SDK 消息类型 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-18) | ~11 种 | 中 | — |
 | **P2** | /clear 多模式增强 — 清屏/清对话/完全重置三种力度 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-19) | 仅清屏 | 小 | [PR#2915](https://github.com/QwenLM/qwen-code/pull/2915) |
 | **P2** | /effort — 设置模型 effort 级别（○ 低 / ◐ 中 / ● 高）[↓](./qwen-code-improvement-report-p2-tools-commands.md#item-6) | 缺失 | 小 | — |
-| **P2** | Status Line 自定义 — shell 脚本在状态栏展示自定义信息 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-7) | 缺失 | 小 | [PR#2923](https://github.com/QwenLM/qwen-code/pull/2923) |
+| **P2** | Status Line 自定义 — shell 脚本在状态栏展示自定义信息 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-7) | 缺失 | 小 | [PR#2923](https://github.com/QwenLM/qwen-code/pull/2923) ✓ |
 | **P2** | Query TransitionReason 枚举 — 6 种查询转换原因显式标记（tool_result/max_tokens/compaction/retry/stop_hook/budget） [↓](./qwen-code-improvement-report-p2-stability.md#item-36) | 隐式 if-else | 小 | — |
 | **P2** | 工具并发安全分类 — 每个工具标记 `concurrencySafe`，并发分区后批量执行 [↓](./qwen-code-improvement-report-p2-stability.md#item-37) | 仅 Agent 工具并行 | 中 | — |
 | **P2** | 工具执行进度消息 — 长时间工具（>3s）发射进度事件，UI 显示"正在安装依赖 42/100..." [↓](./qwen-code-improvement-report-p2-stability.md#item-38) | 仅 Spinner | 小 | — |
@@ -421,11 +421,17 @@
 - 同步 README.md 数据：248 项、25 PR、133 篇 Deep-Dive
 - 重写 5 个 Agent 文档系列（Copilot CLI / Codex CLI / Aider / Goose / Kimi CLI）为开发者视角
 
+### 2026-04-09（晚间更新）
+
+- 标记已合并：[#2923](https://github.com/QwenLM/qwen-code/pull/2923) ✓（Status Line 自定义）、[#3008](https://github.com/QwenLM/qwen-code/pull/3008) ✓（/plan 退出恢复模式）
+- 新增 PR 追踪：[#3064](https://github.com/QwenLM/qwen-code/pull/3064)（disallowedTools Agent 工具黑名单）、[#3066](https://github.com/QwenLM/qwen-code/pull/3066)（approval mode 传播到 sub-agent）、[#3042](https://github.com/QwenLM/qwen-code/pull/3042)（/context detail 子命令）
+- 总追踪 PR：27 个（9 已合并 ✓）
+
 ### 2026-04-08（晚间更新）
 
 - 标记已合并：[#2897](https://github.com/QwenLM/qwen-code/pull/2897) ✓（Thinking 块保留）、[#2898](https://github.com/QwenLM/qwen-code/pull/2898) ✓（输出 Token 升级）、[#2921](https://github.com/QwenLM/qwen-code/pull/2921) ✓（/plan 计划模式）
 - 新增 PR 追踪：[#3013](https://github.com/QwenLM/qwen-code/pull/3013)（**SlicingMaxSizedBox 防闪烁——P0 backport 项！**）、[#3006](https://github.com/QwenLM/qwen-code/pull/3006)（microcompaction 空闲压缩）、[#2990](https://github.com/QwenLM/qwen-code/pull/2990)（prompt hook——LLM 推理决策 Hook，Claude Code 独有能力的 backport）
-- 总追踪 PR：25 个（7 已合并 ✓）
+- 总追踪 PR：27 个（9 已合并 ✓）
 
 ### 2026-04-08
 
