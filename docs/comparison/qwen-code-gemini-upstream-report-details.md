@@ -1557,3 +1557,47 @@ const MemoizedAppHeader = memo(AppHeader);
 - 新增代码：~300 行
 - 开发周期：~2 天（1 人，不含后端）
 
+---
+
+<a id="item-54"></a>
+
+### 54. 流式高度稳定化 — useStableHeight（P0）
+
+**问题**：即使 SlicingMaxSizedBox（item-1）解决了大数据量的闪烁，流式输出期间仍然存在第二类闪烁——`availableTerminalHeight` 因 footer 重测量、工具数变化、tab bar 切换而波动，导致显示行数跳动。
+
+**来源**：[QwenLM/qwen-code PR#3013](https://github.com/QwenLM/qwen-code/pull/3013) Phase 2（社区贡献，chiga0）。
+
+**解决方案**：`useStableHeight` Hook，在流式输出期间缓存高度值：
+
+| 场景 | 策略 |
+|------|------|
+| 高度增加 | 立即接受（更多空间不会跳动） |
+| 小幅减少（<5 行）+ 流式中 | 吸收——MaxSizedBox 视觉裁剪溢出 |
+| 大幅减少（≥5 行）或缓存过期（>2s） | 接受为真实布局变化 |
+| 空闲状态 | 立即同步 |
+
+**同时新增**：`MIN_TOOL_OUTPUT_HEIGHT = 8` 防止工具数变化时每个工具高度剧烈跳动（如 2→3 工具时从 15→9 行）。
+
+**源码索引**（PR#3013）：
+
+| 文件 | 关键函数 |
+|------|---------|
+| `packages/cli/src/ui/hooks/useStableHeight.ts` | 65 行，高度缓存 + 阈值过滤 |
+| `packages/cli/src/ui/components/messages/ToolGroupMessage.tsx` | `MIN_TOOL_OUTPUT_HEIGHT` 下限 |
+| `packages/cli/src/ui/AppContainer.tsx` | Shell PTY 使用原始高度（不稳定化） |
+
+**Qwen Code 现状**：无高度稳定化。`availableTerminalHeight` 直接传入组件。
+
+**Review 状态**：PR#3013 Phase 2 已实现，但 Review 指出 `useStableHeight` 在 render 中 mutate ref 是 React 反模式（StrictMode 下 `Date.now()` 会被调用两次），建议改用 `useMemo` 或 `useEffect` + state。
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~80 行
+- 开发周期：~0.5 天（1 人）
+
+**与 item-1 的关系**：item-1 解决"数据量大导致的闪烁"（O(n)→O(15)），item-54 解决"高度波动导致的闪烁"。两者配合才能完全消除闪烁。
+
+**改进前后对比**：
+- **改进前**：流式输出时 footer 重测量 → 高度波动 → 行数跳动 → 闪烁
+- **改进后**：useStableHeight 吸收小幅波动 → 高度稳定 → 无跳动
+

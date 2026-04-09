@@ -1,6 +1,6 @@
 # Qwen Code 上游 backport 建议报告（Gemini CLI 源码对比）
 
-> Qwen Code 于 2025-10-23 从 Gemini CLI v0.8.2 fork。此后 Gemini CLI 独立演进了 **28 个大版本**（v0.9.0 → v0.36.0）、**2041 个 commit**——大量新功能和优化未被 backport。本报告系统梳理 **52 项**可 backport 的改进点，并附 Qwen Code 独有优势的反向对比。
+> Qwen Code 于 2025-10-23 从 Gemini CLI v0.8.2 fork。此后 Gemini CLI 独立演进了 **28 个大版本**（v0.9.0 → v0.36.0）、**2041 个 commit**——大量新功能和优化未被 backport。本报告系统梳理 **53 项**可 backport 的改进点，并附 Qwen Code 独有优势的反向对比。
 >
 > **相关报告**：
 > - [Claude Code 改进建议报告（248 项）](./qwen-code-improvement-report.md)——行业领先者有什么
@@ -64,19 +64,20 @@ backport 不会丢失 Qwen Code 独立发展的优势：
 | **参考实现重写** | Edit 模糊匹配 | 中——需适配 Qwen Code 的 edit 逻辑 |
 | **大型 backport** | OS 级 sandbox | 高——跨平台+安全边界 |
 
-## 二、backport 建议矩阵（52 项，按优先级排序）
+## 二、backport 建议矩阵（53 项，按优先级排序）
 
 | 优先级 | 改进点 | Qwen Code 现状 | 难度 | 上游 PR |
 |:------:|--------|----------------|:----:|---------|
 | **P0** | [渲染前数据裁剪（SlicingMaxSizedBox）](./qwen-code-gemini-upstream-report-details.md#item-1) — 渲染前 `.slice()` 到 maxLines，避免 Ink 布局全量内容 | 渲染后视觉裁剪（布局全部数据） | 小 | [#21416](https://github.com/google-gemini/gemini-cli/pull/21416) / [QwenPR#3013](https://github.com/QwenLM/qwen-code/pull/3013) |
-| **P0** | [工具输出硬上限常量](./qwen-code-gemini-upstream-report-details.md#item-2) — `ACTIVE_SHELL_MAX_LINES=15` 等 4 个常量 + `calculateShellMaxLines()` | 无硬上限（=终端高度） | 小 | [#20378](https://github.com/google-gemini/gemini-cli/pull/20378) |
+| **P0** | [工具输出硬上限常量](./qwen-code-gemini-upstream-report-details.md#item-2) — `ACTIVE_SHELL_MAX_LINES=15` 等 4 个常量 + `calculateShellMaxLines()` | 无硬上限（=终端高度） | 小 | [#20378](https://github.com/google-gemini/gemini-cli/pull/20378) / [QwenPR#3013](https://github.com/QwenLM/qwen-code/pull/3013) |
 | **P0** | [Shell buffer 摊销截断](./qwen-code-gemini-upstream-report-details.md#item-3) — 10MB 上限 + 1MB 摊销截断 + UTF-16 surrogate 保护 | 无 buffer 上限 | 小 | [#21416](https://github.com/google-gemini/gemini-cli/pull/21416) |
+| **P0** | [流式高度稳定化（useStableHeight）](./qwen-code-gemini-upstream-report-details.md#item-54) — 流式输出期间吸收 <5 行高度波动，防止行数跳动 | 无高度稳定 | 小 | [QwenPR#3013](https://github.com/QwenLM/qwen-code/pull/3013) |
 | **P0** | [环境变量净化](./qwen-code-gemini-upstream-report-details.md#item-19) — 25+ 模式过滤 secrets/API keys/credentials | 无净化，secrets 泄漏到 shell | 中 | — |
-| **P0** | [危险命令黑名单](./qwen-code-gemini-upstream-report-details.md#item-20) — `rm -rf`/`find -exec`/`git -c` 等深度验证 | 仅 AST 只读检测 | 中 | — |
+| **P0** | [危险命令黑名单](./qwen-code-gemini-upstream-report-details.md#item-20) — `rm -rf`/`find -exec`/`git -c` 等深度验证 | 仅 AST 只读检测 | 中 | 提示层已有 [QwenPR#2889](https://github.com/QwenLM/qwen-code/pull/2889) ✓ |
 | **P1** | [LRU 文本处理缓存](./qwen-code-gemini-upstream-report-details.md#item-4) — 字符串宽度 / codePoints / 高亮 token 三级缓存 | 无缓存，每次击键重新计算 | 小 | — |
 | **P1** | [紧凑工具视图（DenseToolMessage）](./qwen-code-gemini-upstream-report-details.md#item-5) — diff 折叠 + 15 行上限 + 紧凑布局 | 缺失 | 中 | [#20974](https://github.com/google-gemini/gemini-cli/pull/20974) |
 | **P1** | [组件 memo 化](./qwen-code-gemini-upstream-report-details.md#item-6) — `HistoryItemDisplay` / `AppHeader` 等高频组件 `React.memo()` | 未 memo 化 | 小 | — |
-| **P1** | [字符上限降级](./qwen-code-gemini-upstream-report-details.md#item-7) — `MAXIMUM_RESULT_DISPLAY_CHARACTERS` 从 1MB 降到 20KB | 1MB（Gemini 的 50 倍） | 小 | [#21416](https://github.com/google-gemini/gemini-cli/pull/21416) |
+| **P1** | [字符上限降级](./qwen-code-gemini-upstream-report-details.md#item-7) — `MAXIMUM_RESULT_DISPLAY_CHARACTERS` 从 1MB 降到 20KB | 1MB（Gemini 的 50 倍） | 小 | [#21416](https://github.com/google-gemini/gemini-cli/pull/21416) / [QwenPR#3013](https://github.com/QwenLM/qwen-code/pull/3013) |
 | **P1** | [Edit 模糊匹配（Levenshtein）](./qwen-code-gemini-upstream-report-details.md#item-21) — 10% 容差 + 空白低惩罚 + LLM 修复回退 | 仅精确匹配 | 中 | — |
 | **P1** | [省略占位符检测](./qwen-code-gemini-upstream-report-details.md#item-22) — 拦截 "rest of methods..." 等不完整内容 | 无检测 | 小 | — |
 | **P1** | [JIT 上下文发现](./qwen-code-gemini-upstream-report-details.md#item-23) — 读/写/编辑文件时自动附加子目录上下文 | 缺失 | 中 | — |
@@ -125,7 +126,7 @@ backport 不会丢失 Qwen Code 独立发展的优势：
 
 | 优先级 | 数量 | 核心主题 |
 |--------|------|---------|
-| P0 | 5 项 | 防闪烁（3）+ 安全加固（2） |
+| P0 | 6 项 | 防闪烁（3）+ 高度稳定（1）+ 安全加固（2） |
 | P1 | 14 项 | 渲染性能（4）+ 工具智能化（4）+ 上下文/会话管理（3）+ **模型路由 + Agent 协议 + 会话浏览器** |
 | P2 | 25 项 | UI 组件（5）+ 安全（3）+ 工具增强（4）+ 调度/协议（3）+ UX（3）+ **A2A Server + DevTools + 资源注册 + 语音 + Triage + 企业集成 + 计费** |
 | P3 | 8 项 | 底层优化（3）+ 终端特性（3）+ 安全框架（2） |
@@ -223,7 +224,8 @@ fork 后 Gemini CLI 新增了大量 Qwen Code 中完全不存在的模块：
 
 ### 2026-04-09
 
-- 新增 10 项 backport 建议（#44-#53），总项数 42→52
+- 新增 11 项 backport 建议（#44-#54），总项数 42→53
+- 根据 [PR#3013](https://github.com/QwenLM/qwen-code/pull/3013) 的 3 阶段实现，关联 item-1/#2/#7 的 QwenPR 追踪，新增 item-54（useStableHeight）
 - 新增第五节"模块级架构差异"——Gemini 独有 10 模块 vs Qwen Code 独有 8 模块
 - 扩展 Qwen Code 独有优势（+5 项：多渠道/Web UI/Java SDK/Zed/i18n）
 - 扩展实施路线图（30 分钟→1 季度阶段规划）

@@ -10,7 +10,7 @@
 |------|------|
 | **[Deep-Dive 索引（133 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
 | **[Qwen Code 改进报告（248 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 25 个社区 PR 追踪 |
-| **[Gemini CLI backport（52 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 + 模块级架构对比 |
+| **[Gemini CLI backport（53 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 + 模块级架构对比 |
 | **[/review 改进建议](./docs/comparison/qwen-code-review-improvements.md)** | 审查功能 4 方对比 + 10 项改进 |
 | **[OpenCode 对标改进（10 项）](./docs/comparison/qwen-code-opencode-improvements.md)** | 文件时间锁 + Session Fork + SQLite 持久化 |
 | **[功能对比矩阵](./docs/comparison/features.md)** | 14 Agent × 多维度横向对比 |
@@ -77,7 +77,7 @@
 | 报告 | 说明 |
 |------|------|
 | [Claude Code 对比（248 项）](./docs/comparison/qwen-code-improvement-report.md) | 改进建议 + 25 个社区 PR 追踪（7 已合并） |
-| [Gemini CLI backport（52 项）](./docs/comparison/qwen-code-gemini-upstream-report.md) | 上游可 backport 改进 + 模块级架构对比 |
+| [Gemini CLI backport（53 项）](./docs/comparison/qwen-code-gemini-upstream-report.md) | 上游可 backport 改进 + 模块级架构对比 |
 | [/review 改进建议](./docs/comparison/qwen-code-review-improvements.md) | 确定性分析 + Autofix + 4 方竞品对比 |
 | [工具输出限高](./docs/comparison/tool-output-height-limiting-deep-dive.md) | Gemini CLI SlicingMaxSizedBox vs Qwen Code |
 | [OpenCode 对标改进（10 项）](./docs/comparison/qwen-code-opencode-improvements.md) | 文件时间锁 + Session Fork + SQLite |
