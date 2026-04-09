@@ -77,7 +77,30 @@ Claude Code 除本地 `/review`（30 行 prompt）外，还有 `/ultrareview`—
 
 源码: `commands/review/reviewRemote.ts`（316 行）
 
-### 0.3 为什么 GitHub PR 里的 Copilot 体感更好
+### 0.3 gstack /review 的结构化审查方法论
+
+[gstack](https://github.com/garrytan/gstack)（Y Combinator CEO Garry Tan 的开源工作流）提供了一个 1,467 行的 `/review` Skill，其审查维度设计值得参考：
+
+**审查分类**（不同于 Copilot 的 8 维度通用审查）：
+
+| 分类 | 说明 | Qwen Code /review 覆盖 |
+|------|------|:----------------------:|
+| SQL 安全 | 注入、未参数化查询、权限过宽 | ⚠️ 部分（Agent 1 安全） |
+| LLM 信任边界 | 用户输入直传 LLM、prompt 注入 | ❌ 未覆盖 |
+| 条件副作用 | 条件分支中的不可逆操作 | ⚠️ 隐式覆盖 |
+| 结构性问题 | CI 通过但 prod 会挂的问题 | ✅ Agent 4 无方向审计 |
+
+**gstack 独特设计**：
+- **Proactive 触发**：Skill 描述中内置 `"Proactively suggest when the user is about to merge or land code changes"`——Agent 主动建议审查而非被动等待命令
+- **与 `/qa` 联动**：审查后可直接触发 `/qa` 用真实浏览器验证前端变更
+- **与 `/ship` 联动**：review → test → bump → push → PR 一键流水线
+
+**对 Qwen Code 的启发**：
+1. 增加 **LLM 信任边界** 审查维度——检测 prompt injection 和用户输入直传 LLM 的安全风险
+2. 增加 **Proactive 触发**——当检测到用户即将 push/merge 时主动建议审查
+3. 考虑 `/review` → `/qa` 联动——审查后自动验证前端变更
+
+### 0.4 为什么 GitHub PR 里的 Copilot 体感更好
 
 Copilot Code Review 效果好，核心不只是模型能力，而是**任务约束 + 平台优势 + 确定性工具 + 高 precision 策略**四者叠加。
 
