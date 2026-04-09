@@ -453,7 +453,7 @@
 
 ### 2026-04-07
 
-- 新增 PR 追踪：[#2936](https://github.com/QwenLM/qwen-code/pull/2936)（Fork Subagent）、[#2932](https://github.com/QwenLM/qwen-code/pull/2932)（/review 增强）
+- 新增 PR 追踪：[#2936](https://github.com/QwenLM/qwen-code/pull/2936)（Fork Subagent）、[#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓（/review 增强——实现了审查报告 10 项建议中的 9 项）
 - 标记已合并：[#2854](https://github.com/QwenLM/qwen-code/pull/2854) ✓（Mid-Turn Queue Drain）、[#2889](https://github.com/QwenLM/qwen-code/pull/2889) ✓（危险操作指导）
 
 ### 2026-04-06
