@@ -1,156 +1,264 @@
-# 3. 技术架构
+# 3. Kimi CLI 技术架构——开发者参考
 
-## 核心架构
+> 本文分析 Kimi CLI 的核心架构：KimiSoul 代理循环、kosong 多提供商 LLM 抽象、Wire 事件流协议、子代理系统、YAML 代理定义、插件/Skill 双生态。这些模式展示了如何用 Python 生态复现 Claude Code 的架构理念，并在多客户端和声明式配置上做出超越。
+>
+> **Qwen Code 对标**：Wire 事件流（多客户端架构）、kosong LLM 抽象（多提供商策略）、YAML 代理定义（声明式 vs 硬编码）、插件子进程隔离
+
+## 为什么 Python 重写值得研究
+
+Kimi CLI 证明了 Claude Code 的核心架构模式可以跨语言复现。但更重要的是，Python 生态带来了 Claude Code 的 TypeScript/Bun 栈难以实现的能力：
+
+| 能力 | Python 生态优势 | TypeScript 对应 |
+|------|----------------|----------------|
+| 类型安全配置 | Pydantic 2（运行时校验 + 序列化） | Zod（仅校验，不含序列化） |
+| 模板系统 | Jinja2（成熟的模板引擎） | 字符串拼接或 Handlebars |
+| Web 服务 | FastAPI（自动 OpenAPI 文档） | Express/Fastify |
+| 内容提取 | trafilatura + lxml | 需要额外依赖 |
+| 包管理 | uv（极快的 Python 包管理） | npm/pnpm |
+
+代价是启动速度（Python 解释器 vs Bun compile）和单文件分发（PyInstaller 二进制 > 200MB vs Bun 单文件 ~227MB 但启动更快）。
+
+---
+
+## 1. 技术栈
+
+| 组件 | 技术选型 | Claude Code 对应 | 开发者启示 |
+|------|---------|-----------------|-----------|
+| **语言** | Python 3.12+（3.14 推荐） | TypeScript (Bun) | Python 的 asyncio 足以支撑代理循环 |
+| **CLI 框架** | Typer（懒加载子命令） | 自建 CLI 解析 | Typer 的类型推导减少样板代码 |
+| **TUI** | prompt-toolkit + Rich | Ink (React for CLI) | prompt-toolkit 更成熟，Rich 渲染质量极高 |
+| **Web** | FastAPI + Uvicorn | 无内置 | 内置 Web UI 是差异化优势 |
+| **LLM 抽象** | kosong（自研多提供商） | 直接调用 Anthropic API | 自研抽象层是多提供商必要投资 |
+| **MCP SDK** | fastmcp（stdio + HTTP） | 官方 MCP SDK | 两者功能等价 |
+| **ACP SDK** | agent-client-protocol 0.8.0 | 无 | ACP 是 IDE 集成的新标准 |
+| **配置** | Pydantic 2 + TOML | 5 层 JSON settings | TOML 对人类更友好 |
+| **模板** | Jinja2 | 字符串拼接 | Jinja2 提示词模板更可维护 |
+| **搜索后端** | ripgrepy | ripgrep (直接调用) | 两者最终都调用 rg 二进制 |
+| **打包** | uv + PyInstaller | Bun compile → Rust | uv 极快，PyInstaller 启动慢但可接受 |
+| **代码质量** | ruff + pyright + ty | ESLint + TypeScript | ruff 是 Python 生态中最快的 linter |
+
+---
+
+## 2. 核心代理循环（KimiSoul）
 
 ```
-CLI 入口 (__main__.py → Typer)
+KimiSoul.step() [单步执行]
     │
-    ▼
-KimiCLI.create() [工厂模式]
-    ├── 配置加载 (Pydantic 2 + TOML, 环境变量覆盖)
-    ├── OAuth 认证 (浏览器重定向 / keyring / 文件)
-    ├── 插件系统初始化 (plugin.json → 子进程工具)
-    └── KimiSoul 代理引擎 (kosong LLM 抽象)
+    ├── 动态提示注入 (dynamic_injection.py)
+    │     └── plan_mode / yolo_mode / 通知 → 系统消息
     │
-    ▼
-执行模式选择
-    ├── run_shell()      → TUI 交互模式 (prompt-toolkit + Rich)
-    ├── run_print()      → 非交互模式 (脚本/CI)
-    ├── run_acp()        → IDE 集成 (ACP JSON-RPC over stdio)
-    └── run_wire_stdio() → Wire 事件流 (自定义 UI)
+    ├── LLM 调用 (kosong.step)
+    │     ├── 请求构建：系统提示(Jinja2) + 历史消息 + 工具 Schema
+    │     ├── 多提供商路由：Kimi / OpenAI / Anthropic / Gemini / Vertex
+    │     └── 流式响应接收
     │
-    ▼
-代理循环 (KimiSoul)
-    → 动态提示注入 (plan_mode, yolo_mode, 通知)
-    → LLM 调用 (kosong.step → 多提供商)
-    → 工具调用解析
-    → 审批检查 (YOLO / auto-approve / 用户确认)
-    → 工具执行 (内置 + MCP + 插件)
-    → 上下文管理 (自动压缩 @ 85%)
-    → Wire 事件广播 (TurnBegin → StepBegin → ToolCall → ToolResult → TurnEnd)
-    → 子代理委派 (前台/后台，结果摘要)
-    → 重复直到完成 (max_steps_per_turn=100)
+    ├── 工具调用解析
+    │     └── 从 LLM 响应中提取工具调用
+    │
+    ├── 审批检查 (approval.py)
+    │     ├── YOLO 模式 → 自动通过
+    │     ├── 会话级自动审批 → 检查 approve_for_session 集合
+    │     └── 逐次确认 → 通过 Wire 协议下发 ApprovalRequest
+    │
+    ├── 工具执行 (内置 17+ 工具 / MCP / 插件)
+    │     └── 结果写入上下文
+    │
+    ├── 上下文管理 (compaction.py)
+    │     └── 使用率 ≥ 85% → LLM 摘要压缩
+    │
+    ├── Wire 事件广播
+    │     └── TurnBegin → StepBegin → ToolCall → ToolResult → TurnEnd
+    │
+    └── 循环控制
+          ├── max_steps_per_turn = 100
+          ├── max_retries_per_step = 3
+          └── end_turn 信号 → 结束
 ```
 
-## 技术栈
-- **语言**：Python 3.12+（3.14 推荐）
-- **CLI 框架**：Typer（懒加载子命令）
-- **TUI**：prompt-toolkit + Rich（终端渲染）
-- **Web 框架**：FastAPI + Uvicorn（WebSocket + REST）
-- **LLM 抽象**：kosong（自研，支持多提供商统一接口）
-- **MCP SDK**：fastmcp（stdio + HTTP）
-- **ACP SDK**：agent-client-protocol 0.8.0
-- **类型安全**：Pydantic 2（配置 + 数据模型）
-- **模板引擎**：Jinja2（系统提示模板）
-- **内容提取**：trafilatura + lxml（网页解析）
-- **搜索**：ripgrepy（Grep 工具后端）
-- **打包**：uv（包管理 + 构建）、PyInstaller（独立二进制）
-- **代码质量**：ruff（lint + format）、pyright + ty（类型检查）
+### 与 Claude Code QueryEngine 的对比
 
-## 多代理系统
+| 维度 | Kimi CLI (KimiSoul) | Claude Code (QueryEngine) |
+|------|---------------------|---------------------------|
+| 工具执行 | 解析完成后顺序执行 | StreamingToolExecutor（流式解析边执行） |
+| 上下文压缩 | 单层 LLM 摘要 @ 85% | 5 层渐进压缩（cache_edits → 全量 compact） |
+| 提示注入 | dynamic_injection.py 统一入口 | buildSystemPrompt() 硬编码 |
+| 步数限制 | max_steps_per_turn=100 | 无硬限制（依赖 token 用量） |
+| 事件广播 | Wire 协议统一 | React 状态 + Bridge（后追加） |
+| 模型回退 | 无 | 模型 fallback + 529 降级 |
+
+**Qwen Code 对标**：Kimi CLI 的 `dynamic_injection.py` 是一个值得借鉴的模式——所有动态提示注入（plan 状态、yolo 状态、后台任务通知等）通过单一入口管理，避免散落在代码各处。Claude Code 的硬编码注入更高效但更难维护。
+
+---
+
+## 3. kosong — 多提供商 LLM 抽象
+
+kosong 是 Kimi CLI 的自研 LLM 抽象层，作为 monorepo 中的独立包。
+
+### 支持的提供商
+
+| 提供商 | API 模式 | 特殊处理 |
+|--------|---------|---------|
+| **Kimi** | Moonshot API | 默认，集成搜索/抓取服务 |
+| **OpenAI** | Legacy + Responses | 两种 API 模式并存 |
+| **Anthropic** | Claude API | session_id 作为 user_id |
+| **Google Gemini** | GenAI API | 标准适配 |
+| **Vertex AI** | Vertex AI API | 企业级，独立 provider type |
+
+### 模型能力标记
+
+```python
+# 源码: config.py (模型配置)
+capabilities = ["image_in", "video_in", "thinking", "always_thinking"]
+```
+
+- `image_in` / `video_in`：多模态输入支持
+- `thinking`：可选深度推理模式
+- `always_thinking`：始终启用深度推理
+
+**Qwen Code 对标**：kosong 的能力标记系统让同一套代理逻辑适配不同模型特性——如果模型不支持 `thinking`，代理循环自动跳过思维模式相关逻辑。Qwen Code 如果要支持非 Qwen 模型，需要类似的能力声明机制。
+
+### 环境变量覆盖
+
+```bash
+KIMI_BASE_URL, KIMI_API_KEY, KIMI_MODEL_NAME, KIMI_MODEL_MAX_CONTEXT_SIZE
+OPENAI_BASE_URL, OPENAI_API_KEY
+ANTHROPIC_API_KEY
+# 每个提供商都有对应的环境变量
+```
+
+---
+
+## 4. Wire 事件流协议（v1.6）
+
+Wire 协议是 Kimi CLI 多客户端架构的核心抽象——所有代理事件通过统一的事件流广播，任何客户端只需实现事件消费者即可。
+
+### 事件类型（30+）
+
+| 分类 | 事件 | 说明 |
+|------|------|------|
+| **控制流** | TurnBegin, TurnEnd, StepBegin, StepInterrupted, SteerInput | 代理回合和步骤生命周期 |
+| **内容** | ContentPart | 文本/思考/图片/音频/视频 |
+| **工具** | ToolCall, ToolCallPart, ToolResult | 工具调用和结果 |
+| **状态** | StatusUpdate | 上下文使用率、token、plan_mode、MCP |
+| **交互** | ApprovalRequest/Response, QuestionRequest/Response | 审批和结构化问题 |
+| **压缩/MCP** | CompactionBegin/End, MCPLoadingBegin/End, MCPServerSnapshot | 压缩和 MCP 状态 |
+| **子代理** | SubagentEvent | 嵌套子代理事件（含 agent_id, subagent_type） |
+| **通知** | Notification | 后台任务完成等通知 |
+
+### 多客户端架构
+
+```
+                    ┌─ TUI Shell (prompt-toolkit + Rich)
+                    │
+KimiSoul ── Wire ──├─ Web UI (FastAPI + React + WebSocket)
+  事件流            │
+                    ├─ IDE (ACP JSON-RPC over stdio)
+                    │
+                    └─ Wire stdio (自定义 UI)
+```
+
+**Qwen Code 对标**：Wire 协议的核心优势是**关注点分离**——代理逻辑不关心前端是终端、浏览器还是 IDE。Claude Code 的 Bridge 模式（WebSocket/SSE）是后来追加的，架构上不如 Wire 清晰。如果 Qwen Code 计划支持 Web UI 或 IDE 集成，从一开始就设计统一的事件流协议比事后补丁更好。
+
+### Wire JSONL 持久化
+
+会话数据以 Wire JSONL 格式存储，支持：
+- 导出/导入（`/export`、`/import` 命令）
+- 会话恢复（`/sessions` 列出并恢复）
+- 事件重放
+
+---
+
+## 5. 多代理系统
+
+### 代理类型
 
 | 代理 | 类型 | 工具权限 | 用途 |
 |------|------|---------|------|
-| **default** | 主代理 | 全部工具 + Agent + AskUserQuestion + EnterPlanMode | 默认代理，完整能力 |
-| **coder** | 子代理 | Shell, ReadFile, ReadMediaFile, Glob, Grep, WriteFile, StrReplaceFile, SearchWeb, FetchURL | 软件工程任务，读写执行 |
-| **explore** | 子代理 | Shell, ReadFile, ReadMediaFile, Glob, Grep, SearchWeb, FetchURL（只读） | 快速代码库探索，不修改文件 |
-| **plan** | 子代理 | ReadFile, ReadMediaFile, Glob, Grep, SearchWeb, FetchURL（无 Shell） | 架构规划，纯只读分析 |
-| **okabe** | 实验代理 | default + SendDMail | 含 D-Mail 时间回溯能力 |
+| **default** | 主代理 | 全部工具 + Agent + AskUserQuestion + EnterPlanMode | 完整能力 |
+| **coder** | 子代理 | Shell + 文件读写 + 搜索 + Web | 软件工程，读写执行 |
+| **explore** | 子代理 | Shell + 文件只读 + 搜索 + Web | 代码探索，不修改文件 |
+| **plan** | 子代理 | 文件只读 + 搜索 + Web（无 Shell） | 架构规划，纯分析 |
+| **okabe** | 实验代理 | default + SendDMail | D-Mail 时间回溯 |
 
-- 子代理通过 `Agent` 工具创建，指定 `subagent_type`（coder/explore/plan）
-- 每个子代理实例在会话内持久化，可通过 `agent_id` 恢复
-- 支持前台（等待结果）和后台（立即返回，自动通知）执行
-- 子代理有独立上下文，父代理只看到结果摘要
-- 支持通过 YAML 文件定义自定义代理（工具策略、系统提示、模型覆盖）
+### YAML 声明式代理定义
 
-## 工具系统
-
-| Agent | 用途 | 关键参数 |
-|------|------|---------|
-| **Agent** | 委派任务给子代理 | description, prompt, subagent_type (coder/explore/plan), model, resume, run_in_background |
-| **Shell** | 执行 bash/PowerShell 命令 | command, timeout (1-86400s), run_in_background, description |
-| **ReadFile** | 读取文件内容 | path, line_offset, n_lines |
-| **ReadMediaFile** | 读取图片/视频文件 | path |
-| **WriteFile** | 创建/覆写文件 | path, contents |
-| **StrReplaceFile** | 精确文本替换 | path, old_str, new_str |
-| **Glob** | 文件模式匹配搜索 | pattern (glob), path |
-| **Grep** | 正则内容搜索 | pattern (regex), glob, path, output_mode, context |
-| **SearchWeb** | Web 搜索（Moonshot Search） | query |
-| **FetchURL** | 抓取网页内容（Moonshot Fetch + trafilatura） | url |
-| **AskUserQuestion** | 向用户提出结构化问题 | questions (1-4), 支持 single/multi-select + 自定义文本 |
-| **SetTodoList** | 更新任务列表 | todos: [{title, status: pending/in_progress/done}] |
-| **TaskList** | 列出后台任务 | active_only (default: true) |
-| **TaskOutput** | 获取后台任务输出 | task_id, block (default: false) |
-| **TaskStop** | 停止后台任务 | task_id |
-| **EnterPlanMode** | 进入只读规划模式 | （自动触发） |
-| **ExitPlanMode** | 提交规划方案供用户选择 | options (2-3 labeled choices) |
-| **Think** | 内部推理思考 | thought（默认禁用） |
-| **SendDMail** | 时间回溯消息 | message, checkpoint_id（仅 okabe 代理） |
-
-此外，MCP 工具和插件工具在运行时动态加载。
-
-## 权限系统
-
-```
-审批模式：
-  - YOLO 模式：自动审批所有操作（--yolo / /yolo）
-  - 会话级自动审批：approve_for_session 后该操作不再询问
-  - 逐次确认：approve / reject (可附带 feedback)
-
-Shell 工具：需要用户审批，显示命令预览
-文件写入：需要用户审批，显示 diff 预览
-文件读取：自动允许
-Web 工具：自动允许
-MCP 工具：需要用户审批
+```yaml
+# 源码: agents/default/coder.yaml（示例结构）
+name: coder
+description: Software engineering subagent
+system_prompt: system.md    # Jinja2 模板
+tools:
+  - Shell
+  - ReadFile
+  - WriteFile
+  - StrReplaceFile
+  - Glob
+  - Grep
+  - SearchWeb
+  - FetchURL
 ```
 
-- 审批请求通过 Wire 协议统一下发，所有客户端（Shell/Web/ACP）共享
-- 拒绝时可附带 feedback 文本引导模型下次尝试
-- 后台子代理的审批请求通过根 UI 通道浮出
+**Qwen Code 对标**：YAML 定义 vs 硬编码是 Kimi CLI 相对于 Claude Code 的重要架构改进。用户可以在 YAML 文件中自定义代理——修改工具策略、覆盖系统提示、指定模型——无需修改 Python 代码。这对企业用户（需要定制化代理行为）尤为重要。
 
-## Wire 事件流协议（v1.6）
+### 子代理生命周期
 
 ```
-控制流事件：
-  TurnBegin          → 代理回合开始（含用户输入）
-  TurnEnd            → 代理回合结束
-  StepBegin          → LLM 步骤开始（含步骤号）
-  StepInterrupted    → 步骤被中断
-  SteerInput         → 用户发送跟进引导消息
-
-内容事件：
-  ContentPart        → 文本/思考/图片/音频/视频
-
-工具事件：
-  ToolCall           → 工具调用
-  ToolCallPart       → 工具调用流式部分
-  ToolResult         → 工具执行结果
-
-状态更新：
-  StatusUpdate       → 上下文使用率、token 统计、plan_mode、MCP 状态
-
-交互请求/响应：
-  ApprovalRequest    → 审批请求（含 source metadata, display blocks）
-  ApprovalResponse   → 审批响应（approve/approve_for_session/reject + feedback）
-  QuestionRequest    → 结构化问题（含 options, multi_select）
-  QuestionResponse   → 问题回答
-
-压缩/MCP 加载：
-  CompactionBegin/End       → 上下文压缩
-  MCPLoadingBegin/End       → MCP 服务器连接
-  MCPServerSnapshot         → 单个 MCP 服务器状态
-  MCPStatusSnapshot         → MCP 整体状态
-
-子代理事件：
-  SubagentEvent      → 嵌套子代理事件（含 agent_id, subagent_type, parent_tool_call_id）
-
-通知：
-  Notification       → 后台任务完成等通知
+Agent 工具调用
+    │
+    ├── 子代理类型查找 (LaborMarket 注册表)
+    │     └── registry.py: AgentTypeDefinition → ToolPolicy
+    │
+    ├── 实例创建或恢复
+    │     └── store.py: 按 agent_id 持久化
+    │
+    ├── 执行模式
+    │     ├── 前台：父代理等待结果
+    │     └── 后台：立即返回，完成后通过 Notification 通知
+    │
+    └── 结果处理
+          └── 自动摘要，父代理只看到结果概要
 ```
 
-## Skill 系统
+### 与 Claude Code 多 Agent 对比
 
-**Skill 发现路径**（优先级递增）：
+| 维度 | Kimi CLI | Claude Code |
+|------|----------|-------------|
+| 代理定义 | YAML + Jinja2（声明式） | TypeScript 硬编码 |
+| 角色分化 | coder/explore/plan（工具权限递减） | Leader-Worker（统一工具集） |
+| 后台执行 | 原生支持 + 任务管理 TUI | Swarm 三后端 |
+| 实例持久化 | store.py 按 agent_id | Subagent fork（进程级） |
+| 结果汇总 | 自动摘要 | Leader 聚合 |
+
+---
+
+## 6. 权限与审批系统
+
+```
+审批模式（优先级递减）：
+  ① YOLO 模式 (--yolo / /yolo)     → 自动审批全部操作
+  ② 会话级自动审批 (approve_for_session) → 该操作类型不再询问
+  ③ 逐次确认 (approve / reject)      → 每次请求用户审批
+
+工具审批策略：
+  Shell 工具      → 需要审批（显示命令预览）
+  文件写入        → 需要审批（显示 diff 预览）
+  文件读取        → 自动允许
+  Web 工具        → 自动允许
+  MCP 工具        → 需要审批
+```
+
+审批请求通过 Wire 协议统一下发，所有客户端（Shell/Web/ACP）共享同一套审批逻辑。拒绝时可附带 feedback 文本引导模型修正。
+
+**Qwen Code 对标**：拒绝+反馈（reject with feedback）是一个精细化设计——用户不仅可以拒绝操作，还可以解释为什么拒绝，引导 AI 下次做出更好的决策。这比简单的 y/n 审批提供了更丰富的人机交互信号。
+
+---
+
+## 7. Skill + 插件双生态
+
+### Skill 系统
+
+**发现路径**（优先级递增）：
+
 1. **内置 Skill**：`src/kimi_cli/skills/`（如 `kimi-cli-help`、`skill-creator`）
 2. **用户级 Skill**：`~/.config/agents/skills`、`~/.agents/skills`、`~/.kimi/skills`、`~/.claude/skills`、`~/.codex/skills`
 3. **项目级 Skill**：`./.agents/skills`、`./.kimi/skills`、`./.claude/skills`、`./.codex/skills`
@@ -158,224 +266,114 @@ MCP 工具：需要用户审批
 
 **Skill 类型**：
 - **标准 Skill**：`SKILL.md` 文件包含指令文本，通过 `/skill:<name>` 加载
-- **Flow Skill**：`SKILL.md` 中嵌入 Mermaid 或 D2 流程图，通过 `/flow:<name>` 执行代理工作流
+- **Flow Skill**：`SKILL.md` 中嵌入 Mermaid/D2 流程图，通过 `/flow:<name>` 执行代理工作流
 
-## 插件系统（v1.25.0 新增）
+**Qwen Code 对标**：Kimi CLI 的 Skill 发现路径兼容 Claude Code（`~/.claude/skills`）和 Codex（`~/.codex/skills`），这意味着为 Claude Code 编写的 Skill 可以直接在 Kimi CLI 中使用。这是一个聪明的兼容性策略——利用 Claude Code 的生态为自己引流。
+
+### 插件系统（v1.25.0）
 
 ```jsonc
 // plugin.json 格式
 {
   "name": "my-plugin",
   "version": "1.0.0",
-  "description": "Plugin description",
-  "config_file": "config.json",
+  "tools": [{
+    "name": "my-tool",
+    "command": ["python", "run.py"],  // 子进程隔离执行
+    "parameters": { ... }
+  }],
   "inject": {
-    "services.moonshot.api_key": "api_key",
-    "services.moonshot.base_url": "base_url"
-  },
-  "tools": [
-    {
-      "name": "my-tool",
-      "description": "Tool description",
-      "command": ["python", "run.py"],
-      "parameters": { ... }
-    }
-  ]
+    "services.moonshot.api_key": "api_key"  // 自动凭证注入
+  }
 }
 ```
 
-- **安装**：`kimi plugin install <git-url> [--subpath PATH]`，支持 monorepo
-- **执行**：工具在隔离子进程中运行，参数通过 stdin JSON 传入，stdout 作为结果
-- **凭证注入**：`inject` 声明自动从宿主 LLM 配置注入 `api_key` 和 `base_url`（OAuth 令牌实时刷新）
-- **存储**：`~/.kimi/plugins/`
+**关键设计**：
+- **子进程隔离**：插件工具在独立子进程中运行，参数通过 stdin JSON 传入，stdout 作为结果
+- **凭证注入**：`inject` 声明自动从宿主配置注入 API key 和 base_url（OAuth 令牌实时刷新）
+- **monorepo 支持**：`kimi plugin install <git-url> --subpath PATH`
 
-## 多客户端支持
+---
 
-### ACP（Agent Client Protocol）IDE 集成
-
-```bash
-# 以 ACP 模式启动（JSON-RPC over stdio）
-kimi acp
-```
-
-#### 支持的编辑器
-
-| 编辑器 | 状态 | 说明 |
-|--------|------|------|
-| **VS Code** | 原生扩展 | 自动安装/激活扩展 |
-| **Zed** | 原生 ACP | 实时编辑、agent following |
-| **JetBrains IDEs** | ACP Registry | acp.json 配置 |
-| **Neovim** | 通过 Avante.nvim / CodeCompanion.nvim | 完整 ACP 集成 |
-
-#### ACP 能力
-- `load_session: True`：支持恢复会话
-- `embedded_context: True`：支持嵌入式文件内容
-- `image: True`：支持图片输入
-- `mcp_capabilities: {http: True}`：支持远程 MCP 服务器
-- 斜杠命令通告（`/init`, `/compact`, `/yolo` 等）
-- Shell 命令路由：通过 ACP 客户端终端执行
-- 文件读写路由：通过 ACP 客户端同步编辑
-- MCP 服务器：加载 ACP 客户端管理的 MCP 服务器
-
-### Web UI
-
-```bash
-# 启动 Web UI
-kimi web                          # 默认 localhost:5494
-kimi web --port 8080              # 自定义端口
-kimi web --network --auth-token my-secret  # 网络模式 + 认证
-kimi web --lan-only               # 仅局域网
-kimi web --public                 # 公网（需配合认证）
-```
-
-#### 功能
-- **多会话管理**：创建、切换、归档、删除、搜索
-- **实时 WebSocket**：通过 Wire 协议实时推送代理事件
-- **审批对话框**：Diff 预览、命令预览、approve/reject + feedback
-- **结构化问题**：Tab 导航的多问题面板
-- **后台任务可视化**：子代理活动渲染、任务状态追踪
-- **文件变更面板**：Git diff 状态栏、文件列表、"Open in" 菜单
-- **会话 Fork**：从任意回复分叉新会话
-- **Plan 模式切换**：输入框工具栏切换
-- **@ 文件提及**：自动补全引用工作区文件
-- **斜杠命令菜单**：自动补全 + 键盘导航
-- **消息队列**：代理运行时队列后续消息
-- **数学公式渲染**：支持 `$...$` 行内和 `$$...$$` 块级数学
-- **媒体预览**：图片/视频工具结果的缩略图预览
-- **安全**：Token 认证、CORS 控制、敏感 API 限制、Origin 验证
-
-#### 环境变量
-- `KIMI_WEB_SESSION_TOKEN`：认证令牌
-- `KIMI_WEB_ALLOWED_ORIGINS`：允许的跨域来源
-- `KIMI_WEB_ENFORCE_ORIGIN`：强制 Origin 检查
-- `KIMI_WEB_RESTRICT_SENSITIVE_APIS`：限制敏感端点
-
-## 配置
+## 8. 配置系统
 
 ```toml
 # ~/.kimi/config.toml
 
-# 默认设置
 default_model = "kimi-k2.5"
 default_thinking = false
 default_yolo = false
-default_editor = "vim"        # 或 "code --wait"
+default_editor = "vim"
 
-# LLM 提供商
-[providers.kimi]
-type = "kimi"
-base_url = "https://api.moonshot.cn/v1"
-# api_key 通过 OAuth 或环境变量
-
-[providers.openai]
-type = "openai_responses"
-api_key = "sk-..."
-
-[providers.anthropic]
-type = "anthropic"
-api_key = "sk-ant-..."
-
-# 模型配置
-[models.kimi-k2-5]
-provider = "kimi"
-model = "kimi-k2.5"
-max_context_size = 256000
-capabilities = ["image_in", "video_in", "thinking"]
-
-# 代理循环控制
 [loop_control]
-max_steps_per_turn = 100        # 每回合最大步数（默认 100）
-max_retries_per_step = 3        # 每步重试次数（默认 3）
-max_ralph_iterations = 0        # 额外 Ralph 迭代（-1=无限，默认 0）
-reserved_context_size = 50000   # 保留上下文大小（默认 50000 token）
-compaction_trigger_ratio = 0.85 # 自动压缩触发比例（默认 0.85）
+max_steps_per_turn = 100
+max_retries_per_step = 3
+compaction_trigger_ratio = 0.85
+reserved_context_size = 50000
 
-# 后台任务
 [background]
-max_running_tasks = 4           # 最大并发后台任务
-read_max_bytes = 30000          # 输出读取上限
-notification_tail_lines = 20    # 通知尾部行数
-keep_alive_on_exit = false      # 退出时保持后台任务
-
-# Moonshot 服务（Kimi 提供商专用）
-[services.moonshot_search]
-base_url = "..."
-# api_key 通过 OAuth
-
-[services.moonshot_fetch]
-base_url = "..."
-
-# MCP 客户端配置
-[mcp.client]
-tool_call_timeout_ms = 60000    # MCP 工具调用超时
+max_running_tasks = 4
+read_max_bytes = 30000
+keep_alive_on_exit = false
 ```
 
-**配置优先级（低→高）**：
+**配置优先级**（低→高）：
 1. 默认值
 2. 配置文件 `~/.kimi/config.toml`
 3. `--config-file PATH` CLI 参数
 4. `--config TEXT` CLI 内联 TOML/JSON
 5. 环境变量（`KIMI_*`）
 
-## `/init` 与 AGENTS.md（源码：`soul/slash.py`、`soul/agent.py`）
+**Qwen Code 对标**：5 级配置优先级与 Claude Code 的 5 层 settings 理念一致，但 TOML 格式比 JSON 更适合人工编辑。`loop_control` 中的 `compaction_trigger_ratio`（压缩触发比例）和 `reserved_context_size`（保留上下文大小）可作为 Qwen Code 上下文管理的参考参数。
 
-**`/init` 命令**：分析代码库并自动生成 `AGENTS.md` 项目配置文件。
+---
 
-**实现机制**（`slash.py:init()`）：
-1. 创建临时目录和临时上下文（`Context(file_backend=...)`），避免污染当前会话
-2. 使用临时 `KimiSoul` 实例运行内置 `prompts.INIT` 提示，让 LLM 分析代码库结构
-3. LLM 生成 `AGENTS.md` 文件到项目工作目录（`KIMI_WORK_DIR`）
-4. 生成完成后，通过 `load_agents_md()` 读取文件内容，注入到当前会话上下文
+## 9. 多客户端支持
 
-**AGENTS.md 加载**（`agent.py:load_agents_md()`）：
-- 查找路径：`<work_dir>/AGENTS.md` 或 `<work_dir>/agents.md`（大小写不敏感）
-- 文件内容作为 `KIMI_AGENTS_MD` 变量注入到系统提示模板（Jinja2）
-- 在 `Runtime.create()` 时自动加载
+### Web UI
 
-**与其他工具对比**：
-- 类似 Claude Code 的 `CLAUDE.md` 和 Gemini CLI 的 `GEMINI.md`
-- 不同之处：Kimi CLI 提供 `/init` 自动生成功能（Claude Code 和 Gemini CLI 需手动创建）
+```bash
+kimi web                            # 默认 localhost:5494
+kimi web --port 8080 --network --auth-token my-secret  # 网络模式 + 认证
+```
 
-## 项目演进（2025.09 — 2026.03）
+**功能矩阵**：
 
-### 里程碑时间线
+| 功能 | 说明 |
+|------|------|
+| 多会话管理 | 创建/切换/归档/删除/搜索 |
+| 实时 WebSocket | Wire 协议事件推送 |
+| 审批对话框 | Diff 预览 + approve/reject + feedback |
+| 会话 Fork | 从任意回复分叉新会话 |
+| @ 文件提及 | 自动补全引用工作区文件 |
+| 数学公式 | `$...$` 行内和 `$$...$$` 块级 |
+| 安全 | Token 认证、CORS、Origin 验证 |
 
-| 时间 | 版本 | 里程碑 |
-|------|------|--------|
-| 2026-03-23 | **v1.25.0** | **插件系统**（plugin.json + 凭证注入）、**Agent 工具**（子代理委派）、**统一审批运行时**、Wire v1.6 |
-| 2026-03-17~18 | v1.23~1.24 | **后台 Bash 任务**、Plan 模式多选项方案、延迟 MCP 启动 |
-| 2026-03-10~12 | v1.19~1.21 | **Plan 模式**、**kimi vis 可视化仪表板**、**Steer Input**（运行时引导）、内联运行提示 |
-| 2026-02-27 | v1.16 | **--add-dir 多目录**、**Ctrl-O 外部编辑器**、/new 和 /editor 命令 |
-| 2026-02-09~11 | v1.9~1.12 | Web UI 大升级（Fork、归档、审批快捷键、文件引用、消息队列）、YOLO 配置 |
-| 2026-02-03~05 | v1.6~1.7 | **Web UI 认证和网络模式**、Wire replay、kagent Rust 实验 |
-| 2026-01-27~30 | **v1.0~1.5** | **正式发布 1.0**（login/logout）、**Web UI 首发**（kimi web）、Git diff 状态栏 |
-| 2026-01-19~24 | v0.79~0.86 | **项目级 Skill**、**Flow Skill（Mermaid/D2）**、**跨平台二进制构建** |
-| 2026-01-04~16 | v0.71~0.78 | **ACP 文件路由**、/model 命令、/skill 命令、kimi info/term |
-| 2025-12-15~31 | v0.64~0.70 | **MCP 子命令组**、session 管理、Wire 重实现、config TOML 迁移 |
-| 2025-11-08~28 | v0.51~0.62 | 基础稳定化：Shell/CMD 工具、MCP 审批、子代理 MCP、ACP 兼容性 |
-| 2025-09~11 | v0.8~0.50 | 早期开发：基础代理循环、TUI Shell、ACP 原型、Wire 协议雏形 |
+### ACP IDE 集成
 
-六个月内从 v0.8 发展到 v1.25.0，经历约 **110 个版本发布**，从基础 CLI 代理成长为含 Web UI、IDE 集成、插件系统的多客户端 AI 编程平台。
+| 编辑器 | 集成方式 |
+|--------|---------|
+| **VS Code** | 原生扩展（自动安装） |
+| **Zed** | 原生 ACP（实时编辑 + agent following） |
+| **JetBrains** | ACP Registry (acp.json) |
+| **Neovim** | Avante.nvim / CodeCompanion.nvim |
 
-### v1.25.0 关键变化（2026-03-23）
+**Qwen Code 对标**：Kimi CLI 在多客户端支持上超越了 Claude Code——内置 Web UI、原生 IDE 集成（4 个编辑器）、Wire 自定义客户端。这是 Wire 事件流架构的直接收益。Qwen Code 如果要做类似的多端覆盖，首先需要定义统一的事件流协议。
 
-- **插件系统**：`plugin.json` 声明式插件，子进程隔离执行，自动凭证注入，支持 monorepo
-- **Agent 工具**：子代理委派（coder/explore/plan），前台/后台运行，结果自动摘要
-- **统一审批运行时**：前台和后台子代理的审批请求统一协调，支持拒绝反馈
-- **Wire v1.6**：SubagentEvent 新增 agent_id/subagent_type，ApprovalResponse 支持 feedback
-- **Shell**：交互式审批面板（Diff/命令预览 + 4 种操作），工具栏显示工作目录/Git 分支/后台任务
+---
 
-### v1.19~1.24 关键变化（2026-03-10~18）
+## 10. 项目演进（2025.09 — 2026.03）
 
-- **Plan 模式**：只读分析阶段 + ExitPlanMode 多方案选择 + 增量编辑
-- **kimi vis**：Wire 事件时间线、上下文查看器、会话浏览器、用量统计
-- **Steer Input**：运行时发送跟进消息引导代理方向
-- **后台 Bash 任务**：Shell 工具支持 `run_in_background`，完整生命周期管理
-- **延迟 MCP 启动**：异步初始化 + 进度指示，优化启动体验
+| 阶段 | 时间 | 版本 | 关键里程碑 |
+|------|------|------|-----------|
+| 早期开发 | 2025-09~11 | v0.8~0.50 | 基础代理循环、TUI Shell、ACP 原型 |
+| 基础稳定 | 2025-11~12 | v0.51~0.70 | Shell/CMD 工具、MCP、Wire 重实现 |
+| 功能扩展 | 2026-01 | v0.71~0.86 | ACP 文件路由、Skill、Flow Skill、跨平台二进制 |
+| **1.0 发布** | 2026-01-27 | **v1.0** | 正式发布、Web UI 首发、login/logout |
+| 快速迭代 | 2026-02 | v1.6~1.16 | Web UI 大升级、认证、多目录、外部编辑器 |
+| 深度功能 | 2026-03 | v1.19~1.24 | Plan 模式、Steer Input、后台任务、可视化仪表板 |
+| **当前** | 2026-03-23 | **v1.25.0** | 插件系统、Agent 工具、统一审批、Wire v1.6 |
 
-### v1.0~1.5 关键变化（2026-01-27~30）
+六个月内从 v0.8 到 v1.25.0，~110 个版本发布。平均每 1.6 天一个版本——这个迭代速度接近 Claude Code 的发布节奏。
 
-- **正式发布 1.0**：login/logout 命令，认证流程完善
-- **Web UI 首发**：`kimi web` 命令启动浏览器界面
-- **Git diff 状态栏**：显示未提交变更
-- **会话搜索和 Open in 菜单**
+**Qwen Code 对标**：Kimi CLI 的版本演进路径值得作为参考——先做核心循环（3 个月），再做多端支持（2 个月），最后做扩展生态（1 个月）。这个优先级排序（核心 → 多端 → 生态）比试图一次性做完所有功能更务实。

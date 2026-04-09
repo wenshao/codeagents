@@ -106,7 +106,7 @@ graph TD
 - Claude Code 使用 Anthropic `tool_use` API，20+ 内置工具
 - Gemini CLI/Qwen Code 使用 `@google/genai` function calling，`CoreToolScheduler`（1790 行）调度工具
 - Codex CLI 使用 OpenAI function calling + `apply_patch`
-- OpenCode 使用 Vercel AI SDK v5 统一接口，19+ 工具
+- OpenCode 使用 Vercel AI SDK v5 统一接口，18 工具（14 无条件 + 4 有条件）
 - Cline 在 VS Code 内执行，24+ 工具，每步自动 Git Checkpoint
 - Goose 通过 MCP 协议统一工具接口（所有工具走 MCP）
 - Copilot CLI 使用 YAML 定义的代理，`tool_choice` 列出现在模型配置矩阵

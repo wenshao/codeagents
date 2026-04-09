@@ -1,259 +1,138 @@
-# 1. Codex CLI 概述
+# 1. Codex CLI 概述——Code Agent 开发者视角
 
-**开发者：** OpenAI
-**许可证：** Apache-2.0
-**仓库：** [github.com/openai/codex](https://github.com/openai/codex)
-**Stars：** ~68k
-**语言：** Rust（原生二进制）+ Node.js（薄启动层）
-**最后更新：** 2026-03
+> **阅读对象**：正在开发 Qwen Code / Gemini CLI 等 CLI Code Agent 的工程师
+>
+> **核心问题**：Codex CLI 作为 OpenAI 第一方开源 Agent，其 Rust 原生架构、沙箱安全模型、Cloud 执行模式有哪些值得借鉴？哪些依赖 OpenAI 生态无法复制？
 
-## 概述
+## 一、为什么要研究 Codex CLI
 
-Codex CLI 是 OpenAI 官方推出的开源终端编程代理。项目采用 Apache-2.0 开源许可证，核心架构为**薄 Node.js 启动层 + 原生 Rust 二进制**——npm 包 `@openai/codex` 仅包含一个 `codex.js` 启动脚本，负责检测平台后 spawn 对应的 Rust 编译二进制（约 137MB，静态链接 musl libc）。内部捆绑 ripgrep 用于代码搜索。
+Codex CLI 是 OpenAI 官方推出的开源终端编程代理（Apache-2.0），也是当前唯一采用 **Rust 原生二进制 + Node.js 薄启动层**架构的主流 Code Agent。它在 GitHub 获得 ~68k Stars，拥有 28 个斜杠命令、9 个代理工具、52 个 Feature Flag、15 个 CLI 子命令、5 种审批模式、4 级沙箱隔离，以及实验性的 Cloud 执行和 App-Server IDE 集成。
 
-主要特点：
+对于 Qwen Code 开发者，Codex CLI 的价值在于三个独特维度：
 
-- **OpenAI 第一方工具**：直接由 OpenAI 团队开发维护，与 OpenAI API 深度集成
-- **Rust 原生性能**：核心为静态编译的 Rust 二进制，非纯 Node.js/TypeScript 应用
-- **丰富的交互命令**：20+ 个斜杠命令，支持会话管理、代码审查、技能系统等
-- **多种审批模式**：从完全受限到完全自主，精细控制代理行为
-- **默认沙箱隔离**：macOS Seatbelt、Linux Bubblewrap/Landlock、Windows 受限令牌
-- **MCP 双向支持**：既是 MCP 客户端也可作为 MCP 服务器
-- **多模态输入**：支持传入截图和图片进行分析
-- **代码审查系统**：独立的 `codex review` 子命令和交互式 `/review` 命令
-- **会话持久化**：支持 resume/fork 恢复和分叉会话
-- **Cloud 任务**（实验性）：提交任务到云端执行
+1. **Rust 原生架构**——证明了 CLI Agent 可以跳过 Node.js/TypeScript 全栈，用 Rust 构建 ~137MB 静态二进制，获得内存安全 + 高性能沙箱。这与 Claude Code（TypeScript + Bun 打包）和 Qwen Code（纯 TypeScript）形成鲜明对比。
+2. **默认安全沙箱**——Codex 是唯一默认启用沙箱的主流 Agent（macOS Seatbelt、Linux Bubblewrap/Landlock、Windows 受限令牌），网络访问默认阻断。Claude Code 的沙箱可选，Qwen Code 仅有权限规则。
+3. **Cloud 执行模型**——`codex cloud exec` 允许将任务提交到云端隔离环境执行 best-of-N，这是其他开源 Agent 尚未实现的模式。
 
-## 审批模式
+## 二、能力矩阵速查
 
-Codex CLI 提供五种审批模式（approval mode），控制代理的自主程度：
+| 能力领域 | Codex CLI | Qwen Code | 差距 | 详见 |
+|---------|-----------|-----------|------|------|
+| **技术栈** | Rust 原生二进制（137MB）+ Node.js 启动层 | TypeScript + Node.js | 架构差异 | [03-架构](./03-architecture.md) |
+| **命令系统** | 28 斜杠命令 + 15 CLI 子命令 | ~40 斜杠命令 | 小（Qwen 数量领先） | [02-命令](./02-commands.md) |
+| **工具系统** | 9 工具（含 ToolSearchCall） | ~30 工具 | 大（Qwen 领先） | [02-命令](./02-commands.md) |
+| **安全模型** | 5 种审批模式 + 4 级沙箱 + 默认网络隔离 | 权限规则 + Hook | 大（Codex 领先） | [03-架构](./03-architecture.md) |
+| **MCP 支持** | 客户端 + 服务器双向 | 客户端 | 中 | [02-命令](./02-commands.md) |
+| **会话管理** | resume/fork + UUID 持久化 | 无 | 大 | [02-命令](./02-commands.md) |
+| **代码审查** | `codex review` 子命令 + `/review` 交互 | 无 | 大 | [02-命令](./02-commands.md) |
+| **Cloud 执行** | 实验性 best-of-N | 无 | 大 | [03-架构](./03-architecture.md) |
+| **IDE 集成** | App-Server JSON-RPC（90+ 方法） | 无 | 大 | [03-架构](./03-architecture.md) |
+| **Feature Flag** | 52 个（含 stable/experimental/under-dev） | 无 Feature Flag 系统 | 大 | [02-命令](./02-commands.md) |
+| **上下文压缩** | `/compact` + `enable_request_compression` | 单一 70% 手动压缩 | 中 | [02-命令](./02-commands.md) |
+| **记忆系统** | `memories` flag（under-dev） | 简单笔记 | 中 | [02-命令](./02-commands.md) |
+| **模型锁定** | 主要 OpenAI 模型（可通过 `--oss` 绕过） | 多模型支持 | 大（Qwen 领先） | — |
 
-> 验证方式：`codex --help` 输出确认 v0.116.0 二进制仅接受 untrusted/on-request/on-failure/never 四种值。`granular` 模式已在官方文档（developers.openai.com/codex/agent-approvals-security）中列出，但 v0.116.0 二进制尚未实现。`on-failure` 已从官方文档中完全移除，仅在二进制中保留向后兼容。
+## 三、架构概览（开发者视角）
 
-### untrusted 模式（默认）
+### 3.1 技术栈
 
-```bash
-codex -a untrusted "重构这个函数"
-# 或直接启动，默认就是 untrusted
-codex
+| 组件 | Codex CLI | 开发者启示 |
+|------|-----------|-----------|
+| 核心语言 | Rust（静态编译 musl libc） | 内存安全 + 零 GC 停顿，但开发速度慢于 TypeScript |
+| 启动层 | Node.js `codex.js`（~6KB） | 仅负责平台检测和 spawn 二进制，极薄 |
+| 二进制体积 | ~137MB（静态链接，含 ripgrep） | 远大于 Claude Code（~227MB 含 Bun 运行时）但架构更纯粹 |
+| 分发方式 | npm `@openai/codex` + 平台特定原生包 | 6 个平台包覆盖 x64/arm64 × Linux/macOS/Windows |
+| 代码搜索 | 内置 ripgrep | 与 Claude Code 的 `file-index.node` 思路类似 |
+| 开源许可 | Apache-2.0 | 可自由修改部署，Qwen Code 同为 Apache-2.0 |
+
+### 3.2 核心循环（推断）
+
+```
+用户输入 / codex exec "prompt"
+  │
+  ├─ 审批模式检查（untrusted/on-request/never/granular）
+  │
+  ├─ 沙箱环境初始化（Seatbelt/Bubblewrap/Landlock/受限令牌）
+  │     └─ 网络默认阻断
+  │
+  ├─ API 请求（OpenAI Chat Completions）
+  │     ├─ 流式响应 → 工具调用解析
+  │     ├─ LocalShellCall → 沙箱内执行
+  │     ├─ ApplyPatch → 自有 diff 格式应用
+  │     ├─ McpToolCall → MCP 服务器调用
+  │     └─ 循环直到模型返回 end_turn
+  │
+  ├─ 上下文压缩检查（enable_request_compression）
+  │
+  └─ 会话持久化（~/.codex/sessions/UUID）
 ```
 
-| 项目 | 说明 |
-|------|------|
-| 行为 | 仅执行受信任的命令，无需审批；其他操作需要用户确认 |
-| 风险等级 | 最低 |
-| 适用场景 | 学习代码、审查建议、不熟悉的代码库 |
+**与 Claude Code 的关键差异**：
+1. **沙箱优先**：Codex 的工具执行在沙箱内进行（网络隔离），Claude Code 的沙箱是可选的。这意味着 Codex 的 `never` 审批模式依赖沙箱保护，而 Claude Code 依赖权限规则。
+2. **ApplyPatch vs Edit**：Codex 使用自有的补丁格式（`*** Begin Patch`），Claude Code 使用 `Edit` 工具逐文件修改。Codex 的方式更适合批量修改，Claude Code 更精细。
+3. **工具数量差距**：Codex 仅 9 个工具（精简路线），Claude Code 42 个工具（全面覆盖）。Codex 通过 `LocalShellCall` 的 `CommandAction` 子操作（Read/Search/ListFiles）弥补部分差距。
 
-### on-request 模式
+### 3.3 审批模式与沙箱交互矩阵
 
-```bash
-codex -a on-request "修复这个 bug"
-```
+| 审批模式 | 沙箱 = read-only | 沙箱 = workspace-write | 沙箱 = danger-full-access |
+|----------|-----------------|----------------------|--------------------------|
+| `untrusted`（默认） | 每次询问 | 每次询问 | 每次询问 |
+| `on-request` | 模型决定 | 模型决定（`--full-auto` 组合） | 模型决定 |
+| `never` | 自动执行（只读） | 自动执行（推荐 CI/CD） | 自动执行（危险） |
+| `granular`（未实现） | 按类别策略 | 按类别策略 | 按类别策略 |
 
-| 项目 | 说明 |
-|------|------|
-| 行为 | 模型自行决定何时请求用户审批 |
-| 风险等级 | 中等 |
-| 适用场景 | 日常开发、代码重构、bug 修复 |
+**Qwen Code 对标**：Qwen Code 的权限模型是扁平的（允许/拒绝），缺少 Codex 的"审批模式 × 沙箱级别"二维控制。建议参考 Codex 的 `--full-auto`（on-request + workspace-write）组合，为自动化场景提供安全且高效的默认配置。
 
-### never 模式
+## 四、可借鉴 vs 不可复制
 
-```bash
-codex -a never "修复所有测试并确保通过"
-```
+### 可借鉴的工程模式（与模型无关）
 
-| 项目 | 说明 |
-|------|------|
-| 行为 | 从不请求审批，执行失败时将错误反馈给模型继续尝试 |
-| 风险等级 | 较高（依赖沙箱保护） |
-| 适用场景 | 批量任务、CI/CD 集成、自动化流水线 |
+| 模式 | 核心价值 | 实现复杂度 |
+|------|---------|-----------|
+| 默认沙箱隔离 + 网络阻断 | 安全执行不可信代码，CI/CD 友好 | 大 |
+| 审批模式 × 沙箱级别二维控制 | 精细平衡安全性与自动化程度 | 中 |
+| MCP 双向支持（客户端 + 服务器） | Agent 既能调用外部工具，也能被其他 Agent 调用 | 中 |
+| App-Server JSON-RPC 协议 | IDE 集成标准化，VS Code 扩展可复用 | 大 |
+| 会话 resume/fork | 跨时间恢复工作 + 分叉探索 | 中 |
+| `codex review` 独立子命令 | 代码审查可脱离交互会话使用，CI 集成友好 | 小 |
+| Feature Flag 系统（52 个） | 实验性功能安全管理，灰度发布 | 中 |
+| ApplyPatch 自有 diff 格式 | 批量文件修改效率高于逐文件 Edit | 小 |
+| Cloud best-of-N 执行 | 关键任务多次尝试选最优 | 大 |
+| CODEX.md/AGENTS.md 指令层级 | 4 级指令优先级（全局 → 项目 → 代理 → 技能） | 小 |
 
-### on-failure 模式（已弃用）
+### OpenAI 独有优势（不可复制）
 
-此模式已标记为 DEPRECATED，不建议使用。官方文档（developers.openai.com/codex/agent-approvals-security）已完全移除此模式，仅在 v0.116.0 二进制中保留向后兼容支持。
+| 优势 | 为什么不可复制 |
+|------|---------------|
+| GPT-5 系列模型 | OpenAI 核心资产 |
+| o-系列推理模型 | 依赖 OpenAI 独有的推理训练 |
+| Cloud 执行基础设施 | 需要 OpenAI 的云端沙箱环境 |
+| ChatGPT Apps/Connectors | 依赖 OpenAI 的应用生态 |
+| Guardian 子代理安全审批 | 需要专门训练的安全审查模型 |
 
-### granular 模式（官方文档确认，二进制未实现）
+## 五、阅读路线推荐
 
-```bash
-codex -a granular "精细控制审批"
-# 注意：v0.116.0 返回 "error: invalid value 'granular'"
-```
+### 如果你想改进安全模型
+→ [03-架构](./03-architecture.md)：沙箱实现细节、审批模式与沙箱交互
 
-| 项目 | 说明 |
-|------|------|
-| 行为 | 细粒度控制：可分别配置 sandbox、rules、MCP、权限、skill 的审批策略 |
-| 状态 | 官方文档确认，v0.116.0 二进制未实现（`codex -a granular` 返回 error），可能在更新版本中添加 |
-| 适用场景 | 需要对不同操作类别设置不同审批策略的高级用户 |
+### 如果你想扩展命令系统
+→ [02-命令](./02-commands.md)：28 斜杠命令分类、15 CLI 子命令、工具系统
 
-### 便捷标志
+### 如果你想做 IDE 集成
+→ [03-架构](./03-architecture.md)：App-Server 90+ JSON-RPC 方法、WebSocket 传输
 
-| 标志 | 等价于 |
-|------|--------|
-| `--full-auto` | `--ask-for-approval on-request --sandbox workspace-write` |
-| `--dangerously-bypass-approvals-and-sandbox` (`--yolo`) | 完全绕过审批和沙箱（危险） |
+### 如果你想做代码审查
+→ [02-命令](./02-commands.md)：`codex review` 子命令参数、`/review` 交互命令
 
-## 沙箱机制
+### 如果你想做会话管理
+→ [02-命令](./02-commands.md)：resume/fork 机制、UUID 持久化
 
-Codex CLI 提供四种沙箱级别：
+## 六、源码验证
 
-| 模式 | 说明 |
-|------|------|
-| `read-only` | 仅允许读取，禁止任何写入 |
-| `restricted-read-access` | 平台策划的受限读取策略（macOS 专用），使用 Seatbelt 限制可读取的目录范围 |
-| `workspace-write` | 允许读取全局 + 写入工作目录和临时目录 |
-| `danger-full-access` | 不启用沙箱，完全访问（危险） |
+本系列所有技术声明通过以下方式验证：
 
-```bash
-codex --sandbox workspace-write "修复 bug"
-codex --sandbox read-only "分析代码"
-```
+1. **二进制分析**：v0.116.0 Rust ELF static-pie x86-64 二进制（137MB），通过 `strings`、`codex --help`、`codex features list` 等提取
+2. **官方文档**：[developers.openai.com/codex](https://developers.openai.com/codex) 斜杠命令、CLI 参考、审批与安全
+3. **源码仓库**：[github.com/openai/codex](https://github.com/openai/codex)（Apache-2.0 开源）
 
-## 安装
-
-```bash
-# 通过 npm 全局安装
-npm install -g @openai/codex
-
-# 或通过 bun
-bun install -g @openai/codex
-
-# 设置 API key
-export OPENAI_API_KEY="sk-..."
-
-# 验证安装
-codex --version
-
-# 启动交互式会话
-codex
-```
-
-### 系统要求
-
-- **Node.js**：>= 22
-- **操作系统**：macOS 12+、Ubuntu 22.04+/Debian 12+、Windows（实验性原生 + WSL2）
-- **Git**：推荐安装（用于版本控制和审查功能）
-
-## 模型支持
-
-### GPT 系列
-
-| 模型 | 说明 |
-|------|------|
-| `gpt-4.1` | GPT-4.1，大上下文窗口 |
-| `gpt-5` | GPT-5 基础版 |
-| `gpt-5.1` | GPT-5.1 |
-| `gpt-5.1-codex` | GPT-5.1 Codex 优化版 |
-| `gpt-5.1-codex-max` | GPT-5.1 Codex 最大规格 |
-| `gpt-5.1-codex-mini` | GPT-5.1 Codex 轻量版 |
-| `gpt-5.2` | GPT-5.2 |
-| `gpt-5.2-codex` | GPT-5.2 Codex 优化版 |
-| `gpt-5.3-codex` | GPT-5.3 Codex 优化版 |
-| `gpt-5.4` | GPT-5.4 |
-| `gpt-5.4-pro` | GPT-5.4 Pro |
-| `gpt-5-mini` | GPT-5 轻量版 |
-| `gpt-5-nano` | GPT-5 最轻量版 |
-
-### 推理系列（o-系列）
-
-| 模型 | 说明 |
-|------|------|
-| `o1` ~ `o9` | OpenAI 推理模型系列 |
-| `o4-mini` | **默认模型**，快速且经济 |
-
-### 本地模型支持
-
-```bash
-# 使用 LM Studio 本地模型
-codex --oss --local-provider lmstudio "分析代码"
-
-# 使用 Ollama 本地模型
-codex --oss --local-provider ollama "写一个函数"
-```
-
-通过 `--oss` 和 `--local-provider` 可连接本地运行的模型服务。
-
-### 自定义端点
-
-```bash
-# 使用第三方 OpenAI 兼容端点
-export OPENAI_BASE_URL="https://your-proxy.example.com/v1"
-export OPENAI_API_KEY="your-key"
-codex --model your-model "写一个排序函数"
-```
-
-## 定价
-
-Codex CLI 本身免费开源，但使用 OpenAI API 需要付费。费用取决于所选模型和 token 用量。
-
-### 模型定价参考
-
-| 模型 | 输入价格（每百万 token） | 输出价格（每百万 token） |
-|------|--------------------------|--------------------------|
-| `o4-mini` | $1.10 | $4.40 |
-| `gpt-4.1` | $2.00 | $8.00 |
-
-> 注：以上价格为 OpenAI 官方 API 定价，可能随时调整。GPT-5 系列定价请参考 OpenAI 官网。
-
-### 成本控制建议
-
-- 日常简单任务使用默认 `o4-mini`，成本最低
-- 仅在需要强推理能力时使用高级模型
-- 使用 `/compact` 命令压缩上下文，减少 token 消耗
-- 通过 CODEX.md 提供清晰的项目上下文，减少模型试错
-
-## 使用场景
-
-- **最适合**：OpenAI API 用户、需要安全沙箱的自动化场景、CI/CD 集成、代码审查
-- **适合**：日常代码编辑、快速原型、bug 修复、代码重构、多工具集成（通过 MCP）
-- **不太适合**：需要多模型供应商切换、对二进制体积敏感的环境
-
-## 优势
-
-1. **OpenAI 官方**：第一方支持，模型兼容性最佳
-2. **开源**：Apache-2.0 许可，可自由修改和部署
-3. **Rust 原生性能**：核心为静态编译 Rust 二进制，启动快、内存效率高
-4. **安全沙箱**：多平台沙箱隔离（Seatbelt/Bubblewrap/Landlock/受限令牌）
-5. **MCP 双向支持**：既是客户端也可作为 MCP 服务器
-6. **丰富的交互命令**：20+ 个斜杠命令覆盖开发全流程
-7. **会话持久化**：支持 resume/fork，跨时间恢复工作
-8. **代码审查**：内置 review 子命令和交互式审查
-9. **Cloud 任务**：实验性云端执行支持 best-of-N
-10. **IDE 集成**：app-server 提供 JSON-RPC 协议供编辑器对接
-
-## 劣势
-
-1. **模型锁定**：主要支持 OpenAI 模型（可通过兼容端点或 --oss 部分绕过）
-2. **二进制体积大**：平台包约 137MB，下载和安装耗时
-3. **Windows 支持有限**：原生 Windows 沙箱仍为实验性
-4. **Cloud 功能未稳定**：cloud 子命令标记为实验性
-5. **文档滞后**：官方文档未完整覆盖所有功能
-
-## 验证记录
-
-> 本文档通过二进制逆向分析和官方文档双重验证。
-
-**二进制分析（v0.116.0，137MB ELF static-pie x86-64 Rust）：**
-- CLI 子命令：通过 `codex --help` 确认 15 个子命令
-- 审批模式：v0.116.0 二进制仅接受 untrusted/on-request/on-failure/never（granular 返回 invalid value 错误）；第六轮 Web 验证确认官方文档已列出 granular 模式并移除 on-failure 模式
-- TUI 斜杠命令：通过 `strings` 提取 + 官方文档交叉验证确认 28 个
-- Feature flags：通过 `codex features list` 确认 50+ 个
-- 系统身份：确认 "You are Codex, based on GPT-5."
-- App-Server 协议：通过 IPC 消息字符串提取确认 40+ 方法
-
-**官方文档验证：**
-- [斜杠命令](https://developers.openai.com/codex/cli/slash-commands) — 28 个命令完整列表
-- [CLI 参考](https://developers.openai.com/codex/cli/reference) — 确认 `--ask-for-approval`（非 --approval-mode）
-- [审批与安全](https://developers.openai.com/codex/agent-approvals-security)
-- [Linux 沙箱](https://github.com/openai/codex/blob/main/codex-rs/linux-sandbox/README.md)
-
-**已修正的错误（第二轮验证发现）：**
-- `--approval-mode` → `--ask-for-approval`（二进制 --help 确认）
-- `granular` 审批模式：v0.116.0 二进制未实现（`codex -a granular` 返回 error），但第六轮 Web 验证确认官方文档已列出，已恢复并标注
-- 移除 6 个未经验证的斜杠命令（官方文档中不存在）
-- 移除 3 个伪造的 CLI 参数（--quiet, --no-project-doc, --project-doc）
-
-## 资源链接
-
-- [GitHub 仓库](https://github.com/openai/codex)
-- [OpenAI 公告](https://openai.com/index/introducing-codex/)
-- [npm 包](https://www.npmjs.com/package/@openai/codex)
+原始证据见 [EVIDENCE.md](./EVIDENCE.md)。
