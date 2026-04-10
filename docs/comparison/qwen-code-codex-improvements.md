@@ -1,6 +1,6 @@
 # Qwen Code 改进建议——对标 Codex CLI
 
-> 基于 Codex CLI (openai/codex) 完整 Rust 源码（70+ crate，619,458 行）与 Qwen Code 源码的系统对比，识别 **25 项**可借鉴的能力。Codex CLI 是唯一采用 Rust 原生构建 + 默认沙箱的主流 CLI Code Agent。
+> 基于 Codex CLI (openai/codex) 完整 Rust 源码（70+ crate，619,458 行）与 Qwen Code 源码的系统对比，识别 **25 项**可借鉴的能力。Codex CLI 是唯一采用 Rust 原生构建 + 沙箱默认启用的主流 CLI Code Agent。
 >
 > **相关报告**：
 > - [Claude Code 改进建议报告（248 项）](./qwen-code-improvement-report.md)——行业领先者对比
@@ -11,7 +11,7 @@
 
 | # | 功能 | 优先级 | 来源 crate | 规模 |
 |:-:|------|:------:|-----------|:----:|
-| [1](#item-1) | 默认沙箱安全模型（3 平台） | **P0** | `sandboxing/` + `linux-sandbox/` + `windows-sandbox-rs/` | 17,315 行 |
+| [1](#item-1) | 默认启用沙箱 + Linux 原生隔离 | **P0** | `sandboxing/` + `linux-sandbox/` + `windows-sandbox-rs/` | 17,315 行 |
 | [2](#item-2) | Apply Patch 批量文件修改 | **P1** | `apply-patch/` | 3,264 行 |
 | [3](#item-3) | Feature Flag 生命周期管理 | **P1** | `features/` | 1,452 行 |
 | [4](#item-4) | 会话 Resume & Fork | **P1** | `rollout/` + `state/` | 19,030 行 |
@@ -41,9 +41,9 @@
 
 <a id="item-1"></a>
 
-### 1. 默认沙箱安全模型（P0）
+### 1. 默认启用沙箱 + Linux 原生隔离（P0）
 
-**问题**：Agent 执行 `npm install` 时，安装脚本可以读取 `~/.ssh/`、`~/.aws/credentials`、环境变量中的 API Key，甚至向外部发送网络请求——当前 Qwen Code 无任何进程隔离，这些行为完全不受控。在 CI/CD 场景中，这意味着不受信任的代码可以访问构建环境的全部 secrets。
+**问题**：Qwen Code 已有沙箱支持（macOS Seatbelt + Docker/Podman，984 行），但存在两个差距：① **默认不启用**——用户需要手动 `--sandbox` 或设置 `QWEN_SANDBOX=true`，大多数用户不会主动开启；② **Linux 无原生沙箱**——只有 Docker/Podman 容器沙箱，缺少 Bubblewrap/Landlock 等轻量级进程隔离（不需要容器运行时）。Codex CLI 的沙箱默认启用且网络默认阻断。
 
 **Codex CLI 的解决方案**：3 平台原生沙箱，**默认启用，网络默认阻断**：
 
@@ -54,9 +54,11 @@
 | Windows | 受限令牌（restricted token） | ~9,757 行 | 实验性 |
 | 通用 | `sandboxing/` 管理器 + 测试 | ~2,000 行 | 平台适配层 |
 
-**Qwen Code 修改方向**：先实现 Linux Landlock（最简单，内核 5.13+），再扩展 macOS Seatbelt。
+**Qwen Code 现状**：已有 macOS Seatbelt（6 种 profile）+ Docker/Podman 容器沙箱（`sandbox.ts` 984 行），但默认不启用。
 
-**实现成本**：~2 周（Linux 优先），参考 Claude Code 改进报告 [stability#30](./qwen-code-improvement-report-p2-stability.md#item-30)。
+**Qwen Code 修改方向**：① 添加 Linux Bubblewrap/Landlock 原生沙箱（不需要 Docker）；② 考虑在 `--full-auto` 或 CI 模式下默认启用沙箱；③ 网络默认阻断（当前 Seatbelt 默认 `permissive-open` 允许网络）。
+
+**实现成本**：~1 周（Linux Landlock），参考 Claude Code 改进报告 [stability#30](./qwen-code-improvement-report-p2-stability.md#item-30)。
 
 ---
 
@@ -398,7 +400,7 @@
 |------|----------|-------------|-----------|-----------|
 | **技术栈** | Rust 原生 | TypeScript/Rust | TypeScript | TypeScript |
 | **代码规模** | 619,458 行 | ~100,000 行（估） | ~50,000 行 | ~50,000 行 |
-| **默认沙箱** | ✅ 3 平台 | 可选 | 可选 | ❌ |
+| **默认沙箱** | ✅ 3 平台原生 | 可选 | 可选 | 可选（Docker/Podman/Seatbelt） |
 | **网络隔离** | ✅ 默认阻断 | 可选 | 无 | ❌ |
 | **Feature Flag** | 52 运行时 | 22 编译时 | 无 | ❌ |
 | **IDE 协议** | 90+ JSON-RPC | WebSocket Bridge | VS Code Companion | VS Code Companion |

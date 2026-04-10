@@ -14,7 +14,7 @@ Codex CLI 的模型能力（GPT-5 系列、o-系列推理模型）是 OpenAI 独
 |---------|-----------|-------------|-----------|---------|
 | 技术栈 | Rust 原生 + Node.js 薄层 | TypeScript + Bun 打包 | TypeScript + Node.js | 性能/安全/开发速度取舍 |
 | 二进制体积 | ~137MB（静态 musl） | ~227MB（含 Bun 运行时） | npm 包（无原生二进制） | 分发 + 启动性能 |
-| 沙箱 | 默认启用，3 平台原生 | 可选 | 仅权限规则 | 安全性 |
+| 沙箱 | 默认启用，3 平台原生 | 可选 | 可选（Seatbelt/Docker/Podman） | 安全性 |
 | IDE 集成 | App-Server JSON-RPC（90+ 方法） | WebSocket/SSE Bridge | 无 | 编辑器生态 |
 | Cloud 执行 | 实验性 best-of-N | Kairos（Always-On） | 无 | 长任务/批量任务 |
 | Feature 管理 | 52 运行时 Flag | 22 build-time DCE | 无 | 实验性功能管理 |

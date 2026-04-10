@@ -13,7 +13,7 @@
 | **OpenCode** | 无 OS 沙箱 | allow/deny/ask | ✗ | — | **Tree-sitter Bash AST** |
 | **Goose** | 无 OS 沙箱 | SmartApprove | **对抗检测器** | **✓（31 项）** | AdversaryInspector |
 | **Cline** | 无 OS 沙箱 | 正则 + 设置 | ✗ | — | **Git Checkpoint** + 重定向检测 |
-| **Qwen Code** | 无 OS 沙箱 | deny > ask > allow | ✗ | — | **Loop 检测**（Levenshtein） |
+| **Qwen Code** | Seatbelt/Docker/Podman（可选） | deny > ask > allow | ✗ | — | **Loop 检测**（Levenshtein） |
 | **Kimi CLI** | 无 | YOLO 切换 | ✗ | — | 会话级审批 |
 | **Aider** | 无 | 信任模式 | ✗ | — | 用户确认 shell |
 
