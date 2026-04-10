@@ -347,7 +347,7 @@
 | **延迟初始化** | lazySchema + 延迟 import + 延迟prefetch | 全量同步加载 | 中等差距 | — |
 | **Git 直读** | .git/HEAD+refs 直读 + LRU | spawn git | 中等差距 | — |
 | **崩溃恢复** | 中断检测 + 合成续行 + 全量恢复 | 无 | 缺失 | — |
-| **API 重试** | 10 次退避 + 529 降级 + 持久化重试 | 仅重试次数 | 显著落后 | — |
+| **API 重试** | 10 次退避 + 529 降级 + 持久化重试 | 仅重试次数 | 显著落后 | [PR#3080](https://github.com/QwenLM/qwen-code/pull/3080) |
 | **优雅关闭** | SIGINT/SIGTERM + 清理注册 + failsafe | 无信号处理 | 缺失 | — |
 | **反应式压缩** | prompt_too_long 自动裁剪重试 | 无 | 缺失 | — |
 | **原子写入** | temp+rename + 大结果persist to disk | 直接 writeFileSync | 中等差距 | — |

@@ -222,6 +222,8 @@
 
 **Codex CLI 的解决方案**：`models-manager/`（2,072 行）——内置 `models.json` 目录 + 模型预设 + 协作模式配置 + 弃用状态跟踪。
 
+**参考实现**：[Hermes Agent](https://github.com/nousresearch/hermes-agent) 额外实现了 **Credential Pool**（`agent/credential_pool.py`）——同一 Provider 配置多个 API Key，自动轮换 + 速率限制追踪 + 失败自动切换。解决单 Key 被限流时 Agent 无法继续工作的问题。
+
 **实现成本**：~2 天
 
 ---
@@ -391,6 +393,8 @@
 **问题**：Agent 需要在 Linux 环境编译 C++ 项目，但用户在 macOS 上——只能手动 SSH 到远程服务器。如果能通过统一 API 把命令发送到远程容器执行（和本地命令用相同接口），Agent 就不受本地环境限制。
 
 **Codex CLI 的解决方案**：`exec-server/`（5,150 行）——RPC 进程管理（start/read/write/terminate），支持远程容器/CI 系统中执行，与本地使用同一 API。
+
+**参考实现**：[Hermes Agent](https://github.com/nousresearch/hermes-agent)（`tools/environments/`）实现了 6 种终端后端——Local/Docker/SSH/Daytona/Singularity/Modal，统一 `BaseEnvironment` 接口。Daytona 和 Modal 支持 **serverless 休眠**——Agent 环境空闲时自动暂停，按需唤醒，几乎零成本。
 
 ---
 

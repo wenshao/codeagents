@@ -941,9 +941,9 @@ bonjour.publish({
 
 <a id="item-20"></a>
 
-### 20. Skill 动态发现系统（P2）
+### 20. Skill 动态发现 + 自创/自改进（P2）
 
-**问题**：Qwen Code 的 Skill 系统是打包内置的，缺少从项目目录动态发现用户定义 Skill 的能力。
+**问题**：Qwen Code 的 Skill 由人类编写和维护——Agent 完成复杂任务后，成功的方法没有被自动沉淀为可复用的 Skill。下次遇到类似任务，Agent 从零开始。
 
 **OpenCode 的解决方案**：`skill/`（2 文件 393 行）——多路径 Skill 发现：
 
@@ -953,9 +953,11 @@ bonjour.publish({
 - 缓存 + 热重载
 - 支持项目级、用户级、扩展级 Skill
 
-**Qwen Code 现状**：内置 Skill + SKILL.md 加载，但发现机制较简单。
+**参考实现**：[Hermes Agent](https://github.com/nousresearch/hermes-agent)（`tools/skill_manager_tool.py`）实现了 **Agent 自创 + 自改进 Skill**——完成复杂任务后自主创建 `~/.hermes/skills/<name>/SKILL.md`，后续使用中持续改进内容。这形成了"学习循环"：经验 → Skill → 更好的执行 → 更好的 Skill。
 
-**实现成本**：~2 天
+**Qwen Code 修改方向**：① 动态发现（OpenCode 模式）；② 考虑 Agent 自创 Skill 能力（Hermes 模式）——在 `/review`、复杂调试等成功完成后，提示 Agent 将方法沉淀为 SKILL.md。
+
+**实现成本**：动态发现 ~2 天；自创 Skill ~1 周
 
 ---
 
