@@ -44,7 +44,7 @@
 | **P0** | [Fork Subagent](./fork-subagent-deep-dive.md) — Subagent 继承完整对话上下文，共享 prompt cache 省 80%+ 费用 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-2) | Subagent 必须从零开始 | 中 | [PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) |
 | **P0** | [会话崩溃恢复与中断检测](./crash-recovery-deep-dive.md) — 3 种中断状态检测 + 合成续行 + 全量恢复 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-7) | 无崩溃恢复 | 大 | — |
 | **P1** | [Speculation](../tools/claude-code/10-prompt-suggestions.md) — 预测用户下一步并提前执行，Tab 接受零延迟 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-3) | 已实现但默认关闭 | 小 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
-| **P1** | [会话记忆](./memory-system-deep-dive.md) — 关键决策/文件结构自动提取，新 session 自动注入 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-4) | 仅简单笔记工具 | 大 | — |
+| **P1** | [会话记忆](./memory-system-deep-dive.md) — 关键决策/文件结构自动提取，新 session 自动注入 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-4) | 仅简单笔记工具 | 大 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) |
 | **P1** | [Auto Dream](./memory-system-deep-dive.md) — 后台 agent 自动合并去重过时记忆 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-5) | 缺失 | 中 | — |
 | **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | 全部工具始终加载 | 小 | — |
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1-core.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) |
@@ -109,7 +109,7 @@
 | **P2** | [Session Ingress Auth](./session-ingress-auth-deep-dive.md) — 远程会话 bearer token 认证（企业多用户环境） [↓](./qwen-code-improvement-report-p2-core.md#item-18) | 缺失 | 中 | — |
 | **P2** | [企业代理](./enterprise-proxy-support-deep-dive.md) — CONNECT relay + CA cert 注入 + NO_PROXY allowlist（容器环境） [↓](./qwen-code-improvement-report-p2-core.md#item-19) | 缺失 | 大 | — |
 | **P2** | [ConfigTool](./config-tool-dynamic-settings-deep-dive.md) — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](./qwen-code-improvement-report-p2-core.md#item-20) | 仅 /settings 命令 | 小 | [PR#2911](https://github.com/QwenLM/qwen-code/pull/2911) |
-| **P2** | [终端主题检测](./terminal-theme-detection-deep-dive.md) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | — |
+| **P2** | [终端主题检测](./terminal-theme-detection-deep-dive.md) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | [PR#3082](https://github.com/QwenLM/qwen-code/pull/3082) |
 | **P2** | [自动后台化 Agent](./session-backgrounding-deep-dive.md) — 当前会话可转后台继续执行，并在稍后恢复到前台 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | 需显式指定 | 小 | — |
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](./qwen-code-improvement-report-p2-core.md#item-7) | 缺失 | 小 | — |
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2-core.md#item-23) | 缺失 | 小 | [PR#2871](https://github.com/QwenLM/qwen-code/pull/2871) |
@@ -139,7 +139,7 @@
 | **P2** | 结构化 Diff 渲染 — Rust NAPI 快速着色 + 行号 gutter + 语法高亮 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-9) | 基础 inline diff | 中 | — |
 | **P2** | Slash Command 命名空间治理 — source namespace + reserved names + 来源透明 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-10) | 后者覆盖前者 | 中 | — |
 | **P2** | /plan 计划模式 — Agent 只分析不动手 + 用户确认后执行 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-11) | 无计划模式 | 小 | [PR#2921](https://github.com/QwenLM/qwen-code/pull/2921) ✓ / [PR#3008](https://github.com/QwenLM/qwen-code/pull/3008) ✓ |
-| **P2** | /rename 重命名会话 — 手动修改会话标题 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-12) | AI 自动标题不可改 | 小 | — |
+| **P2** | /rename 重命名会话 — 手动修改会话标题 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-12) | AI 自动标题不可改 | 小 | [PR#3093](https://github.com/QwenLM/qwen-code/pull/3093) / [PR#3105](https://github.com/QwenLM/qwen-code/pull/3105) |
 | **P2** | /upgrade 版本升级 — changelog 展示 + 一键更新 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-13) | 手动 npm update | 小 | — |
 | **P2** | Plugin 系统增强 — 聚合容器（commands+skills+hooks+MCP）+ 一键安装/卸载 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-14) | extension 分散管理 | 中 | — |
 | **P2** | 文件编辑引号风格保留 — preserveQuoteStyle() 检测并保持原文件引号风格 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-15) | 直接替换不保留 | 小 | — |
@@ -359,7 +359,7 @@
 | Team Memory | 组织级记忆同步 | 无 | 缺失 | — |
 | 自定义快捷键 | multi-chord + keybindings.json | 无 | 缺失 | — |
 | 企业代理 | CONNECT relay + CA cert 注入 | 无 | 缺失 | — |
-| 终端主题 | OSC 11 dark/light 检测 | 无 | 缺失 | — |
+| 终端主题 | OSC 11 dark/light 检测 | 无 | 缺失 | [PR#3082](https://github.com/QwenLM/qwen-code/pull/3082) |
 | Denial Tracking | 权限拒绝学习 + 自动回退 | 无 | 缺失 | — |
 
 ## 五、相关 Deep-Dive 文章
@@ -421,6 +421,11 @@
 - 修正 Deep-Dive 索引数：134→133（实际值）
 - 同步 README.md 数据：248 项、25 PR、133 篇 Deep-Dive
 - 重写 5 个 Agent 文档系列（Copilot CLI / Codex CLI / Aider / Goose / Kimi CLI）为开发者视角
+
+### 2026-04-10（晚间更新）
+
+- 新增 PR 追踪：[#3087](https://github.com/QwenLM/qwen-code/pull/3087)（auto-memory + auto-dream 记忆系统）、[#3082](https://github.com/QwenLM/qwen-code/pull/3082)（终端 dark/light 主题检测）、[#3093](https://github.com/QwenLM/qwen-code/pull/3093)（会话 rename/delete/auto-title）、[#3105](https://github.com/QwenLM/qwen-code/pull/3105)（/chat 命名会话管理）
+- 总追踪 PR：35 个（10 已合并 ✓）
 
 ### 2026-04-10
 
