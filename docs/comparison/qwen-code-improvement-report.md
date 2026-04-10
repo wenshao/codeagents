@@ -4,8 +4,9 @@
 >
 > **相关报告**：
 > - [Gemini CLI 上游 backport 报告（53 项）](./qwen-code-gemini-upstream-report.md)——Qwen Code 上游的可 backport 改进
-> - [OpenCode 对标改进报告（27 项）](./qwen-code-opencode-improvements.md)——文件时间锁、Session Fork、SQLite 等
-> - [/review 功能改进建议](./qwen-code-review-improvements.md)——审查功能 5 方对比（含 gstack）+ 10 项改进
+> - [Codex CLI 对标改进报告（25 项）](./qwen-code-codex-improvements.md)——沙箱、Apply Patch、Feature Flag、网络代理等
+> - [OpenCode 对标改进报告（27 项）](./qwen-code-opencode-improvements.md)——Provider 系统、Plugin 插件、Snapshot 快照等
+> - [/review 功能分析](./qwen-code-review-improvements.md)——审查功能 5 方对比（含 gstack）
 
 ## 一、Claude Code 功能模块清单
 
