@@ -206,3 +206,19 @@ const [branch, mainBranch, status, log, userName] = await Promise.all([
 ### P2：Git 上下文并行获取
 
 参考 Claude Code 的 `Promise.all()` 并行执行 5 个 git 命令模式，减少上下文收集延迟。
+
+## 六、补充：CLI vs Agent SDK 的系统提示差异
+
+> 参考：[claude-code-best-practice](https://github.com/shanraisshan/claude-code-best-practice) 的 SDK vs CLI 系统提示对比报告
+
+Claude Code CLI 和 Agent SDK 发送给 API 的系统提示**完全不同**：
+
+| 维度 | Claude CLI（Claude Code） | Agent SDK（默认） | Agent SDK（`claude_code` preset） |
+|------|-------------------------|------------------|----------------------------------|
+| 基础 prompt | ~269 token（模块化） | 最小 prompt | 复用 CLI 的 prompt |
+| 工具定义 | 18+ 内置工具 | 用户自定义 | 复用 CLI 的工具 |
+| 条件加载 | 110+ 系统提示字符串按 feature 条件加载 | 无条件加载 | 部分条件加载 |
+| 安全审查 | ~2,610 token 扩展安全指令（条件） | 无 | 有 |
+| 项目上下文 | CLAUDE.md + settings + hooks | 无 | 用户注入 |
+
+**对 Qwen Code 的启发**：如果 Qwen Code 未来提供 SDK 模式（如 `@qwen-code/sdk`），需要决定是否复用 CLI 的完整系统提示还是提供精简版。Claude Code 的经验是：SDK 默认精简，但提供 `claude_code` preset 让用户选择完整模式。
