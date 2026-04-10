@@ -425,7 +425,7 @@
 ### 2026-04-10（晚间更新）
 
 - 新增 PR 追踪：[#3087](https://github.com/QwenLM/qwen-code/pull/3087)（auto-memory + auto-dream 记忆系统）、[#3082](https://github.com/QwenLM/qwen-code/pull/3082)（终端 dark/light 主题检测）、[#3093](https://github.com/QwenLM/qwen-code/pull/3093)（会话 rename/delete/auto-title）、[#3105](https://github.com/QwenLM/qwen-code/pull/3105)（/chat 命名会话管理）、[#3115](https://github.com/QwenLM/qwen-code/pull/3115)（Commit Attribution per-file AI 贡献追踪）
-- 总追踪 PR：36 个（10 已合并 ✓）
+- 总追踪 PR：36 个（11 已合并 ✓）
 
 ### 2026-04-10
 
