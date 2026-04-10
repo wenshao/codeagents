@@ -238,11 +238,11 @@
 
 ### 12. Secrets Manager 密钥管理（P2）
 
-**问题**：API 密钥通过环境变量传递，无作用域隔离。
+**问题**：用户自定义密钥（API Key、token 等）通过环境变量传递，无项目作用域隔离。Qwen Code 有 `KeychainTokenStorage` 但仅用于 MCP OAuth 凭据。
 
-**Codex CLI 的解决方案**：`secrets/`（~682 行）——OS 密钥环后端 + Global/Environment 双作用域 + 安全路径哈希。
+**Codex CLI 的解决方案**：`secrets/`（~682 行）——通用密钥管理：OS 密钥环后端 + Global/Environment（基于 cwd）双作用域 + 安全路径哈希 + list/get/set/delete 操作。
 
-**实现成本**：~2 天
+**实现成本**：~2 天（可复用现有 `KeychainTokenStorage` 基础设施）
 
 ---
 
