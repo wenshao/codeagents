@@ -385,7 +385,7 @@ interface ScheduledTask {
 
 ### 替代模式：Multica Daemon
 
-[Multica](https://github.com/multica-ai/multica)（`server/internal/daemon/`，2,127 行 Go）采用了不同于 Kairos 的自治 Agent 模式：
+[Multica](https://github.com/multica-ai/multica)（`server/internal/daemon/`，~5,600 行 Go，含 execenv/repocache/usage 子模块）采用了不同于 Kairos 的自治 Agent 模式：
 
 | 维度 | Kairos（Claude Code） | Multica Daemon |
 |------|---------------------|---------------|
