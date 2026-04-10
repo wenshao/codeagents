@@ -206,6 +206,8 @@
 - 广度优先 vs 深度优先执行策略
 - Agent 生命周期事件
 
+**参考实现**：[Multica](https://github.com/multica-ai/multica)（`server/pkg/agent/`，4,201 行 Go）提供了统一的 Agent Backend 抽象——同一 `Backend` 接口驱动 Claude Code（stream-json）、Codex CLI（JSON-RPC）、OpenClaw、OpenCode 四种 Agent。Qwen Code 如果要编排外部 Agent（如调用 Claude Code 做 /ultrareview），可参考此模式。
+
 **实现成本**：~2 周，参考 Claude Code 改进报告 [engine#14](./qwen-code-improvement-report-p0-p1-engine.md#item-14)。
 
 ---

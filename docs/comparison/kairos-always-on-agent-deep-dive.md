@@ -382,3 +382,18 @@ interface ScheduledTask {
 | [远程控制 Bridge](./remote-control-bridge-deep-dive.md) | Kairos 启用时自动激活 Bridge |
 | [PR Webhook 事件订阅](./pr-webhook-event-subscription-deep-dive.md) | SubscribePR 工具的底层机制 |
 | [成本与 Fast Mode](./cost-fastmode-deep-dive.md) | cc_workload=cron 的 QoS 分级 |
+
+### 替代模式：Multica Daemon
+
+[Multica](https://github.com/multica-ai/multica)（`server/internal/daemon/`，2,127 行 Go）采用了不同于 Kairos 的自治 Agent 模式：
+
+| 维度 | Kairos（Claude Code） | Multica Daemon |
+|------|---------------------|---------------|
+| 触发方式 | Cron 定时 + PR 事件 | 后台轮询服务器任务队列 |
+| 任务来源 | 自主发现（PR、Issue、定时维护） | 平台分配（Issue Board 上人类指派） |
+| Agent 编排 | 单 Agent + 异步派生 | 多 Agent 统一 Backend（Claude/Codex/OpenClaw/OpenCode） |
+| 状态管理 | Brief 模式（通知 + 睡眠） | 数据库任务状态机（enqueue→claim→start→complete/fail） |
+| 安全 | sandbox + 权限升级 | Secret Redaction（输出脱敏） |
+| 适用场景 | 个人开发者自治 | 团队协作管理（"AI 版 Linear"） |
+
+对 Qwen Code 的启发：如果目标是**团队场景**（多人 + 多 Agent 协作），Multica 的 Daemon 轮询模式比 Kairos 的 Cron 模式更合适；如果目标是**个人自治**，Kairos 的事件驱动模式更轻量。

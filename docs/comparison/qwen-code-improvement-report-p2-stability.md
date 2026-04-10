@@ -1119,7 +1119,9 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 | `services/teamMemorySync/secretScanner.ts` (295行) | 50+ gitleaks 规则 |
 | `services/teamMemorySync/teamMemSecretGuard.ts` (44行) | 写入阻断 |
 
-**Qwen Code 修改方向**：无工具输出密钥扫描。改进方向：① 移植 gitleaks 规则；② 写入文件/记忆前扫描；③ 检测到密钥时警告 + 阻止写入共享位置。
+**参考实现**：[Multica](https://github.com/multica-ai/multica)（`server/pkg/redact/`）在 Agent 输出存入数据库和 WebSocket 广播前自动脱敏——覆盖 AWS Key、GitHub Token、PEM 私钥、SSH 密钥等模式，正则匹配 + 替换为 `[REDACTED ...]`。
+
+**Qwen Code 修改方向**：无工具输出密钥扫描。改进方向：① 移植 gitleaks 规则（或参考 Multica 的 `redact` 包）；② 写入文件/记忆前扫描；③ 检测到密钥时警告 + 阻止写入共享位置。
 
 **实现成本评估**：
 - 涉及文件：~3 个
