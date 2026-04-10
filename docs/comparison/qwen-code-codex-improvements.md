@@ -49,9 +49,10 @@
 
 | 平台 | 实现 | 规模 | 隔离级别 |
 |------|------|:----:|---------|
-| macOS | Seatbelt（`sandbox-exec`） | ~3,500 行 | read-only / restricted-read / workspace-write / danger-full-access |
+| macOS | Seatbelt（`sandbox-exec`） | ~1,600 行 | read-only / restricted-read / workspace-write / danger-full-access |
 | Linux | Bubblewrap + Landlock 回退 | ~4,000 行 | 命名空间隔离 + 内核级文件控制 |
 | Windows | 受限令牌（restricted token） | ~9,757 行 | 实验性 |
+| 通用 | `sandboxing/` 管理器 + 测试 | ~2,000 行 | 平台适配层 |
 
 **Qwen Code 修改方向**：先实现 Linux Landlock（最简单，内核 5.13+），再扩展 macOS Seatbelt。
 
@@ -398,7 +399,7 @@
 | **默认沙箱** | ✅ 3 平台 | 可选 | 可选 | ❌ |
 | **网络隔离** | ✅ 默认阻断 | 可选 | 无 | ❌ |
 | **Feature Flag** | 52 运行时 | 22 编译时 | 无 | ❌ |
-| **IDE 协议** | 90+ JSON-RPC | WebSocket Bridge | 无 | ❌ |
+| **IDE 协议** | 90+ JSON-RPC | WebSocket Bridge | VS Code Companion | VS Code Companion |
 | **会话 Fork** | ✅ | ✅ | ✅ | ❌ |
 | **Cloud 执行** | ✅ best-of-N | Kairos | 无 | ❌ |
 | **MCP 双向** | ✅ 客户端+服务器 | 客户端 | 客户端 | 客户端 |
