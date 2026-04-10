@@ -28,14 +28,14 @@
 | [15](#item-15) | 执行策略引擎 | **P2** | `execpolicy/` | 1,790 行 |
 | [16](#item-16) | Code Review 独立子命令 | **P2** | `exec/` review 部分 | ~2,000 行 |
 | [17](#item-17) | Cloud Tasks 云端执行 | **P2** | `cloud-tasks/` | 4,801 行 |
-| [18](#item-18) | 终端检测与主题适配 | **P3** | `terminal-detection/` | 1,353 行 |
-| [19](#item-19) | 实时语音对话 | **P3** | `realtime-webrtc/` + core | ~8,000 行 |
-| [20](#item-20) | Personality 人格选择 | **P3** | `features/` personality | ~200 行 |
-| [21](#item-21) | MCP Server 模式 | **P2** | `mcp-server/` | 2,487 行 |
-| [22](#item-22) | Code Mode 轻量沙箱 | **P3** | `code-mode/` | 2,746 行 |
-| [23](#item-23) | 请求压缩（Zstd） | **P3** | `features/` | ~100 行 |
-| [24](#item-24) | Exec Server 远程执行 | **P3** | `exec-server/` | 5,150 行 |
-| [25](#item-25) | 多层配置栈 | **P2** | `config/` | 6,879 行 |
+| [18](#item-18) | MCP Server 模式 | **P2** | `mcp-server/` | 2,487 行 |
+| [19](#item-19) | 多层配置栈 | **P2** | `config/` | 6,879 行 |
+| [20](#item-20) | 终端检测与主题适配 | **P3** | `terminal-detection/` | 1,353 行 |
+| [21](#item-21) | 实时语音对话 | **P3** | `realtime-webrtc/` + core | ~8,000 行 |
+| [22](#item-22) | Personality 人格选择 | **P3** | `features/` personality | ~200 行 |
+| [23](#item-23) | Code Mode 轻量沙箱 | **P3** | `code-mode/` | 2,746 行 |
+| [24](#item-24) | 请求压缩（Zstd） | **P3** | `features/` | ~100 行 |
+| [25](#item-25) | Exec Server 远程执行 | **P3** | `exec-server/` | 5,150 行 |
 
 ---
 
@@ -307,67 +307,85 @@
 
 <a id="item-18"></a>
 
-### 18. 终端检测与主题适配（P3）
+### 18. MCP Server 模式（P2）
 
-Codex CLI `terminal-detection/`（1,353 行）自动检测终端能力（Kitty 键盘协议、bracketed paste、色彩深度），适配不同终端。
+**问题**：Qwen Code 只能调用 MCP 服务器的工具，不能被其他 Agent 以 MCP 协议调用。
 
----
-
-<a id="item-19"></a>
-
-### 19. 实时语音对话（P3）
-
-Codex CLI 支持 GPT-4 Realtime 双向流式语音（WebSocket + WebRTC），~8,000 行实现。需要模型支持实时音频 API。
-
----
-
-<a id="item-20"></a>
-
-### 20. Personality 人格选择（P3）
-
-TUI 中可选择 Agent 人格/风格（`codex features enable personality`），通过 prompt 注入不同的交互风格。
-
----
-
-<a id="item-21"></a>
-
-### 21. MCP Server 模式（P2）
-
-Codex CLI 可作为 MCP Server 运行（`codex mcp-server`），让其他 Agent 调用 Codex 的工具——与 MCP Client 形成双向通信。
+**Codex CLI 的解决方案**：`mcp-server/`（2,487 行）——`codex mcp-server` 以 stdio 模式启动，暴露 tools/resources/prompts 能力，支持 MCP 协议 `2024-11-05`。
 
 **实现成本**：~3 天
 
 ---
 
+<a id="item-19"></a>
+
+### 19. 多层配置栈（P2）
+
+**问题**：Qwen Code 配置层次扁平，缺少团队级和工作区级覆盖。
+
+**Codex CLI 的解决方案**：`config/`（6,879 行）——5 层配置合并（global → user → project → workspace → workspace-local）+ TOML 解析 + 配置迁移 + Profile 支持。
+
+**实现成本**：~1 周
+
+---
+
+<a id="item-20"></a>
+
+### 20. 终端检测与主题适配（P3）
+
+**问题**：不同终端（SSH、容器、IDE 嵌入）能力差异大，当前无适配。
+
+**Codex CLI 的解决方案**：`terminal-detection/`（1,353 行）——自动检测 Kitty 键盘协议、bracketed paste、色彩深度，适配不同终端。
+
+---
+
+<a id="item-21"></a>
+
+### 21. 实时语音对话（P3）
+
+**问题**：CLI 交互仅限键盘输入，无语音能力。
+
+**Codex CLI 的解决方案**：GPT-4 Realtime 双向流式语音（WebSocket + WebRTC），~8,000 行实现。需要模型支持实时音频 API。
+
+---
+
 <a id="item-22"></a>
 
-### 22. Code Mode 轻量沙箱（P3）
+### 22. Personality 人格选择（P3）
 
-`code-mode/`（2,746 行）——统一 exec + wait 工具接口，运行时约束（yield 时间、输出 token 上限），嵌套工具检测防止循环。
+**问题**：Agent 交互风格固定，无法按用户偏好调整。
+
+**Codex CLI 的解决方案**：TUI 中可选 Agent 人格/风格（`codex features enable personality`），通过 prompt 注入不同交互风格。
 
 ---
 
 <a id="item-23"></a>
 
-### 23. 请求压缩（Zstd）（P3）
+### 23. Code Mode 轻量沙箱（P3）
 
-大上下文请求使用 Zstd 压缩，减少 30-50% 传输体积。
+**问题**：简单代码执行也需要走完整 Shell 工具流程，开销大。
+
+**Codex CLI 的解决方案**：`code-mode/`（2,746 行）——统一 exec + wait 工具接口，运行时约束（yield 时间、输出 token 上限），嵌套工具检测防止循环。
 
 ---
 
 <a id="item-24"></a>
 
-### 24. Exec Server 远程执行（P3）
+### 24. 请求压缩（Zstd）（P3）
 
-`exec-server/`（5,150 行）——RPC 进程管理（start/read/write/terminate），支持远程容器/CI 系统中执行，与本地使用同一 API。
+**问题**：大上下文请求传输慢。
+
+**Codex CLI 的解决方案**：可选 Zstd 压缩，减少 30-50% 传输体积。
 
 ---
 
 <a id="item-25"></a>
 
-### 25. 多层配置栈（P2）
+### 25. Exec Server 远程执行（P3）
 
-`config/`（6,879 行）——5 层配置合并（global → user → project → workspace → workspace-local）+ TOML 解析 + 配置迁移 + Profile 支持。
+**问题**：所有代码执行限于本地环境。
+
+**Codex CLI 的解决方案**：`exec-server/`（5,150 行）——RPC 进程管理（start/read/write/terminate），支持远程容器/CI 系统中执行，与本地使用同一 API。
 
 ---
 
