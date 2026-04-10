@@ -5,7 +5,8 @@
 > **相关报告**：
 > - [Claude Code 改进建议报告（248 项）](./qwen-code-improvement-report.md)——行业领先者对比
 > - [Gemini CLI 上游 backport 报告（53 项）](./qwen-code-gemini-upstream-report.md)——上游可 backport 改进
-> - [/review 功能改进建议](./qwen-code-review-improvements.md)——审查功能改进
+> - [Codex CLI 对标改进报告（25 项）](./qwen-code-codex-improvements.md)——沙箱、Apply Patch、Feature Flag、网络代理等
+> - [/review 功能分析](./qwen-code-review-improvements.md)——审查功能 5 方对比
 
 ---
 

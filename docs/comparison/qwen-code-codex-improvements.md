@@ -416,8 +416,8 @@
 | **第 2-3 周** | 2 周 | 默认沙箱 Linux (#1) + Shell 安全 (#5/#6) | 安全模型完善 |
 | **第 4 周** | 1 周 | 会话 Resume & Fork (#4) + Ghost Commit (#11) | 跨会话工作流 |
 | **第 5-6 周** | 2 周 | 网络代理 (#7) + 执行策略 (#15) + Secrets (#12) | 网络安全 + 密钥管理 |
-| **第 7-8 周** | 2 周 | 多 Agent V2 (#9) + MCP Server (#21) | 并行 Agent + 双向 MCP |
-| **后续** | 按需 | App-Server (#8) + Cloud Tasks (#17) + 语音 (#19) | IDE 集成 + 云端 |
+| **第 7-8 周** | 2 周 | 多 Agent V2 (#9) + MCP Server (#18) | 并行 Agent + 双向 MCP |
+| **后续** | 按需 | App-Server (#8) + Cloud Tasks (#17) + 语音 (#21) | IDE 集成 + 云端 |
 
 ## 四、Qwen Code 独有优势（Codex CLI 无）
 
