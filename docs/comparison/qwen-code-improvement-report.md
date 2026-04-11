@@ -122,6 +122,7 @@
 | **P2** | Chrome Extension — 调试 live web 应用（读 DOM/Console/Network）[↓](./qwen-code-improvement-report-p2-tools-commands.md#item-5) | 缺失 | 中 | — |
 | **P2** | [MCP Auto-Reconnect](./mcp-auto-reconnect-deep-dive.md) — 连续 3 次错误自动重连 + SSE 断线恢复 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-13) | 缺失 | 小 | — |
 | **P2** | Tool Result 大小限制 — 超限结果持久化到磁盘，发文件路径给模型 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-14) | 缺失 | 小 | — |
+| | ↳ 参考：[RTK](https://github.com/rtk-ai/rtk)——在命令输出端过滤压缩（58 个 TOML 规则，-80% token），30 分钟会话节省 118K→24K token | | | |
 | **P2** | Output Token 升级重试 — 首次 8K 截断后自动 64K 重试 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-15) | 缺失 | 小 | — |
 | **P2** | [Ripgrep 三级回退](./ripgrep-fallback-deep-dive.md) — System→Embedded→Builtin + EAGAIN 单线程重试 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-16) | 缺失 | 小 | — |
 | **P2** | MAGIC DOC 自更新文档 — 空闲时 Agent 自动更新标记文件的内容 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-17) | 缺失 | 中 | — |

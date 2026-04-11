@@ -985,7 +985,9 @@ const MemoizedAppHeader = memo(AppHeader);
 
 **Qwen Code 现状**：工具输出全量保留在上下文中，依赖压缩时统一处理。
 
-**Qwen Code 修改方向**：① 新建 `toolOutputMaskingService.ts`；② 在发送 API 请求前对历史消息中的大工具输出做预览替换；③ 配置保护区大小和豁免工具列表。
+**互补方案**：[RTK](https://github.com/rtk-ai/rtk)（23,650 stars）从**命令执行端**解决同一问题——通过 Hook 拦截 Agent 的 shell 命令，在输出**进入上下文之前**就过滤压缩（58 个 TOML 声明式规则，覆盖 git/npm/cargo/pytest 等 100+ 命令）。RTK 实测 30 分钟会话节省 118K→24K token（-80%）。两者互补：RTK 在**输入端**减少 token，Tool Output Masking 在**历史端**裁剪已有的大输出。
+
+**Qwen Code 修改方向**：① 新建 `toolOutputMaskingService.ts`；② 在发送 API 请求前对历史消息中的大工具输出做预览替换；③ 配置保护区大小和豁免工具列表。也可考虑在 shell 工具中内置类似 RTK 的输出过滤能力（声明式 TOML 规则），从源头减少 token 消耗。
 
 **实现成本评估**：
 - 涉及文件：~2 个
