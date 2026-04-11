@@ -281,9 +281,19 @@
 
 <a id="item-10"></a>
 
-### 10. Ghost Text 输入补全（P1）
+### 10. Ghost Text 输入补全增强（P1）
 
-**思路**：用户输入时在光标后显示灰色建议文字（ghost text）——命令名、文件路径、shell history 三层。Tab/Right Arrow 接受。建议仅在光标位于正确插入点时显示。
+**现状**：Qwen Code 已有较完整的输入补全体系：
+
+| 能力 | Qwen Code | Claude Code |
+|------|:---------:|:-----------:|
+| Slash 命令补全（`/` 触发） | ✅ `useSlashCompletion` | ✅ `commandSuggestions` |
+| @ 文件路径补全（`@` 触发） | ✅ `useAtCompletion` | ✅ `directoryCompletion` + LRU 缓存 |
+| Shell history 补全 | ✅ `useShellHistory` | ✅ `shellHistoryCompletion` |
+| Follow-up 建议（AI 响应后） | ✅ `useFollowupSuggestions` | ✅ `promptSuggestions` |
+| 通用 ghost text（非命令输入时的灰字建议） | ❌ | ✅ `InlineGhostText` 类型 |
+
+**差距**：Qwen Code 的补全在**触发模式**（`/`、`@`）下工作良好，但在普通输入时没有 Claude Code 的 `InlineGhostText` 机制——即用户输入普通文本时光标后显示灰色建议（如基于上下文预测下一步操作）。
 
 **Claude Code 源码索引**：
 
@@ -291,20 +301,10 @@
 |------|-------------|
 | `types/textInputTypes.ts` | `InlineGhostText` 类型定义 |
 | `hooks/useTextInput.ts` | ghost text 渲染 + `insertPosition === offset` 检查 |
-| `utils/suggestions/commandSuggestions.ts` | 命令名模糊匹配 |
-| `utils/suggestions/directoryCompletion.ts` | 路径补全 + LRU 缓存 |
-| `utils/suggestions/shellHistoryCompletion.ts` | `~/.bash_history` 缓存 |
-
-**Qwen Code 修改方向**：`InputPrompt.tsx` 新增 ghost text 渲染层（Ink `<Text dimColor>`）；新建 `utils/suggestions/` 目录实现命令/路径/历史三层补全。
 
 **实现成本评估**：
-- 涉及文件：~5 个
-- 新增代码：~400 行
-- 开发周期：~4 天（1 人）
-- 难点：输入法 composition 事件与 ghost text 的冲突处理
-
-**意义**：命令补全是 CLI 工具最基础的 UX 期待——无补全等于每次都手打全名。
-**缺失后果**：用户需完整输入 `/compress`、文件路径等——效率低且易出错。
-**改进收益**：输入 `/com` 即显示 `/compress` 灰字，Tab 接受——打字量减半。
+- 涉及文件：~3 个
+- 新增代码：~200 行
+- 开发周期：~2 天（1 人）
 
 ---
