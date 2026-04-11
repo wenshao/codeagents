@@ -1,6 +1,6 @@
 # AI 编程 Code Agent 对比
 
-> 基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比 | 284 文件 | 72,000+ 行 | 134 篇 Deep-Dive | 10 个 EVIDENCE.md
+> 基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比 | 284 文件 | 72,000+ 行 | 133 篇 Deep-Dive | 10 个 EVIDENCE.md
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -9,7 +9,7 @@
 | 入口 | 说明 |
 |------|------|
 | **[Deep-Dive 索引（133 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
-| **[Qwen Code 改进报告（247 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 35 个社区 PR 追踪 |
+| **[Qwen Code 改进报告（247 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 38 个社区 PR 追踪 |
 | **[Gemini CLI backport（53 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 + 模块级架构对比 |
 | **[/review 功能分析](./docs/comparison/qwen-code-review-improvements.md)** | 审查功能 5 方对比（含 gstack） |
 | **[Codex CLI 对标改进（25 项）](./docs/comparison/qwen-code-codex-improvements.md)** | 沙箱 + Apply Patch + Feature Flag + 网络代理 |
@@ -77,7 +77,7 @@
 
 | 报告 | 说明 |
 |------|------|
-| [Claude Code 对比（247 项）](./docs/comparison/qwen-code-improvement-report.md) | 改进建议 + 35 个社区 PR 追踪（13 已合并） |
+| [Claude Code 对比（247 项）](./docs/comparison/qwen-code-improvement-report.md) | 改进建议 + 38 个社区 PR 追踪（13 已合并） |
 | [Gemini CLI backport（53 项）](./docs/comparison/qwen-code-gemini-upstream-report.md) | 上游可 backport 改进 + 模块级架构对比 |
 | [/review 功能分析](./docs/comparison/qwen-code-review-improvements.md) | 审查功能 5 方对比（含 gstack） |
 | [工具输出限高](./docs/comparison/tool-output-height-limiting-deep-dive.md) | Gemini CLI SlicingMaxSizedBox vs Qwen Code |
@@ -100,7 +100,7 @@
 
 **命令对比：** [/review](./docs/comparison/review-command.md) | [/compact /plan /init](./docs/comparison/key-commands-deep-dive.md) | [/loop /schedule](./docs/comparison/loop-schedule.md) | [/btw /rewind](./docs/comparison/btw-rewind.md) | [内置命令总览](./docs/comparison/slash-commands-deep-dive.md)
 
-**完整索引：** [134 篇 Deep-Dive 文章索引](./docs/comparison/deep-dive-index.md)
+**完整索引：** [133 篇 Deep-Dive 文章索引](./docs/comparison/deep-dive-index.md)
 
 ### Agent 1v1 对比
 

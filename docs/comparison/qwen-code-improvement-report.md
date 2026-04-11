@@ -415,13 +415,6 @@
 
 ## 六、更新日志
 
-### 2026-04-09
-
-- 修正子报告项数：engine 24→27、stability 34→41、hooks 32→33
-- 修正 Deep-Dive 索引数：134→133（实际值）
-- 同步 README.md 数据：248 项、25 PR、133 篇 Deep-Dive
-- 重写 5 个 Agent 文档系列（Copilot CLI / Codex CLI / Aider / Goose / Kimi CLI）为开发者视角
-
 ### 2026-04-11
 
 - 标记已合并：[#2871](https://github.com/QwenLM/qwen-code/pull/2871) ✓（队列输入编辑 Up arrow key）、[#2914](https://github.com/QwenLM/qwen-code/pull/2914) ✓（Markdown 表格 CJK 列宽）
@@ -445,6 +438,13 @@
 - 标记已合并：[#2923](https://github.com/QwenLM/qwen-code/pull/2923) ✓（Status Line 自定义）、[#3008](https://github.com/QwenLM/qwen-code/pull/3008) ✓（/plan 退出恢复模式）
 - 新增 PR 追踪：[#3064](https://github.com/QwenLM/qwen-code/pull/3064)（disallowedTools Agent 工具黑名单）、[#3066](https://github.com/QwenLM/qwen-code/pull/3066)（approval mode 传播到 sub-agent）、[#3042](https://github.com/QwenLM/qwen-code/pull/3042)（/context detail 子命令）
 - 总追踪 PR：27 个（9 已合并 ✓）
+
+### 2026-04-09
+
+- 修正子报告项数：engine 24→27、stability 34→41、hooks 32→33
+- 修正 Deep-Dive 索引数：134→133（实际值）
+- 同步 README.md 数据
+- 重写 5 个 Agent 文档系列（Copilot CLI / Codex CLI / Aider / Goose / Kimi CLI）为开发者视角
 
 ### 2026-04-08（晚间更新）
 
