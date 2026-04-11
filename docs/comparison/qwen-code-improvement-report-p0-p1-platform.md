@@ -293,7 +293,7 @@
 | Follow-up 建议（AI 响应后） | ✅ `useFollowupSuggestions` | ✅ `promptSuggestions` |
 | 通用 ghost text（非命令输入时的灰字建议） | ❌ | ✅ `InlineGhostText` 类型 |
 
-**差距**：Qwen Code 的补全在**触发模式**（`/`、`@`）下工作良好，但在普通输入时没有 Claude Code 的 `InlineGhostText` 机制——即用户输入普通文本时光标后显示灰色建议（如基于上下文预测下一步操作）。
+**差距很小**：Qwen Code 的补全体系已较完整——包括 Tab 接受 follow-up 建议（AI 响应后的灰字提示）。与 Claude Code 的差异主要在**用户打字过程中**的实时 ghost text（如输入 `fix` 时预测 `fix the bug in auth.ts`），Qwen Code 的 ghost text 仅在**AI 响应后**（follow-up）和**特定前缀**（`/`、`@`）时触发。
 
 **Claude Code 源码索引**：
 
