@@ -464,12 +464,10 @@ Mock 外部依赖，不 Mock 内部模块。
 
 **效果**：Agent 编辑数据库迁移文件时自动注入安全规则；编辑 API 路由时注入安全检查；编辑测试文件时注入测试规范——每种场景只加载相关的指令，精准且省 token。
 
-**Claude Code 源码索引**：
+**Claude Code 参考**：
 
-| 文件 | 关键函数/常量 |
-|------|-------------|
-| `utils/claudemd.ts` (1479行) | `processMdRules()`、`@include` 指令解析、HTML 注释剥离 |
-| `utils/frontmatterParser.ts` | `paths:` glob 解析（`ignore` 库 picomatch） |
+- 官方文档：[Memory - Organize rules with .claude/rules](https://code.claude.com/docs/en/memory#organize-rules-with-clauderules)
+- 源码：`utils/claudemd.ts`（1,479 行）`processMdRules()` + `utils/frontmatterParser.ts` `paths:` glob 解析
 
 **Qwen Code 现状**：仅支持单一 `QWEN.md` 全局指令文件，无条件加载机制。所有规则始终注入系统提示。
 
