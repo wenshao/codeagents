@@ -391,27 +391,23 @@ Preconnect 实现极简（71 行）——发一个不等响应的 HEAD 请求，
 
 <a id="item-9"></a>
 
-### 9. 按目录自动切换编码规范（P1）
+### 9. 按路径自动注入上下文规则（P1）
 
 **用户痛点**：
 
-一个 monorepo 项目有 3 个子目录，编码规范完全不同：
+当前 Qwen Code 只有一个全局 `QWEN.md`——所有指令塞在一起，不管 Agent 操作什么文件都全部加载。这导致两个问题：
 
-```
-myapp/
-├── packages/frontend/    # TypeScript + React——"组件用函数式，用 Tailwind"
-├── packages/backend/     # Python + FastAPI——"用 class-based view，PEP8"
-└── docs/                 # Markdown——"中文技术文档，术语保留英文"
-```
+1. **Token 浪费**：操作 Python 文件时，TypeScript 规范也在系统提示中
+2. **规则互相矛盾**：前端规范"用函数式"和后端规范"用 class"同时存在，模型困惑
 
-当前 Qwen Code 只有一个全局 `QWEN.md`，三套规范全部塞在里面。Agent 编辑 Python 文件时，TypeScript 和 Markdown 的规范也在系统提示中——**浪费 token**，而且前端规范"用函数式"和后端规范"用 class"**互相矛盾**，模型会困惑。
+这不只是编码规范的问题——**任何与特定文件/目录相关的上下文指令**都有同样的痛点：数据库迁移的安全规则、API 端点的安全检查、测试文件的编写规范、部署配置的运维规则……全部挤在一个文件里。
 
 **Claude Code 的解决方案**：
 
-在 `.claude/rules/` 目录下创建多个规则文件，每个文件用 YAML frontmatter 指定**生效路径**：
+在 `.claude/rules/` 目录下创建多个规则文件，每个文件用 YAML frontmatter 的 `paths:` 字段指定**生效路径**——本质是**按文件路径过滤的上下文注入机制**：
 
 ```markdown
-<!-- .claude/rules/frontend.md -->
+<!-- .claude/rules/frontend.md — 编码规范 -->
 ---
 paths:
   - "packages/frontend/**/*.tsx"
@@ -423,14 +419,42 @@ React 组件必须用函数式写法，禁止 class component。
 ```
 
 ```markdown
-<!-- .claude/rules/backend.md -->
+<!-- .claude/rules/database-safety.md — 数据库迁移安全规则 -->
 ---
 paths:
-  - "packages/backend/**/*.py"
+  - "**/migrations/**"
+  - "**/models/**"
 ---
 
-使用 class-based view，遵循 PEP8。
-数据库查询必须用参数化 SQL。
+大表（>100万行）禁止 NOT NULL 加列不带默认值。
+必须先加列后回填，不要在迁移中 UPDATE 全表。
+索引用 CREATE INDEX CONCURRENTLY。
+```
+
+```markdown
+<!-- .claude/rules/api-security.md — API 安全检查 -->
+---
+paths:
+  - "**/api/**"
+  - "**/routes/**"
+---
+
+所有用户输入必须参数化，禁止字符串拼接 SQL。
+文件上传必须校验 MIME type + 文件头魔数。
+敏感端点必须加 rate limiting。
+```
+
+```markdown
+<!-- .claude/rules/test-patterns.md — 测试规范 -->
+---
+paths:
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+---
+
+用 describe/it 而非 test()。
+Mock 外部依赖，不 Mock 内部模块。
+每个 test 只断言一个行为。
 ```
 
 **加载规则**：
@@ -438,7 +462,7 @@ paths:
 - 没有 `paths:` 的规则 → session 启动时加载（急加载）
 - HTML 注释 `<!-- ... -->` 自动剥离，不占 token
 
-**效果**：Agent 编辑 `packages/frontend/src/App.tsx` 时，只加载 frontend 规范；编辑 `packages/backend/api/users.py` 时，只加载 backend 规范。精准且省 token。
+**效果**：Agent 编辑数据库迁移文件时自动注入安全规则；编辑 API 路由时注入安全检查；编辑测试文件时注入测试规范——每种场景只加载相关的指令，精准且省 token。
 
 **Claude Code 源码索引**：
 
