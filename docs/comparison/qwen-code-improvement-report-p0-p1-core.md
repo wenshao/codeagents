@@ -391,16 +391,27 @@ Preconnect 实现极简（71 行）——发一个不等响应的 HEAD 请求，
 
 <a id="item-9"></a>
 
-### 9. 指令条件规则（P1）
+### 9. 按目录自动切换编码规范（P1）
 
-**思路**：一个 monorepo 项目包含前端（TypeScript/React）、后端（Python/FastAPI）、文档（Markdown）三个子目录，各有不同的编码规范。当前 Qwen Code 只支持一个全局 `QWEN.md`——所有规则塞在一起，无论 Agent 操作哪个目录的文件都全部加载。结果是：
+**用户痛点**：
 
-- **Token 浪费**：操作 Python 文件时，TypeScript 和 Markdown 的规则也被注入系统提示
-- **规则干扰**：前端规范"组件用函数式写法"和后端规范"用 class-based view"同时存在，模型困惑
+一个 monorepo 项目有 3 个子目录，编码规范完全不同：
 
-Claude Code 支持 **条件规则**——在 `.claude/rules/` 目录下创建多个规则文件，每个文件可以用 YAML frontmatter 指定生效路径：
+```
+myapp/
+├── packages/frontend/    # TypeScript + React——"组件用函数式，用 Tailwind"
+├── packages/backend/     # Python + FastAPI——"用 class-based view，PEP8"
+└── docs/                 # Markdown——"中文技术文档，术语保留英文"
+```
+
+当前 Qwen Code 只有一个全局 `QWEN.md`，三套规范全部塞在里面。Agent 编辑 Python 文件时，TypeScript 和 Markdown 的规范也在系统提示中——**浪费 token**，而且前端规范"用函数式"和后端规范"用 class"**互相矛盾**，模型会困惑。
+
+**Claude Code 的解决方案**：
+
+在 `.claude/rules/` 目录下创建多个规则文件，每个文件用 YAML frontmatter 指定**生效路径**：
 
 ```markdown
+<!-- .claude/rules/frontend.md -->
 ---
 paths:
   - "packages/frontend/**/*.tsx"
@@ -411,7 +422,23 @@ React 组件必须用函数式写法，禁止 class component。
 使用 Tailwind CSS，不要写内联样式。
 ```
 
-有 `paths:` 的规则只在 Agent 操作匹配文件时才惰加载（lazy load），没有 `paths:` 的规则在 session 启动时急加载（eager load）。此外支持 HTML 注释剥离——规则作者可以写 `<!-- 这是给人看的备注 -->` 而不占 token 预算。
+```markdown
+<!-- .claude/rules/backend.md -->
+---
+paths:
+  - "packages/backend/**/*.py"
+---
+
+使用 class-based view，遵循 PEP8。
+数据库查询必须用参数化 SQL。
+```
+
+**加载规则**：
+- 有 `paths:` 的规则 → Agent 操作匹配文件时才加载（惰加载）
+- 没有 `paths:` 的规则 → session 启动时加载（急加载）
+- HTML 注释 `<!-- ... -->` 自动剥离，不占 token
+
+**效果**：Agent 编辑 `packages/frontend/src/App.tsx` 时，只加载 frontend 规范；编辑 `packages/backend/api/users.py` 时，只加载 backend 规范。精准且省 token。
 
 **Claude Code 源码索引**：
 
@@ -420,21 +447,19 @@ React 组件必须用函数式写法，禁止 class component。
 | `utils/claudemd.ts` (1479行) | `processMdRules()`、`@include` 指令解析、HTML 注释剥离 |
 | `utils/frontmatterParser.ts` | `paths:` glob 解析（`ignore` 库 picomatch） |
 
-**Qwen Code 现状**：仅支持单一 `QWEN.md` 全局指令文件，无条件加载机制。所有规则始终注入系统提示，无法按文件路径过滤。
+**Qwen Code 现状**：仅支持单一 `QWEN.md` 全局指令文件，无条件加载机制。所有规则始终注入系统提示。
 
-**Qwen Code 修改方向**：`memoryImportProcessor.ts` 新增 frontmatter 解析；`memoryDiscovery.ts` 区分急/惰加载；文件操作时触发条件规则检查。
+**Qwen Code 修改方向**：
+1. 支持 `.qwen/rules/` 目录 + YAML frontmatter `paths:` 字段
+2. `memoryDiscovery.ts` 区分急/惰加载
+3. 文件操作时触发条件规则匹配
 
 **实现成本评估**：
 - 涉及文件：~3 个
 - 新增代码：~200 行
 - 开发周期：~3 天（1 人）
-- 难点：glob 模式匹配性能（大量规则时）
 
 **相关文章**：[指令文件加载](./instruction-loading-deep-dive.md)
-
-**意义**：大型项目不同目录有不同编码规范（TS/Python/Docs），全部加载浪费 token。
-**缺失后果**：所有规则塞在一个 QWEN.md 中——系统提示膨胀，规则互相干扰。
-**改进收益**：按文件路径匹配加载规则——操作 TS 文件时只注入 TS 规范，精准且省 token。
 
 ---
 
