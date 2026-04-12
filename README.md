@@ -1,6 +1,6 @@
 # AI 编程 Code Agent 对比
 
-> 基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比 | 284 文件 | 72,000+ 行 | 133 篇 Deep-Dive | 10 个 EVIDENCE.md
+> 基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比 | 293 文件 | 75,000+ 行 | 133 篇 Deep-Dive | 10 个 EVIDENCE.md
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
