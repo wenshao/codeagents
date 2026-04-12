@@ -243,7 +243,7 @@ Claude Code → CLI binary → localhost HTTP → Bun.serve() → Chromium (CDP)
 - **改进前**：状态栏固定显示——查看 rate limit 需要手动执行命令
 - **改进后**：配置 `statusLine: "curl -s api/rate-limit | jq .remaining"` → 状态栏实时显示剩余额度
 
-**进展**：[PR#2923](https://github.com/QwenLM/qwen-code/pull/2923)（open）— 实现了 `/statusline` 命令 + `useStatusLine` hook，用户通过 settings.json 配置 shell 命令，输出渲染在 Footer 下方。
+**进展**：[PR#2923](https://github.com/QwenLM/qwen-code/pull/2923) ✓ 已合并 — 实现了 `/statusline` 命令 + `useStatusLine` hook，用户通过 settings.json 配置 shell 命令，输出渲染在 Footer 下方。
 
 **意义**：状态栏是实时信息展示的最佳位置——rate limit、git branch 等。
 **缺失后果**：状态栏内容固定——无法展示用户关心的自定义信息。

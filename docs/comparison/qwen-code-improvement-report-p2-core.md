@@ -903,7 +903,7 @@ Subagent 启动 → 计时器开始 → 超过阈值 → 自动转后台 → 释
 - **改进前**：排队指令有误 → 无法撤回 → Agent 执行错误指令 → 额外一轮纠正
 - **改进后**：排队指令有误 → 按 Escape 弹出到输入框 → 修改后重新提交 → 零浪费
 
-**进展**：[QwenLM/qwen-code#2871](https://github.com/QwenLM/qwen-code/pull/2871)（open）— 实现了 Up 方向键弹出队列消息到输入框编辑。
+**进展**：[QwenLM/qwen-code#2871](https://github.com/QwenLM/qwen-code/pull/2871) ✓ 已合并 — 实现了 Up 方向键弹出队列消息到输入框编辑。
 
 **相关文章**：[输入队列与中断机制](./input-queue-deep-dive.md)
 
