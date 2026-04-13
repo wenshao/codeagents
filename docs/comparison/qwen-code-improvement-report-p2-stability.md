@@ -1207,31 +1207,38 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 
 <a id="item-37"></a>
 
-### 37. 工具并发安全分类（P2）
+### 37. 工具并发安全分类（P2）✓ 已合并
 
-**问题**：模型一次返回 5 个工具调用，哪些可以并行？当前 Qwen Code 仅按工具类型粗暴分类（Agent 工具并行，其他串行）。但 `read_file` 和 `grep` 也可以并行——它们不修改共享状态。
+**状态**：**已通过 [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) 实现**（2026-04-13 合并）。
 
-**Claude Code 的解决方案**：`StreamingToolExecutor`（530 行）对每个工具标记并发安全性，分区后批量并发执行。读工具并行，写工具串行，上下文修改器（如改 CWD 的工具）必须单独执行。
+**问题**：模型一次返回 5 个工具调用，哪些可以并行？此前 Qwen Code 仅按工具类型粗暴分类（Agent 工具并行，其他串行）。但 `read_file` 和 `grep` 也可以并行——它们不修改共享状态。
 
-**Claude Code 源码索引**：
+**Claude Code 的方案**：`StreamingToolExecutor`（530 行）对每个工具标记并发安全性，分区后批量并发执行。读工具并行，写工具串行，上下文修改器必须单独执行。
 
-| 文件 | 行号 | 关键函数 |
-|------|------|---------|
-| `services/tools/StreamingToolExecutor.ts` | 530 行 | 完整并发执行引擎——分区 + 批量 + 进度 + 合并 |
-| `query.ts` | L563, L735 | `new StreamingToolExecutor(...)` — 实例化 |
-| `Tool.ts` | — | `ToolUseContext` 共享执行环境 |
+**Qwen Code 实现（PR#2864）**：
 
-**Qwen Code 现状**：`packages/core/src/core/coreToolScheduler.ts` 仅 Agent/Task 工具并行（`Promise.all(taskCalls)`），其他全部 `for...await` 串行。
+| 维度 | 实现方式 |
+|---|---|
+| **分类方法** | Kind-based（`Kind.Read` / `Kind.Search` / `Kind.Fetch` / `Agent` 安全；`Edit` / `Write` / `Kind.Think` 不安全） |
+| **Batching 策略** | Consecutive batching——连续安全工具合并为一个并行批次，不安全工具打断批次 |
+| **Shell 读写检测** | `isShellCommandReadOnly()` 白名单（~30 命令），含 git 子命令验证，未知命令 fail-closed 串行 |
+| **行为变化** | Agent 工具从"无条件并发"改为"遵循 consecutive batching"，`[Edit, Agent]` 现在 Agent 会等 Edit 完成（更安全，保留模型意图顺序） |
 
-**Qwen Code 修改方向**：① 对每个工具添加 `concurrencySafe: boolean` 属性；② 执行前按安全性分区；③ 安全工具 `Promise.all()` 并行。
+**Claude Code 对比**：
 
-**实现成本评估**：~100 行，~1 天。
+| 能力 | Claude Code | Qwen Code（PR#2864 之后） |
+|---|---|---|
+| 只读工具并行 | ✓ | ✓ |
+| Consecutive batch 分组 | ✓ | ✓ |
+| Shell 只读检测 | regex + shell-quote + 每参数校验 | regex + 白名单 |
 
-**相关文章**：[工具执行运行时](../tools/claude-code/21-tool-execution-runtime.md)
+**相关 Roadmap**：[Roadmap#2516](https://github.com/QwenLM/qwen-code/issues/2516)
 
-**意义**：工具调用延迟是 Agent 执行时间的主要瓶颈。
-**缺失后果**：5 个 read_file 串行 = 5 秒；并行 = 1 秒。
-**改进收益**：只读工具并行化 → 代码探索阶段速度 3-5x 提升。
+**相关文章**：[工具执行运行时](../tools/claude-code/21-tool-execution-runtime.md) | [工具并行深度对比](./tool-parallelism-deep-dive.md)
+
+**收益验证**：5 个 read_file 串行 = 5 秒 → 并行 = 1 秒。代码探索阶段速度 3-5× 提升。
+
+> 注：本条目与 [`item-7` 智能工具并行](./qwen-code-improvement-report-p0-p1-core.md#item-7) 属同一 PR 的两个侧面（item-7 聚焦"Kind-based batching 机制"，item-37 聚焦"per-tool concurrencySafe 属性"）。
 
 ---
 

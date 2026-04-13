@@ -340,7 +340,7 @@ Claude Code 的做法是 **智能分批**——每个工具声明自己是否并
 - 开发周期：~3 天（1 人）
 - 难点：上下文修改的队列化与串行应用
 
-**相关文章**：[工具并行执行](./tool-parallelism-deep-dive.md) | **进展**：[PR#2864](https://github.com/QwenLM/qwen-code/pull/2864)
+**相关文章**：[工具并行执行](./tool-parallelism-deep-dive.md) | **进展**：[PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓（2026-04-13 合并）— Kind-based consecutive batching，读工具并行、写工具串行、shell `isShellCommandReadOnly()` 白名单
 
 **意义**：代码探索场景（多个 Read + Grep + Glob）是最常见的 Agent 操作之一。
 **缺失后果**：7 个只读工具串行执行 = 7× 延迟。

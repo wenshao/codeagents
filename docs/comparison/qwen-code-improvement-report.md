@@ -48,7 +48,7 @@
 | **P1** | [Auto Dream](./memory-system-deep-dive.md) — 后台 agent 自动合并去重过时记忆 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-5) | 缺失 | 中 | — |
 | **P1** | [Nudge 驱动的闭环学习](./closed-learning-loop-deep-dive.md) — 双计数器 + 后台 review 子代理 + 冻结快照 + 自修补（Hermes Agent 参考） [↓](./qwen-code-improvement-report-p0-p1-core.md#item-14) | 被动记忆（无 nudge） | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087)（部分覆盖） |
 | **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | 全部工具始终加载 | 小 | — |
-| **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1-core.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) / [Roadmap#2516](https://github.com/QwenLM/qwen-code/issues/2516) |
+| **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1-core.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ / [Roadmap#2516](https://github.com/QwenLM/qwen-code/issues/2516) |
 | **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | 完全缺失 | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) |
 | **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-9) | 所有指令始终加载 | 中 | [Roadmap#125](https://github.com/QwenLM/qwen-code/issues/125) |
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-12) | 缺失 | 小 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
@@ -115,7 +115,7 @@
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2-core.md#item-23) | 缺失 | 小 | [PR#2871](https://github.com/QwenLM/qwen-code/pull/2871) ✓ |
 | **P2** | [状态栏紧凑布局](./compact-status-bar-deep-dive.md) — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2-core.md#item-24) | Footer 占用偏高 | 小 | — |
 | **P2** | [会话标签与搜索](./session-tags-search-deep-dive.md) — /tag 命令打标签 + 按标签/仓库/标题搜索历史会话 [↓](./qwen-code-improvement-report-p2-core.md#item-25) | 仅按时间排序 | 小 | — |
-| **P2** | Conditional Hooks — Hook `if` 字段用权限规则语法按工具/路径过滤 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-1) | 缺失 | 小 | [PR#2825](https://github.com/QwenLM/qwen-code/pull/2825) |
+| **P2** | Conditional Hooks — Hook `if` 字段用权限规则语法按工具/路径过滤 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-1) | 缺失 | 小 | — |
 | **P2** | [Transcript Search 会话记录搜索](./transcript-search-navigation-deep-dive.md) — 按 `/` 搜索会话记录，`n`/`N` 导航匹配项 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-2) | 缺失 | 小 | — |
 | **P2** | [Bash File Watcher](./file-watcher-stale-edit-deep-dive.md) — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-3) | 缺失 | 小 | — |
 | **P2** | [/batch 并行操作](./batch-parallel-execution-deep-dive.md) — 编排大规模并行变更（多文件/多任务）[↓](./qwen-code-improvement-report-p2-tools-commands.md#item-4) | 缺失 | 中 | [PR#3079](https://github.com/QwenLM/qwen-code/pull/3079) |
@@ -225,7 +225,7 @@
 | **P2** | 破坏性命令警告系统 — 8 种高风险 git 操作 + 权限对话框风险说明 [↓](./qwen-code-improvement-report-p2-stability.md#item-27) | 仅读写分类/无风险说明 | 小 | — |
 | **P2** | 系统提示危险操作行为指导 — 4 类危险操作列举 + 行为准则 + 审批范围限定 [↓](./qwen-code-improvement-report-p2-stability.md#item-28) | 仅 "never push" 一条 | 小 | [PR#2889](https://github.com/QwenLM/qwen-code/pull/2889) ✓ |
 | **P2** | Unicode sanitization与 ASCII 走私防御 — NFKC + 不可见字符剥离 + 递归sanitization [↓](./qwen-code-improvement-report-p2-stability.md#item-29) | 无sanitization | 中 | — |
-| **P2** | sandbox运行时集成 — seatbelt/bubblewrap/Docker + 文件/网络限制 [↓](./qwen-code-improvement-report-p2-stability.md#item-30) | 可选/非默认 | 大 | [PR#3146](https://github.com/QwenLM/qwen-code/pull/3146) |
+| **P2** | sandbox运行时集成 — seatbelt/bubblewrap/Docker + 文件/网络限制 [↓](./qwen-code-improvement-report-p2-stability.md#item-30) | 可选/非默认 | 大 | [PR#3146](https://github.com/QwenLM/qwen-code/pull/3146) ✓（配置项，非默认启用） |
 | **P2** | SSRF 防护 — 私有 IP 阻断 + IPv4-mapped + DNS rebinding 防护 [↓](./qwen-code-improvement-report-p2-stability.md#item-31) | 仅基础 isPrivateIp | 中 | — |
 | **P2** | WebFetch 域名allowlist — 130+ 预批准域名 + 路径段边界匹配 [↓](./qwen-code-improvement-report-p2-stability.md#item-32) | 无内置allowlist | 小 | — |
 | **P2** | 子进程环境变量清洗 — 30+ 敏感变量自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-33) | 继承完整环境 | 中 | — |
@@ -317,7 +317,7 @@
 | **[Mid-Turn Queue Drain](./command-queue-orchestration-deep-dive.md)** | `query.ts` 工具批次间 drain | 无 | 显著落后 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) ✓ |
 | 压缩 (Compression) 策略 | 4 层分层压缩 | 单一阈值压缩 | 显著落后 | — |
 | Subagent | 支持 fork + 上下文继承 | 仅预定义类型 | 显著落后 | [PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) |
-| **智能工具并行** | Kind-based batching（默认 10 并发） | Agent 并发 / 其他顺序 | 中等差距 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) |
+| **智能工具并行** | Kind-based batching（默认 10 并发） | Agent 并发 / 其他顺序 | 中等差距 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ |
 | 投机执行 (Speculation) | 完整 overlay-fs + cow（991 行） | v0.15.0 已完整实现（563 行），默认关闭 | 小差距 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | 启动优化 | API Preconnect + Early Input | 无 | 缺失 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) |
 | 按路径注入上下文规则 | `.claude/rules/` + frontmatter `paths:` 惰加载 | 单一 QWEN.md | 中等差距 | — |
@@ -417,6 +417,17 @@
 
 ## 六、更新日志
 
+### 2026-04-13（晚间更新）
+
+**追踪社区 PR 合并**（由社区反馈触发审计）：
+
+- **标记已合并**：
+  - [#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓（**智能工具并行** — Kind-based consecutive batching，item-7 + item-37 双侧面）
+  - [#3146](https://github.com/QwenLM/qwen-code/pull/3146) ✓（tools.sandboxImage 配置项，**部分**覆盖 item-30）
+- **勘误**：从 item-1 Conditional Hooks 移除错误的 PR#2825 关联——PR#2825 实际实现的是 StopFailure + PostCompact 两个新 hook 事件，和 Hook `if` 字段条件过滤完全不同
+- **item-37 状态更新**：重写为"已合并"版本，对比 PR#2864 与 Claude Code `StreamingToolExecutor` 在 Kind 分类、batching 策略、shell 读写检测上的差异
+- 总追踪 PR：**38 个（15 已合并 ✓）**
+
 ### 2026-04-13
 
 **新增 item-14（闭环学习系统）**：基于对 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 源码的分析（822 .py / 369K 行），新增 p0-p1-core item-14 "Nudge 驱动的闭环学习"。总项数 248→249。
@@ -434,7 +445,7 @@
 - 标记已合并：[#2871](https://github.com/QwenLM/qwen-code/pull/2871) ✓（队列输入编辑 Up arrow key）、[#2914](https://github.com/QwenLM/qwen-code/pull/2914) ✓（Markdown 表格 CJK 列宽）
 - 移除已关闭：[#3105](https://github.com/QwenLM/qwen-code/pull/3105)（/chat——已关闭，由 [#3093](https://github.com/QwenLM/qwen-code/pull/3093) 替代）
 - 新增 PR 追踪：[#3146](https://github.com/QwenLM/qwen-code/pull/3146)（sandbox settings 中配置 sandboxImage）、[#3034](https://github.com/QwenLM/qwen-code/pull/3034)（LSP diagnostics caching）、[#3048](https://github.com/QwenLM/qwen-code/pull/3048)（vibe mode 安全 shell 自动批准）
-- 总追踪 PR：38 个（13 已合并 ✓）
+- 总追踪 PR：38 个（13 已合并 ✓）— 后于 04-13 晚间更新为 15 已合并
 
 ### 2026-04-10（晚间更新）
 

@@ -79,7 +79,7 @@
 
 | 报告 | 说明 |
 |------|------|
-| [Claude Code 对比（249 项）](./docs/comparison/qwen-code-improvement-report.md) | 改进建议 + 38 个社区 PR 追踪（13 已合并） |
+| [Claude Code 对比（249 项）](./docs/comparison/qwen-code-improvement-report.md) | 改进建议 + 38 个社区 PR 追踪（15 已合并） |
 | [Gemini CLI backport（53 项）](./docs/comparison/qwen-code-gemini-upstream-report.md) | 上游可 backport 改进 + 模块级架构对比 |
 | [/review 功能分析](./docs/comparison/qwen-code-review-improvements.md) | 审查功能 5 方对比（含 gstack） |
 | [工具输出限高](./docs/comparison/tool-output-height-limiting-deep-dive.md) | Gemini CLI SlicingMaxSizedBox vs Qwen Code |
