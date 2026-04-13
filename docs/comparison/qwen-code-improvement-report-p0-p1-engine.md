@@ -526,6 +526,12 @@ Agent 定义还支持在 frontmatter 中精确配置：`tools:` 指定 allowlist
 **缺失后果**：所有 Agent 拥有全部工具 = 探索 Agent 可能意外写文件、执行危险命令。
 **改进收益**：allowlist + denylist = 每个 Agent 恰好拥有完成任务所需的最小权限集。
 
+**进展**：
+- [PR#3064](https://github.com/QwenLM/qwen-code/pull/3064) ✓（2026-04-13 合并）— 在 agent 定义中新增 `disallowedTools` 字段，允许 denylist 形式排除特定工具
+- [PR#3066](https://github.com/QwenLM/qwen-code/pull/3066) ✓（2026-04-13 合并）— approval mode 传播到子代理，确保子代理继承主代理的审批策略（安全相关）
+
+两个 PR 覆盖了本 item 中 ③（`disallowedTools` denylist）和部分 ② 的要求。完整的"3 层自动过滤"（① 全局禁止、异步 allowlist、Teammate 额外）仍未实现。
+
 ---
 
 <a id="item-16"></a>
