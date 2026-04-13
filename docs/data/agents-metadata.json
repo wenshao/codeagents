@@ -452,6 +452,38 @@
         "last_verified": "2026-03-26"
       },
       "github_repo": null
+    },
+    {
+      "id": "hermes-agent",
+      "name": "Hermes Agent",
+      "category": "deep-analysis",
+      "license": "MIT",
+      "developer": "Nous Research",
+      "implementation_language": "Python",
+      "runtime": "CPython >= 3.11",
+      "package_ecosystem": "pypi",
+      "github_repo": "NousResearch/hermes-agent",
+      "stars": "70k",
+      "downloads": {
+        "type": "unknown",
+        "value": "—",
+        "as_of": "2026-04-13"
+      },
+      "pricing_summary": "开源自托管 / API 按量（自带 key）",
+      "free_tier": "依赖所选 provider；Credential Pool 支持多 key 轮换延长免费配额",
+      "code_size": {
+        "python_files": 822,
+        "python_lines": 369014,
+        "version": "0.8.0",
+        "as_of": "2026-04-13"
+      },
+      "differentiator": "闭环学习系统（冻结快照 Memory + 自主 Skill + FTS5 跨会话搜索 + 双计数器 Nudge）+ 14 消息渠道 + 6 执行环境后端 + MCP 双向（Client + Server）",
+      "evidence": {
+        "status": "complete",
+        "source_type": "source-code-analysis",
+        "evidence_path": "docs/tools/hermes-agent/EVIDENCE.md",
+        "last_verified": "2026-04-13"
+      }
     }
   ]
 }

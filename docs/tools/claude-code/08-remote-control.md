@@ -35,7 +35,7 @@ Code Agent 运行在开发者的终端中，但开发者不总是坐在那台电
 
 ## 8.1 概述
 
-Remote Control 是 Claude Code 的跨设备会话桥接功能，在 18 款主流 AI 编程 Agent 中**为 Claude Code 独有**（[功能矩阵](../../comparison/features.md)）。它解决了开发者的一个核心痛点：启动了一个长时间的终端代理任务后，需要离开工位继续监控或干预。
+Remote Control 是 Claude Code 的跨设备会话桥接功能，在 19 款主流 AI 编程 Agent 中**为 Claude Code 独有**（[功能矩阵](../../comparison/features.md)）。它解决了开发者的一个核心痛点：启动了一个长时间的终端代理任务后，需要离开工位继续监控或干预。
 
 核心特性：
 
@@ -438,7 +438,7 @@ Claude Code 提供了多种跨设备工作方式，各有侧重：
 
 ## 8.12 行业对比
 
-在 18 款对比的 AI 编程 Agent 中，Remote Control 为 **Claude Code 独有**功能：
+在 19 款对比的 AI 编程 Agent 中，Remote Control 为 **Claude Code 独有**功能：
 
 | Agent | 远程控制能力 |
 |-------|-------------|
@@ -825,7 +825,7 @@ Qwen Code 基于 Gemini CLI 分叉（[Qwen Code EVIDENCE](../qwen-code/EVIDENCE.
 
 **1. 唯一实现"终端会话远程操控"的 Agent**
 
-Claude Code 的 Remote Control 在所有 18 款 Agent 中独树一帜——它不是简单的 Web UI 或 API 暴露，而是将一个**正在运行的终端交互会话**双向桥接到浏览器/手机。这意味着远程端可以完整使用本地文件系统、MCP 服务器、项目配置，实现真正的"离开工位不中断工作"。
+Claude Code 的 Remote Control 在所有 19 款 Agent 中独树一帜——它不是简单的 Web UI 或 API 暴露，而是将一个**正在运行的终端交互会话**双向桥接到浏览器/手机。这意味着远程端可以完整使用本地文件系统、MCP 服务器、项目配置，实现真正的"离开工位不中断工作"。
 
 **2. 安全架构设计审慎**
 

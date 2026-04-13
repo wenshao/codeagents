@@ -2,18 +2,23 @@
 
 本文档提供 Code Agent CLI 工具的详细横向对比。
 
+> **2026-04-13 新增 Hermes Agent**（第 19 款）—— Nous Research 的自我改进代理，核心卖点是**闭环学习系统**（冻结快照 Memory + 自主 Skill + FTS5 跨会话搜索 + 双计数器 Nudge）。详见 [Hermes Agent 文档](../tools/hermes-agent/) 和 [闭环学习系统深度对比](./closed-learning-loop-deep-dive.md)。
+
 ## 快速参考表
 
-| 功能 | Claude Code | Aider | Copilot CLI | SWE-agent | Cline | Goose | OpenCode | Continue | Warp | Gemini CLI | OpenHands | Cursor | Qwen Code | Kimi CLI |
-|---------|------------|-------|-------------|-----------|-------|-------|----------|----------|------|------------|----------|--------|-----------|----------|
-| **开源** | | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ |
-| **免费层级** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **多模型** | | ✓ | | ✓ | | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ |
-| **Git 集成** | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ |
-| **MCP 支持** | ✓ | | | | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | ✓ |
-| **IDE 集成** | ✓ | | | ✓ | ✓ | | ✓ | ✓ | | | | ✓ | ✓ | ✓ |
-| **CLI 优先** | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | | | ✓ | ✓ |
-| **终端原生** | ✓ | ✓ | ✓ | | | ✓ | ✓ | | | ✓ | | | ✓ | ✓ |
+| 功能 | Claude Code | Aider | Copilot CLI | SWE-agent | Cline | Goose | OpenCode | Continue | Warp | Gemini CLI | OpenHands | Cursor | Qwen Code | Kimi CLI | Hermes |
+|---------|------------|-------|-------------|-----------|-------|-------|----------|----------|------|------------|----------|--------|-----------|----------|--------|
+| **开源** | | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | ✓ |
+| **免费层级** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **多模型** | | ✓ | | ✓ | | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Git 集成** | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | ✓ | |
+| **MCP 支持** | ✓ | | | | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | ✓ | ✓（双向） |
+| **IDE 集成** | ✓ | | | ✓ | ✓ | | ✓ | ✓ | | | | ✓ | ✓ | ✓ | |
+| **CLI 优先** | ✓ | ✓ | ✓ | ✓ | | ✓ | ✓ | | ✓ | ✓ | | | ✓ | ✓ | ✓ |
+| **终端原生** | ✓ | ✓ | ✓ | | | ✓ | ✓ | | | ✓ | | | ✓ | ✓ | ✓ |
+| **自主学习** | 部分 | | | | | | | | | | | 部分 | | | **✓ 完整闭环** |
+| **跨会话搜索** | /resume | | | | | | | | | | | | | | **✓ FTS5 全文** |
+| **多消息渠道** | | | | | | | | | | | | | | | **✓ 14 个** |
 
 ## 详细对比
 
@@ -35,6 +40,7 @@
 | OpenHands | ✓ | ✓ | ✓ | ✓ | 灵活 |
 | Qwen Code | ✓ | ✓ | ✓ | | 6+ 提供商（Qwen OAuth/DashScope/ModelScope/Anthropic/Google/自定义） |
 | Kimi CLI | ✓ | ✓ | ✓ | | 6 种 provider type（Kimi/OpenAI Legacy/OpenAI Responses/Anthropic/Gemini/Vertex AI） |
+| Hermes Agent | ✓ | ✓ | ✓ | | 200+ 提供商（Nous Portal / OpenRouter / z.ai / Kimi / MiniMax / OpenAI / 自定义） + Credential Pool 多 Key 轮换 |
 
 ### 架构与设计
 
@@ -54,6 +60,7 @@
 | OpenHands | Python | CLI Agent（事件驱动，EventStream） | 完全自主 |
 | Qwen Code | TypeScript | CLI Agent（工具调用，Gemini CLI 分叉） | 中文开发者生态 |
 | Kimi CLI | Python | CLI Agent（工具调用，Wire 协议） | 双模式交互 + 多客户端（TUI + Web + IDE） |
+| **Hermes Agent** | **Python（369K 行）** | **CLI + 14 消息渠道 Agent（闭环学习）** | **自我改进 AI 伴侣：跨 CLI / Telegram / Discord / Slack / 等 14 平台，冻结快照 memory + 自主 skill + 后台 review 子代理** |
 
 ### 核心功能对比
 
@@ -90,6 +97,7 @@
 | OpenHands | 可变 | | | 全项目 |
 | Qwen Code | ~100 万 token | | ✓ | 聊天压缩服务 |
 | Kimi CLI | ~25.6 万 token | | ✓ | 自动压缩（85% 触发比例），可配置保留空间 |
+| Hermes Agent | 可变（依赖模型） | | ✓ | **冻结快照 Memory + FTS5 跨会话搜索 + Gemini Flash 摘要保护主 context** |
 
 #### 执行与安全
 

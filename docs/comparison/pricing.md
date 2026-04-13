@@ -17,6 +17,7 @@
 | **Kimi CLI** | API 按量 | 有限免费额度 | Moonshot API 按量 |
 | **Goose** | API 按量（自带 key） | 无 | 取决于所选模型 |
 | **OpenCode** | API 按量 | 无 | 取决于提供商 |
+| **Hermes Agent** | API 按量（自带 key） | 无（自托管） | 取决于所选提供商；Credential Pool 支持多 key 轮换延长免费配额 |
 
 ## Claude Code 详细定价
 

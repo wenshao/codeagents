@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/codeagents/',
   lang: 'zh-CN',
   title: 'AI 编程 Code Agent 对比',
-  description: '基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比',
+  description: '基于源码分析和二进制反编译的 19 款 AI 编程 Code Agent 全面对比',
 
   rewrites: {
     'tools/README.md': 'tools/index.md',

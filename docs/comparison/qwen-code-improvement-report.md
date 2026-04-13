@@ -46,6 +46,7 @@
 | **P1** | [Speculation](../tools/claude-code/10-prompt-suggestions.md) — 预测用户下一步并提前执行，Tab 接受零延迟 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-3) | 已实现但默认关闭 | 小 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | **P1** | [会话记忆](./memory-system-deep-dive.md) — 关键决策/文件结构自动提取，新 session 自动注入 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-4) | 仅简单笔记工具 | 大 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) |
 | **P1** | [Auto Dream](./memory-system-deep-dive.md) — 后台 agent 自动合并去重过时记忆 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-5) | 缺失 | 中 | — |
+| **P1** | [Nudge 驱动的闭环学习](./closed-learning-loop-deep-dive.md) — 双计数器 + 后台 review 子代理 + 冻结快照 + 自修补（Hermes Agent 参考） [↓](./qwen-code-improvement-report-p0-p1-core.md#item-14) | 被动记忆（无 nudge） | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087)（部分覆盖） |
 | **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | 全部工具始终加载 | 小 | — |
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1-core.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) / [Roadmap#2516](https://github.com/QwenLM/qwen-code/issues/2516) |
 | **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | 完全缺失 | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) |
@@ -297,7 +298,7 @@
 
 | 文件 | 内容 | 项数 |
 |------|------|:----:|
-| [P0/P1 核心能力](./qwen-code-improvement-report-p0-p1-core.md) | 上下文压缩、Subagent、Speculation、记忆系统、工具并行、启动优化等 | 13 |
+| [P0/P1 核心能力](./qwen-code-improvement-report-p0-p1-core.md) | 上下文压缩、Subagent、Speculation、记忆系统、工具并行、启动优化、闭环学习等 | 14 |
 | [P0/P1 平台集成](./qwen-code-improvement-report-p0-p1-platform.md) | GitHub Actions CI、Code Review、SDK、Remote Control Bridge、GitLab 等 | 9 |
 | [P0/P1 引擎优化](./qwen-code-improvement-report-p0-p1-engine.md) | 流式执行、缓存、Token 管理、崩溃恢复、Agent 编排、上下文管理、安全等 | 27 |
 | [P2 核心功能与企业特性](./qwen-code-improvement-report-p2-core.md) | 中等优先级（Shell 安全、MDM 企业策略、Token 计数、Computer Use 等） | 25 |
@@ -415,6 +416,18 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-13
+
+**新增 item-14（闭环学习系统）**：基于对 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 源码的分析（822 .py / 369K 行），新增 p0-p1-core item-14 "Nudge 驱动的闭环学习"。总项数 248→249。
+
+- **触发**：[codeagents Issue #129](https://github.com/wenshao/codeagents/issues/129)（pomelo-nwu 建议加入 Hermes Agent 研究）
+- **核心发现**：Hermes 的"闭环学习系统"由 4 个子系统组成 — 冻结快照 Memory / 自主 Skill + patch 自修补 / SQLite FTS5 跨会话搜索 / 双计数器 Nudge 触发
+- **对 Qwen Code 的价值**：PR#3087（managed auto-memory + auto-dream）缺少 ① 双计数器 ② 冻结快照保护 prompt cache ③ 保守 review prompt 三个关键要素
+- **新增文档**：
+  - [`docs/tools/hermes-agent/`](../tools/hermes-agent/)（5 文件：README + 01-overview + 02-architecture + 03-closed-learning-loop + 04-tools-channels + EVIDENCE）
+  - [`docs/comparison/closed-learning-loop-deep-dive.md`](./closed-learning-loop-deep-dive.md)（横向对比 Hermes / Claude Code / Qwen Code / Codex / Cursor / Aider / Gemini CLI / OpenCode）
+- **Code Agent 总数**：18 → **19**（新增 Hermes Agent）
 
 ### 2026-04-11
 

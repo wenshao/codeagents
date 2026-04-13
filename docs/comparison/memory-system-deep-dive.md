@@ -18,6 +18,9 @@
 | **Cursor** | .cursor/rules/*.mdc | 4 种规则类型 | ✗ | ✗ | ✓ | ✗ |
 | **Aider** | .aider.conf.yml | 2 层 | ✗ | ✗ | ✓ | ✗ |
 | **Cline** | .cline/instructions | 1 层 | ✗ | ✗ | ✗ | ✗ |
+| **Hermes Agent** | MEMORY.md + USER.md | **2 文件**（~/.hermes/memories/） | **✓（双计数器 Nudge）** | **✓（后台 review 子代理）** | ✓ | — |
+
+> **Hermes Agent 是当前 18+1 款 Code Agent 中唯一完整实现"闭环学习系统"的产品**：冻结快照模式保护 prompt cache + 自主 Skill + SQLite FTS5 跨会话搜索 + 双计数器 Nudge 触发。详见 [闭环学习系统深度对比](./closed-learning-loop-deep-dive.md) 和 [Hermes Agent 03-closed-learning-loop](../tools/hermes-agent/03-closed-learning-loop.md)。
 
 ---
 

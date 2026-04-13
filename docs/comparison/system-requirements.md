@@ -15,6 +15,7 @@
 | **Kimi CLI** | Python | **Python ≥ 3.12** | v3.12+ | `uv tool install kimi-cli` / `pip` |
 | **Goose** | Rust | **Rust 1.92+**（编译时） | — | `brew install goose` / `cargo install` |
 | **OpenCode** | TypeScript（Bun） | Bun 1.3+ | — | `brew install opencode` / `go install` |
+| **Hermes Agent** | Python | **Python ≥ 3.11** | v3.11+ | `curl install.sh \| bash` / `pip install hermes-agent` |
 
 > **注意：**
 > - Claude Code 不依赖 Node.js——它是 Bun 编译的独立二进制
@@ -34,6 +35,7 @@
 | **Kimi CLI** | ✓ | ✓ | WSL 推荐 | ✓ | — |
 | **Goose** | ✓ | ✓ | WSL 推荐 | ✓ | — |
 | **OpenCode** | ✓ | ✓ | ✓ | ✓ | — |
+| **Hermes Agent** | ✓ | ✓ | ✓（通过 WSL） | ✓ | ✓（`docker/` 目录 + Dockerfile） |
 
 ## 二进制大小
 
@@ -49,6 +51,7 @@
 | **Qwen Code** | ~50MB | TypeScript + WASM (tree-sitter) |
 | **Aider** | ~20MB | Python 包 + 依赖 |
 | **Kimi CLI** | ~15MB | Python 包 + 依赖 |
+| **Hermes Agent** | ~100MB+ | Python 包 + 依赖（`openai>=2.21` + `anthropic>=0.39` + `prompt_toolkit` + `rich` + 可选 messaging/voice/modal/daytona 依赖） |
 
 ## 沙箱依赖
 
@@ -60,6 +63,7 @@
 | **Aider** | 无沙箱 | 无沙箱 | 无沙箱 |
 | **Kimi CLI** | 无沙箱 | 无沙箱 | 无沙箱 |
 | **Goose** | 无沙箱 | 无沙箱 | 无沙箱 |
+| **Hermes Agent** | Docker/SSH/Daytona/Modal（可选） | Docker/SSH/Daytona/Modal/Singularity（可选） | SSH/Daytona/Modal（可选） |
 
 ## 网络要求
 
@@ -74,6 +78,7 @@
 | **Kimi CLI** | Moonshot/所选 API | 部分（本地模型） |
 | **Goose** | 所选模型的 API | 部分（Ollama 本地模型） |
 | **OpenCode** | 所选模型的 API | 部分（本地模型） |
+| **Hermes Agent** | 所选模型的 API（Nous Portal / OpenRouter / OpenAI / Anthropic / z.ai 等）+ 可选消息平台（Telegram / Discord / ...） | 部分（本地 Ollama + 本地 whisper STT） |
 
 ### Qoder CLI 补充
 

@@ -18,6 +18,7 @@
 | **Goose** | PostHog | 默认关闭（opt-in） | 是 | 是 | 否 |
 | **Qwen Code** | OTEL（重品牌）+ 阿里云 RUM | 开启 | 是 | 是 | 否 |
 | **Qoder CLI** | Qoder 自有 | 开启 | 是 | 未确认 | 否 |
+| **Hermes Agent** | **无内建遥测** | — | 否 | 否 | 否 |
 
 ## 遥测端点
 
@@ -35,6 +36,7 @@
 | | 可配置 OTLP 端点（继承 Gemini） | OpenTelemetry（Clearcut 已移除） |
 | **Kimi CLI** | **无** | — |
 | **OpenCode** | **无** | — |
+| **Hermes Agent** | **无** | — |
 
 ## 采集数据详情
 
@@ -77,6 +79,7 @@
 | **Kimi CLI** | 无需禁用（无遥测） | — |
 | **OpenCode** | 无需禁用（无遥测） | — |
 | **Goose** | `GOOSE_TELEMETRY_OFF=1` 或 `GOOSE_TELEMETRY_ENABLED=false` | **关闭** |
+| **Hermes Agent** | 无需禁用（无内建遥测） | — |
 
 ## 安全监控系统
 
@@ -90,6 +93,7 @@
 | **Kimi CLI** | **否** | **否** | **是**（审批系统） | **否** |
 | **OpenCode** | **否** | **否** | **是**（基础权限） | **否** |
 | **Goose** | **是**（AdversaryInspector + RepetitionInspector + 模式扫描） | **否** | **是**（SmartApprove） | **是**（模式 + ML 分类器） |
+| **Hermes Agent** | **是**（`tools/tirith_security.py` + `tools/skills_guard.py` + `tools/osv_check.py`） | **6 种**（Local/Docker/SSH/Daytona/Singularity/Modal） | **是**（`tools/approval.py`） | **部分**（url_safety + website_policy） |
 
 ## 环境变量清洗
 
@@ -117,3 +121,4 @@
 | Kimi CLI | 源码 `src/kimi_cli/` 全量搜索 | `kimi-cli/EVIDENCE.md` |
 | OpenCode | 源码 `internal/` 全量搜索 | `opencode/EVIDENCE.md` |
 | Goose | 源码 `crates/goose/src/` + `crates/goose-cli/src/` | `goose/EVIDENCE.md` |
+| Hermes Agent | 源码 `/root/git/hermes-agent`（822 .py / 369K 行全量分析） | `hermes-agent/EVIDENCE.md` |

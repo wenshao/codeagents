@@ -15,6 +15,7 @@
 | **Goose** | MCP 原生 | MCP 事件 | 58+ 提供商 MCP | Recipe | YAML 模板 |
 | **Codex CLI** | 功能标志 | — | 沙箱控制 | ✗ | — |
 | **Cline** | hooks/ 目录 | 自定义 | Custom Instructions | 社区 | Workflows |
+| **Hermes Agent** | **Nudge 计数器触发**（memory 10 轮 / skill 10 工具调用） | post-response 后台 review | 28+ 内置工具 + MCP Client/Server 双向 | agentskills.io（`skills_hub.py`） | **自主 SKILL.md + `patch` 自修补** |
 
 ---
 

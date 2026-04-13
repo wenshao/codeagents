@@ -43,6 +43,7 @@
 | SWE-agent | 单文件 | `single-file-only` | `summary-analysis` | `docs/tools/swe-agent.md` | 2026-03-26 | 季度 |
 | Warp | 单文件 | `single-file-only` | `summary-analysis` | `docs/tools/warp.md` | 2026-03-26 | 季度 |
 | mini-swe-agent | 单文件 | `single-file-only` | `summary-analysis` | `docs/tools/mini-swe-agent.md` | 2026-03-26 | 低优先级 |
+| Hermes Agent | 多文件 | `complete` | `source-analysis` | `docs/tools/hermes-agent/EVIDENCE.md` | 2026-04-13 | 月度 |
 
 ## 优先补强建议
 

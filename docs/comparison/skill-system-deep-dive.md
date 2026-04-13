@@ -15,6 +15,9 @@
 | **Copilot CLI** | `.agent.yaml` | 3 内置 | ✗ | ✓（per-agent） | ✓ | ✗ | ✗ |
 | **Goose** | `recipe.yaml` | 0 | ✗ | ✗ | ✗ | ✗ | **✓（YAML 模板）** |
 | **Cline** | Markdown Skills + Workflows | 自定义 | ✗ | ✗ | ✗ | ✓（Subagent） | **✓（Workflows）** |
+| **Hermes Agent** | SKILL.md + 4 子目录（references/templates/scripts/assets） | — | ✗ | ✗ | ✗ | **✓（后台 review）** | **✓（自主 create + patch 自修补）** |
+
+> **Hermes Agent 的独特卖点**：**Agent 自主创建 + 自主修补 skill**。源码 `agent/prompt_builder.py:164-171` 明确指示代理"发现 skill 过时立即 patch，不等用户"。双计数器 Nudge（10 轮用户回合 / 10 次工具调用）触发后台 review 子代理，决定是否沉淀新 skill。详见 [闭环学习系统深度对比](./closed-learning-loop-deep-dive.md)。
 
 ---
 

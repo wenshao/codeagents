@@ -397,3 +397,24 @@ interface ScheduledTask {
 | 适用场景 | 个人开发者自治 | 团队协作管理（"AI 版 Linear"） |
 
 对 Qwen Code 的启发：如果目标是**团队场景**（多人 + 多 Agent 协作），Multica 的 Daemon 轮询模式比 Kairos 的 Cron 模式更合适；如果目标是**个人自治**，Kairos 的事件驱动模式更轻量。
+
+### 替代模式：Hermes Agent 的闭环学习 + 后台 Review 子代理
+
+[Hermes Agent](../tools/hermes-agent/)（Nous Research，Python 369K 行）采用了第三种"Always-On" 范式：**基于双计数器 Nudge 的后台学习 review 子代理**。它不是 Kairos 那样的"按时/按事件触发"的独立 Agent，也不是 Multica 那样的"轮询任务队列"的 daemon，而是**会话内触发的 post-response review 后台子代理**。
+
+| 维度 | Kairos（Claude Code） | Multica Daemon | Hermes Review 子代理 |
+|------|---------------------|---------------|---------------------|
+| 触发方式 | Cron 定时 + PR 事件 | 后台轮询服务器任务队列 | **双计数器**（用户回合数 ≥10 / 工具调用数 ≥10） |
+| 任务来源 | 自主发现（PR、Issue、定时维护） | 平台分配 | 会话本身（学习闭环） |
+| 运行时机 | 独立周期性 | 独立轮询 | **主响应送出后异步**（不抢主任务注意力） |
+| 状态管理 | Brief 模式 | 数据库任务状态机 | 共享 memory_store + `nudge_interval=0` 防递归 |
+| 运行时长上限 | 无（长任务） | 无 | **`max_iterations=8`**（严格短任务） |
+| 用户可见性 | 通知 + 睡眠 | 任务状态面板 | 一行 `💾 Skill 'xxx' created` |
+| 适用场景 | 个人开发者长期自治 | 团队 AI-Linear | **会话内持续学习** |
+
+**三种范式的互补性**：
+- Kairos = **"做事"**的自治（定时维护、PR 审查、issue 分类）
+- Multica = **"分派"**的自治（任务队列 → 多 Agent Backend）
+- Hermes Review 子代理 = **"学习"**的自治（从对话中沉淀 memory/skill）
+
+这三者可以**同时存在**：qwen-code 若要实现完整的自治能力，应参考三者不同的设计原则——Kairos 的事件触发、Multica 的任务分派、Hermes 的会话内学习。详见 [闭环学习系统深度对比](./closed-learning-loop-deep-dive.md) 和 [Hermes Agent 闭环学习实现](../tools/hermes-agent/03-closed-learning-loop.md)。

@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "AI Code Agent"
   text: "对比选型指南"
-  tagline: 基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比
+  tagline: 基于源码分析和二进制反编译的 19 款 AI 编程 Code Agent 全面对比
   actions:
     - theme: brand
       text: 📋 选型速查
@@ -21,8 +21,8 @@ features:
     details: 120+ 文件、36,000+ 行分析，9 个 EVIDENCE.md 证据索引，纠正"常识"中的错误说法
   - title: 📊 多维度对比
     details: 21 篇 Deep-Dive，覆盖架构、命令、隐私、定价、模型路由、沙箱安全等核心维度
-  - title: 🛠 18 款 Agent 全覆盖
-    details: Claude Code、Copilot CLI、Codex CLI、Gemini CLI、Qwen Code、Kimi CLI、Aider、OpenCode、Goose 等
+  - title: 🛠 19 款 Agent 全覆盖
+    details: Claude Code、Copilot CLI、Codex CLI、Gemini CLI、Qwen Code、Kimi CLI、Aider、OpenCode、Goose、Hermes Agent 等
   - title: 🧭 实用选型指南
     details: 30 秒决策树、关键数字对比、安全/隐私等级排序、用户指南和迁移指南
 ---

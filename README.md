@@ -1,6 +1,6 @@
 # AI 编程 Code Agent 对比
 
-> 基于源码分析和二进制反编译的 18 款 AI 编程 Code Agent 全面对比 | 293 文件 | 75,000+ 行 | 133 篇 Deep-Dive | 10 个 EVIDENCE.md
+> 基于源码分析和二进制反编译的 19 款 AI 编程 Code Agent 全面对比 | 300 文件 | 78,000+ 行 | 134 篇 Deep-Dive | 11 个 EVIDENCE.md
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -8,13 +8,13 @@
 
 | 入口 | 说明 |
 |------|------|
-| **[Deep-Dive 索引（133 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
-| **[Qwen Code 改进报告（248 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 38 个社区 PR 追踪 |
+| **[Deep-Dive 索引（134 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
+| **[Qwen Code 改进报告（249 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 38 个社区 PR 追踪 |
 | **[Gemini CLI backport（53 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 + 模块级架构对比 |
 | **[/review 功能分析](./docs/comparison/qwen-code-review-improvements.md)** | 审查功能 5 方对比（含 gstack） |
 | **[Codex CLI 对标改进（25 项）](./docs/comparison/qwen-code-codex-improvements.md)** | 沙箱 + Apply Patch + Feature Flag + 网络代理 |
 | **[OpenCode 对标改进（27 项）](./docs/comparison/qwen-code-opencode-improvements.md)** | Provider 系统 + Plugin 插件 + Snapshot 快照 |
-| **[功能对比矩阵](./docs/comparison/features.md)** | 14 Agent × 多维度横向对比 |
+| **[功能对比矩阵](./docs/comparison/features.md)** | 15 Agent × 多维度横向对比 |
 | **[一页总结（选型速查）](./docs/SUMMARY.md)** | 给没时间看全部文档的人 |
 
 ## 30 秒选型指南
@@ -39,6 +39,7 @@
 | [OpenCode](./docs/tools/opencode/) | Anomaly | MIT | TypeScript（Bun） | 133k | 100+ | 多客户端（TUI+Web+桌面），37 LSP |
 | [Gemini CLI](./docs/tools/gemini-cli/) | Google | Apache-2.0 | TypeScript | 100k | 1 | 8 策略模型路由，TOML 策略引擎 |
 | [Claude Code](./docs/tools/claude-code/) | Anthropic | 专有 | Rust | 85k | 1 | 50ms 启动，27 Hook 事件，Channels |
+| [Hermes Agent](./docs/tools/hermes-agent/) | Nous Research | MIT | Python | 70k | 200+ | **闭环学习系统**，14 渠道，6 环境，MCP 双向 |
 | [OpenHands](./docs/tools/openhands.md) | OpenHands | MIT | Python | 70k | 100+ | Docker 沙箱，三层安全，多代理 |
 | [Codex CLI](./docs/tools/codex-cli/) | OpenAI | Apache-2.0 | Rust | 68k | 1 | 三平台 OS 沙箱，Cloud 远程执行 |
 | [Cline](./docs/tools/cline.md) | Cline | Apache-2.0 | TypeScript | 60k | 48+ | VS Code 原生，Git Checkpoint |
@@ -63,6 +64,7 @@
 | Agent | 文件数 | 核心内容 |
 |-------|--------|---------|
 | [Claude Code](./docs/tools/claude-code/) | 20 | 79 命令 / 42 工具 / 14 Skill / 27 Hook / 会话 / 多 Agent / 系统提示 / MCP / 遥测 |
+| [Hermes Agent](./docs/tools/hermes-agent/) | 5 | **闭环学习系统**（冻结快照 Memory + 自主 Skill + FTS5 跨会话搜索 + Nudge）/ 369K Python / 14 渠道 / 6 执行环境 |
 | [Gemini CLI](./docs/tools/gemini-cli/) | 7 | 41 命令 / 23 工具 / 策略引擎（Qwen Code 上游） |
 | [OpenCode](./docs/tools/opencode/) | 9 | 18 工具 / 7 代理 / 18 Hook / Session Fork / 多客户端 |
 | [Qwen Code](./docs/tools/qwen-code/) | 8 | 41 命令 / 16 工具 / Arena / CoreToolScheduler / 多 Provider |
@@ -71,13 +73,13 @@
 | [Aider](./docs/tools/aider/) | 3 | 42 命令 / PageRank RepoMap |
 | [Goose](./docs/tools/goose/) | 4 | MCP 原生架构 / 11 Platform Extension |
 | [Kimi CLI](./docs/tools/kimi-cli/) | 3 | 28 命令 / Wire 协议 |
-| [全部 Agent 索引](./docs/tools/) | — | 18 个 Agent 的详细分析 |
+| [全部 Agent 索引](./docs/tools/) | — | 19 个 Agent 的详细分析 |
 
 ### Qwen Code 改进报告
 
 | 报告 | 说明 |
 |------|------|
-| [Claude Code 对比（248 项）](./docs/comparison/qwen-code-improvement-report.md) | 改进建议 + 38 个社区 PR 追踪（13 已合并） |
+| [Claude Code 对比（249 项）](./docs/comparison/qwen-code-improvement-report.md) | 改进建议 + 38 个社区 PR 追踪（13 已合并） |
 | [Gemini CLI backport（53 项）](./docs/comparison/qwen-code-gemini-upstream-report.md) | 上游可 backport 改进 + 模块级架构对比 |
 | [/review 功能分析](./docs/comparison/qwen-code-review-improvements.md) | 审查功能 5 方对比（含 gstack） |
 | [工具输出限高](./docs/comparison/tool-output-height-limiting-deep-dive.md) | Gemini CLI SlicingMaxSizedBox vs Qwen Code |
@@ -94,13 +96,13 @@
 
 **核心架构：** [模型路由](./docs/comparison/model-routing.md) | [上下文压缩](./docs/comparison/context-compression-deep-dive.md) | [MCP 集成](./docs/comparison/mcp-integration-deep-dive.md) | [沙箱安全](./docs/comparison/sandbox-security-deep-dive.md) | [多代理](./docs/comparison/multi-agent-deep-dive.md)
 
-**扩展系统：** [Hook/插件](./docs/comparison/hook-plugin-extension-deep-dive.md) | [Skill 技能](./docs/comparison/skill-system-deep-dive.md) | [长期记忆](./docs/comparison/memory-system-deep-dive.md)
+**扩展系统：** [Hook/插件](./docs/comparison/hook-plugin-extension-deep-dive.md) | [Skill 技能](./docs/comparison/skill-system-deep-dive.md) | [长期记忆](./docs/comparison/memory-system-deep-dive.md) | [闭环学习](./docs/comparison/closed-learning-loop-deep-dive.md)
 
 **工程实践：** [终端 UI](./docs/comparison/terminal-ui-deep-dive.md) | [Git 集成](./docs/comparison/git-integration-deep-dive.md) | [测试反射](./docs/comparison/test-reflection-deep-dive.md) | [CI 模式](./docs/comparison/ci-scripting-deep-dive.md) | [系统提示](./docs/comparison/system-prompt-deep-dive.md)
 
 **命令对比：** [/review](./docs/comparison/review-command.md) | [/compact /plan /init](./docs/comparison/key-commands-deep-dive.md) | [/loop /schedule](./docs/comparison/loop-schedule.md) | [/btw /rewind](./docs/comparison/btw-rewind.md) | [内置命令总览](./docs/comparison/slash-commands-deep-dive.md)
 
-**完整索引：** [133 篇 Deep-Dive 文章索引](./docs/comparison/deep-dive-index.md)
+**完整索引：** [134 篇 Deep-Dive 文章索引](./docs/comparison/deep-dive-index.md)
 
 ### Agent 1v1 对比
 
@@ -175,6 +177,7 @@
 | SWE-agent | Python | ~20k 行 | ACI + Bundle 工具 |
 | OpenHands | Python | ~60k 行 | EventStream + 多代理 |
 | Kimi CLI | **Python** | ~20k 行 | Wire 协议 + D-Mail |
+| **Hermes Agent** | **Python** | **~369k 行** | 闭环学习 + 14 消息渠道 + 6 执行环境 + MCP 双向 |
 
 **资源：** [awesome-cli-coding-agents](https://github.com/bradAGI/awesome-cli-coding-agents) | [SWE-bench](https://www.swebench.com/) | [MCP 协议](https://modelcontextprotocol.io/) | [架构原理](./docs/architecture/overview.md) | [基准测试](./docs/benchmarks/overview.md)
 

@@ -15,6 +15,7 @@
 | **Aider** | 双模型流水线 | 1（双阶段） | — | 内部委托 | **架构师→编辑器** |
 | **Codex CLI** | Multi-agent v2（v0.117） | 实验性 | — | 逻辑路径地址（如 `/root/agent_a`） | 结构化代理间消息 + Plugins 一等公民 |
 | **Goose** | MCP 工具委托 | — | — | Recipe | **纯 MCP 工作流** |
+| **Hermes Agent** | 主代理 + **后台 Review 子代理** | 1 + `delegate_tool` + `mixture_of_agents_tool` | ✓（asyncio） | spawn_background_review | **双计数器 Nudge + post-response 派发 + max_iter=8** |
 
 ---
 

@@ -1,4 +1,4 @@
-# Deep-Dive 文章索引（133 篇）
+# Deep-Dive 文章索引（134 篇）
 
 > 按主题分类的深度分析文章，每篇聚焦一个具体技术机制的 Claude Code vs Qwen Code 对比。
 >
@@ -6,7 +6,7 @@
 
 ---
 
-## 核心架构（18 篇）
+## 核心架构（19 篇）
 
 | 文章 | 主题 |
 |------|------|
@@ -20,6 +20,7 @@
 | [系统提示内容指导](./system-prompt-content-guidelines-deep-dive.md) | OWASP + 代码风格 |
 | [附件协议与预算](./attachment-protocol-budget-deep-dive.md) | 40+ 类型 + per-type 预算 |
 | [记忆系统](./memory-system-deep-dive.md) | Session Memory + Auto Dream |
+| [闭环学习系统](./closed-learning-loop-deep-dive.md) | Hermes Agent 双计数器 Nudge + 冻结快照 + 自修补 |
 | [记忆 Prefetch](./memory-prefetch-deep-dive.md) | 异步预取 |
 | [嵌套记忆 @include](./nested-memory-include-deep-dive.md) | @path 递归引用 |
 | [指令加载](./instruction-loading-deep-dive.md) | CLAUDE.md 层级加载 |

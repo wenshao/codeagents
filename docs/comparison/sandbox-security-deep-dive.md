@@ -16,6 +16,7 @@
 | **Qwen Code** | Seatbelt/Docker/Podman（可选） | deny > ask > allow | ✗ | — | **Loop 检测**（Levenshtein） |
 | **Kimi CLI** | 无 | YOLO 切换 | ✗ | — | 会话级审批 |
 | **Aider** | 无 | 信任模式 | ✗ | — | 用户确认 shell |
+| **Hermes Agent** | **6 种可插拔后端**（Local/Docker/SSH/Daytona/Singularity/Modal） | approval.py 工作流 | **Tirith Security + skills_guard + osv_check** | — | **Daytona/Modal 休眠唤醒 + `url_safety`/`website_policy`** |
 
 ---
 

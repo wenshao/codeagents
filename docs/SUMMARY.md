@@ -18,6 +18,7 @@
 | **Goose** | Block 出品后捐赠 Linux 基金会，MCP 原生架构，398 个贡献者 | MCP 生态和开源社区 |
 | **OpenCode** | 多客户端（TUI+Web+桌面），37 个 LSP，100+ 模型提供商 | 需要多客户端和 IDE 集成的团队 |
 | **Qoder CLI** | 阿里通义灵码闭源代理，Go 原生 43MB，Quest 模式，`--with-claude-config` 兼容 Claude Code | 阿里云生态和 Quest 自主执行场景 |
+| **Hermes Agent** | Nous Research 出品，**闭环学习系统**（冻结快照 Memory + 自主 Skill + FTS5 搜索 + Nudge）+ 14 消息渠道 + 6 执行环境 + MCP 双向 | 需要 Agent 跨会话自主学习 + 跨平台响应的用户 |
 
 ## 30 秒决策树
 
@@ -30,7 +31,9 @@
 ├── 隐私零遥测 → Kimi CLI（零分析）或 OpenCode（零分析）
 ├── Git 工作流控制 → Aider（/commit /undo /diff /git + 自动提交归因）
 ├── 最大模型灵活性 → Goose（58+ 提供商）或 Aider（100+ via LiteLLM）
-├── 沙箱隔离执行 → Codex CLI（3 平台原生沙箱）或 Claude Code
+├── 沙箱隔离执行 → Codex CLI（3 平台原生沙箱）或 Hermes Agent（6 种环境后端）
+├── 跨会话自主学习 → Hermes Agent（闭环学习系统：冻结快照 + Nudge + Skill 自修补）
+├── 跨平台响应（Telegram/Discord/Slack） → Hermes Agent（14 消息渠道）
 └── 最活跃开发 → Codex CLI（882 commits/月）或 Gemini CLI（708/月）
 ```
 

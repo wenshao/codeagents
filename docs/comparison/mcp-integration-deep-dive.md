@@ -7,6 +7,7 @@
 | Agent | 架构角色 | 传输协议 | 工具命名 | 策略控制 | OAuth |
 |------|---------|---------|---------|---------|-------|
 | **Goose** | **全部工具基于 MCP** | Stdio/StreamableHTTP/Builtin | 标准 MCP 发现 | 4 模式 + Per-tool | ✗ |
+| **Hermes Agent** | **双向（Client + Server）** | Stdio / StreamableHTTP | Client: 标准 MCP 发现；Server: 9 OpenClaw 工具 + channels_list | Client 侧通过 registry 控制 | ✓ |
 | **Claude Code** | 扩展 | Stdio/SSE/Streamable-HTTP | `mcp__server__tool`（双下划线） | deny→ask→allow 3 层 | ✓ |
 | **Gemini CLI** | 扩展 | Stdio/SSE | `mcp_{server}_{tool}`（单下划线） | **TOML 通配符 + 正则** | ✓ |
 | **Kimi CLI** | 扩展 | Stdio/HTTP | 动态注册 | Per-tool 审批 + 超时 | ✓ |
