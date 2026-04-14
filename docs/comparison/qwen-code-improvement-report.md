@@ -49,7 +49,7 @@
 | **P1** | [Nudge 驱动的闭环学习](./closed-learning-loop-deep-dive.md) — 双计数器 + 后台 review 子代理 + 冻结快照 + 自修补（Hermes Agent 参考） [↓](./qwen-code-improvement-report-p0-p1-core.md#item-14) | 被动记忆（无 nudge） | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087)（部分覆盖） |
 | **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | 全部工具始终加载 | 小 | — |
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1-core.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ / [Roadmap#2516](https://github.com/QwenLM/qwen-code/issues/2516) |
-| **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | 完全缺失 | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) |
+| **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | 完全缺失 | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) / [PR#3242](https://github.com/QwenLM/qwen-code/pull/3242) / [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
 | **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-9) | 所有指令始终加载 | 中 | [Roadmap#125](https://github.com/QwenLM/qwen-code/issues/125) |
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-12) | 缺失 | 小 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | 缺失 | 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) |
@@ -68,7 +68,7 @@
 | **P1** | [Token Budget 续行与自动交接](./token-budget-continuation-deep-dive.md) — 90% 续行 + 递减检测 + 分层压缩回退 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-4) | 70% 一次性压缩 | 中 | — |
 | **P1** | 同步 I/O 异步化 — readFileSync/statSync 替换为 async，解阻塞事件循环 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-5) | 多处 readFileSync | 中 | — |
 | **P1** | [Prompt Cache 分段与工具稳定排序](./prompt-cache-optimization-deep-dive.md) — static/dynamic 分界 + 内置工具前缀 + schema 锁定 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-6) | 无分段缓存 | 中 | — |
-| **P1** | [API 指数退避与降级重试](./api-retry-fallback-deep-dive.md) — 10 次退避 + 529 模型降级 + 401 token 刷新 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-8) | 仅配置重试次数 | 中 | — |
+| **P1** | [API 指数退避与降级重试](./api-retry-fallback-deep-dive.md) — 10 次退避 + 529 模型降级 + 401 token 刷新 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-8) | 仅配置重试次数 | 中 | [PR#3246](https://github.com/QwenLM/qwen-code/pull/3246) ✓（SSE 流式 429 检测） |
 | **P1** | [优雅关闭序列与信号处理](./graceful-shutdown-deep-dive.md) — SIGINT/SIGTERM + 清理注册 + 5s failsafe [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-9) | 无信号处理 | 中 | — |
 | **P1** | [反应式压缩](./reactive-compression-deep-dive.md) — prompt_too_long 自动裁剪最早消息 + 重试 3 次 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-10) | 无被动恢复 | 中 | — |
 | **P1** | [持久化重试模式](./persistent-retry-deep-dive.md) — CI/后台无限重试 + 5min 退避上限 + 30s 心跳 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-11) | 失败即退出 | 中 | [PR#3080](https://github.com/QwenLM/qwen-code/pull/3080) |
@@ -103,7 +103,7 @@
 | **P2** | [Plan 模式 Interview](./plan-mode-interview-deep-dive.md) — 先澄清需求再形成计划，分离访谈/规划/执行阶段 [↓](./qwen-code-improvement-report-p2-core.md#item-12) | 无 interview 阶段 | 中 | — |
 | **P2** | [BriefTool 异步用户消息](./brieftool-async-user-messages-deep-dive.md) — Agent 主动发消息/附件给用户，不阻塞当前工具执行 [↓](./qwen-code-improvement-report-p2-core.md#item-13) | 缺失 | 中 | — |
 | **P2** | [SendMessageTool](./multi-agent-deep-dive.md) — 多 Agent间消息传递、shutdown 请求、plan 审批 [↓](./qwen-code-improvement-report-p2-core.md#item-14) | 缺失 | 中 | — |
-| **P2** | [FileIndex 模糊文件搜索](./file-index-fuzzy-search-deep-dive.md) — fzf 风格模糊文件搜索 + 异步增量索引 [↓](./qwen-code-improvement-report-p2-core.md#item-15) | 依赖 rg/glob | 中 | — |
+| **P2** | [FileIndex 模糊文件搜索](./file-index-fuzzy-search-deep-dive.md) — fzf 风格模糊文件搜索 + 异步增量索引 [↓](./qwen-code-improvement-report-p2-core.md#item-15) | 依赖 rg/glob | 中 | [PR#3214](https://github.com/QwenLM/qwen-code/pull/3214)（git ls-files + rg 回退） |
 | **P2** | [Notebook Edit 原子级编辑](./notebook-edit-deep-dive.md) — Jupyter cell 编辑 + 自动 cell ID 追踪 + 文件历史快照 [↓](./qwen-code-improvement-report-p2-core.md#item-16) | 缺失 | 中 | — |
 | **P2** | 自定义快捷键 — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
 | **P2** | [Session Ingress Auth](./session-ingress-auth-deep-dive.md) — 远程会话 bearer token 认证（企业多用户环境） [↓](./qwen-code-improvement-report-p2-core.md#item-18) | 缺失 | 中 | — |
@@ -319,7 +319,7 @@
 | Subagent | 支持 fork + 上下文继承 | 仅预定义类型 | 显著落后 | [PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) |
 | **智能工具并行** | Kind-based batching（默认 10 并发） | Agent 并发 / 其他顺序 | 中等差距 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ |
 | 投机执行 (Speculation) | 完整 overlay-fs + cow（991 行） | v0.15.0 已完整实现（563 行），默认关闭 | 小差距 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
-| 启动优化 | API Preconnect + Early Input | 无 | 缺失 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) |
+| 启动优化 | API Preconnect + Early Input | 无 | 缺失 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) / [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
 | 按路径注入上下文规则 | `.claude/rules/` + frontmatter `paths:` 惰加载 | 单一 QWEN.md | 中等差距 | — |
 | 会话记忆 (Session Memory) | SessionMemory + memdir | 简单笔记工具 | 显著落后 | — |
 | 自动记忆 (Memory) 整理 | Auto Dream | 无 | 缺失 | — |
@@ -329,7 +329,7 @@
 | Token 实时计数 | API 计数 + VCR 缓存 | 静态模式匹配 | 中等差距 | — |
 | 工具发现 | ToolSearchTool | 无 | 缺失 | — |
 | 多 Agent通信 | SendMessageTool | 无 | 缺失 | — |
-| 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | — |
+| 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | [PR#3214](https://github.com/QwenLM/qwen-code/pull/3214)（git ls-files + rg） |
 | Commit Attribution | Co-Authored-By 追踪 | 无 | 缺失 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
 | 会话分支 | /branch 对话分叉 | 无 | 缺失 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) |
 | Output Styles | Learning / Explanatory 模式 | 无 | 缺失 | — |
@@ -349,7 +349,7 @@
 | **延迟初始化** | lazySchema + 延迟 import + 延迟prefetch | 全量同步加载 | 中等差距 | — |
 | **Git 直读** | .git/HEAD+refs 直读 + LRU | spawn git | 中等差距 | — |
 | **崩溃恢复** | 中断检测 + 合成续行 + 全量恢复 | 无 | 缺失 | — |
-| **API 重试** | 10 次退避 + 529 降级 + 持久化重试 | 仅重试次数 | 显著落后 | [PR#3080](https://github.com/QwenLM/qwen-code/pull/3080) |
+| **API 重试** | 10 次退避 + 529 降级 + 持久化重试 | 仅重试次数 | 显著落后 | [PR#3080](https://github.com/QwenLM/qwen-code/pull/3080) / [PR#3246](https://github.com/QwenLM/qwen-code/pull/3246) ✓ |
 | **优雅关闭** | SIGINT/SIGTERM + 清理注册 + failsafe | 无信号处理 | 缺失 | — |
 | **反应式压缩** | prompt_too_long 自动裁剪重试 | 无 | 缺失 | — |
 | **原子写入** | temp+rename + 大结果persist to disk | 直接 writeFileSync | 中等差距 | — |
@@ -416,6 +416,27 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-14
+
+**继续追踪社区 PR**（qwen-code 4/14 连续合并 + 新开）：
+
+- **新标记已合并**（2 个 ✓）：
+  - [#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（**启动性能剖析器**，7 检查点 + `QWEN_CODE_PROFILE_STARTUP=1` 环境变量）— 作为 item-8 启动优化的**测量基线**，与主 PR#3085 互补
+  - [#3246](https://github.com/QwenLM/qwen-code/pull/3246) ✓（**从流式 SSE 帧中检测 rate-limit 错误**）— 解决 DashScope 子代理 `Throttling.AllocationQuota` 立即失败问题，是 engine item-8 API 退避逻辑的**前置条件**
+- **新增追踪 PR**（3 个 open）：
+  - [#3214](https://github.com/QwenLM/qwen-code/pull/3214)（tanzhenxin）— **替换 fdir 爬虫为 `git ls-files + ripgrep` 两级回退**，Closes [Issue#3137](https://github.com/QwenLM/qwen-code/issues/3137)。直接解决 `@` 文件补全在大项目里按键每次重新扫描的性能问题；关联 p2-core item-15 FileIndex
+  - [#3242](https://github.com/QwenLM/qwen-code/pull/3242)（open）— 保证 startup input 穿透 full init 流程不丢失，补充 PR#3085
+  - [#3266](https://github.com/QwenLM/qwen-code/pull/3266)（open）— 新增 `PostTurn` hook 事件（每次模型 turn 边界触发），延续 PR#2825 的"新 hook 事件类型"方向
+- **其他新开 PR（观察中，暂不追踪）**：
+  - [#3178](https://github.com/QwenLM/qwen-code/pull/3178) + [#3236](https://github.com/QwenLM/qwen-code/pull/3236) 工具验证重试循环检测 + 停止指令
+  - [#3255](https://github.com/QwenLM/qwen-code/pull/3255) Fork Subagent params 构造时注入重构
+  - [#3261](https://github.com/QwenLM/qwen-code/pull/3261) `/history` 命令管理已保存的聊天会话
+  - [#3248](https://github.com/QwenLM/qwen-code/pull/3248) ACP 集成完整 hooks 支持
+- **其他维护合并**（未对应矩阵条目）：
+  - [#3217](https://github.com/QwenLM/qwen-code/pull/3217) docs：更新 quota 耗尽后的替代方案（OpenRouter/Fireworks）
+  - [#3249](https://github.com/QwenLM/qwen-code/pull/3249) VS Code 会话 tab 标题长度限制
+- 总追踪 PR：**40 个（21 已合并 ✓，2 已关闭移除）**
 
 ### 2026-04-13（全量审计 + 晚间更新）
 

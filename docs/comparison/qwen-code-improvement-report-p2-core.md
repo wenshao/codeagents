@@ -587,6 +587,8 @@ interview（提问收集需求） → plan（制定实施计划） → 用户确
 **缺失后果**：需要精确文件名才能定位——'那个 auth 相关的文件叫什么来着？'
 **改进收益**：fzf 风格模糊搜索——输入部分关键词即可定位。
 
+**进展**：[PR#3214](https://github.com/QwenLM/qwen-code/pull/3214)（open，tanzhenxin）— **替换 fdir 爬虫为 `git ls-files + ripgrep` 两级回退**。Closes [Issue#3137](https://github.com/QwenLM/qwen-code/issues/3137)。修改动机：原 fdir 在每次按键都重新扫描目录树，大仓库响应缓慢且不遵循 `.gitignore`。新策略：① git 仓库优先用 `git ls-files`（秒级返回，天然遵循 .gitignore）；② 非 git 目录 fallback 到 ripgrep 扫描。本 PR 直接解决了 `@` 文件补全在大项目里卡顿的问题。
+
 ---
 
 <a id="item-16"></a>

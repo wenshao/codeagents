@@ -385,6 +385,11 @@ Preconnect 实现极简（71 行）——发一个不等响应的 HEAD 请求，
 
 **相关文章**：[启动阶段优化](./startup-optimization-deep-dive.md)
 
+**进展**：
+- [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085)（open，doudouOUC）— 主 PR：API preconnect + early input capture
+- [PR#3242](https://github.com/QwenLM/qwen-code/pull/3242)（open）— 补充：保证 startup input 穿透 full init 流程不丢失
+- [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（2026-04-14 合并）— **启动性能剖析器**：`QWEN_CODE_PROFILE_STARTUP=1` 启用，在 `main()` 7 个检查点（`main_entry` / `after_load_settings` / `after_parse_arguments` 等）打点，为后续优化提供测量基线
+
 **意义**：启动体验是用户对工具的第一印象。
 **缺失后果**：首次 API 需完整 TCP+TLS 握手（+100-200ms），启动打字丢失。
 **改进收益**：preconnect 省 150ms + 启动打字不丢失——感知启动更快。
