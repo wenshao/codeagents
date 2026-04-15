@@ -30,6 +30,12 @@
 | [Oh My OpenAgent](./oh-my-openagent.md) | 单文件 | — | OpenCode Harness 层，7~10 Discipline Agent 编排，~45K Stars |
 | [mini-swe-agent](./mini-swe-agent.md) | 单文件 | 93 | 教学用，SWE-bench 74%+ |
 
+## 相关：Agent Framework 对比（开发者侧）
+
+> Code Agent（本页）= 用户直接运行的编程助手；Agent Framework = 开发者写代码构建 agent 的 SDK。两者对比维度不同。
+>
+> **[Agent Framework 章节](../frameworks/)** —— 6 款 SDK 对比（AgentScope 源码级 + LangGraph/CrewAI/AG2/MAF/LangChain 文档级）
+
 ## 对比文档
 
 - [功能对比矩阵](../comparison/features.md)

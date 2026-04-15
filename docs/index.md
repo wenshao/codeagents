@@ -23,6 +23,8 @@ features:
     details: 21 篇 Deep-Dive，覆盖架构、命令、隐私、定价、模型路由、沙箱安全等核心维度
   - title: 🛠 19 款 Agent 全覆盖
     details: Claude Code、Copilot CLI、Codex CLI、Gemini CLI、Qwen Code、Kimi CLI、Aider、OpenCode、Goose、Hermes Agent 等
+  - title: 🧩 6 款 Agent Framework
+    details: AgentScope / LangGraph / CrewAI / AG2 / Microsoft Agent Framework / LangChain —— 开发者侧 SDK 选型
   - title: 🧭 实用选型指南
     details: 30 秒决策树、关键数字对比、安全/隐私等级排序、用户指南和迁移指南
 ---

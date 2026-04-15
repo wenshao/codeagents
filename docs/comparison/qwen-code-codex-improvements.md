@@ -3,7 +3,7 @@
 > 基于 Codex CLI (openai/codex) 完整 Rust 源码（70+ crate，619,458 行）与 Qwen Code 源码的系统对比，识别 **25 项**可借鉴的能力。Codex CLI 是唯一采用 Rust 原生构建 + 沙箱默认启用的主流 CLI Code Agent。
 >
 > **相关报告**：
-> - [Claude Code 改进建议报告（248 项）](./qwen-code-improvement-report.md)——行业领先者对比
+> - [Claude Code 改进建议报告（252 项）](./qwen-code-improvement-report.md)——行业领先者对比
 > - [Gemini CLI 上游 backport 报告（53 项）](./qwen-code-gemini-upstream-report.md)——上游可 backport 改进
 > - [OpenCode 对标改进报告（27 项）](./qwen-code-opencode-improvements.md)——多 Provider、Plugin 系统等
 

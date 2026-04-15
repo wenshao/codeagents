@@ -34,6 +34,7 @@
 ├── 沙箱隔离执行 → Codex CLI（3 平台原生沙箱）或 Hermes Agent（6 种环境后端）
 ├── 跨会话自主学习 → Hermes Agent（闭环学习系统：冻结快照 + Nudge + Skill 自修补）
 ├── 跨平台响应（Telegram/Discord/Slack） → Hermes Agent（14 消息渠道）
+├── 自己构建 agent（不是用现成工具） → 看 [Agent Framework 章节](./frameworks/)（AgentScope/LangGraph/CrewAI/AG2/MAF/LangChain）
 └── 最活跃开发 → Codex CLI（882 commits/月）或 Gemini CLI（708/月）
 ```
 
