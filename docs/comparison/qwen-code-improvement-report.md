@@ -54,7 +54,7 @@
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-12) | 缺失 | 小 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | 缺失 | 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) |
 | **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-1) | 缺失 | 中 | — |
-| **P1** | GitHub Code Review — 多 Agent自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-2) | 缺失 | 大 | [Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742) |
+| **P1** | GitHub Code Review — 多 Agent自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-2) | **已实现**（内置 `/review` skill，5 agent 并行 + Create Review API） | — | [PR#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [PR#2376](https://github.com/QwenLM/qwen-code/pull/2376) ✓ / [PR#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [PR#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ / [Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742) |
 | **P1** | [HTTP Hooks](./http-hooks-deep-dive.md) — Hook 可 POST JSON 到 URL 并接收响应（不仅 shell 命令）[↓](./qwen-code-improvement-report-p0-p1-platform.md#item-3) | 仅 shell 命令 | 小 | [PR#2827](https://github.com/QwenLM/qwen-code/pull/2827) |
 | **P1** | [Structured Output](./structured-output-deep-dive.md) — `--json-schema` 强制 JSON Schema 验证输出 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-4) | 缺失 | 小 | — |
 | **P1** | [Agent SDK 增强](./agent-sdk-python-deep-dive.md) — Python SDK + 流式回调 + 工具审批回调（Qwen 仅 TS SDK）[↓](./qwen-code-improvement-report-p0-p1-platform.md#item-5) | 仅 TypeScript SDK | 中 | — |
@@ -416,6 +416,22 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-14（晚间更新）
+
+**勘误**：social 反馈指出 platform item-2 "GitHub Code Review 多 Agent 审查" 已被 qwen-code 内置 `/review` skill 完整覆盖。审查源码 `packages/core/src/skills/bundled/review/SKILL.md` 后确认：
+
+- **Step 4**：dispatch 5 个 task agent 并行执行（5 个维度：correctness / security / quality / performance / build-test）
+- **Step 9**：用 GitHub Create Review API 一次性提交 verdict + inline comments 数组（模仿 Copilot Code Review）
+- **Step 5/6/8**：去重、反向审计、autofix 流程完整
+- **`.qwen/review-rules.md`** 项目规则（等同 REVIEW.md 概念）
+- **增量 cache**、**worktree 隔离**、**跨仓库 lightweight 模式**等额外能力
+
+实现深度**已超过 Claude Code 托管的 GitHub Code Review**。涉及 PR：[#2348](https://github.com/QwenLM/qwen-code/pull/2348) / [#2376](https://github.com/QwenLM/qwen-code/pull/2376) / [#2380](https://github.com/QwenLM/qwen-code/pull/2380) / [#2687](https://github.com/QwenLM/qwen-code/pull/2687) / [#2932](https://github.com/QwenLM/qwen-code/pull/2932) — 全部已合并。
+
+更新 platform item-2 状态为"✓ 已实现"，新增 5 个 PR 的 ✓ 标记到主矩阵。
+
+总追踪 PR 重新计数：**44 个（25 已合并 ✓，2 已关闭移除）**
 
 ### 2026-04-14
 

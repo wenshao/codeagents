@@ -9,7 +9,7 @@
 | 入口 | 说明 |
 |------|------|
 | **[Deep-Dive 索引（134 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
-| **[Qwen Code 改进报告（249 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 40 个社区 PR 追踪 |
+| **[Qwen Code 改进报告（249 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 44 个社区 PR 追踪 |
 | **[Gemini CLI backport（53 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 + 模块级架构对比 |
 | **[/review 功能分析](./docs/comparison/qwen-code-review-improvements.md)** | 审查功能 5 方对比（含 gstack） |
 | **[Codex CLI 对标改进（25 项）](./docs/comparison/qwen-code-codex-improvements.md)** | 沙箱 + Apply Patch + Feature Flag + 网络代理 |
@@ -79,7 +79,7 @@
 
 | 报告 | 说明 |
 |------|------|
-| [Claude Code 对比（249 项）](./docs/comparison/qwen-code-improvement-report.md) | 改进建议 + 40 个社区 PR 追踪（21 已合并） |
+| [Claude Code 对比（249 项）](./docs/comparison/qwen-code-improvement-report.md) | 改进建议 + 44 个社区 PR 追踪（25 已合并） |
 | [Gemini CLI backport（53 项）](./docs/comparison/qwen-code-gemini-upstream-report.md) | 上游可 backport 改进 + 模块级架构对比 |
 | [/review 功能分析](./docs/comparison/qwen-code-review-improvements.md) | 审查功能 5 方对比（含 gstack） |
 | [工具输出限高](./docs/comparison/tool-output-height-limiting-deep-dive.md) | Gemini CLI SlicingMaxSizedBox vs Qwen Code |

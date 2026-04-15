@@ -61,28 +61,46 @@
 
 <a id="item-2"></a>
 
-### 2. GitHub Code Review 多 Agent审查（P1）
+### 2. GitHub Code Review 多 Agent审查（P1）✓ 已实现
 
-**思路**：多 Agent 并行审查 PR 不同文件——每个 Agent 检查一类问题（逻辑错误/安全漏洞/边界情况），验证步骤过滤误报，结果去重排序后发 inline 评论。可配合 `REVIEW.md` 定制审查规则。
+**状态**：**已通过内置 `/review` skill 完整实现**（`packages/core/src/skills/bundled/review/SKILL.md`，11 步流程）。
 
-**Claude Code 源码索引**：
+**思路**：多 Agent 并行审查 PR 不同维度——每个 Agent 检查一类问题（correctness / security / quality / performance / build-test），验证步骤过滤误报，结果去重排序后用 GitHub Create Review API 一次性提交 verdict + inline 评论。可配合 `.qwen/review-rules.md` 定制审查规则。
 
-| 文件 | 关键函数/常量 |
-|------|-------------|
-| 托管服务（非本地源码） | 多 Agent 并行 + 验证 + 去重 |
-| `code-review.md` 官方文档 | severity: 🔴 Important / 🟡 Nit / 🟣 Pre-existing |
+**qwen-code `/review` 实现对比**：
 
-**Qwen Code 修改方向**：基于已有 `/review` Skill 扩展——fork 多个 Agent 各审查一组文件；`gh api` 发 inline 评论；新增 `REVIEW.md` 支持。
+| 维度 | item-2 描述 | qwen-code 实现 |
+|---|---|---|
+| 多 Agent 并行 | ✓ | **Step 4**：单次响应中 dispatch **5 个 task agent**（同仓库）/ **4 个**（跨仓库 lightweight），运行时并发执行 |
+| 维度划分 | 逻辑错误/安全/边界 | correctness / security / code quality / performance / build-test，每个 agent 专注一个维度 |
+| Inline 评论 | gh api 单条发送 | **Step 9**：使用 GitHub **Create Review API** 一次性提交 verdict + inline comments 数组（模仿 Copilot Code Review，避免多次 API 调用） |
+| 去重过滤 | 验证步骤 | **Step 5**：去重 + 验证 + 聚合 + 高低置信度分流（低置信度只在终端显示，不发 PR） |
+| 反向审计 | — | **Step 6**：reverse audit 进一步过滤误报 |
+| 项目规则 | `REVIEW.md` | **`.qwen/review-rules.md`**（等同概念）+ `.qwen/team/*` + `AGENTS.md` 多源加载 |
+| Severity | 🔴 / 🟡 / 🟣 | Critical / Important / Nit + "Silence is better than noise" 设计原则 |
+| Autofix | — | **Step 8**：autofix 后 commit + push（fork PR 失败时降级提示） |
+| 增量 review | — | **`.qwen/review-cache/pr-N.json`**：基于 commit SHA + model ID 跳过未变化的 PR |
+| Worktree 隔离 | — | 用 `git worktree` 隔离 PR review 不污染用户工作树 |
+| 已存在评论 | — | 拉取已有 inline + general comments 防止重复反馈 |
+| 跨仓库 review | — | URL 模式：`gh pr diff` lightweight 模式（无 build/test/autofix） |
 
-**实现成本评估**：
-- 涉及文件：~2 个
-- 新增代码：~100 行
-- 开发周期：~2 天（1 人）
-- 难点：审查结果的去重与排序
+**相关 PR**（已合并）：
 
-**意义**：大 PR 单 Agent 逐文件审查慢——多 Agent并行可大幅提速。
-**缺失后果**：单 Agent 审查大 PR 需 N 分钟。
-**改进收益**：多 Agent 并行审查——大 PR 审查时间缩短到 ~1 分钟。
+| PR | 主题 | 合并日期 |
+|---|---|---|
+| [#2348](https://github.com/QwenLM/qwen-code/pull/2348) | 初版 `/review` skill | 2026-03-14 |
+| [#2376](https://github.com/QwenLM/qwen-code/pull/2376) | 多模型仲裁（multi-model arbitration） | 2026-03-14 |
+| [#2380](https://github.com/QwenLM/qwen-code/pull/2380) | `extends: bundled` 允许扩展 bundled skill | 2026-03-14 |
+| [#2687](https://github.com/QwenLM/qwen-code/pull/2687) | 验证机制 + 误报控制 + PR 评论 | 2026-04-01 |
+| [#2932](https://github.com/QwenLM/qwen-code/pull/2932) | **确定性分析 + autofix + 安全加固** | 2026-04-09 |
+
+**相关文档**：[/review 功能分析（5 方对比）](./qwen-code-review-improvements.md) | [/review Deep-Dive（架构）](./qwen-code-review-deep-dive.md) | [/review 用户指南](../guides/qwen-code-review-guide.md)
+
+**Roadmap**：[Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742)
+
+**收益**：大 PR 多 Agent 并行审查 + 单 API call 提交 inline + 增量 cache + autofix + 跨仓库 lightweight，已超出原 item 范围。
+
+> 注：本 item 的实现深度**已超出 Claude Code 托管的 GitHub Code Review** —— qwen-code 是开源、可定制、本地运行的多 Agent review 系统，而 Claude Code 的 Code Review 是托管服务（非本地源码）。详细对比见 [/review 功能分析](./qwen-code-review-improvements.md)。
 
 ---
 
