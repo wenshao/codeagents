@@ -300,6 +300,29 @@
 **缺失后果**：token 估算偏差 + 未及时压缩 = API 报错 = 任务中断。
 **改进收益**：prompt_too_long → 自动裁剪 → 重试——用户零感知，任务不中断。
 
+**社区历史**（供后续实现者参考，避免重复踩坑）：
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| [PR#2571](https://github.com/QwenLM/qwen-code/pull/2571) `feat(core): pre-flight context budget trimming for Anthropic and OpenAI` | **CLOSED（未合并）** | **最接近的一次尝试**，方向**不同**：是**预防性 pre-flight trimming**（估算请求大小 → 提前裁剪工具结果），不是**反应式 recovery**（收到错误后裁剪重试）。PR 描述明确指出问题："With Claude (200K) or OpenAI models, accumulated tool results can push the request past the context limit **before chat compression gets a chance to run**. The API hard-rejects, the user sees a cryptic error, and the session is stuck."——这正是本 item 要解决的问题，但实现策略被 reject |
+| [PR#2464](https://github.com/QwenLM/qwen-code/pull/2464) `fix: improve /compress reliability and error handling for context limit issues (#2459)` | **CLOSED（未合并）** | 修复 `/compress` 的 bug：`hasFailedCompressionAttempt` 标志位不重置导致后续无法自动压缩、token count 公式估算偏低。不是 reactive 能力本身，但暴露了 Qwen Code 压缩链路的**可靠性问题**——如果主动压缩能确保可靠，反应式 recovery 的必要性会降低 |
+| [Issue#843](https://github.com/QwenLM/qwen-code/issues/843) `when send a long prompt, user query too long cause error UI` | CLOSED | 真实用户痛点报告：发送长 prompt → UI 报错。Issue 被关闭但无 follow-up PR，说明问题仍存在 |
+| `packages/core/src/` grep `prompt_too_long` | **0 命中** | Qwen Code 源码**完全没有** `prompt_too_long` 错误处理代码 |
+
+**当前实际状况**：
+- ✓ **主动压缩**：PR#3006（microcompaction）已合并 + 原有 70% 阈值压缩
+- ✗ **反应式压缩**：完全缺失，PR#2571 的 pre-flight 尝试被 reject
+- ✗ **错误消息解析**：源码中无 `parsePromptTooLongTokenCounts()` 等价实现
+
+**为什么社区方向偏向主动压缩而非反应式 recovery**：如果主动压缩做得足够好（PR#3006 microcompaction + item-1 多层压缩 + item-5 Auto Dream），理论上永远不会触发 `prompt_too_long`——反应式 recovery 成了"**主动压缩失效时的最后兜底**"，不是高优先级。但**兜底不可缺**：主动压缩再好也有边界情况（工具结果瞬间膨胀、token 估算偏差），没有反应式 recovery 就是 session 直接卡死。
+
+**建议实现方向**（避开 PR#2571 被 reject 的原因）：
+1. **定位在"错误恢复"而非"容量规划"**：只在捕获 `prompt_too_long` 错误后才触发，平时零开销
+2. **最小化代码侵入**：单独的 error handler，不修改主压缩链路
+3. **复用现有压缩基础**：调用已合并的 compaction service，不重新实现裁剪逻辑
+4. **幂等性**：注入 `[earlier conversation truncated]` 标记防止循环裁剪
+5. **测试覆盖**：必须有针对 `prompt_too_long` error path 的集成测试
+
 ---
 
 <a id="item-11"></a>
