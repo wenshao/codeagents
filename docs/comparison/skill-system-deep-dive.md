@@ -10,7 +10,7 @@
 | **Kimi CLI** | SKILL.md + **Flow Skill** | 标准+Flow | ✓（三层发现） | ✗ | ✗ | ✓（子代理） | **✓（Mermaid/D2）** |
 | **OpenCode** | SKILL.md（Hook 驱动） | 0+ | ✓（per-agent） | ✗（Hook 控制） | ✗ | ✗ | ✗ |
 | **Gemini CLI** | SKILL.md（TS 接口） | — | ✓（activate_skill） | ✗ | ✗ | ✗ | ✗ |
-| **Qwen Code** | SKILL.md（**YAML 必须**） | 1+（/review） | ✓（继承） | ✗ | ✗ | ✗ | ✗ |
+| **Qwen Code** | SKILL.md（**YAML 必须**） | 1+（/review） | ✓（继承） | ✗ | **✓**（[PR#2949](https://github.com/QwenLM/qwen-code/pull/2949) ✓，2026-04-13 合并，同 provider） | ✗ | ✗ |
 | **Codex CLI** | SKILL.md（Markdown） | 0 | ✗ | ✗ | ✗ | ✗ | ✗ |
 | **Copilot CLI** | `.agent.yaml` | 3 内置 | ✗ | ✓（per-agent） | ✓ | ✗ | ✗ |
 | **Goose** | `recipe.yaml` | 0 | ✗ | ✗ | ✗ | ✗ | **✓（YAML 模板）** |

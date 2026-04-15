@@ -725,3 +725,58 @@ Word/Excel/PowerPoint 通过 Managed Agents 的预置 Skill（`xlsx`/`docx`/`ppt
 - DOCX/XLSX/PPTX：MCP 集成 ~0 行（用户配置）；内置 ~200 行，~3 天
 
 ---
+
+<a id="item-22"></a>
+
+### 22. Skill 级模型覆盖（frontmatter `model:` 字段）（P2）✓ 已合并
+
+**状态**：**已通过 [PR#2949](https://github.com/QwenLM/qwen-code/pull/2949) 实现**（2026-04-13 合并，tanzhenxin）。
+
+**问题**：一个复杂的 agentic 任务往往分为多个阶段——**分析**（需要大模型推理）→ **模板生成**（小模型即可，省钱）→ **code review**（大模型）。当前 Qwen Code 只能在 session 级别指定模型，无法让某个 skill 独立使用不同模型。用户只能手动 `/model` 切换，打断工作流。
+
+**Claude Code 的方案**：SKILL.md frontmatter 支持 `model:` 字段：
+
+```yaml
+---
+name: review
+description: Review code changes
+model: sonnet               # 或 opus / haiku，具体模型名
+allowed-tools: [read_file, grep]
+---
+```
+
+调用该 skill 的整个 agentic sub-loop 使用指定的模型，loop 结束后自动恢复到 session 默认。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `tools/SkillTool/SkillTool.ts` | skill frontmatter 解析 + `model` 字段传递 |
+| `services/agents/agentModelRouter.ts` | agentic loop 的模型路由逻辑 |
+
+**Qwen Code 现状（PR#2949 之前）**：[skill-system-deep-dive.md 矩阵](./skill-system-deep-dive.md) 中"模型覆盖"列，Qwen Code 标注为 ✗，Claude Code/Copilot CLI 为 ✓。PR#2949 将这个空白填上。
+
+**Qwen Code 实现（PR#2949）**：
+
+| 维度 | 实现 |
+|---|---|
+| **Frontmatter 字段** | `model: qwen-coder-plus` 加入 skill YAML frontmatter |
+| **数据流** | Skill frontmatter → `SkillConfig.model` → skill tool call 后的 API 请求使用该 model |
+| **生效范围** | Skill tool call 之后的 agentic loop 内的所有 API 请求 |
+| **失效时机** | agentic loop 结束时自然失效（无需手动恢复） |
+| **跨 provider 支持** | **Phase 1 仅同 provider 切换**；跨 provider（需要 ContentGenerator threading）延到后续 PR |
+| **验证方式** | `--openai-logging` 检查 API log，before: `"model": "glm-5"`（session default），after: `"model": "qwen3-coder-plus"`（skill override） |
+
+**未实现（Phase 2 follow-up）**：跨 provider 切换（例如从 DashScope Qwen 切换到 Anthropic Claude），需要改造 ContentGenerator 的线程模型。
+
+**相关文章**：[Skill 系统深度对比](./skill-system-deep-dive.md)
+
+**意义**：多阶段 agent 任务的核心优化手段——**按阶段使用合适的模型**，既省成本又保证推理质量。Claude Code 和 Copilot CLI 早已支持，PR#2949 让 Qwen Code 对齐。
+
+**缺失后果（此前）**：所有 skill 只能用 session 默认模型。想要小模型做模板生成？必须手动 `/model` 切换，skill 结束后再切回来。
+
+**改进收益**：skill frontmatter `model:` 字段 = 零用户操作自动按阶段切换模型，agentic loop 结束自然恢复。
+
+**后续**：跨 provider 切换在 follow-up PR。
+
+---
