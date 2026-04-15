@@ -807,7 +807,7 @@ Agent 内部调用：
 - 开发周期：~1.5 天（1 人）
 - 难点：确定哪些配置项允许 Agent 修改（安全边界），schema 验证的完整性
 
-**进展**：[PR#2911](https://github.com/QwenLM/qwen-code/pull/2911)（open）— Agent 通过 `config GET/SET` 自主读写配置，SET 需用户确认，白名单机制。
+**进展**：[PR#2911](https://github.com/QwenLM/qwen-code/pull/2911) **已关闭**（未合并）— Agent 通过 `config GET/SET` 自主读写配置，SET 需用户确认，白名单机制。由作者 wenshao 关闭，推测后续有替代方案。
 
 **改进前后对比**：
 - **改进前**：复杂任务的不同阶段需要不同模型 → 用户手动 `/model` 切换 3 次 → 打断工作流

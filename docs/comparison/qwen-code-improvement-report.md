@@ -41,7 +41,7 @@
 |:------:|--------|----------------|:----:|------|
 | **P0** | [[Mid-Turn Queue Drain](./command-queue-orchestration-deep-dive.md)](./input-queue-deep-dive.md) — Agent 执行中途注入用户输入，无需等整轮结束 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-6) | 推理循环内无队列检查 | 中 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) ✓ |
 | **P0** | [多层上下文压缩](./context-compression-deep-dive.md) — 自动裁剪旧工具结果 + 摘要，用户无需手动 /compress [↓](./qwen-code-improvement-report-p0-p1-core.md#item-1) | 仅单一 70% 手动压缩 | 中 | [PR#3006](https://github.com/QwenLM/qwen-code/pull/3006) ✓（L2 microcompaction） |
-| **P0** | [Fork Subagent](./fork-subagent-deep-dive.md) — Subagent 继承完整对话上下文，共享 prompt cache 省 80%+ 费用 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-2) | Subagent 必须从零开始 | 中 | [PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) / [Roadmap#2409](https://github.com/QwenLM/qwen-code/issues/2409) |
+| **P0** | [Fork Subagent](./fork-subagent-deep-dive.md) — Subagent 继承完整对话上下文，共享 prompt cache 省 80%+ 费用 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-2) | Subagent 必须从零开始 | 中 | [PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) ✓ / [Roadmap#2409](https://github.com/QwenLM/qwen-code/issues/2409) |
 | **P0** | [会话崩溃恢复与中断检测](./crash-recovery-deep-dive.md) — 3 种中断状态检测 + 合成续行 + 全量恢复 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-7) | 无崩溃恢复 | 大 | — |
 | **P1** | [Speculation](../tools/claude-code/10-prompt-suggestions.md) — 预测用户下一步并提前执行，Tab 接受零延迟 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-3) | 已实现但默认关闭 | 小 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | **P1** | [会话记忆](./memory-system-deep-dive.md) — 关键决策/文件结构自动提取，新 session 自动注入 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-4) | 仅简单笔记工具 | 大 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) |
@@ -52,7 +52,7 @@
 | **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | 完全缺失 | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) / [PR#3242](https://github.com/QwenLM/qwen-code/pull/3242) / [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
 | **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-9) | 所有指令始终加载 | 中 | [Roadmap#125](https://github.com/QwenLM/qwen-code/issues/125) |
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-12) | 缺失 | 小 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
-| **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | 缺失 | 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) |
+| **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | 缺失 | 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) ✗（已关闭）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292)（后续 session rewind + restore flows） |
 | **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-1) | 缺失 | 中 | — |
 | **P1** | GitHub Code Review — 多 Agent自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-2) | **已实现**（内置 `/review` skill，5 agent 并行 + Create Review API） | — | [PR#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [PR#2376](https://github.com/QwenLM/qwen-code/pull/2376) ✓ / [PR#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [PR#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ / [PR#3276](https://github.com/QwenLM/qwen-code/pull/3276)（弱模型并行强化） / [Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742) |
 | **P1** | [HTTP Hooks](./http-hooks-deep-dive.md) — Hook 可 POST JSON 到 URL 并接收响应（不仅 shell 命令）[↓](./qwen-code-improvement-report-p0-p1-platform.md#item-3) | 仅 shell 命令 | 小 | [PR#2827](https://github.com/QwenLM/qwen-code/pull/2827) |
@@ -108,7 +108,7 @@
 | **P2** | 自定义快捷键 — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
 | **P2** | [Session Ingress Auth](./session-ingress-auth-deep-dive.md) — 远程会话 bearer token 认证（企业多用户环境） [↓](./qwen-code-improvement-report-p2-core.md#item-18) | 缺失 | 中 | — |
 | **P2** | [企业代理](./enterprise-proxy-support-deep-dive.md) — CONNECT relay + CA cert 注入 + NO_PROXY allowlist（容器环境） [↓](./qwen-code-improvement-report-p2-core.md#item-19) | 缺失 | 大 | — |
-| **P2** | [ConfigTool](./config-tool-dynamic-settings-deep-dive.md) — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](./qwen-code-improvement-report-p2-core.md#item-20) | 仅 /settings 命令 | 小 | [PR#2911](https://github.com/QwenLM/qwen-code/pull/2911) |
+| **P2** | [ConfigTool](./config-tool-dynamic-settings-deep-dive.md) — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](./qwen-code-improvement-report-p2-core.md#item-20) | 仅 /settings 命令 | 小 | [PR#2911](https://github.com/QwenLM/qwen-code/pull/2911) ✗（已关闭） |
 | **P2** | [终端主题检测](./terminal-theme-detection-deep-dive.md) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | — |
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](./qwen-code-improvement-report-p2-core.md#item-7) | 缺失 | 小 | — |
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | 缺失 | 小 | [PR#2871](https://github.com/QwenLM/qwen-code/pull/2871) ✓ |
@@ -319,7 +319,7 @@
 |------|-------------|-----------|----------|------|
 | **[Mid-Turn Queue Drain](./command-queue-orchestration-deep-dive.md)** | `query.ts` 工具批次间 drain | 无 | 显著落后 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) ✓ |
 | 压缩 (Compression) 策略 | 4 层分层压缩 | 单一阈值压缩 | 显著落后 | — |
-| Subagent | 支持 fork + 上下文继承 | 仅预定义类型 | 显著落后 | [PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) |
+| Subagent | 支持 fork + 上下文继承 | 仅预定义类型 | 显著落后 | [PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) ✓ |
 | **智能工具并行** | Kind-based batching（默认 10 并发） | Agent 并发 / 其他顺序 | 中等差距 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ |
 | 投机执行 (Speculation) | 完整 overlay-fs + cow（991 行） | v0.15.0 已完整实现（563 行），默认关闭 | 小差距 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | 启动优化 | API Preconnect + Early Input | 无 | 缺失 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) / [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
@@ -334,7 +334,7 @@
 | 多 Agent通信 | SendMessageTool | 无 | 缺失 | — |
 | 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | [PR#3214](https://github.com/QwenLM/qwen-code/pull/3214)（git ls-files + rg） |
 | Commit Attribution | Co-Authored-By 追踪 | 无 | 缺失 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
-| 会话分支 | /branch 对话分叉 | 无 | 缺失 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) |
+| 会话分支 | /branch 对话分叉 | 无 | 缺失 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) ✗（已关闭）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292)（跟进） |
 | Output Styles | Learning / Explanatory 模式 | 无 | 缺失 | — |
 | Fast Mode | 速度/成本分级推理 | `fastModel` 不同方案（另一个模型） | ⚠️ 部分 | [PR#3077](https://github.com/QwenLM/qwen-code/pull/3077) ✓ / [PR#3086](https://github.com/QwenLM/qwen-code/pull/3086) ✓ / [PR#3120](https://github.com/QwenLM/qwen-code/pull/3120) ✓ |
 | 并发 Session | 多终端 PID 追踪 + 后台脱附 | 无 | 缺失 | — |
@@ -419,6 +419,58 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-16（PR 状态全面刷新）
+
+全量扫描 qwen-code PRs `updated:>=2026-04-14`，发现多项状态变化：
+
+**1. 重大更新：Fork Subagent 已合并**
+
+- [PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) ✓ **合并于 2026-04-14**（tanzhenxin 提交）— `feat(core): implement fork subagent for context sharing`
+- 这是 **P0 item-2 Fork Subagent** 的主实现 PR，标记所有引用为 ✓
+- **P0 级别的核心能力落地**：子代理继承完整对话上下文 + 共享 prompt cache 省 80%+ 费用
+
+**2. 勘误：PR#2380 之前错标为 merged**
+
+- 2026-04-14 的 "2026-04-14（晚间更新）" changelog 条目写"[#2380] 全部已合并"**不准确**
+- `gh pr view 2380` 实际状态：**CLOSED（未合并）**
+- 已修正 `p0-p1-platform.md` item-2 的 PR 表格标注 + 主 changelog 对应段落
+- /review skill 的 **4 个合并 PR** 是 #2348 / #2376 / #2687 / #2932，不包括 #2380
+
+**3. 状态纠正：3 个曾标注 open 的 PR 现已 CLOSED**
+
+- [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) `/branch 会话分支` → **CLOSED**（未合并）。由 [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) `feat(cli): add session rewind and restore flows`（open）跟进（合并 /branch + /rewind 两个方向）
+- [PR#2911](https://github.com/QwenLM/qwen-code/pull/2911) `ConfigTool` → **CLOSED**（未合并，wenshao 自己提交后关闭）
+- [PR#2866](https://github.com/QwenLM/qwen-code/pull/2866) upstream backports → CLOSED（从未纳入追踪，观察记录）
+
+**4. 新合并 PR（其他维护项）**
+
+- [PR#2984](https://github.com/QwenLM/qwen-code/pull/2984) ✓ — `feat(vscode-ide-companion): add /account for account display`
+- [PR#3191](https://github.com/QwenLM/qwen-code/pull/3191) ✓ — `feat(acp): LLM-based message rewrite middleware with custom prompts`（此前已在 04-15 changelog 记录）
+- [PR#3212](https://github.com/QwenLM/qwen-code/pull/3212) ✓ — `fix(core): respect custom Gemini baseUrl from modelProviders`
+- [PR#3251](https://github.com/QwenLM/qwen-code/pull/3251) ✓ — `fix(core): allow thought-only responses in GeminiChat stream validation`
+- [PR#3257](https://github.com/QwenLM/qwen-code/pull/3257) ✓ — `fix(cli): make /bug easier to open in terminals without hyperlink support`
+- [PR#3270](https://github.com/QwenLM/qwen-code/pull/3270) ✓ — `fix(cli): ignore literal Tab input in BaseTextInput`
+- [PR#3294](https://github.com/QwenLM/qwen-code/pull/3294) ✓ — `fix(channels/dingtalk): prioritize senderStaffId over senderId for allowedUsers matching`
+- [PR#3298](https://github.com/QwenLM/qwen-code/pull/3298) ✓ — `chore(release): bump version to 0.14.5`
+- [PR#3299](https://github.com/QwenLM/qwen-code/pull/3299) ✓ — `fix(cli): block discontinued qwen-oauth model selection in ModelDialog`
+
+**5. 政策变更（值得留意）**
+
+- [PR#3291](https://github.com/QwenLM/qwen-code/pull/3291) ✓ — **`feat(auth): discontinue Qwen OAuth free tier (2026-04-15 cutoff)`**——Qwen OAuth 免费层已于 2026-04-15 终止。Qwen Code 文档的"免费层"描述（README / SUMMARY / pricing.md 等）可能需要相应更新，但这是文档维护任务，不影响改进矩阵
+- [PR#3217](https://github.com/QwenLM/qwen-code/pull/3217) ✓（2026-04-13）— docs 更新 quota 耗尽后替代方案（OpenRouter/Fireworks），配套政策变更
+
+**6. 新开 PR（观察中，暂不追踪）**
+
+- [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) — session rewind and restore flows（顶替已关闭的 #3022 /branch + #3013 /rewind 方向）
+- [PR#3303](https://github.com/QwenLM/qwen-code/pull/3303) — 检测 macOS 上不在 PATH 的 Zed.app
+- [PR#3297](https://github.com/QwenLM/qwen-code/pull/3297) — tool registry lazy factory with concurrency dedup
+- [PR#3295](https://github.com/QwenLM/qwen-code/pull/3295) — SDK ProcessTransport exit listener leak 修复
+
+**计数变化**：
+- 追踪 PR：49 → **49**（新增 PR#3292 顶替已关闭的 PR#3022，计数抵消）
+- 已合并 ✓：27 → **28**（+PR#2936 Fork Subagent 核心合并）
+- 已关闭 ✗：2 → **5**（+PR#3022、+PR#2911、+PR#2380 勘误）
 
 ### 2026-04-15（伪需求审计 + 实验性功能警告）
 
@@ -585,7 +637,7 @@ function getAutoBackgroundMs(): number {
 - **`.qwen/review-rules.md`** 项目规则（等同 REVIEW.md 概念）
 - **增量 cache**、**worktree 隔离**、**跨仓库 lightweight 模式**等额外能力
 
-实现深度**已超过 Claude Code 托管的 GitHub Code Review**。涉及 PR：[#2348](https://github.com/QwenLM/qwen-code/pull/2348) / [#2376](https://github.com/QwenLM/qwen-code/pull/2376) / [#2380](https://github.com/QwenLM/qwen-code/pull/2380) / [#2687](https://github.com/QwenLM/qwen-code/pull/2687) / [#2932](https://github.com/QwenLM/qwen-code/pull/2932) — 全部已合并。
+实现深度**已超过 Claude Code 托管的 GitHub Code Review**。涉及 PR：[#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [#2376](https://github.com/QwenLM/qwen-code/pull/2376) ✓ / [#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ —— 4 个 PR 已合并。[#2380](https://github.com/QwenLM/qwen-code/pull/2380)（`extends: bundled`）**已关闭**（未合并，勘误：之前错标为 merged）。
 
 更新 platform item-2 状态为"✓ 已实现"，新增 5 个 PR 的 ✓ 标记到主矩阵。
 
