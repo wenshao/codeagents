@@ -59,7 +59,7 @@
 | **P1** | [Structured Output](./structured-output-deep-dive.md) — `--json-schema` 强制 JSON Schema 验证输出 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-4) | 缺失 | 小 | — |
 | **P1** | [Agent SDK 增强](./agent-sdk-python-deep-dive.md) — Python SDK + 流式回调 + 工具审批回调（Qwen 仅 TS SDK）[↓](./qwen-code-improvement-report-p0-p1-platform.md#item-5) | 仅 TypeScript SDK | 中 | — |
 | **P1** | [Bare Mode](./bare-mode-deep-dive.md) — `--bare` 跳过所有自动发现，CI/脚本最快启动 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-6) | 缺失 | 小 | — |
-| **P1** | [Remote Control Bridge](./remote-control-bridge-deep-dive.md) — 从手机/浏览器驱动本地终端 session [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-7) | 缺失 | 大 | — |
+| **P1** | [Remote Control Bridge](./remote-control-bridge-deep-dive.md) — 从手机/浏览器驱动本地终端 session [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-7) | Channels 平台已合并（IM 路径），Web/QR 路径 review 中 | 大 | [PR#2628](https://github.com/QwenLM/qwen-code/pull/2628) ✓（Telegram/WeChat/DingTalk） / [PR#2330](https://github.com/QwenLM/qwen-code/pull/2330)（Web UI + QR code） |
 | **P1** | [/teleport 跨端双向迁移](./teleport-session-migration-deep-dive.md) — Web session → 终端 session 双向迁移 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-8) | 缺失 | 大 | — |
 | **P1** | [GitLab CI/CD](./gitlab-ci-cd-deep-dive.md) — 官方 GitLab pipeline 集成 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-9) | 缺失 | 中 | — |
 | **P1** | [流式工具执行流水线](./streaming-tool-execution-deep-dive.md) — API 流式返回 tool_use 时立即开始执行，不等完整响应 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-1) | 等完整响应后执行 | 中 | — |
@@ -420,6 +420,24 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-15（补充追踪：Remote Control Bridge 3 个 PR）
+
+用户指出 [item-7 Remote Control Bridge](./qwen-code-improvement-report-p0-p1-platform.md#item-7) "进展"列为空，搜索后发现 **3 个未追踪 PR**，分两条路径推进同一个 item：
+
+**路径 A：本地 HTTP/WebSocket + Web UI + QR code**（对标 Claude Code Bridge）
+- **[PR#2330](https://github.com/QwenLM/qwen-code/pull/2330)**（open）— `feat: remote-control feature for browser-based CLI interaction`：`http://localhost:7373/` + 64-char hex token + qrcode-terminal 扫码连手机 + rate limit + idle timeout + XSS sanitization
+- [PR#1678](https://github.com/QwenLM/qwen-code/pull/1678)（open，较早）— Web GUI，和 #2330 有重叠
+
+**路径 B：Channels 平台**（通过消息平台远程驱动）
+- **[PR#2628](https://github.com/QwenLM/qwen-code/pull/2628) ✓**（**2026-04-01 合并**）— `feat(channels): extensible Channels platform`：`@qwen-code/channel-base` 插件系统 + 内置 Telegram/WeChat/DingTalk 3 个 adapter + allowlist/pairing/group policies + session 管理。这是**另一种 remote control**——通过 IM 驱动本地 Agent
+
+**修正**：
+- 主矩阵 item-7 行"进展"列从 "—" 补上 3 个 PR
+- "Qwen Code 现状"列从"缺失"改为"Channels 平台已合并（IM 路径），Web/QR 路径 review 中"
+- p0-p1-platform item-7 详细页新增长段落，对比两种路径的适用场景、实时性、已合并状态
+
+总追踪 PR：**47 → 49**（+PR#2330、+PR#2628；PR#1678 只提及不单独计数），merged 26 → **27**（+PR#2628 ✓）。
 
 ### 2026-04-15（补充追踪）
 

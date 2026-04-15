@@ -248,6 +248,41 @@
 **缺失后果**：需要人在电脑前审批——离开后 Agent 暂停。
 **改进收益**：手机/浏览器远程驱动——外出时继续审批和补充上下文。
 
+**进展**：本 item 有 **3 个 PR 同时推进两种不同路径**：
+
+### 路径 A：本地 HTTP/WebSocket + Web UI + QR code（直接对标 Claude Code Bridge）
+
+- **[PR#2330](https://github.com/QwenLM/qwen-code/pull/2330)**（open）— `feat: remote-control feature for browser-based CLI interaction`，是本 item 的直接对应：
+  - HTTP + WebSocket 双向通信
+  - `http://localhost:7373/` Web UI
+  - **64-char hex 安全 token auth**
+  - **QR code 扫码连接手机**（`qrcode-terminal`）
+  - 实时消息同步（CLI ↔ 浏览器）
+  - **安全特性**：5 次/分钟 rate limit + 5 并发连接上限 + 1MB 消息大小限制 + 30min idle timeout + XSS HTML sanitization + 安全响应头
+- **[PR#1678](https://github.com/QwenLM/qwen-code/pull/1678)**（open，较早）— `add Web GUI for Qwen Code CLI`，和 #2330 的目标重叠
+
+### 路径 B：Channels 平台（通过消息平台远程驱动）
+
+- **[PR#2628](https://github.com/QwenLM/qwen-code/pull/2628)** ✓（**已合并 2026-04-01**）— `feat(channels): add extensible Channels platform with plugin system and Telegram/WeChat/DingTalk channels`
+  - **Plugin 系统**：`@qwen-code/channel-base` 支持自定义 channel adapter
+  - **内置 3 个 adapter**：Telegram、WeChat、DingTalk
+  - **访问控制**：allowlist + pairing flow + group policies
+  - **Session 管理**：user-scoped / thread-scoped / single session
+  - 这是**另一种 remote control**——不是通过浏览器，而是通过微信/Telegram/钉钉聊天驱动本地 Agent
+
+### 两种路径对比
+
+| 维度 | 路径 A（#2330 Web/QR） | 路径 B（#2628 Channels）✓ |
+|---|---|---|
+| UI | 浏览器 + Web UI | 聊天平台 UI |
+| 连接方式 | 扫码 / localhost:7373 | Bot 绑定 + pairing |
+| 适用场景 | 同局域网 / 穿透内网 | 任意网络（依赖平台） |
+| 移动端体验 | 手机浏览器 | 原生 IM 体验 |
+| 实时性 | WebSocket 推送 | 消息轮询 / webhook |
+| 已合并 | ❌ | **✓ Telegram/WeChat/DingTalk 已可用** |
+
+**结论**：item-7 在"手机驱动本地 session"的目标上**已部分实现**（路径 B 通过 IM 平台），**完整实现**（路径 A 的 Web/QR 直驱）在 PR#2330 review 中。后续可考虑把路径 A 和路径 B 合并为 "Channels 扩展到 browser channel" 的统一抽象。
+
 ---
 
 <a id="item-8"></a>
