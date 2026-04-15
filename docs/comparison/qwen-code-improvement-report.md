@@ -108,15 +108,14 @@
 | **P2** | 自定义快捷键 — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
 | **P2** | [Session Ingress Auth](./session-ingress-auth-deep-dive.md) — 远程会话 bearer token 认证（企业多用户环境） [↓](./qwen-code-improvement-report-p2-core.md#item-18) | 缺失 | 中 | — |
 | **P2** | [企业代理](./enterprise-proxy-support-deep-dive.md) — CONNECT relay + CA cert 注入 + NO_PROXY allowlist（容器环境） [↓](./qwen-code-improvement-report-p2-core.md#item-19) | 缺失 | 大 | — |
-| **P2** | [ConfigTool](./config-tool-dynamic-settings-deep-dive.md) — 模型通过工具读写设置（主题/模型/权限等），带 schema 验证 [↓](./qwen-code-improvement-report-p2-core.md#item-20) | 仅 /settings 命令 | 小 | [PR#2911](https://github.com/QwenLM/qwen-code/pull/2911) ✗（已关闭） |
-| **P2** | [终端主题检测](./terminal-theme-detection-deep-dive.md) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | — |
+| **P2** | [终端主题检测](./terminal-theme-detection-deep-dive.md) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-20) | 缺失 | 小 | — |
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](./qwen-code-improvement-report-p2-core.md#item-7) | 缺失 | 小 | — |
-| **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | 缺失 | 小 | [PR#2871](https://github.com/QwenLM/qwen-code/pull/2871) ✓ |
-| **P2** | [状态栏紧凑布局](./compact-status-bar-deep-dive.md) — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2-core.md#item-23) | Footer 占用偏高 | 小 | — |
-| **P2** | [会话标签与搜索](./session-tags-search-deep-dive.md) — /tag 命令打标签 + 按标签/仓库/标题搜索历史会话 [↓](./qwen-code-improvement-report-p2-core.md#item-24) | 仅按时间排序 | 小 | — |
-| **P2** | Plan 状态机化 + Hint 注入 — 4 状态 subtask + 每轮 hint 注入（AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-25) | `/plan` 是一次性文档 | 中 | — |
-| **P2** | A2A 协议集成 — 跨 agent 通信 + AgentCard + 服务发现（AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-26) | 仅 MCP Client | 大 | — |
-| **P2** | OTel 原生 Tracing — 5 类 span extractor（Agent/LLM/Tool/Formatter/Embedding，AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-27) | 仅阿里云 RUM | 中 | — |
+| **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | [PR#2871](https://github.com/QwenLM/qwen-code/pull/2871) ✓ |
+| **P2** | [状态栏紧凑布局](./compact-status-bar-deep-dive.md) — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | Footer 占用偏高 | 小 | — |
+| **P2** | [会话标签与搜索](./session-tags-search-deep-dive.md) — /tag 命令打标签 + 按标签/仓库/标题搜索历史会话 [↓](./qwen-code-improvement-report-p2-core.md#item-23) | 仅按时间排序 | 小 | — |
+| **P2** | Plan 状态机化 + Hint 注入 — 4 状态 subtask + 每轮 hint 注入（AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-24) | `/plan` 是一次性文档 | 中 | — |
+| **P2** | A2A 协议集成 — 跨 agent 通信 + AgentCard + 服务发现（AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-25) | 仅 MCP Client | 大 | — |
+| **P2** | OTel 原生 Tracing — 5 类 span extractor（Agent/LLM/Tool/Formatter/Embedding，AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-26) | 仅阿里云 RUM | 中 | — |
 | **P2** | Conditional Hooks — Hook `if` 字段用权限规则语法按工具/路径过滤 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-1) | 缺失 | 小 | — |
 | **P2** | [Transcript Search 会话记录搜索](./transcript-search-navigation-deep-dive.md) — 按 `/` 搜索会话记录，`n`/`N` 导航匹配项 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-2) | 缺失 | 小 | — |
 | **P2** | [Bash File Watcher](./file-watcher-stale-edit-deep-dive.md) — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-3) | 缺失 | 小 | — |
@@ -304,7 +303,7 @@
 | [P0/P1 核心能力](./qwen-code-improvement-report-p0-p1-core.md) | 上下文压缩、Subagent、Speculation、记忆系统、工具并行、启动优化、闭环学习等 | 14 |
 | [P0/P1 平台集成](./qwen-code-improvement-report-p0-p1-platform.md) | GitHub Actions CI、Code Review、SDK、Remote Control Bridge、GitLab 等 | 9 |
 | [P0/P1 引擎优化](./qwen-code-improvement-report-p0-p1-engine.md) | 流式执行、缓存、Token 管理、崩溃恢复、Agent 编排、上下文管理、安全等 | 27 |
-| [P2 核心功能与企业特性](./qwen-code-improvement-report-p2-core.md) | 中等优先级（Shell 安全、MDM 企业策略、Token 计数、Computer Use、AgentScope Plan/A2A/OTel 参考等） | 27 |
+| [P2 核心功能与企业特性](./qwen-code-improvement-report-p2-core.md) | 中等优先级（Shell 安全、MDM 企业策略、Token 计数、Computer Use、AgentScope Plan/A2A/OTel 参考等） | 26 |
 | [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退、Skill 模型覆盖等） | 22 |
 | [P2 界面与 UX](./qwen-code-improvement-report-p2-tools-ui.md) | 中等优先级（Token 警告、Spinner、/rewind、Diff 渲染、/plan 等） | 20 |
 | [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并等） | 34 |
@@ -419,6 +418,39 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-16（伪需求删除：ConfigTool）
+
+用户质疑 [p2-core item-20 ConfigTool](./qwen-code-improvement-report-p2-core.md) 必要性，经源码验证发现这是一个 **Anthropic 内部专属工具**，对外部 Claude Code 用户**完全不可见**。
+
+**源码证据** `/root/git/claude-code-leaked/tools.ts:214-215`：
+
+```typescript
+...(process.env.USER_TYPE === 'ant' ? [ConfigTool] : []),
+...(process.env.USER_TYPE === 'ant' ? [TungstenTool] : []),
+```
+
+`USER_TYPE === 'ant'` 表示 **Anthropic 内部员工**——只有在此条件下 ConfigTool / TungstenTool / REPLTool 才会被注册到工具列表。**所有公开 Claude Code 用户从未访问过 ConfigTool**。
+
+**结论**：这是比 item-22 auto-background 更严重的伪需求：
+- item-22 是 GrowthBook flag 默认关闭但可开启
+- item-20 是**硬编码的 `USER_TYPE === 'ant'` gate**——**没有外部启用路径**
+
+**作者行为佐证**：[PR#2911](https://github.com/QwenLM/qwen-code/pull/2911) 由 wenshao 提交后**自己关闭**，很可能在实现中发现该能力对外部用户无意义。Agent 需要读写配置可以直接用 Read/Write 工具读 `settings.json`，无需独立的 ConfigTool 抽象。
+
+**变更**：
+
+1. p2-core item-20 ConfigTool **删除**
+2. p2-core items 21-27 重编号为 20-26（终端主题检测、队列输入编辑、状态栏紧凑布局、会话标签与搜索、Plan 状态机化、A2A、OTel）
+3. 主矩阵删除 ConfigTool 行，更新所有 `#item-N` 链接
+4. 子报告表 p2-core 27 → **26**，总项数 252 → **251**
+5. Changelog 记录 + 指向 `tools.ts:214-215` 源码证据
+
+**强化的审查规则**（加入审计清单）：
+
+> **5. 是否有 `USER_TYPE === 'ant'` 条件注册？** 这比 GrowthBook flag 更封闭——是"Anthropic 内部专属"的硬编码 gate。任何此类工具都**不应进入外部对标矩阵**（TungstenTool / REPLTool 同理）。
+
+**查同类工具**：`tools.ts` 中其他 `USER_TYPE === 'ant'` 条件注册的工具有 **TungstenTool**（Anthropic 内部实验工具，性质不明）和 **REPLTool**（Python REPL，内部专属）。这两个都不在改进报告中，确认保持不追踪。
 
 ### 2026-04-16（PR 状态全面刷新）
 
@@ -616,9 +648,9 @@ function getAutoBackgroundMs(): number {
 
 基于对 [AgentScope](https://github.com/agentscope-ai/agentscope)（阿里 Tongyi Lab，215 文件 / 43K 行）的源码级分析，新增 3 条 P2 improvement item，均标注"AgentScope 参考"：
 
-- **[item-25 Plan 状态机化](./qwen-code-improvement-report-p2-core.md#item-25)** — 4 状态 subtask（todo/in_progress/done/abandoned）+ 每轮自动 hint 注入，升级 `/plan` 从"一次性文档"到"持久状态机"
-- **[item-26 A2A 协议集成](./qwen-code-improvement-report-p2-core.md#item-26)** — 集成 `a2a-sdk` + AgentCard + Well-known/File/HTTP resolver，让 qwen-code 参与跨 agent 网络
-- **[item-27 OTel 原生 Tracing](./qwen-code-improvement-report-p2-core.md#item-27)** — 5 类 span extractor（Agent/LLM/Tool/Formatter/Embedding），对标 AgentScope `src/agentscope/tracing/_trace.py:24-45` 的 13 个 extractor 实现
+- **[item-24 Plan 状态机化](./qwen-code-improvement-report-p2-core.md#item-24)** — 4 状态 subtask（todo/in_progress/done/abandoned）+ 每轮自动 hint 注入，升级 `/plan` 从"一次性文档"到"持久状态机"
+- **[item-25 A2A 协议集成](./qwen-code-improvement-report-p2-core.md#item-25)** — 集成 `a2a-sdk` + AgentCard + Well-known/File/HTTP resolver，让 qwen-code 参与跨 agent 网络
+- **[item-26 OTel 原生 Tracing](./qwen-code-improvement-report-p2-core.md#item-26)** — 5 类 span extractor（Agent/LLM/Tool/Formatter/Embedding），对标 AgentScope `src/agentscope/tracing/_trace.py:24-45` 的 13 个 extractor 实现
 
 总项数 **249 → 252**，p2-core 子报告 25 → 28。（后于 2026-04-15 伪需求审计删除 item-22，最终项数 252，见该日 changelog 条目）。
 
