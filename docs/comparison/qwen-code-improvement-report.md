@@ -54,7 +54,7 @@
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-12) | 缺失 | 小 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | 缺失 | 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) |
 | **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-1) | 缺失 | 中 | — |
-| **P1** | GitHub Code Review — 多 Agent自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-2) | **已实现**（内置 `/review` skill，5 agent 并行 + Create Review API） | — | [PR#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [PR#2376](https://github.com/QwenLM/qwen-code/pull/2376) ✓ / [PR#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [PR#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ / [Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742) |
+| **P1** | GitHub Code Review — 多 Agent自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-2) | **已实现**（内置 `/review` skill，5 agent 并行 + Create Review API） | — | [PR#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [PR#2376](https://github.com/QwenLM/qwen-code/pull/2376) ✓ / [PR#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [PR#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ / [PR#3276](https://github.com/QwenLM/qwen-code/pull/3276)（弱模型并行强化） / [Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742) |
 | **P1** | [HTTP Hooks](./http-hooks-deep-dive.md) — Hook 可 POST JSON 到 URL 并接收响应（不仅 shell 命令）[↓](./qwen-code-improvement-report-p0-p1-platform.md#item-3) | 仅 shell 命令 | 小 | [PR#2827](https://github.com/QwenLM/qwen-code/pull/2827) |
 | **P1** | [Structured Output](./structured-output-deep-dive.md) — `--json-schema` 强制 JSON Schema 验证输出 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-4) | 缺失 | 小 | — |
 | **P1** | [Agent SDK 增强](./agent-sdk-python-deep-dive.md) — Python SDK + 流式回调 + 工具审批回调（Qwen 仅 TS SDK）[↓](./qwen-code-improvement-report-p0-p1-platform.md#item-5) | 仅 TypeScript SDK | 中 | — |
@@ -172,7 +172,7 @@
 | **P2** | [write-through缓存与 TTL 后台刷新](./memoize-ttl-cache-deep-dive.md) — stale-while-revalidate + LRU 有界缓存 [↓](./qwen-code-improvement-report-p2-perf.md#item-4) | 无通用缓存模式 | 小 | — |
 | **P2** | 上下文收集并行化 — 多源附件 Promise.all 并行获取（~20 并发）[↓](./qwen-code-improvement-report-p2-perf.md#item-5) | 串行追加 | 小 | — |
 | **P2** | 输出缓冲与防阻塞渲染 — setImmediate 延迟写入 + 内存缓冲 [↓](./qwen-code-improvement-report-p2-perf.md#item-6) | 直接 appendFileSync | 小 | — |
-| **P2** | [LSP 服务器并行启动](./lsp-parallel-startup-deep-dive.md) — Promise.all 并行启动 + Promise.race 端口探测 [↓](./qwen-code-improvement-report-p2-perf.md#item-7) | 顺序 for 循环 | 小 | [PR#3034](https://github.com/QwenLM/qwen-code/pull/3034) |
+| **P2** | [LSP 服务器并行启动](./lsp-parallel-startup-deep-dive.md) — Promise.all 并行启动 + Promise.race 端口探测 [↓](./qwen-code-improvement-report-p2-perf.md#item-7) | 顺序 for 循环 | 小 | [PR#3034](https://github.com/QwenLM/qwen-code/pull/3034) / [PR#3170](https://github.com/QwenLM/qwen-code/pull/3170)（官方 SDK + didSave 实时诊断） |
 | **P2** | 请求合并与去重 — 1-in-flight + 1-pending + BoundedUUIDSet + inFlight 去重 [↓](./qwen-code-improvement-report-p2-perf.md#item-8) | 无合并机制 | 中 | — |
 | **P2** | 延迟初始化与按需加载 — lazySchema + 动态 import() + 延迟prefetch [↓](./qwen-code-improvement-report-p2-perf.md#item-9) | 全量同步加载 | 小 | — |
 | **P2** | 流式超时检测与级联取消 — 90s 空闲watchdog + siblingAbortController 级联 [↓](./qwen-code-improvement-report-p2-perf.md#item-10) | 固定超时/无级联 | 小 | — |
@@ -420,6 +420,23 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-15（补充追踪）
+
+系统扫描 `pull/` URL 跨报告交叉引用，发现 5 个此前未追踪的 PR。两个**应立即追踪**（已执行），3 个**changelog 级记录**（无对应 matrix item）：
+
+**已加入追踪**（主矩阵 + 详细页都更新）：
+
+- [PR#3170](https://github.com/QwenLM/qwen-code/pull/3170)（open，huww98）— **LSP 官方 SDK + didSave 实时诊断**。挂到 [p2-perf item-7 LSP 服务器并行启动](./qwen-code-improvement-report-p2-perf.md#item-7)，与 PR#3034（diagnostics caching）互补。核心是"实时诊断"而非"启动并行"——解决 Edit 后必须手动 refresh 才能看到新 diagnostics 的问题
+- [PR#3276](https://github.com/QwenLM/qwen-code/pull/3276)（open）— **`/review` Step 4 并行 dispatch 强化（弱模型）**。挂到 [p0-p1-platform item-2 GitHub Code Review](./qwen-code-improvement-report-p0-p1-platform.md#item-2) 的"进行中的增强"。修复 qwen3.6-plus 等弱模型会串行执行 5 agent 的问题（替换单行指令为 callout + ASCII 正反例 + self-check + "STOP" 模式打断）
+
+**仅 changelog 记录**（无对应 matrix item，为社区开发方向观察）：
+
+- [PR#3191](https://github.com/QwenLM/qwen-code/pull/3191) ✓（2026-04-15 合并）— **ACP LLM 消息重写中间件**：`TurnBuffer` 累积 turn content（thoughts + messages），`LlmRewriter` 用 user-defined system prompt 重写为用户友好格式。ACP 模式专用，不影响其他 session path
+- [PR#3283](https://github.com/QwenLM/qwen-code/pull/3283)（open）— **命令能力化 metadata（Phase 1）**：替换硬编码的 `ALLOWED_BUILTIN_COMMANDS_NON_INTERACTIVE` 白名单为 per-command `commandType` + `supportedModes` 元数据。是 broader slash command 架构重构的 Phase 1，零行为回归
+- [PR#3165](https://github.com/QwenLM/qwen-code/pull/3165)（open）— **MiniMax provider 支持**。扩展 qwen-code 的 provider 生态到 MiniMax
+
+总追踪 PR：**45 → 47**（新增 PR#3170 + PR#3276），merged 26 → 26（这次追加的 2 个 PR 都是 open）。
 
 ### 2026-04-14（追加：PR#3087 Auto Dream 追踪修复）
 

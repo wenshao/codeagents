@@ -94,6 +94,14 @@
 | [#2687](https://github.com/QwenLM/qwen-code/pull/2687) | 验证机制 + 误报控制 + PR 评论 | 2026-04-01 |
 | [#2932](https://github.com/QwenLM/qwen-code/pull/2932) | **确定性分析 + autofix + 安全加固** | 2026-04-09 |
 
+**进行中的增强**：
+
+- [PR#3276](https://github.com/QwenLM/qwen-code/pull/3276)（open）— **`/review` Step 4 并行 dispatch 强化**（针对弱模型）。问题：qwen3.6-plus 等能力较弱的模型有时会**串行**执行 5 个 review agents 而不是在**单个 assistant turn**里全部并行 dispatch，导致大 PR 的 review 延迟成倍增加。本 PR 把 Step 4 的 dispatch 指令从"一句话"升级为：
+  - **显著的 callout** + 原因解释
+  - **✅ CORRECT / ❌ WRONG ASCII 正反例**
+  - **结束 turn 前的 self-check**
+  - **"STOP" 模式打断**——强制在常见失败模式触发时中止串行路径
+
 **相关文档**：[/review 功能分析（5 方对比）](./qwen-code-review-improvements.md) | [/review Deep-Dive（架构）](./qwen-code-review-deep-dive.md) | [/review 用户指南](../guides/qwen-code-review-guide.md)
 
 **Roadmap**：[Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742)

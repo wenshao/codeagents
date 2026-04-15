@@ -254,6 +254,12 @@
 **缺失后果**：3 个 LSP × 500ms/个 = 1.5s 启动延迟（顺序）。
 **改进收益**：并行启动 = ~500ms（最慢的一个）；端口探测首个成功即返回。
 
+**进展**：
+- [PR#3034](https://github.com/QwenLM/qwen-code/pull/3034)（open，vadimLuzyanin）— LSP diagnostics caching + document refresh fallback
+- [PR#3170](https://github.com/QwenLM/qwen-code/pull/3170)（open，huww98）— **使用官方 `vscode-languageserver-protocol` SDK** + 实现 `textDocument/didSave` 通知，让 **LSP 诊断在 Edit 工具应用修改后立即更新**（修复用户必须手动触发 refresh 才能看到最新 diagnostics 的问题）。核心是"实时诊断"而非"启动并行"，和 PR#3034 互补
+
+两个 PR 覆盖 LSP 的不同方向，本 item 侧重"启动并行"，但实时诊断是 LSP 体验的另一关键维度。建议合并后本 item 可以扩写为"LSP 性能 + 实时性双优化"。
+
 ---
 
 <a id="item-8"></a>
