@@ -45,7 +45,7 @@
 | **P0** | [会话崩溃恢复与中断检测](./crash-recovery-deep-dive.md) — 3 种中断状态检测 + 合成续行 + 全量恢复 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-7) | 无崩溃恢复 | 大 | — |
 | **P1** | [Speculation](../tools/claude-code/10-prompt-suggestions.md) — 预测用户下一步并提前执行，Tab 接受零延迟 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-3) | 已实现但默认关闭 | 小 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | **P1** | [会话记忆](./memory-system-deep-dive.md) — 关键决策/文件结构自动提取，新 session 自动注入 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-4) | 仅简单笔记工具 | 大 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) |
-| **P1** | [Auto Dream](./memory-system-deep-dive.md) — 后台 agent 自动合并去重过时记忆 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-5) | 缺失 | 中 | — |
+| **P1** | [Auto Dream](./memory-system-deep-dive.md) — 后台 agent 自动合并去重过时记忆 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-5) | 缺失 | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087)（managed auto-memory + auto-dream） |
 | **P1** | [Nudge 驱动的闭环学习](./closed-learning-loop-deep-dive.md) — 双计数器 + 后台 review 子代理 + 冻结快照 + 自修补（Hermes Agent 参考） [↓](./qwen-code-improvement-report-p0-p1-core.md#item-14) | 被动记忆（无 nudge） | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087)（部分覆盖） |
 | **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | 全部工具始终加载 | 小 | — |
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1-core.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ / [Roadmap#2516](https://github.com/QwenLM/qwen-code/issues/2516) |
@@ -420,6 +420,18 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-14（追加：PR#3087 Auto Dream 追踪修复）
+
+用户指出 [item-5 Auto Dream](./qwen-code-improvement-report-p0-p1-core.md#item-5) 主矩阵的"进展"列为空，但 [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) 标题明确是 `managed auto-memory + auto-dream system`，即同时覆盖 [item-4 会话记忆](./qwen-code-improvement-report-p0-p1-core.md#item-4)（`extract` 子系统）和 item-5 Auto Dream（`dream` 子系统）。
+
+验证 PR 内容后确认：
+- `extract` → item-4（提取记忆）—— **顺便修复了一个 bug**：`saveCacheSafeParams` 被 `skipNextSpeakerCheck` early-return 路径跳过，导致 extract 从未触发
+- `dream` → item-5（后台整理/去重/合并）
+- 含 `PermissionManager` wrapper 限制 memory scope 写入权限
+- PR 描述明确声明对齐 Claude Code 的 `extract` + `dream` 实现模式
+
+**修复**：主矩阵 item-5 行的"进展"列补上 PR#3087，并在 p0-p1-core item-5 详细页补充 "进展" 段落说明双子系统覆盖。
 
 ### 2026-04-14（追加：PR#2949 追踪缺口修复）
 
