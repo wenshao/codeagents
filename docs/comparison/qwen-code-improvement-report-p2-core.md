@@ -219,7 +219,9 @@ API countTokens()（精确） → 小模型回退（较准） → 粗估 4 bytes
 
 <a id="item-6"></a>
 
-### 6. Computer Use 桌面自动化（P2）
+### 6. Computer Use 桌面自动化（P2）⚠️ 实验性功能
+
+> **⚠️ 实验性功能警告**：Computer Use 在 Claude Code 中**默认禁用**，受 GrowthBook feature gate `tengu_malort_pedway`（源码 `utils/computerUse/gates.ts:30`）控制，**且**还需要 Max/Pro 订阅等级双重门控。实际 Claude Code 用户中极少有人能体验到此功能。本 item 保留用于记录能力方向，但**不建议 P2 优先级实现**——优先做真正的核心能力，桌面自动化可降级到 P3 或单独评估需求后再决定。
 
 你在调试前端页面时，希望 Agent 能"看到"浏览器渲染结果并点击按钮验证交互。或者你需要从 Figma 设计稿中提取参数，再在代码中实现。但目前 Agent 只能操作文件和终端，对桌面应用完全"失明"。解决方案是通过 MCP Server 桥接原生模块实现桌面自动化：
 
@@ -415,7 +417,9 @@ Session 快照链：
 
 <a id="item-11"></a>
 
-### 11. Deep Link 协议（P2）
+### 11. Deep Link 协议（P2）⚠️ 实验性功能
+
+> **⚠️ 实验性功能警告**：Deep Link 协议在 Claude Code 中**默认禁用**，受 GrowthBook feature gate `tengu_lodestone_enabled` 控制（源码 `utils/deepLink/registerProtocol.ts:302`：`if (!getFeatureValue_CACHED_MAY_BE_STALE('tengu_lodestone_enabled', false))`）。这意味着即使 Claude Code 安装了，`claude-cli://` 协议也不会自动注册到 OS——除非 gate 被启用。本 item 描述的"点击链接一键启动"流程在实际 Claude Code 上不可用。建议**降级为 P3**，或标注"待 Claude Code 自身将此功能从实验升级为默认后再实现"。
 
 你在浏览器里看到一个 GitHub Issue，想让 Agent 立刻处理这个问题。目前的流程是：打开终端 → cd 到项目目录 → 输入 `qwen-code` → 复制 Issue 内容 → 粘贴为 Prompt。通过 Deep Link 协议，只需点击一个链接（如 `qwen-code://open?q=Fix+issue+123&cwd=/my-project`），Agent 就能自动在正确的项目目录中启动并预填充 Prompt。实现流程：
 
@@ -855,45 +859,7 @@ Agent 内部调用：
 
 <a id="item-22"></a>
 
-### 22. 自动后台化 Agent（P2）
-
-你让 Subagent 执行一个耗时任务（比如在 10 个文件中添加单元测试），Subagent 执行了 2 分钟还没完成——这期间你的主 Agent 被阻塞，无法输入新指令，只能干等。你真正想要的是 Subagent 超过一定时间后自动转入后台，释放前台让你继续与主 Agent 交互，Subagent 完成后再通知你。解决方案很简单——启动 timer，超过阈值（可配置的 ms 数）自动将任务标记为 background：
-
-```
-Subagent 启动 → 计时器开始 → 超过阈值 → 自动转后台 → 释放前台
-                                         ↓
-                              完成后通知用户 "测试添加完成，共 10 个文件"
-```
-
-**Qwen Code 现状**：Subagent 执行期间始终占用前台，用户必须等待执行完成才能继续交互。
-
-**Claude Code 源码索引**：
-
-| 文件 | 关键函数/常量 |
-|------|-------------|
-| `tools/AgentTool/AgentTool.tsx` | `getAutoBackgroundMs()` |
-
-**Qwen Code 修改方向**：`agent.ts` 执行时启动 timer；超时将任务标记为 background 并释放前台。
-
-**实现成本评估**：
-- 涉及文件：~2 个
-- 新增代码：~100 行
-- 开发周期：~1 天（1 人）
-- 难点：后台任务完成后的通知机制，后台任务的输出缓冲区管理
-
-**改进前后对比**：
-- **改进前**：Subagent 执行 3 分钟 → 用户被阻塞 3 分钟 → 无法做其他事
-- **改进后**：Subagent 执行 30 秒后自动转后台 → 用户继续与主 Agent 交互 → 完成后收到通知
-
-**意义**：长时间 Agent 任务阻塞用户交互——用户只能等待。
-**缺失后果**：用户等 Agent 执行完才能继续输入——浪费时间。
-**改进收益**：超时自动转后台——用户继续交互，Agent 后台完成。
-
----
-
-<a id="item-23"></a>
-
-### 23. 队列输入编辑（P2）
+### 22. 队列输入编辑（P2）
 
 你在 Agent 处理当前任务时提前输入了下一条指令（排队），但刚按完回车就发现打了个错别字或者指令有误。指令已经入队了，无法撤回——你只能等 Agent 处理到这条错误指令后，再花一轮对话纠正。更糟的情况是：你排了 3 条指令，第 2 条有误，但无法单独修改它。解决方案是让排队中的命令可见可编辑：
 
@@ -936,9 +902,9 @@ Subagent 启动 → 计时器开始 → 超过阈值 → 自动转后台 → 释
 
 ---
 
-<a id="item-24"></a>
+<a id="item-23"></a>
 
-### 24. 状态栏紧凑布局（P2）
+### 23. 状态栏紧凑布局（P2）
 
 你在 13 寸笔记本上分屏工作——左边代码编辑器、右边 Agent 终端。Agent 终端只有约 30 行高度，但状态栏（Footer）在显示不同信息时会伸缩——有时 1 行、有时 3 行。每次 Footer 高度变化，上方的 Agent 输出内容会跳动（scroll content shift），阅读体验很差。更关键的是，非关键信息（如模型名称、Token 用量）占用了宝贵的终端空间。解决方案是 Footer 固定高度 + 条件显示：
 
@@ -973,9 +939,9 @@ Subagent 启动 → 计时器开始 → 超过阈值 → 自动转后台 → 释
 
 ---
 
-<a id="item-25"></a>
+<a id="item-24"></a>
 
-### 25. 会话标签与搜索（P2）
+### 24. 会话标签与搜索（P2）
 
 **问题**：用户长期使用 Agent 积累数十甚至上百个会话，只能按时间顺序浏览。想找之前"重构认证模块"或"修复登录 bug"的会话，需要逐条翻看标题——效率极低。
 
@@ -1016,9 +982,9 @@ Subagent 启动 → 计时器开始 → 超过阈值 → 自动转后台 → 释
 
 ---
 
-<a id="item-26"></a>
+<a id="item-25"></a>
 
-### 26. Plan 状态机化 + Hint 注入（P2，AgentScope 参考）
+### 25. Plan 状态机化 + Hint 注入(P2，AgentScope 参考)
 
 **思路**：当前 qwen-code `/plan` 命令（PR#2921）是"一次性生成计划 + 进入 plan mode"。但没有**持续跟踪 subtask 执行状态**的能力——一旦退出 plan mode，哪个 subtask 完成、哪个还没做、哪个被放弃的信息就丢了。
 
@@ -1089,9 +1055,9 @@ when_a_subtask_in_progress: str = (
 
 ---
 
-<a id="item-27"></a>
+<a id="item-26"></a>
 
-### 27. A2A 协议集成（P2，AgentScope 参考）
+### 26. A2A 协议集成（P2，AgentScope 参考）
 
 **思路**：**Agent-to-Agent（A2A）协议**是 2025 年出现的 agent 间通信标准——不是工具调用（MCP 级别），而是**一个 agent 调用另一个独立运行的 agent**。场景：
 
@@ -1158,9 +1124,9 @@ async def get_agent_card(self, *args: Any, **kwargs: Any) -> AgentCard:
 
 ---
 
-<a id="item-28"></a>
+<a id="item-27"></a>
 
-### 28. OTel 原生 Tracing + 5 类 Span Extractor（P2，AgentScope 参考）
+### 27. OTel 原生 Tracing + 5 类 Span Extractor（P2，AgentScope 参考）
 
 **思路**：当前 qwen-code 的可观测性仅有阿里云 RUM（`gb4w8c3ygj-default-sea.rum.aliyuncs.com`），**没有 OpenTelemetry 支持**。这意味着：
 
