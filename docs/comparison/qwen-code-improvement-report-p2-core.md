@@ -994,3 +994,227 @@ Subagent 启动 → 计时器开始 → 超过阈值 → 自动转后台 → 释
 **改进收益**：标签 + 搜索 = 秒级定位历史会话——比逐条浏览快 10×。
 
 ---
+
+<a id="item-26"></a>
+
+### 26. Plan 状态机化 + Hint 注入（P2，AgentScope 参考）
+
+**思路**：当前 qwen-code `/plan` 命令（PR#2921）是"一次性生成计划 + 进入 plan mode"。但没有**持续跟踪 subtask 执行状态**的能力——一旦退出 plan mode，哪个 subtask 完成、哪个还没做、哪个被放弃的信息就丢了。
+
+**AgentScope 的做法**——`PlanNotebook`（源码 `src/agentscope/plan/_plan_notebook.py`）：
+
+1. **4 种 subtask 状态机**：`todo` / `in_progress` / `done` / `abandoned`（`_plan_notebook.py:119-133`）
+2. **每轮 reasoning 前自动注入 hint**：把"当前计划 + 活跃 subtask 详情"塞进 prompt（`_plan_notebook.py:50-68`）
+3. **Plan 是 Agent 的工具**（不是外部编排）——Agent 自己决定何时 `create_plan` / `update_subtask_state` / `abandon_subtask`
+
+**关键设计——Hint 模板**（源码 `_plan_notebook.py:50-68`）：
+
+```python
+when_a_subtask_in_progress: str = (
+    "The current plan:\n"
+    "```\n"
+    "{plan}\n"
+    "```\n"
+    "Now the subtask at index {subtask_idx}, named '{subtask_name}', is "
+    "'in_progress'. Its details are as follows:\n"
+    "```\n"
+    "{subtask}\n"
+    "```\n"
+    ...
+)
+```
+
+每次 reasoning 开始时都把 plan 状态作为 hint 注入——即使模型"忘记"，plan 也会在下一轮 prompt 中重新出现。
+
+**AgentScope 源码索引**：
+
+| 文件 | 关键内容 |
+|---|---|
+| `src/agentscope/plan/_plan_notebook.py:172` | `PlanNotebook` 类 —— 管理 plan 作为 agent 工具 |
+| `src/agentscope/plan/_plan_notebook.py:119-133` | 4 状态计数和筛选 `in_progress` subtask |
+| `src/agentscope/plan/_plan_notebook.py:50-68` | Hint 注入模板 |
+| `src/agentscope/plan/_plan_model.py` | `Plan` + `SubTask` Pydantic 数据模型 |
+
+**Qwen Code 现状**：PR#2921 `/plan` 命令实现了 plan mode，但：
+- 计划本身不是**持久状态**（退出 plan mode 就丢）
+- 没有 subtask 状态机
+- 没有每轮自动注入的 hint 机制
+- Plan 不是 Agent 可以调用的工具
+
+**Qwen Code 修改方向**：
+
+1. **新建 `packages/core/src/plan/planNotebook.ts`**，定义 `Plan` / `SubTask` 数据模型（对标 Pydantic 版本）
+2. 4 种 subtask 状态：`todo` / `in_progress` / `done` / `abandoned`
+3. 注册 4 个新工具：`create_plan` / `update_subtask_state` / `finish_subtask` / `abandon_subtask`
+4. 每轮 reasoning 前，如果当前有活跃 plan，自动把 `in_progress` subtask 作为 `<system-reminder>` 注入 prompt
+5. Session 持久化 plan 状态（进程重启后恢复）
+
+**实现成本评估**：
+- 涉及文件：~5 个（plan/ 目录新建 + systemPromptBuilder 改动 + session persistence）
+- 新增代码：~400 行
+- 开发周期：~4 天（1 人）
+- 难点：何时 prompt 注入？全部 or 仅 in_progress？如何避免 hint 重复？
+
+**意义**：让 plan 从"一次性生成的文档"升级为"Agent 持续跟踪的状态机"——这是从 toy plan mode 到 production-grade planning 的关键升级。
+
+**缺失后果**：当前 `/plan` 只是"生成一个漂亮的计划"，Agent 执行到一半就忘记。
+
+**改进收益**：Plan 持久化 + 每轮 hint 注入 = Agent 不再"忘记"计划——即使经过 compaction，下一轮 prompt 也会重新看到活跃 subtask。
+
+**相关参考**：
+- [AgentScope Plan 模块分析](../frameworks/agentscope/03-key-modules.md#2-plan-模块first-class-计划原语)
+- 现有 [/plan 模式 Interview](#item-12) item-12（互补方向）
+- [PR#2921](https://github.com/QwenLM/qwen-code/pull/2921) ✓（已合并，基础能力）
+
+---
+
+<a id="item-27"></a>
+
+### 27. A2A 协议集成（P2，AgentScope 参考）
+
+**思路**：**Agent-to-Agent（A2A）协议**是 2025 年出现的 agent 间通信标准——不是工具调用（MCP 级别），而是**一个 agent 调用另一个独立运行的 agent**。场景：
+
+- qwen-code 在项目 A 需要查询项目 B 的 Agent 了解接口细节
+- 跨团队 agent 协作（Team A 的 reviewer agent 审查 Team B 的 PR）
+- 企业内部 agent 目录（类似"服务发现"，但发现的是 agent 能力）
+
+**AgentScope 的做法**——集成官方 **`a2a-sdk`** + **Nacos 服务发现**（源码 `pyproject.toml:50`）：
+
+```python
+a2a = [
+    "a2a-sdk",                      # 官方 A2A 协议 SDK
+    "httpx",
+    "nacos-sdk-python>=3.0.0",      # 服务发现
+]
+```
+
+**核心抽象**——`AgentCard`（源码 `src/agentscope/a2a/_base.py:18-25`）：
+
+```python
+@abstractmethod
+async def get_agent_card(self, *args: Any, **kwargs: Any) -> AgentCard:
+    """Get Agent Card from the configured source."""
+```
+
+**3 种 Resolver**：
+1. **Well-known**（标准 A2A 注册表）
+2. **File-based**（本地 JSON）
+3. **Nacos**（阿里服务网格）
+
+**AgentScope 是目前 6 款 Agent Framework 中唯一原生集成 A2A 协议的**。
+
+**Qwen Code 现状**：Qwen Code 有 MCP Client（可以**调用工具**），但没有 A2A Client（无法**调用其他 agent**）。跨 agent 协作只能通过"让 MCP 包一层"的 workaround。
+
+**Qwen Code 修改方向**：
+
+1. 添加 `@a2a/sdk` 依赖（TypeScript 版本，若无则自行实现协议）
+2. 新建 `packages/core/src/a2a/`：
+   - `agentCard.ts`（AgentCard 数据模型）
+   - `a2aClient.ts`（协议客户端）
+   - `resolvers/{wellKnown,file,http}.ts`（3 种 resolver）
+3. `/agents` 命令扩展：不仅列出本地定义的 subagent，也通过 A2A resolver 列出可达的远程 agent
+4. 注入 `call_remote_agent` 工具到主代理
+
+**实现成本评估**：
+- 涉及文件：~6 个
+- 新增代码：~500 行
+- 开发周期：~5 天（1 人）
+- 难点：
+  - A2A 协议标准尚不稳定（2026 Q1-Q2 持续演进）
+  - 远程调用的超时 / 重试 / 安全边界
+  - AgentCard 与本地 agent 定义的 schema 映射
+
+**意义**：A2A 是多 agent 系统的"HTTP 协议"——没有 A2A，agent 只能在单进程内通信，无法形成**跨组织、跨工具、跨语言**的 agent 网络。
+
+**缺失后果**：qwen-code 无法参与跨组织 agent 协作场景，只能作为"**孤立的编程助手**"。
+
+**改进收益**：A2A Client + 服务发现 = qwen-code 可以**作为网络中的 agent 节点**，被其他 agent 发现和调用，也可以发现和调用其他 agent。
+
+**相关参考**：
+- [AgentScope A2A 模块分析](../frameworks/agentscope/03-key-modules.md#3-a2a-协议agent-to-agent)
+- [AgentScope EVIDENCE §7](../frameworks/agentscope/EVIDENCE.md#7-a2a-协议)
+- [Google A2A Spec](https://github.com/google/agent-to-agent)
+
+---
+
+<a id="item-28"></a>
+
+### 28. OTel 原生 Tracing + 5 类 Span Extractor（P2，AgentScope 参考）
+
+**思路**：当前 qwen-code 的可观测性仅有阿里云 RUM（`gb4w8c3ygj-default-sea.rum.aliyuncs.com`），**没有 OpenTelemetry 支持**。这意味着：
+
+- 无法接入企业 OTel 栈（Datadog / New Relic / Honeycomb / Jaeger / Grafana Tempo）
+- 无法做细粒度 span 分析（哪个工具慢？哪个 LLM 调用慢？哪个 embedding 慢？）
+- 无法跨服务 trace（qwen-code → MCP server → 数据库的完整调用链）
+
+**AgentScope 的做法**——在主循环**每个关键操作点**自动发射 OTel span（源码 `src/agentscope/tracing/_trace.py:24-45`）：
+
+```python
+from ._extractor import (
+    _get_agent_request_attributes,
+    _get_agent_span_name,
+    _get_agent_response_attributes,
+    _get_llm_request_attributes,
+    _get_llm_span_name,
+    _get_llm_response_attributes,
+    _get_tool_request_attributes,
+    _get_tool_span_name,
+    _get_tool_response_attributes,
+    _get_formatter_request_attributes,
+    _get_formatter_span_name,
+    _get_formatter_response_attributes,
+    _get_embedding_request_attributes,
+    _get_embedding_span_name,
+    _get_embedding_response_attributes,
+    ...
+)
+```
+
+**5 类 span extractor**：`Agent` / `LLM` / `Tool` / `Formatter` / `Embedding`，每类 3 个函数（`span_name` + `request_attrs` + `response_attrs`）。
+
+**依赖**（`pyproject.toml:34-37`）：
+
+```python
+opentelemetry-api>=1.39.0,
+opentelemetry-sdk>=1.39.0,
+opentelemetry-exporter-otlp>=1.39.0,
+opentelemetry-semantic-conventions>=0.60b0,
+```
+
+**Qwen Code 现状**：仅阿里云 RUM（移动端风格的 `useCursor` 事件），无 OTel。详见 [privacy-telemetry.md](./privacy-telemetry.md)。
+
+**Qwen Code 修改方向**：
+
+1. 添加 `@opentelemetry/api` + `@opentelemetry/sdk-node` + `@opentelemetry/exporter-trace-otlp-http` 依赖
+2. 新建 `packages/core/src/tracing/`，参考 AgentScope 的 5 类 extractor 结构：
+   - `agentTracer.ts`（Agent reply span）
+   - `llmTracer.ts`（API 调用 span）
+   - `toolTracer.ts`（工具执行 span）
+   - `formatterTracer.ts`（消息格式化 span）
+   - `embeddingTracer.ts`（embedding 计算 span）
+3. 在 `query.ts` 主循环的每个关键点 wrap `tracer.startSpan(...)` + 属性记录
+4. 通过 `OTEL_EXPORTER_OTLP_ENDPOINT` 环境变量配置 collector
+5. 兼容现有阿里云 RUM（保留，不替换）
+
+**实现成本评估**：
+- 涉及文件：~8 个
+- 新增代码：~800 行
+- 开发周期：~6 天（1 人）
+- 难点：
+  - 所有异步调用点插桩的代码量大
+  - 如何避免 span 泄漏（未 `end()`）
+  - Privacy：确保 prompt / tool input 不被写入 span 属性（除非用户 opt-in）
+
+**意义**：OTel 是**企业可观测性的标准协议**——没有 OTel 就无法进入大多数企业的监控体系。对 qwen-code 的企业化推广至关重要。
+
+**缺失后果**：企业用户无法做 qwen-code 的性能分析、成本追踪、故障定位。CI/CD 流水线中无法跨服务 trace。
+
+**改进收益**：OTel 原生支持 → qwen-code 可接入 Datadog / New Relic / Jaeger / Grafana Tempo，做**细粒度性能分析**、**跨服务 trace**、**企业级监控**。
+
+**相关参考**：
+- [AgentScope Tracing 模块](../frameworks/agentscope/03-key-modules.md#4-tracingotel-13-个-extractor)
+- [AgentScope EVIDENCE §8](../frameworks/agentscope/EVIDENCE.md#8-tracing)
+- 现有 [privacy-telemetry.md](./privacy-telemetry.md) 对比了 9 款 agent 的遥测方案
+- OTel 语义约定：[GenAI spans](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
+
+---

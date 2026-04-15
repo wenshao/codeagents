@@ -8,6 +8,8 @@
 
 **代表框架**：[AgentScope](https://github.com/agentscope-ai/agentscope)（阿里）、[LangGraph](https://github.com/langchain-ai/langgraph)（LangChain）、[CrewAI](https://github.com/crewAIInc/crewAI)、[AG2](https://github.com/ag2ai/ag2)（原 AutoGen 社区分叉）、[Microsoft Agent Framework](https://learn.microsoft.com/en-us/agent-framework/)（AutoGen 官方继任者）
 
+> **深度分析**：见 [`docs/frameworks/`](../frameworks/) —— 6 款 Agent Framework 横向对比 + AgentScope 源码级 deep-dive（215 文件 / 43K 行）。选型决策树、核心抽象对比、多 Agent/Memory/MCP/A2A 支持矩阵都在那里。
+
 ```
 你的代码
   ├── 代理循环（ReAct / 工具调用 / 自定义）

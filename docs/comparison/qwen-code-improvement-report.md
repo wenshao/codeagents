@@ -115,6 +115,9 @@
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2-core.md#item-23) | 缺失 | 小 | [PR#2871](https://github.com/QwenLM/qwen-code/pull/2871) ✓ |
 | **P2** | [状态栏紧凑布局](./compact-status-bar-deep-dive.md) — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2-core.md#item-24) | Footer 占用偏高 | 小 | — |
 | **P2** | [会话标签与搜索](./session-tags-search-deep-dive.md) — /tag 命令打标签 + 按标签/仓库/标题搜索历史会话 [↓](./qwen-code-improvement-report-p2-core.md#item-25) | 仅按时间排序 | 小 | — |
+| **P2** | Plan 状态机化 + Hint 注入 — 4 状态 subtask + 每轮 hint 注入（AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-26) | `/plan` 是一次性文档 | 中 | — |
+| **P2** | A2A 协议集成 — 跨 agent 通信 + AgentCard + 服务发现（AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-27) | 仅 MCP Client | 大 | — |
+| **P2** | OTel 原生 Tracing — 5 类 span extractor（Agent/LLM/Tool/Formatter/Embedding，AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-28) | 仅阿里云 RUM | 中 | — |
 | **P2** | Conditional Hooks — Hook `if` 字段用权限规则语法按工具/路径过滤 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-1) | 缺失 | 小 | — |
 | **P2** | [Transcript Search 会话记录搜索](./transcript-search-navigation-deep-dive.md) — 按 `/` 搜索会话记录，`n`/`N` 导航匹配项 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-2) | 缺失 | 小 | — |
 | **P2** | [Bash File Watcher](./file-watcher-stale-edit-deep-dive.md) — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-3) | 缺失 | 小 | — |
@@ -301,7 +304,7 @@
 | [P0/P1 核心能力](./qwen-code-improvement-report-p0-p1-core.md) | 上下文压缩、Subagent、Speculation、记忆系统、工具并行、启动优化、闭环学习等 | 14 |
 | [P0/P1 平台集成](./qwen-code-improvement-report-p0-p1-platform.md) | GitHub Actions CI、Code Review、SDK、Remote Control Bridge、GitLab 等 | 9 |
 | [P0/P1 引擎优化](./qwen-code-improvement-report-p0-p1-engine.md) | 流式执行、缓存、Token 管理、崩溃恢复、Agent 编排、上下文管理、安全等 | 27 |
-| [P2 核心功能与企业特性](./qwen-code-improvement-report-p2-core.md) | 中等优先级（Shell 安全、MDM 企业策略、Token 计数、Computer Use 等） | 25 |
+| [P2 核心功能与企业特性](./qwen-code-improvement-report-p2-core.md) | 中等优先级（Shell 安全、MDM 企业策略、Token 计数、Computer Use、AgentScope Plan/A2A/OTel 参考等） | 28 |
 | [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退等） | 21 |
 | [P2 界面与 UX](./qwen-code-improvement-report-p2-tools-ui.md) | 中等优先级（Token 警告、Spinner、/rewind、Diff 渲染、/plan 等） | 20 |
 | [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并等） | 34 |
@@ -416,6 +419,21 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-14（AgentScope 参考新增 3 项）
+
+基于对 [AgentScope](https://github.com/agentscope-ai/agentscope)（阿里 Tongyi Lab，215 文件 / 43K 行）的源码级分析，新增 3 条 P2 improvement item，均标注"AgentScope 参考"：
+
+- **[item-26 Plan 状态机化](./qwen-code-improvement-report-p2-core.md#item-26)** — 4 状态 subtask（todo/in_progress/done/abandoned）+ 每轮自动 hint 注入，升级 `/plan` 从"一次性文档"到"持久状态机"
+- **[item-27 A2A 协议集成](./qwen-code-improvement-report-p2-core.md#item-27)** — 集成 `a2a-sdk` + AgentCard + Well-known/File/HTTP resolver，让 qwen-code 参与跨 agent 网络
+- **[item-28 OTel 原生 Tracing](./qwen-code-improvement-report-p2-core.md#item-28)** — 5 类 span extractor（Agent/LLM/Tool/Formatter/Embedding），对标 AgentScope `src/agentscope/tracing/_trace.py:24-45` 的 13 个 extractor 实现
+
+总项数 **249 → 252**，p2-core 子报告 25 → 28。
+
+新增文档章节 [`docs/frameworks/`](../frameworks/)：
+- [`agentscope/`](../frameworks/agentscope/) — AgentScope 源码级 deep-dive（6 文件）
+- [`comparison.md`](../frameworks/comparison.md) — 6 款 framework 横向对比
+- 5 个 framework 单文件（LangGraph / CrewAI / AG2 / MAF / LangChain）—— 基于文档级分析
 
 ### 2026-04-14（晚间更新）
 
