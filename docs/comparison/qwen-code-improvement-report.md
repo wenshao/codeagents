@@ -92,7 +92,7 @@
 | **P2** | [MDM 企业策略](./mdm-enterprise-deep-dive.md) — macOS plist + Windows Registry + 远程 API 集中管控 [↓](./qwen-code-improvement-report-p2-core.md#item-2) | 无 OS 级策略 | 大 | — |
 | **P2** | [API 实时 Token 计数](./token-estimation-deep-dive.md) — 每次 API 调用前精确计数，3 层回退 [↓](./qwen-code-improvement-report-p2-core.md#item-3) | 静态 82 种模式匹配 | 中 | — |
 | **P2** | [Output Styles](./git-workflow-session-deep-dive.md) — Learning 模式暂停让用户写代码，Explanatory 添加教育洞察 [↓](./qwen-code-improvement-report-p2-core.md#item-4) | 缺失 | 中 | — |
-| **P2** | [Fast Mode](./cost-fastmode-deep-dive.md) — 同一模型标准/快速推理切换（$5→$30/Mtok），含冷却机制 [↓](./qwen-code-improvement-report-p2-core.md#item-5) | 仅指定备用模型 | 小 | — |
+| **P2** | [Fast Mode](./cost-fastmode-deep-dive.md) — 同一模型标准/快速推理切换（$5→$30/Mtok），含冷却机制 [↓](./qwen-code-improvement-report-p2-core.md#item-5) | ⚠️ 部分实现（`fastModel` 走不同方案——另一个更快模型，非同模型速度分级） | 小 | [PR#3077](https://github.com/QwenLM/qwen-code/pull/3077) ✓ / [PR#3086](https://github.com/QwenLM/qwen-code/pull/3086) ✓ / [PR#3120](https://github.com/QwenLM/qwen-code/pull/3120) ✓ |
 | **P2** | [并发 Session](./cost-fastmode-deep-dive.md) — 多终端 PID 追踪 + 后台 Agent 脱附/重附 [↓](./qwen-code-improvement-report-p2-core.md#item-8) | 缺失 | 中 | — |
 | **P2** | [Git Diff 统计](./git-workflow-session-deep-dive.md) — 编辑后 numstat + hunks 结构化 diff（50 文件/1MB 上限） [↓](./qwen-code-improvement-report-p2-core.md#item-9) | 无 git-aware diff | 小 | — |
 | **P2** | [文件历史快照](./git-workflow-session-deep-dive.md) — per-file SHA256 备份，按消息粒度恢复（100 个/session） [↓](./qwen-code-improvement-report-p2-core.md#item-10) | git-level checkpoint | 中 | — |
@@ -337,7 +337,7 @@
 | Commit Attribution | Co-Authored-By 追踪 | 无 | 缺失 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
 | 会话分支 | /branch 对话分叉 | 无 | 缺失 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) |
 | Output Styles | Learning / Explanatory 模式 | 无 | 缺失 | — |
-| Fast Mode | 速度/成本分级推理 | 无 | 缺失 | — |
+| Fast Mode | 速度/成本分级推理 | `fastModel` 不同方案（另一个模型） | ⚠️ 部分 | [PR#3077](https://github.com/QwenLM/qwen-code/pull/3077) ✓ / [PR#3086](https://github.com/QwenLM/qwen-code/pull/3086) ✓ / [PR#3120](https://github.com/QwenLM/qwen-code/pull/3120) ✓ |
 | 并发 Session | 多终端 PID 追踪 + 后台脱附 | 无 | 缺失 | — |
 | Git Diff 统计 | 结构化 diff + 按文件统计 | 无 git-aware stats | 中等差距 | — |
 | 文件历史快照 | per-file SHA256 + 按消息恢复 | checkpoint（git 级） | 小差距 | — |
@@ -420,6 +420,32 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-15（补充追踪：Fast Mode 部分实现）
+
+用户指出 [p2-core item-5 Fast Mode](./qwen-code-improvement-report-p2-core.md#item-5) 标注"仅指定备用模型"不准确——Qwen Code 已实现 `fastModel` 配置体系。审查 qwen-code 源码 + git log 后确认：
+
+**Qwen Code 的 `fastModel` 实现时间线**：
+- `49702ce26` refactor: 合并 `suggestionModel + speculationModel` → 统一 `fastModel`
+- `e9bc686f0` refactor: `fastModel` 移到顶层配置（与 `model` 并列）
+- `fea1739d2` feat: **`/model --fast` 命令**
+- `c06276799` feat: `/model --fast` 打开选择对话框
+- [PR#3077](https://github.com/QwenLM/qwen-code/pull/3077) ✓ improve /model --fast description clarity
+- [PR#3086](https://github.com/QwenLM/qwen-code/pull/3086) ✓ add --fast hint to /model description
+- [PR#3120](https://github.com/QwenLM/qwen-code/pull/3120) ✓ replace text input with model picker for Fast Model in /settings
+
+**但不完全对齐 Claude Code Fast Mode**：
+- Claude Code Fast Mode = **同一模型的速度分级**（Opus 4.6 standard vs Opus 4.6 fast，依赖 Anthropic priority tier 定价）
+- Qwen Code fastModel = **另一个更快/更便宜的模型**（如 qwen-turbo 作为 qwen-plus 的 fastModel）
+- 两者解决**相似问题**（fast-response 场景），但实现路径不同。Qwen Code 走"换模型"方案的根本原因是 DashScope / OpenAI 不提供 priority tier 定价，**只有 Anthropic 有**。
+
+**修复**：
+- item-5 标题加 ⚠️ 部分实现标记
+- 详细页加完整实现时间线（4 commits + 3 merged PRs）+ 两种方案对比表 + "为什么走不同方案"说明
+- 主矩阵 item-5 行：状态 "仅指定备用模型" → "⚠️ 部分实现（`fastModel` 走不同方案）"，进展列补 3 个 merged PRs
+- 架构差异总结表同步更新
+
+**追踪计数不变**：PR#3077 / #3086 / #3120 早已在报告其他位置引用（changelog + 历史表），本次只是把它们**归属到 item-5 的进展列**，不是新增追踪。总追踪 PR 仍为 **49**，merged 仍为 **27**。
 
 ### 2026-04-15（补充追踪：Remote Control Bridge 3 个 PR）
 

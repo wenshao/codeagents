@@ -163,11 +163,11 @@ API countTokens()（精确） → 小模型回退（较准） → 粗估 4 bytes
 
 <a id="item-5"></a>
 
-### 5. Fast Mode（P2）
+### 5. Fast Mode（P2）⚠️ 部分实现（不同方案）
 
 你在修复线上紧急 bug 时需要 Agent 尽快响应，但日常编码时更关心成本。目前只能通过切换不同模型来平衡速度和成本，但这意味着切换上下文和模型能力。Fast Mode 的核心是同一模型的速度分级——比如同一个 Opus 4.6 模型提供标准模式（$5/$25/Mtok）和快速模式（$30/$150/Mtok），用户一键切换而不丢失上下文。关键设计包括冷却机制：429 限流后自动回退到标准模式，冷却结束恢复。
 
-**Qwen Code 现状**：支持通过 `/model` 切换不同模型，但无同一模型的速度分级能力，无冷却/回退机制。
+**Qwen Code 现状**：**已实现 `fastModel`（走不同方案）**。Qwen Code 的 `fastModel` 是**另一个**（通常更小/更快/更便宜的）模型——例如 `qwen-turbo` 作为主 `qwen-plus` 的 fastModel——用于 speculation / followup suggestions / 快响应操作。通过 `/model --fast` 命令或 `/settings` 配置。**不是**同一模型的速度分级（依赖 provider 支持 priority tier 定价，仅 Anthropic 提供）。
 
 **Claude Code 源码索引**：
 
@@ -176,23 +176,44 @@ API countTokens()（精确） → 小模型回退（较准） → 粗估 4 bytes
 | `utils/fastMode.ts` (532行) | `isFastModeAvailable()`、`triggerFastModeCooldown()`、`FastModeState` |
 | `commands/fast/fast.tsx` | /fast 命令 UI + 定价显示 |
 
-**Qwen Code 修改方向**：需后端支持速度分级；`modelCommand.ts` 新增 `--fast` toggle（非指定备用模型）；UI 显示当前速度档位。
+**Qwen Code 实现历程**（commit + PR 时间线）：
 
-**实现成本评估**：
-- 涉及文件：~4 个
-- 新增代码：~350 行
-- 开发周期：~3 天（1 人）
-- 难点：依赖后端 API 支持速度分级，前端实现相对简单但需等后端就绪
+| Commit / PR | 说明 |
+|---|---|
+| `49702ce26` refactor(followup) | 合并 `suggestionModel + speculationModel` → 统一 `fastModel` |
+| `e9bc686f0` refactor(settings) | `fastModel` 移到顶层（和 `model` 并列） |
+| `fea1739d2` feat(cli) | **`/model --fast` 命令** 设置 fast model |
+| `c06276799` feat(cli) | `/model --fast` 打开模型选择对话框 |
+| `2348093fb` fix(cli) | `/model --fast` 默认选中当前 fast model |
+| [PR#3077](https://github.com/QwenLM/qwen-code/pull/3077) ✓ | improve /model --fast description clarity + prevent accidental activation |
+| [PR#3086](https://github.com/QwenLM/qwen-code/pull/3086) ✓ | add --fast hint to /model description for discoverability |
+| [PR#3120](https://github.com/QwenLM/qwen-code/pull/3120) ✓ | replace text input with **model picker** for Fast Model in /settings |
 
-**改进前后对比**：
-- **改进前**：紧急 bug → 切换到更快的模型 → 丢失当前上下文 → 重新描述问题
-- **改进后**：紧急 bug → `/fast` 一键切换 → 同一模型同一上下文加速推理 → 修完后 `/fast` 切回标准
+**两种方案对比**：
+
+| 维度 | Claude Code Fast Mode | Qwen Code fastModel |
+|---|---|---|
+| **核心思路** | **同一模型**的速度分级（Opus 4.6 standard vs Opus 4.6 fast） | **另一个**更快/更便宜的模型（如 qwen-turbo） |
+| **前提** | Anthropic "priority tier" 定价（2-5× 价格，同模型更快） | 任意 provider 的多模型选择 |
+| **触发方式** | 用户手动或自动切换速度档位 | 用于 speculation / followup suggestions 等 fast-response 操作 |
+| **冷却机制** | 429 → 回退 standard → 冷却后恢复 | 无冷却（两个模型互相独立） |
+| **上下文切换** | ❌（同模型同上下文） | ⚠️（不同模型，需重新载入 context） |
+| **适用场景** | 紧急 bug 修复时全 session 加速 | 局部 fast path（补全、推测、followup） |
+
+**为什么走不同方案**：Qwen Code 支持多 provider（DashScope / ModelScope / Anthropic / Google / OpenAI 兼容），但**只有 Anthropic 提供 priority tier 定价**——同一模型不同速度档位。DashScope 和 OpenAI 都没有此定价。所以 Qwen Code 采用"**换用更快的备用模型**"的替代方案，通过 `fastModel` 配置。
+
+**改进前后对比（以 qwen-code 当前实现为基准）**：
+- **改进前**：`suggestionModel` 和 `speculationModel` 是两个独立配置，概念混乱
+- **改进后（2026-04 合并）**：统一为 `fastModel`，用 `/model --fast` 或 `/settings` 设置，UI 提供模型 picker 而非文本输入
 
 **相关文章**：[成本追踪与 Fast Mode](./cost-fastmode-deep-dive.md)
 
-**意义**：时间敏感任务（紧急 bug 修复）需要更快推理，日常任务需要更低成本。
-**缺失后果**：用户无法灵活平衡速度和成本——始终使用同一速度。
-**改进收益**：一键切换推理速度——紧急用 Fast，日常用 Standard，同一模型同一上下文。
+**意义**：时间敏感任务（紧急 bug 修复、speculation、followup suggestions）需要更快推理。
+**缺失后果（此前）**：`suggestionModel` + `speculationModel` 两个概念混乱，用户不知道怎么配置。
+**改进收益**：统一的 `fastModel` 配置 + `/model --fast` 命令 + `/settings` picker——一处配置，多处复用。
+**仍存差距**：没有**同模型 speed-tier** 能力（受限于非 Anthropic provider），但通过不同模型达到相似效果。
+
+> **小结**：本 item 的"同一模型速度分级"目标在 Qwen Code 下**无法完全对齐**（provider 定价机制限制），但 Qwen Code 用 **"fastModel 配置 + 换用更快模型"** 达到了**相似的 fast-response 效果**，应视为**已部分实现**。如果 Anthropic priority tier 被 DashScope/其他 provider 引入，再考虑补齐"同模型速度分级"的剩余能力。
 
 ---
 
