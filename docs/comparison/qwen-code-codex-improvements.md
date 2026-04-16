@@ -1,9 +1,11 @@
 # Qwen Code 改进建议——对标 Codex CLI
 
-> 基于 Codex CLI (openai/codex) 完整 Rust 源码（70+ crate，619,458 行）与 Qwen Code 源码的系统对比，识别 **25 项**可借鉴的能力。Codex CLI 是唯一采用 Rust 原生构建 + 沙箱默认启用的主流 CLI Code Agent。
+> 基于 Codex CLI (openai/codex) 完整 Rust 源码（70+ crate，**651,174 行**）与 Qwen Code 源码（**281,954 行 TS**）的系统对比，识别 **25 项**可借鉴的能力（其中 **1 项已实现**——item-13 Hook 系统）。Codex CLI 是唯一采用 Rust 原生构建 + 沙箱默认启用的主流 CLI Code Agent。
+>
+> **最后核对日期**：2026-04-16（两侧源码均已 `git pull` 刷新）
 >
 > **相关报告**：
-> - [Claude Code 改进建议报告（253 项）](./qwen-code-improvement-report.md)——行业领先者对比
+> - [Claude Code 改进建议报告（251 项）](./qwen-code-improvement-report.md)——行业领先者对比
 > - [Gemini CLI 上游 backport 报告（53 项）](./qwen-code-gemini-upstream-report.md)——上游可 backport 改进
 > - [OpenCode 对标改进报告（27 项）](./qwen-code-opencode-improvements.md)——多 Provider、Plugin 系统等
 
@@ -23,7 +25,7 @@
 | [10](#item-10) | Models Manager 模型目录 | **P2** | `models-manager/` | 2,072 行 |
 | [11](#item-11) | Git Ghost Commit 快照 | **P2** | `git-utils/` | 4,024 行 |
 | [12](#item-12) | Secrets Manager 密钥管理 | **P2** | `secrets/` | ~682 行 |
-| [13](#item-13) | Hook 系统（5 种事件） | **P2** | `hooks/` | 5,373 行 |
+| [13](#item-13) | Hook 系统（5 种事件）✅ | **P2** | `hooks/` | 5,373 行 → Qwen Code **17,443 行已反超** |
 | [14](#item-14) | Core Skills 环境依赖发现 | **P2** | `core-skills/` | 5,243 行 |
 | [15](#item-15) | 执行策略引擎 | **P2** | `execpolicy/` | 1,790 行 |
 | [16](#item-16) | Code Review 独立子命令 | **P2** | `exec/` review 部分 | ~2,000 行 |
@@ -254,13 +256,23 @@
 
 <a id="item-13"></a>
 
-### 13. Hook 系统——5 种事件（P2）
+### 13. Hook 系统——5 种事件（P2）✅ 已实现（已反超）
 
-**问题**：用户想在每次 Agent 执行 shell 命令前做自定义检查（如安全扫描）、在每次会话开始时加载项目环境——但当前 Hook 事件类型有限，无法覆盖这些场景。Claude Code 支持 27 种事件，Codex CLI 支持 5 种核心事件（含 abort/modify 响应），Qwen Code 的覆盖面不足。
+**状态**：**Qwen Code 已通过 [PR#2827](https://github.com/QwenLM/qwen-code/pull/2827) 全面实现**（2026-04-15 合并）。当前 Qwen Code hook 系统 **17,443 行**，远超 Codex CLI 的 5,584 行。
 
-**Codex CLI 的解决方案**：`hooks/`（5,373 行）——5 种事件：SessionStart、UserPromptSubmit、PreToolUse、PostToolUse、Stop。支持 abort/modify/continue 响应。
+**2026-04-16 核对对比**：
 
-**实现成本**：~3 天（扩展现有 Hook 系统）
+| 维度 | Codex CLI | Qwen Code（2026-04-15 后） |
+|---|---|---|
+| **代码量** | ~5,584 行 | **~17,443 行** |
+| **事件类型** | 5 种（SessionStart / UserPromptSubmit / PreToolUse / PostToolUse / Stop） | **12+ 种**（SessionStart / SessionEnd / UserPromptSubmit / PreToolUse / PostToolUse / PostToolUseFailure / **StopFailure** / **PostCompact** / Notification + 更多） |
+| **Hook 类型** | command 脚本 | **command + HTTP POST + Function（JS 函数引用）+ Async Hook** |
+| **响应模式** | abort / modify / continue | abort / modify / continue + **异步非阻塞** |
+| **安全** | — | **SSRF 防护**（`ssrfGuard.ts` / `urlValidator.ts`），HTTP Hook URL 验证 |
+
+**原文描述**（"Qwen Code 覆盖面不足"）已**过时**——PR#2827 新增 HTTP Hook + Function Hook + Async Hook + SSRF 防护后，Qwen Code 的 hook 能力**已超过** Codex CLI。
+
+**实现成本**：✅ 已实现（0 天）
 
 ---
 
@@ -442,10 +454,20 @@
 
 ## 五、更新日志
 
+### 2026-04-16
+
+**全量核对**：`git pull` 刷新两侧源码后逐项验证 25 项。Codex CLI 651,174 行（+31,716），Qwen Code 281,954 行。
+
+- **item-13 Hook 系统 标记 ✅ 已实现**：[PR#2827](https://github.com/QwenLM/qwen-code/pull/2827) 于 2026-04-15 合并，添加 HTTP Hook + Function Hook + Async Hook + SSRF 防护。Qwen Code hook 系统 17,443 行 vs Codex CLI 5,584 行——**已反超**。
+- **修正代码量**：报告头 619,458 行 → **651,174 行**（Codex 增长），Qwen Code **281,954 行**。
+- **修正 Claude Code 改进报告引用**：253 项 → 251 项。
+- **其他 24 项状态确认为"准确"**——通过 crate 目录存在性 + `wc -l` 验证 + Qwen Code 等价功能搜索逐一确认。差距项无变化（沙箱/apply-patch/feature-flag/shell 分析/网络代理/多 Agent V2/MCP server 等）。
+- **接近对齐的 5 项**（已有部分实现但仍有差距）：item-10（Models Manager，Qwen 5,180 LOC 但无统一目录 JSON）、item-11（Git Snapshot，gitWorktreeService 1,063 LOC 但无 ghost commit）、item-14（Skills，2,673 LOC 但无环境依赖预检）、item-19（Config，2,366 LOC 但无多层栈合并）、item-20（Terminal Detection，仅 Kitty 溢出追踪）。
+
 ### 2026-04-10
 
 - 初始版本：25 项改进建议，基于 Codex CLI 完整 Rust 源码（619,458 行）分析
 
 ---
 
-*分析基于 Codex CLI (openai/codex, Apache-2.0, 70+ Rust crate) 和 Qwen Code 源码，截至 2026 年 4 月。*
+*分析基于 Codex CLI (openai/codex, Apache-2.0, 70+ Rust crate, **651K 行**) 和 Qwen Code 源码 (**282K 行**)。最后核对：2026-04-16。*
