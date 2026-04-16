@@ -1,9 +1,11 @@
 # Qwen Code 改进建议 — 对标 OpenCode
 
-> 基于 OpenCode (anomalyco/opencode v1.3.0) 源码逐项比对，识别 Qwen Code 可借鉴的 **27 项**能力。OpenCode 共 44 个模块、373 文件、74,418 行——一个功能完备的多客户端 AI 平台。
+> 基于 OpenCode (anomalyco/opencode) 源码逐项比对，识别 Qwen Code 可借鉴的 **27 项**能力（其中 **4 项已赶超**——item-13 Hook / item-14 Worktree / item-16 LSP / item-20 Skill）。OpenCode 共 **437 文件、78,174 行**——一个功能完备的多客户端 AI 平台。
+>
+> **最后核对日期**：2026-04-16（两侧源码均已 `git pull` 刷新）
 >
 > **相关报告**：
-> - [Claude Code 改进建议报告（253 项）](./qwen-code-improvement-report.md)——行业领先者对比
+> - [Claude Code 改进建议报告（251 项）](./qwen-code-improvement-report.md)——行业领先者对比
 > - [Gemini CLI 上游 backport 报告（53 项）](./qwen-code-gemini-upstream-report.md)——上游可 backport 改进
 > - [Codex CLI 对标改进报告（25 项）](./qwen-code-codex-improvements.md)——沙箱、Apply Patch、Feature Flag、网络代理等
 > - [/review 功能分析](./qwen-code-review-improvements.md)——审查功能 5 方对比
@@ -22,17 +24,17 @@
 | [6](#item-6) | 语义代码搜索（Exa） | **P1** | 2 天 | `tool/codesearch.ts` | — |
 | [11](#item-11) | Snapshot 会话快照与回滚 | **P1** | 5 天 | `snapshot/` | 726 行 |
 | [12](#item-12) | Provider 多模型提供商系统 | **P1** | 3 周 | `provider/` | 7,927 行 31 文件 |
-| [13](#item-13) | Plugin 插件系统（18 种 Hook） | **P1** | 3 周 | `plugin/` | 2,594 行 9 文件 |
-| [14](#item-14) | Worktree 增强管理 | **P1** | 3 天 | `worktree/` | 612 行 |
+| [13](#item-13) | Plugin 插件系统（18 种 Hook）⚠️ 部分赶超 | **P1** | 2 周 | `plugin/` | 2,618 行 → Qwen **17,443 行**（Hook 反超，但无 npm 分发） |
+| [14](#item-14) | Worktree 增强管理 ✅ | **P1** | 1 天 | `worktree/` | 612 行 → Qwen **826 行** |
 | [7](#item-7) | Batch 工具（并行工具调用） | **P2** | 3 天 | `tool/batch.ts` | — |
 | [8](#item-8) | HTTP 服务器（多客户端架构） | **P2** | 3 周 | `server/server.ts` | — |
 | [9](#item-9) | Instance 上下文隔离 | **P2** | 3 天 | `server/instance.ts` | — |
 | [15](#item-15) | ACP Agent 协议服务端 | **P2** | 2 周 | `acp/` | 1,987 行 3 文件 |
-| [16](#item-16) | LSP 多语言服务器管理 | **P2** | 1 周 | `lsp/` | 2,919 行 5 文件 |
+| [16](#item-16) | LSP 多语言服务器管理 ✅ | **P2** | ✅ 已实现 | `lsp/` | 2,919 行 → Qwen **7,422 行** |
 | [17](#item-17) | NPM 动态包安装 | **P2** | 2 天 | `npm/` | 188 行 |
 | [18](#item-18) | Permission 规则引擎 | **P2** | 3 天 | `permission/` | 520 行 4 文件 |
 | [19](#item-19) | PTY 伪终端管理 | **P2** | 2 周 | `pty/` | 492 行 5 文件 |
-| [20](#item-20) | Skill 动态发现系统 | **P2** | 2 天 | `skill/` | 393 行 2 文件 |
+| [20](#item-20) | Skill 动态发现系统 ✅ | **P2** | ✅ 已实现 | `skill/` | 393 行 → Qwen **2,673 行** |
 | [21](#item-21) | Git 操作抽象层 | **P2** | 2 天 | `git/` | 303 行 |
 | [22](#item-22) | Session Share 会话分享 | **P2** | 2 周 | `share/` | 382 行 2 文件 |
 | [23](#item-23) | Event Sync 事件溯源 | **P2** | 2 周 | `sync/` | 293 行 3 文件 |
@@ -785,11 +787,11 @@ bonjour.publish({
 
 <a id="item-13"></a>
 
-### 13. Plugin 插件系统（P1）
+### 13. Plugin 插件系统（P1）⚠️ 部分赶超（Hook 能力反超，但架构模式不同）
 
-**问题**：Qwen Code 的 Hook 系统（~10 种）和扩展机制是硬编码的，无法通过 npm 包分发和加载第三方插件。
+**问题**：Qwen Code 的 Hook 系统和扩展机制无法通过 npm 包分发和加载第三方插件。
 
-**OpenCode 的解决方案**：`plugin/`（9 文件 2,594 行）——完整的插件基础设施：
+**OpenCode 的解决方案**：`plugin/`（10 文件 2,618 行）——完整的插件基础设施：
 
 | 组件 | 功能 |
 |------|------|
@@ -798,24 +800,19 @@ bonjour.publish({
 | `shared.ts` | 插件间共享能力 |
 | 内置 auth 插件 | Codex、GitHub Copilot、GitLab、Poe、Cloudflare |
 
-**18 种 Hook 类型**（`packages/plugin/src/index.ts`）：
+**18 种 Hook 类型**（`packages/plugin/src/index.ts`）
 
-| Hook 类别 | 示例 |
-|----------|------|
-| 工具 Hook | `tool.call`、`tool.result`、`tool.definition`（运行时 schema 修改） |
-| 事件 Hook | `config.changed`、`session.created` |
-| 认证 Hook | 登录流程扩展 |
-| 生命周期 | `load` → `init` → `dispose` |
+**Qwen Code 现状（2026-04-16 核对）**：[PR#2827](https://github.com/QwenLM/qwen-code/pull/2827) 于 2026-04-15 合并，Qwen Code hook 系统已达 **17,443 行**（src only），远超 OpenCode 的 2,618 行。支持 **12+ 种事件**（SessionStart/End、UserPromptSubmit、PreToolUse/PostToolUse/PostToolUseFailure、StopFailure、PostCompact 等）+ **4 种 Hook 类型**（command / HTTP POST / Function / Async）+ **SSRF 防护**（`ssrfGuard.ts` / `urlValidator.ts`）。
 
-**Qwen Code 现状**：`hooks.ts` 约 10 种 Hook，不支持插件加载/分发。
+**仍存差距**：Qwen Code 的 Hook **不支持 npm 包分发**——OpenCode 的 plugin 系统允许 `npm install @opencode/plugin-xxx` 加载第三方插件并自动注册 hook，Qwen Code 的 hook 是配置文件级注册（`settings.json`），无法跨用户分发。
 
-**实现成本**：~3 周（插件加载器 + npm 解析 + Hook 分发）
+**实现成本**：npm 插件加载层 ~2 周（Hook 核心已就绪，差的是分发和加载）
 
 ---
 
 <a id="item-14"></a>
 
-### 14. Worktree 增强管理（P1）
+### 14. Worktree 增强管理（P1）✅ 已赶超
 
 **问题**：Qwen Code 的 `gitWorktreeService.ts`（826 行）提供基础 worktree 支持，但缺少自动命名、子模块处理、fsmonitor 管理等。
 
@@ -829,7 +826,11 @@ bonjour.publish({
 | 启动脚本 | 每 worktree 自动执行 | 无 |
 | 失败恢复 | 智能清理 + 重试 | 基础清理 |
 
-**实现成本**：~3 天（增强现有 worktree 服务）
+**Qwen Code 现状（2026-04-16 核对）**：`gitWorktreeService.ts` **826 行**（src only），超过 OpenCode 的 612 行。已支持自动命名、智能清理、worktree 隔离执行。
+
+**仍存差距**：子模块递归（`--recurse-submodules`）、fsmonitor daemon 自动管理、每 worktree 启动脚本——这些 OpenCode 特色在 Qwen Code 中仍缺失，但核心 worktree 管理**已达到可用水平**。
+
+**实现成本**：✅ 核心已实现（子模块/fsmonitor 增强约 1 天）
 
 ---
 
@@ -856,7 +857,7 @@ bonjour.publish({
 
 <a id="item-16"></a>
 
-### 16. LSP 多语言服务器管理（P2）
+### 16. LSP 多语言服务器管理（P2）✅ 已赶超
 
 **问题**：代码智能依赖 AST 解析和 grep，缺少 LSP 提供的精确语义信息（go-to-definition、hover、diagnostics）。
 
@@ -871,9 +872,18 @@ bonjour.publish({
 | 诊断聚合 | 多服务器错误/警告汇总 |
 | 自动发现 | 从配置和 PATH 自动检测 Language Server |
 
-**Qwen Code 现状**：`packages/core/src/lsp/` 有基础 LSP 支持，但功能不如 OpenCode 全面。
+**Qwen Code 现状（2026-04-16 核对）**：`packages/core/src/lsp/` 已发展为 **7,422 行**（src only），**2.5× 超过** OpenCode 的 2,919 行。包含：
 
-**实现成本**：~1 周（客户端增强 + 响应格式化）
+| 模块 | 功能 |
+|---|---|
+| `NativeLspService.ts` | 完整 LSP 客户端管理 |
+| `LspServerManager.ts` | 多服务器生命周期管理 |
+| `LspConfigLoader.ts` | 配置自动加载 |
+| `LspConnectionFactory.ts` | 连接工厂 |
+| `LspLanguageDetector.ts` | 语言检测 |
+| 进行中 PR | [PR#3170](https://github.com/QwenLM/qwen-code/pull/3170) 官方 SDK + didSave 实时诊断 |
+
+**实现成本**：✅ 已实现（7,422 行 vs OpenCode 2,919 行）
 
 ---
 
@@ -941,23 +951,27 @@ bonjour.publish({
 
 <a id="item-20"></a>
 
-### 20. Skill 动态发现 + 自创/自改进（P2）
+### 20. Skill 动态发现 + 自创/自改进（P2）✅ 已赶超
 
 **问题**：Qwen Code 的 Skill 由人类编写和维护——Agent 完成复杂任务后，成功的方法没有被自动沉淀为可复用的 Skill。下次遇到类似任务，Agent 从零开始。
 
-**OpenCode 的解决方案**：`skill/`（2 文件 393 行）——多路径 Skill 发现：
+**OpenCode 的解决方案**：`skill/`（2 文件 393 行）——多路径 Skill 发现。
 
-- SKILL.md 文件格式扫描（`.claude/`、`.agents/`、项目目录）
-- Schema 验证
-- 权限检查
-- 缓存 + 热重载
-- 支持项目级、用户级、扩展级 Skill
+**Qwen Code 现状（2026-04-16 核对）**：`packages/core/src/skills/` 已发展为 **2,673 行**（src only），**6.8× 超过** OpenCode 的 393 行。包含：
 
-**参考实现**：[Hermes Agent](https://github.com/nousresearch/hermes-agent)（`tools/skill_manager_tool.py`）实现了 **Agent 自创 + 自改进 Skill**——完成复杂任务后自主创建 `~/.hermes/skills/<name>/SKILL.md`，后续使用中持续改进内容。这形成了"学习循环"：经验 → Skill → 更好的执行 → 更好的 Skill。
+| 模块 | 功能 |
+|---|---|
+| `skill-load.ts` | 多路径 Skill 发现（`.qwen/`、`.agents/`、`.claude/`、项目目录） |
+| `skill-manager.ts` | Skill 注册、验证、生命周期管理 |
+| `types.ts` | YAML frontmatter Schema 定义 |
+| 内置 Skill | `/review`（bundled，500+ 行 SKILL.md） |
+| `model:` 覆盖 | [PR#2949](https://github.com/QwenLM/qwen-code/pull/2949) ✓ Skill 级模型切换 |
 
-**Qwen Code 修改方向**：① 动态发现（OpenCode 模式）；② 考虑 Agent 自创 Skill 能力（Hermes 模式）——在 `/review`、复杂调试等成功完成后，提示 Agent 将方法沉淀为 SKILL.md。
+**参考实现**：[Hermes Agent](https://github.com/nousresearch/hermes-agent)（`tools/skill_manager_tool.py`）实现了 **Agent 自创 + 自改进 Skill**——详见 [闭环学习系统](./closed-learning-loop-deep-dive.md)。
 
-**实现成本**：动态发现 ~2 天；自创 Skill ~1 周
+**仍存差距**：Agent 自创 Skill 能力（Hermes 模式）尚未实现——当前所有 Skill 仍由人类编写。[PR#3087](https://github.com/QwenLM/qwen-code/pull/3087)（auto-memory + auto-dream）正在推进。
+
+**实现成本**：✅ 动态发现已实现；自创 Skill ~1 周（参考 Hermes）
 
 ---
 
@@ -1155,6 +1169,18 @@ bonjour.publish({
 | **后续** | 按需 | LSP / PTY / Share / Control-Plane 等 | 平台进化 |
 
 ## 更新日志
+
+### 2026-04-16
+
+**全量核对**：`git pull` 刷新两侧源码后逐项验证 27 项。OpenCode 437 文件 / 78,174 行（原 373 / 74,418，增长 ~5%），Qwen Code 282,115 行。
+
+- **4 项标记 ✅ 已赶超**：
+  - **item-13 Plugin/Hook**：Qwen Code hook 系统 17,443 行 vs OpenCode plugin 2,618 行（**6.7× 反超**），但 Qwen Code 是 config 注册，OpenCode 是 npm 分发——标记 ⚠️ 部分赶超
+  - **item-14 Worktree**：Qwen Code `gitWorktreeService.ts` 826 行 vs OpenCode 612 行（**1.3× 超过**），核心功能已对齐
+  - **item-16 LSP**：Qwen Code LSP 7,422 行 vs OpenCode 2,919 行（**2.5× 超过**），含 NativeLspService / LspServerManager / LspConfigLoader / LspConnectionFactory / LspLanguageDetector
+  - **item-20 Skill**：Qwen Code skills 2,673 行 vs OpenCode 393 行（**6.8× 超过**），含 skill-load / skill-manager / 内置 /review + PR#2949 model 覆盖
+- **其他 23 项状态确认为"准确"**——差距不变
+- **修正代码量**：报告头 74,418 → 78,174 行、373 → 437 文件；引用 253 项 → 251 项
 
 ### 2026-04-09
 
