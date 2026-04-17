@@ -50,7 +50,7 @@
 | **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | 全部工具始终加载 | 小 | — |
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1-core.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ / [Roadmap#2516](https://github.com/QwenLM/qwen-code/issues/2516) |
 | **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | 完全缺失 | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) ✗（关闭，由 #3318 + #3319 替代）/ [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318) preconnect / [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) early input / [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
-| **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-9) | 所有指令始终加载 | 中 | [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) / [Roadmap#125](https://github.com/QwenLM/qwen-code/issues/125) |
+| **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-9) | 所有指令始终加载 | 中 | [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) ✓ / [Roadmap#125](https://github.com/QwenLM/qwen-code/issues/125) |
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-12) | 缺失 | 小 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | 缺失 | 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) ✗（已关闭）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292)（后续 session rewind + restore flows） |
 | **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-1) | 缺失 | 中 | — |
@@ -331,7 +331,7 @@
 | **智能工具并行** | Kind-based batching（默认 10 并发） | Agent 并发 / 其他顺序 | 中等差距 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ |
 | 投机执行 (Speculation) | 完整 overlay-fs + cow（991 行） | v0.15.0 已完整实现（563 行），默认关闭 | 小差距 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | 启动优化 | API Preconnect + Early Input | 无 | 缺失 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) / [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
-| 按路径注入上下文规则 | `.claude/rules/` + frontmatter `paths:` 惰加载 | 单一 QWEN.md | 中等差距 | [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339)（`.qwen/rules/`） |
+| 按路径注入上下文规则 | `.claude/rules/` + frontmatter `paths:` 惰加载 | ✅ `.qwen/rules/` + frontmatter `paths:` + 嵌套子目录 | **已对齐** | [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) ✓ |
 | 会话记忆 (Session Memory) | SessionMemory + memdir | 简单笔记工具 | 显著落后 | — |
 | 自动记忆 (Memory) 整理 | Auto Dream | 无 | 缺失 | — |
 | 上下文折叠 (Context Collapse) | History Snip | 无 | 缺失 | — |
@@ -466,7 +466,7 @@
 **新开 PR 并对接现有 item**：
 
 - [PR#3383](https://github.com/QwenLM/qwen-code/pull/3383)（open）— `support refreshInterval in statusLine for periodic refresh` —— **直接实现我昨天新增的 [item-25 Refresh Interval Statusline](./qwen-code-improvement-report-p2-tools-commands.md#item-25)**！已挂到该 item 的进展列
-- [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339)（open）— `add path-based context rule injection from .qwen/rules/` —— **实现 [p0-p1-core item-9 指令条件规则](./qwen-code-improvement-report-p0-p1-core.md#item-9)**！长期等待的功能终于开动
+- [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) ✓（**2026-04-17 合并**，tanzhenxin）— `add path-based context rule injection from .qwen/rules/` —— **实现 [p0-p1-core item-9 指令条件规则](./qwen-code-improvement-report-p0-p1-core.md#item-9)**！长期等待的功能落地
 - [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318) + [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319)（open）— 启动优化拆分为两个独立 PR（preconnect + early input），原 [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) 已关闭被替代
 
 **新 hook 类型 PR（暂不单独追踪，归入 hook 系统扩展）**：
@@ -488,7 +488,7 @@
 - PR#3261（/history command）— closed
 - PR#3258、PR#2760、PR#3082 — 各类关闭
 
-**计数变化**：追踪 PR 49 → **52**（+PR#3318、+PR#3319、+PR#3339、+PR#3383；-PR#3085 关闭），已合并 ✓ 28 → **47**（本轮 +17 merged，主要是 Claude Code/AgentScope 等项目的长期打磨成果）。
+**计数变化**：追踪 PR 49 → **52**（+PR#3318、+PR#3319、+PR#3339、+PR#3383；-PR#3085 关闭），已合并 ✓ 28 → **48**（本轮 +18 merged，主要是 Claude Code/AgentScope 等项目的长期打磨成果；**晚间补 PR#3339 ✓ 于 2026-04-17 14:05 UTC 合并**）。
 
 ### 2026-04-17（Copilot CLI 0.0.381 → 0.0.402 更新扫描）
 
