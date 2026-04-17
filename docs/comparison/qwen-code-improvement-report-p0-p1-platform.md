@@ -114,9 +114,21 @@
 
 <a id="item-3"></a>
 
-### 3. HTTP Hooks（P1）
+### 3. HTTP Hooks（P1）✅ 已实现（反超 Claude Code）
+
+**状态**：**已通过 [PR#2827](https://github.com/QwenLM/qwen-code/pull/2827) 实现**（2026-04-16 合并）。
 
 **思路**：Hook 除了 `type: "command"`（shell）外，支持 `type: "http"` —— POST JSON 到 URL 并接收 JSON 响应。适合与 CI、审批系统、消息平台直接集成，无需 shell 中转。
+
+**Qwen Code 实现（PR#2827）**：不仅实现了 HTTP Hook，还同时实现了 **3 种 Hook 类型**，超过 Claude Code 的 2 种：
+
+| Hook 类型 | Claude Code | Qwen Code（PR#2827 后） |
+|---|---|---|
+| **command**（shell） | ✓ | ✓ |
+| **http**（POST JSON） | ✓ | ✓ |
+| **function**（JS 函数引用） | ❌ | ✅ **Qwen Code 独有** |
+| **async**（异步非阻塞） | ❌ | ✅ **Qwen Code 独有** |
+| **SSRF 防护** | 有 | ✅ 独立文件 `ssrfGuard.ts` + `urlValidator.ts` |
 
 **Claude Code 源码索引**：
 
@@ -125,17 +137,28 @@
 | `utils/hooks/hookRunner.ts` | HTTP hook 执行（fetch POST + JSON parse） |
 | `types/hooks.ts` | `HookConfig.type` 支持 `'command'` 和 `'http'` |
 
-**Qwen Code 修改方向**：`hookRunner.ts` 新增 HTTP 分支——`type === 'http'` 时 fetch POST body（hook input JSON），解析 response JSON 作为 hook output。
+**Qwen Code 实现**（源码：`packages/core/src/hooks/`，17,443 行）：
 
-**实现成本评估**：
-- 涉及文件：~2 个
-- 新增代码：~150 行
-- 开发周期：~2 天（1 人）
-- 难点：SSRF 防护（私有 IP 阻断）
+| 文件 | 功能 |
+|---|---|
+| `ssrfGuard.ts` / `ssrfGuard.test.ts` | SSRF 防护（私有 IP 阻断、DNS rebinding 防护） |
+| `urlValidator.ts` / `urlValidator.test.ts` | URL 格式验证 |
+| `sessionHooksManager.ts` | Hook 注册 + 执行管理 |
+
+**Qwen Code Hook 事件覆盖**（比 Claude Code 更多）：
+- `SessionStart` / `SessionEnd` / `UserPromptSubmit`
+- `PreToolUse` / `PostToolUse` / `PostToolUseFailure`
+- **`StopFailure`**（PR#2825 合并，Qwen 独有）
+- **`PostCompact`**（PR#2825 合并，Qwen 独有）
+- `Notification`
+
+**关联工作**：
+- [PR#3248](https://github.com/QwenLM/qwen-code/pull/3248) ✓ — ACP 完整 hooks 支持
+- [PR#3378](https://github.com/QwenLM/qwen-code/pull/3378)（open）— TodoCreated / TodoCompleted 新事件
+- [PR#3388](https://github.com/QwenLM/qwen-code/pull/3388)（open）— prompt hook LLM 评估
 
 **意义**：与外部服务（CI/审批/消息平台）集成需要 HTTP 而非 shell。
-**缺失后果**：通过 shell curl 间接集成——脆弱且难以处理 JSON 响应。
-**改进收益**：Hook 原生 HTTP——直接与 API 交互，响应结构化解析。
+**收益**：Hook 原生 HTTP + Function + Async + SSRF 防护，**已超过 Claude Code 的 HTTP-only 设计**。
 
 ---
 
