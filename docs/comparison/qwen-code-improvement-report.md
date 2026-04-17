@@ -428,6 +428,29 @@
 
 ## 六、更新日志
 
+### 2026-04-17（晚间第三次补更）
+
+继续扫描 qwen-code PR（updated > 今早）：
+
+**新合并 PR（4 个）**：
+
+- [PR#3076](https://github.com/QwenLM/qwen-code/pull/3076) ✓ 2026-04-17 10:23 UTC — **`background subagents with headless and SDK support`**。这是 Agent tool 的显式 `run_in_background: true` 参数**真实落地**！之前作为 item-22 自动后台化伪需求删除时，我已明确此 PR 是"真正的正规路径"——今天合并印证了判断。
+- [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) ✓ 2026-04-17 14:05 UTC — `.qwen/rules/` 路径规则（已在上一轮更新中标注）
+- [PR#3352](https://github.com/QwenLM/qwen-code/pull/3352) ✓ 2026-04-17 18:19 UTC — `dual-output sidecar mode for TUI`（新颖 UX）
+- [PR#3358](https://github.com/QwenLM/qwen-code/pull/3358) ✓ 2026-04-17 22:43 UTC — `bind M-d to Emacs-like default`（输入 UX 微优化）
+- [PR#3402](https://github.com/QwenLM/qwen-code/pull/3402) ✓ 2026-04-17 14:57 UTC — `match new cron notification format in interactive tests`（测试修复）
+
+**新开 PR（未追踪，观察）**：
+
+- [PR#3407](https://github.com/QwenLM/qwen-code/pull/3407) — `auto-submit on number key press in AskUserQuestionDialog`（UX 微优化）
+- [PR#3404](https://github.com/QwenLM/qwen-code/pull/3404) — **`/doctor` 诊断命令**（对标 Claude Code 的 `/doctor`）。值得后续追踪，Qwen Code 加了一个常用的诊断命令
+- [PR#3398](https://github.com/QwenLM/qwen-code/pull/3398) — vscode OAuth → Coding Plan/API Key（重要 provider 策略调整）
+- [PR#3394](https://github.com/QwenLM/qwen-code/pull/3394) — `feat(arena): add comparison summary for agent results`
+- [PR#3393](https://github.com/QwenLM/qwen-code/pull/3393) — `feat(mcp): add OSC 52 copy hotkey for OAuth authorization URL`
+- [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) — `reduce terminal redraw cursor movement`（性能微优化）
+
+**计数更新**：已合并 ✓ 48 → **52**（+PR#3076、+PR#3352、+PR#3358、+PR#3402）。
+
 ### 2026-04-17（qwen-code PR 状态全量刷新）
 
 全量扫描 qwen-code PRs `updated:>=2026-04-16`，发现多项合并：
@@ -476,7 +499,7 @@
 
 **其他观察到的新开 PR**：
 
-- [PR#3352](https://github.com/QwenLM/qwen-code/pull/3352) — `dual-output sidecar mode for TUI`（新颖 UX 方向）
+- [PR#3352](https://github.com/QwenLM/qwen-code/pull/3352) ✓（2026-04-17 合并）— `dual-output sidecar mode for TUI`（新颖 UX 方向）
 - [PR#3329](https://github.com/QwenLM/qwen-code/pull/3329) — real-time token consumption display（UI polish）
 - [PR#3377](https://github.com/QwenLM/qwen-code/pull/3377) — slash command multi-mode expansion Phase 2（延续 PR#3283）
 - [PR#3377](https://github.com/QwenLM/qwen-code/pull/3377) — slash command Phase 2
@@ -511,7 +534,7 @@
 | `/review`（v0.0.388） | Qwen Code 已有（PR#2932 等，见 platform item-2）|
 | `/resume`（v0.0.386）、`/yolo`（v0.0.381）、`/init`（v0.0.396）、`/rename`（v0.0.392）| Qwen Code 已有 |
 | OAuth MCP（v0.0.389）、MCP 插件分发（v0.0.389）| Qwen Code MCP 基础已有 |
-| `/delegate` / `&` 前缀后台（v0.0.384/v0.0.394）| Qwen Code 已有 PR#3076 Agent run_in_background |
+| `/delegate` / `&` 前缀后台（v0.0.384/v0.0.394）| Qwen Code 已有 [PR#3076](https://github.com/QwenLM/qwen-code/pull/3076) ✓（2026-04-17 合并）background subagents |
 | `/diff` + Esc-Esc 回退（v0.0.395/v0.0.399）| 重叠 p2-core item-10 文件历史快照 + PR#3292 session rewind |
 | LSP 工具（v0.0.399, experimental）| Qwen Code LSP 已 7,422 行（见 opencode 对比 item-16） |
 | **移除捆绑 LSP**（v0.0.400）| Qwen 方向相反：PR#3170 正在加强 LSP，Copilot 的这个决策不适合借鉴 |
@@ -670,7 +693,7 @@ function getAutoBackgroundMs(): number {
 
 **确认为伪需求**：Claude Code 此功能**默认禁用**，仅在 `CLAUDE_AUTO_BACKGROUND_TASKS` 环境变量 **或** GrowthBook feature flag `tengu_auto_background_agents` 被启用时才生效（两者默认均关闭）。绝大多数 Claude Code 用户**从未体验过**此功能。把 feature-gated 实验能力描述为"核心能力"会误导 Qwen Code 开发者投入低 ROI 工作。
 
-**正确的方向是显式 `run_in_background: true`**——已在 Agent tool schema 中作为 first-class 参数，也是 Qwen Code [PR#3076](https://github.com/QwenLM/qwen-code/pull/3076) 正在追踪的**真实需求**。
+**正确的方向是显式 `run_in_background: true`**——已在 Agent tool schema 中作为 first-class 参数，也是 Qwen Code [PR#3076](https://github.com/QwenLM/qwen-code/pull/3076) ✓（**2026-04-17 合并**）的**真实需求**，已落地。
 
 **用户追加要求：** "同时仔细检查其他的建议，避免误导开发者投入" —— 系统性审计 `/root/git/claude-code-leaked` 中所有 GrowthBook gates (`tengu_*`) 和 env var gates (`CLAUDE_CODE_EXPERIMENTAL_*`)，交叉对比改进报告。
 
