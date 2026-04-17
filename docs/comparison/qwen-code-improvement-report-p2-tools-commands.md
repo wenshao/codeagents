@@ -869,3 +869,43 @@ allowed-tools: [read_file, grep]
 **意义**：让 statusline 成为**实时仪表盘**（时间/配额/构建状态）而不仅是当前 Agent 状态显示。
 
 ---
+
+<a id="item-26"></a>
+
+### 26. `/experimental` 命令 + `--experimental` flag 统一实验特性门控（P2）
+
+**来源**：Copilot CLI v0.0.396 新增 `/experimental` command + `--experimental` flag。
+
+**问题**：Qwen Code 当前的"实验性特性"分散在多个位置：
+- 某些特性藏在 feature flag（如 `--fast` mode、某些 MCP 方式）
+- 某些藏在环境变量（如 `QWEN_SANDBOX=true`）
+- 某些就是默认不启用的配置项
+- 用户**不知道有哪些实验性特性可用**，也**无法系统性地管理**它们
+
+**Copilot CLI 的方案**（v0.0.396）：
+1. 启动 flag：`copilot --experimental <feature>` 启用特性
+2. 运行时命令：`/experimental` 列出所有实验性特性和当前状态（启用/禁用）
+3. 统一的实验特性注册表（注册时标注 stability: experimental/beta/stable）
+4. UI 明确区分实验特性（加 🧪 标记等）
+
+**Qwen Code 现状**：
+- 实验特性分散在 `settings.json`、环境变量、命令行参数
+- 无统一注册表、无命令查询当前启用的实验特性
+
+**Qwen Code 修改方向**：
+1. 新建 `packages/core/src/features/experimentalRegistry.ts`，每个实验特性用 `registerExperimental({ id, description, stability, defaultEnabled })` 注册
+2. `/experimental` 命令：`/experimental list` 列出所有、`/experimental enable <id>` / `disable <id>`
+3. CLI flag：`--experimental <id>` 启动时启用特定特性
+4. UI 中实验特性调用时显示 🧪 标记
+
+**实现成本**：
+- 涉及文件：~5 个
+- 新增代码：~300 行
+- 开发周期：~3 天
+- 难点：向后兼容现有 env var / settings 配置项——把它们重构成实验特性注册表而不破坏已有配置
+
+**意义**：目前 Qwen Code 社区讨论的实验性特性（[PR#3048 vibe mode](https://github.com/QwenLM/qwen-code/pull/3048)、[PR#3087 auto-memory](https://github.com/QwenLM/qwen-code/pull/3087) 等）缺少统一的启用/禁用机制——用户可能不知道某个特性是实验性的。
+**缺失后果**：实验特性遇到 bug 时用户难以快速关闭，也不知道有哪些实验特性可用。
+**改进收益**：`/experimental` 一站式管理——用户清楚知道在用哪些实验特性，随时可切换。
+
+---

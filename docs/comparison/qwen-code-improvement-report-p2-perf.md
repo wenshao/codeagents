@@ -1206,3 +1206,39 @@
 **改进收益**：useMemo = 内容不变时 0ms；预编译正则 = 省去每次 compile 开销。
 
 ---
+
+<a id="item-35"></a>
+
+### 35. 自定义指令文件去重（P2）
+
+**来源**：Copilot CLI v0.0.394 新增 "Deduplicate identical model instruction files to save context"。
+
+**问题**：Qwen Code 加载多个项目指令文件（`QWEN.md`、`AGENTS.md`、`.qwen/settings.json` 描述、`~/.qwen/QWEN.md` 全局）时，用户可能**复制粘贴**同一段规则到多个文件——例如把全局 `~/.qwen/QWEN.md` 的"代码风格"段落复制到项目级 `QWEN.md` 作为强调。结果两份完全相同的内容都被加载进 system prompt，**浪费 token**（可能是几 KB）。长会话里 token 成本和 prompt cache 命中率都受影响。
+
+**Copilot CLI 的方案**（v0.0.394）：加载时计算每个指令文件内容的 hash，**相同内容只保留一份**。原 changelog：
+
+> Deduplicate identical model instruction files to save context
+
+**Qwen Code 现状**：`memoryService.ts` 加载 `QWEN.md` / `AGENTS.md` / 全局/项目/子目录多层指令时**直接拼接**，无去重逻辑。
+
+**Qwen Code 修改方向**：
+1. `memoryService.ts` 加载 N 个文件后，对每份内容计算 SHA-256
+2. 相同 hash 的文件只保留一份（保留**层级优先级最高**的——通常是项目级覆盖全局）
+3. 去重后再拼接成 system prompt
+4. Debug 日志：输出"去重了 X 个重复文件，节省 Y tokens"
+
+**实现成本评估**：
+- 涉及文件：~1 个（`memoryService.ts`）
+- 新增代码：~30 行
+- 开发周期：~0.5 天
+- 难点：接近但不完全相同的内容（例如只差一个换行）是否应该去重——建议**只去重完全相同**的，避免误判
+
+**改进前后对比**：
+- **改进前**：用户把 "always use TypeScript strict mode" 同时写在 `~/.qwen/QWEN.md` 和 `<project>/QWEN.md`，两遍都进 prompt
+- **改进后**：SHA-256 检测发现相同，只保留项目级的那份，节省上下文
+
+**意义**：用户习惯复制粘贴指令，去重是零风险的 context 节约。
+**缺失后果**：重复的 1KB × 每次 API 调用 = 长会话累积数十 KB 浪费。
+**改进收益**：零配置、零风险的 context 节约，顺便提升 prompt cache 命中率（较短的 system prompt 更容易命中）。
+
+---

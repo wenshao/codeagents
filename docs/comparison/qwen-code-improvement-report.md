@@ -99,6 +99,7 @@
 | **P2** | [Computer Use](./computer-use-deep-dive.md) — macOS 截图 + 鼠标/键盘 + 剪贴板，通过 MCP 桥接 [↓](./qwen-code-improvement-report-p2-core.md#item-6) | 缺失 | 大 | — ⚠️ **Claude Code 侧默认禁用（`tengu_malort_pedway` gate），降级建议** |
 | **P2** | [Deep Link](./deep-link-protocol-deep-dive.md) — `claude-cli://` 一键从浏览器/IDE 启动 Agent + 预填充 prompt [↓](./qwen-code-improvement-report-p2-core.md#item-11) | 缺失 | 中 | — ⚠️ **Claude Code 侧默认禁用（`tengu_lodestone_enabled` gate），降级建议** |
 | **P2** | [`/context` 非交互输出](./context-usage-noninteractive-deep-dive.md) — 将上下文诊断暴露给脚本、CI 与外部控制器 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-20) | 仅交互式 | 小 | [PR#2916](https://github.com/QwenLM/qwen-code/pull/2916) / [PR#3042](https://github.com/QwenLM/qwen-code/pull/3042) ✓ |
+| **P3** | 大粘贴内容自动存到工作区文件 — 粘贴 >30KB 内容自动外化到 tmp 文件 + 输入框显示引用（Copilot CLI v0.0.397 参考） [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-21) | 直接进 prompt | 小 | — |
 | **P1** | [Team Memory](./team-memory-deep-dive.md) — 团队共享项目知识 + 29 条 gitleaks 密钥扫描 + ETag 同步 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-10) | 缺失 | 大 | — |
 | **P2** | [Plan 模式 Interview](./plan-mode-interview-deep-dive.md) — 先澄清需求再形成计划，分离访谈/规划/执行阶段 [↓](./qwen-code-improvement-report-p2-core.md#item-12) | 无 interview 阶段 | 中 | — |
 | **P2** | [BriefTool 异步用户消息](./brieftool-async-user-messages-deep-dive.md) — Agent 主动发消息/附件给用户，不阻塞当前工具执行 [↓](./qwen-code-improvement-report-p2-core.md#item-13) | 缺失 | 中 | — |
@@ -125,6 +126,7 @@
 | **P2** | PreCompact Hook — 压缩前钩子，支持 block/modify/continue（Claude Code v2.1.105 新增） [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-23) | 仅 PostCompact | 小 | — |
 | **P2** | 模型通过 Skill 工具调用内置 Slash 命令 — Agent 自主调用 `/init` / `/review` / `/security-review`（v2.1.108 新增） [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-24) | 用户手动触发 | 中 | — |
 | **P3** | Statusline Refresh Interval — 按秒级间隔重跑 statusline 脚本（v2.1.97 新增） [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-25) | 仅状态变化时刷新 | 小 | — |
+| **P2** | `/experimental` 实验特性统一门控 — 统一注册表 + `/experimental list` + `--experimental <id>` flag（Copilot CLI v0.0.396 参考） [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-26) | 实验特性分散在 env var / settings / 命令参数 | 中 | — |
 | **P2** | Chrome Extension — 调试 live web 应用（读 DOM/Console/Network）[↓](./qwen-code-improvement-report-p2-tools-commands.md#item-5) | 缺失 | 中 | — |
 | **P2** | [MCP Auto-Reconnect](./mcp-auto-reconnect-deep-dive.md) — 连续 3 次错误自动重连 + SSE 断线恢复 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-13) | 缺失 | 小 | — |
 | **P2** | Tool Result 大小限制 — 超限结果持久化到磁盘，发文件路径给模型 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-14) | 缺失 | 小 | — |
@@ -221,6 +223,7 @@
 | **P2** | Shell AST 解析缓存 — 同一命令 2 次解析→Map 缓存 [↓](./qwen-code-improvement-report-p2-perf.md#item-32) | 每次重新解析 | 小 | — |
 | **P2** | 终端输出浅比较 — JSON.stringify O(n)→浅比较 O(1) + 脏行范围 [↓](./qwen-code-improvement-report-p2-perf.md#item-33) | JSON.stringify 深比较 | 小 | — |
 | **P2** | Diff 渲染 useMemo — parseDiff 缓存 + Regex 模块级预编译 [↓](./qwen-code-improvement-report-p2-perf.md#item-34) | 每帧重新解析 | 小 | — |
+| **P2** | 自定义指令文件去重 — 多层 QWEN.md 相同内容只保留一份，节省 context（Copilot CLI v0.0.394 参考） [↓](./qwen-code-improvement-report-p2-perf.md#item-35) | 直接拼接，重复也计入 | 小 | — |
 | **P2** | 远程触发器 REST API — CRUD 定时远程 Agent + 云端 CCR 执行 [↓](./qwen-code-improvement-report-p2-stability.md#item-19) | 仅会话内 cron | 中 | — |
 | **P2** | [SDK 双向控制协议](./sdk-bidirectional-control-deep-dive.md) — 权限回调 + 模型切换 + MCP 管理 + 文件回退 [↓](./qwen-code-improvement-report-p2-stability.md#item-20) | 基础 canUseTool 回调 | 中 | — |
 | **P2** | [CI 环境自动检测](./ci-environment-detection-deep-dive.md) — GitHub Actions/CircleCI/Jenkins 检测 + 上下文提取 [↓](./qwen-code-improvement-report-p2-stability.md#item-21) | 仅通用 CI 变量 | 小 | — |
@@ -254,6 +257,7 @@
 | **P3** | [/extra-usage 企业用量管理](./enterprise-usage-management-deep-dive.md) [↓](./qwen-code-improvement-report-p3-features.md#item-14) | 仅 /cost | 中 | — |
 | **P3** | [/rate-limit-options 限速选项菜单](./rate-limit-options-deep-dive.md) [↓](./qwen-code-improvement-report-p3-features.md#item-15) | 仅错误消息 | 小 | — |
 | **P3** | [/remote-setup CCR 远程环境设置](./remote-ccr-setup-deep-dive.md) [↓](./qwen-code-improvement-report-p3-features.md#item-16) | 无远程配置 | 中 | — |
+| **P3** | `--config-dir` CLI flag — 覆盖 `~/.qwen/` 配置目录（CI/多租户/DevContainer 场景，Copilot CLI v0.0.382 参考） [↓](./qwen-code-improvement-report-p3-features.md#item-17) | 仅 `QWEN_HOME` env var（PR#2953 open） | 小 | — |
 | **P3** | [Virtual Scrolling 虚拟滚动](./virtual-scrolling-deep-dive.md) — 仅渲染可视区域消息 [↓](./qwen-code-improvement-report-p3-ux.md#item-1) | 全量渲染 | 中 | — |
 | **P3** | [Feedback Survey 用户反馈](./feedback-survey-deep-dive.md) — 内置 /feedback 评分+文字表单 [↓](./qwen-code-improvement-report-p3-ux.md#item-2) | 无内置反馈 | 小 | — |
 | **P3** | [Turn Diffs 轮次差异统计](./turn-diffs-deep-dive.md) — 每轮变更文件数+增删行数汇总 [↓](./qwen-code-improvement-report-p3-ux.md#item-3) | 仅 per-file diff | 小 | — |
@@ -309,11 +313,11 @@
 | [P0/P1 平台集成](./qwen-code-improvement-report-p0-p1-platform.md) | GitHub Actions CI、Code Review、SDK、Remote Control Bridge、GitLab 等 | 9 |
 | [P0/P1 引擎优化](./qwen-code-improvement-report-p0-p1-engine.md) | 流式执行、缓存、Token 管理、崩溃恢复、Agent 编排、上下文管理、安全等 | 27 |
 | [P2 核心功能与企业特性](./qwen-code-improvement-report-p2-core.md) | 中等优先级（Shell 安全、MDM 企业策略、Token 计数、Computer Use、AgentScope Plan/A2A/OTel 参考等） | 26 |
-| [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退、Skill 模型覆盖、PreCompact Hook、模型调用 Slash 命令等） | 25 |
-| [P2 界面与 UX](./qwen-code-improvement-report-p2-tools-ui.md) | 中等优先级（Token 警告、Spinner、/rewind、Diff 渲染、/plan 等） | 20 |
-| [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并等） | 34 |
+| [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退、Skill 模型覆盖、PreCompact Hook、模型调用 Slash 命令、/experimental 门控等） | 26 |
+| [P2 界面与 UX](./qwen-code-improvement-report-p2-tools-ui.md) | 中等优先级（Token 警告、Spinner、/rewind、Diff 渲染、/plan、大粘贴外化等） | 21 |
+| [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并、指令文件去重等） | 35 |
 | [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap 等） | 43 |
-| [P3 功能特性](./qwen-code-improvement-report-p3-features.md) | 低优先级功能特性（动态状态栏、Feature Gates、Vim、语音、插件市场等） | 16 |
+| [P3 功能特性](./qwen-code-improvement-report-p3-features.md) | 低优先级功能特性（动态状态栏、Feature Gates、Vim、语音、插件市场、--config-dir 等） | 17 |
 | [P3 用户体验](./qwen-code-improvement-report-p3-ux.md) | 低优先级用户体验（Virtual Scrolling、Turn Diffs、Buddy、settingsSync 等） | 9 |
 | [P3 Hook 与组件](./qwen-code-improvement-report-p3-hooks.md) | 低优先级 Hook 与组件（useInboxPoller、AgentSummary、usePrStatus 等） | 33 |
 
@@ -423,6 +427,45 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-17（Copilot CLI 0.0.381 → 0.0.402 更新扫描）
+
+扫描 GitHub Copilot CLI v0.0.381 到 v0.0.402 的 `changelog.json`（22 个版本，来自 `@github/copilot@0.0.403` 本地 npm 包 + `github/copilot-cli` GitHub 仓库 releases），识别 Qwen Code 可借鉴的新能力。本次排除了已被 Qwen Code 覆盖的特性（如 `/review`、`/resume`、`/yolo`、plan mode、shell parallel、MCP OAuth）。
+
+**新增追踪（4 项）**：
+
+| # | 功能 | Copilot CLI 版本 | 审查 |
+|---|---|---|---|
+| [p2-tools-commands item-26](./qwen-code-improvement-report-p2-tools-commands.md#item-26) | **`/experimental` 实验特性统一门控** | v0.0.396 | ✅ Copilot 提供了统一注册表，优于 Qwen 目前 env var/settings 分散配置 |
+| [p2-perf item-35](./qwen-code-improvement-report-p2-perf.md#item-35) | **自定义指令文件 SHA-256 去重** | v0.0.394 | ✅ 零风险 context 节约 |
+| [p2-tools-ui item-21](./qwen-code-improvement-report-p2-tools-ui.md#item-21) | **大粘贴内容自动存到工作区文件**（>30KB） | v0.0.397 | ✅ 具体 UX 痛点修复 |
+| [p3-features item-17](./qwen-code-improvement-report-p3-features.md#item-17) | **`--config-dir` CLI flag** | v0.0.382 | ✅ CI/多租户场景原生支持，补 PR#2953 `QWEN_HOME` env var |
+
+**观察到但不追踪**（Qwen Code 已覆盖或不适用）：
+
+| Copilot 新特性 | 不追踪原因 |
+|---|---|
+| Autopilot mode（v0.0.400, experimental） | Anthropic/Claude Code 已有 Auto mode，qwen-code `/loop` 类似方向 |
+| `/review`（v0.0.388） | Qwen Code 已有（PR#2932 等，见 platform item-2）|
+| `/resume`（v0.0.386）、`/yolo`（v0.0.381）、`/init`（v0.0.396）、`/rename`（v0.0.392）| Qwen Code 已有 |
+| OAuth MCP（v0.0.389）、MCP 插件分发（v0.0.389）| Qwen Code MCP 基础已有 |
+| `/delegate` / `&` 前缀后台（v0.0.384/v0.0.394）| Qwen Code 已有 PR#3076 Agent run_in_background |
+| `/diff` + Esc-Esc 回退（v0.0.395/v0.0.399）| 重叠 p2-core item-10 文件历史快照 + PR#3292 session rewind |
+| LSP 工具（v0.0.399, experimental）| Qwen Code LSP 已 7,422 行（见 opencode 对比 item-16） |
+| **移除捆绑 LSP**（v0.0.400）| Qwen 方向相反：PR#3170 正在加强 LSP，Copilot 的这个决策不适合借鉴 |
+| Extended thinking for Claude（v0.0.384）| Provider 特定功能 |
+| MSI installer（v0.0.389）| 安装器工具链，非核心能力 |
+
+**排除（伪需求审查）**：
+
+- Copilot CLI changelog 中未发现明显 gated 特性（相比 Claude Code 的 `tengu_*` 或 `USER_TYPE === 'ant'` 模式）
+- 大部分新特性是**直接可用**的 stable 功能，Copilot CLI 的门控方式更宽松（`/experimental` 主动 opt-in）
+
+**有趣的反向观察**（Copilot 做了 Qwen/Claude 没做的**减法**）：
+
+- v0.0.400 **移除捆绑 LSP servers**（TypeScript、Python）—— 从"大而全"改为"按需外部调用"。值得注意的是 Qwen Code/Claude Code 都在加强 LSP（Qwen Code LSP 7,422 行 vs Copilot 移除）。这是架构哲学差异，不必盲目跟随。
+
+**总项数**：256 → **260**（+4），p2-tools-commands 25→26，p2-perf 34→35，p2-tools-ui 20→21，p3-features 16→17。
 
 ### 2026-04-17（Claude Code 2.1.82 → 2.1.112 更新扫描）
 
