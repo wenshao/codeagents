@@ -122,6 +122,9 @@
 | **P2** | [/batch 并行操作](./batch-parallel-execution-deep-dive.md) — 编排大规模并行变更（多文件/多任务）[↓](./qwen-code-improvement-report-p2-tools-commands.md#item-4) | 缺失 | 中 | [PR#3079](https://github.com/QwenLM/qwen-code/pull/3079) |
 | **P2** | PDF / 二进制文件读取 — read_file 内置 PDF + 图片 + Notebook 支持 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-21) | 拒绝 PDF（[#2024](https://github.com/QwenLM/qwen-code/pull/2024)） | 中 | [Issue#38](https://github.com/QwenLM/qwen-code/issues/38) |
 | **P2** | Skill 级模型覆盖 — SKILL.md frontmatter `model:` 字段，按阶段切换模型 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-22) | 仅 session 级 | 小 | [PR#2949](https://github.com/QwenLM/qwen-code/pull/2949) ✓ |
+| **P2** | PreCompact Hook — 压缩前钩子，支持 block/modify/continue（Claude Code v2.1.105 新增） [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-23) | 仅 PostCompact | 小 | — |
+| **P2** | 模型通过 Skill 工具调用内置 Slash 命令 — Agent 自主调用 `/init` / `/review` / `/security-review`（v2.1.108 新增） [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-24) | 用户手动触发 | 中 | — |
+| **P3** | Statusline Refresh Interval — 按秒级间隔重跑 statusline 脚本（v2.1.97 新增） [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-25) | 仅状态变化时刷新 | 小 | — |
 | **P2** | Chrome Extension — 调试 live web 应用（读 DOM/Console/Network）[↓](./qwen-code-improvement-report-p2-tools-commands.md#item-5) | 缺失 | 中 | — |
 | **P2** | [MCP Auto-Reconnect](./mcp-auto-reconnect-deep-dive.md) — 连续 3 次错误自动重连 + SSE 断线恢复 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-13) | 缺失 | 小 | — |
 | **P2** | Tool Result 大小限制 — 超限结果持久化到磁盘，发文件路径给模型 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-14) | 缺失 | 小 | — |
@@ -159,6 +162,8 @@
 | **P2** | 运行时任务模型 — 区分 work-graph task（持久目标）vs runtime task（执行槽），防止状态混淆 [↓](./qwen-code-improvement-report-p2-stability.md#item-39) | 仅 TodoWriteTool | 中 | — |
 | **P2** | 后台通知 drain-before-call — LLM 调用前排空后台任务通知队列，确保模型看到最新结果 [↓](./qwen-code-improvement-report-p2-stability.md#item-40) | 无通知排空 | 小 | — |
 | **P2** | 压缩后身份重注入 — 上下文压缩后 messages<3 条时注入 Agent 身份块，防止 Agent "忘记自己是谁" [↓](./qwen-code-improvement-report-p2-stability.md#item-41) | 无身份重注入 | 小 | — |
+| **P2** | 子进程 PID 命名空间沙箱 + 脚本次数限制 — Linux PID namespace + env scrub + SCRIPT_CAPS（v2.1.98 新增） [↓](./qwen-code-improvement-report-p2-stability.md#item-42) | 无 PID 隔离 | 中 | — |
+| **P2** | 会话 Recap（返回时上下文摘要）— `/recap` 命令 + 自动展示（v2.1.108/v2.1.110 新增）[↓](./qwen-code-improvement-report-p2-stability.md#item-43) | 无 recap | 小 | — |
 | **P2** | 终端渲染优化 — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 | 大 | — |
 | **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-9) | 缺失 | 小 | — |
 | **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-10) | 缺失 | 小 | — |
@@ -304,10 +309,10 @@
 | [P0/P1 平台集成](./qwen-code-improvement-report-p0-p1-platform.md) | GitHub Actions CI、Code Review、SDK、Remote Control Bridge、GitLab 等 | 9 |
 | [P0/P1 引擎优化](./qwen-code-improvement-report-p0-p1-engine.md) | 流式执行、缓存、Token 管理、崩溃恢复、Agent 编排、上下文管理、安全等 | 27 |
 | [P2 核心功能与企业特性](./qwen-code-improvement-report-p2-core.md) | 中等优先级（Shell 安全、MDM 企业策略、Token 计数、Computer Use、AgentScope Plan/A2A/OTel 参考等） | 26 |
-| [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退、Skill 模型覆盖等） | 22 |
+| [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退、Skill 模型覆盖、PreCompact Hook、模型调用 Slash 命令等） | 25 |
 | [P2 界面与 UX](./qwen-code-improvement-report-p2-tools-ui.md) | 中等优先级（Token 警告、Spinner、/rewind、Diff 渲染、/plan 等） | 20 |
 | [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并等） | 34 |
-| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描等） | 41 |
+| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap 等） | 43 |
 | [P3 功能特性](./qwen-code-improvement-report-p3-features.md) | 低优先级功能特性（动态状态栏、Feature Gates、Vim、语音、插件市场等） | 16 |
 | [P3 用户体验](./qwen-code-improvement-report-p3-ux.md) | 低优先级用户体验（Virtual Scrolling、Turn Diffs、Buddy、settingsSync 等） | 9 |
 | [P3 Hook 与组件](./qwen-code-improvement-report-p3-hooks.md) | 低优先级 Hook 与组件（useInboxPoller、AgentSummary、usePrStatus 等） | 33 |
@@ -418,6 +423,46 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-17（Claude Code 2.1.82 → 2.1.112 更新扫描）
+
+扫描 Claude Code v2.1.82 到 v2.1.112 的 CHANGELOG（30 个版本，涵盖 2 月时间窗口），识别 Qwen Code 可借鉴的新能力。系统性地检查每个新特性的**源码门控**（避免 item-22/item-20 那样的伪需求），**已验证 5 项值得追踪 + 1 项排除**：
+
+**新增追踪（5 项，各 item 含 ⚠️ 伪需求审查结果）**：
+
+| # | 功能 | 优先级 | Claude Code 来源 | 审查 |
+|---|---|---|---|---|
+| [p2-tools-commands item-23](./qwen-code-improvement-report-p2-tools-commands.md#item-23) | **PreCompact Hook**（压缩前钩子） | P2 | v2.1.105 `commands/compact/compact.ts` `executePreCompactHooks()` | ✅ 真实能力，与现有 PostCompact 对称 |
+| [p2-tools-commands item-24](./qwen-code-improvement-report-p2-tools-commands.md#item-24) | **模型通过 Skill 工具调用内置 Slash 命令** | P2 | v2.1.108 "The model can now discover and invoke built-in slash commands like `/init`, `/review`, and `/security-review` via the Skill tool" | ✅ 真实能力 |
+| [p2-tools-commands item-25](./qwen-code-improvement-report-p2-tools-commands.md#item-25) | **Statusline Refresh Interval** | P3 | v2.1.97 `refreshInterval` setting | ✅ 真实能力，扩展 PR#2923 |
+| [p2-stability item-42](./qwen-code-improvement-report-p2-stability.md#item-42) | **子进程 PID 命名空间沙箱 + 脚本次数限制** | P2 | v2.1.98 `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` + `CLAUDE_CODE_SCRIPT_CAPS` | ✅ 真实能力（env var 控制不是 gate） |
+| [p2-stability item-43](./qwen-code-improvement-report-p2-stability.md#item-43) | **会话 Recap（返回时上下文摘要）** | P2 | v2.1.108 `/recap` + v2.1.110 auto-show; `services/awaySummary.ts` | ✅ 真实能力 |
+
+**排除（1 项，伪需求审查发现）**：
+
+- **`/ultrareview`**（v2.1.111）— "cloud parallel multi-agent review"。**源码 `commands/review/ultrareviewEnabled.ts:13` 验证是 `tengu_review_bughunter_config.enabled === true` 门控**（GrowthBook feature flag，默认 false）。当前是**实验性功能对外不可用**——同 item-22/item-20 一类伪需求，**不作为 Qwen Code 改进目标**。
+
+**观察到但暂不追踪（合理理由）**：
+
+| 新功能 | 为何不追踪 |
+|---|---|
+| `/effort` slider + `xhigh` 等级（v2.1.111） | Anthropic Opus 4.7 specific，不适用于多 provider 的 Qwen Code |
+| PowerShell tool（v2.1.111） | 平台特定（Windows），Bash 工具已覆盖多数场景 |
+| Auto mode（v2.1.111） | Anthropic Max 订阅专属，模型特定 |
+| `/tui fullscreen`（v2.1.110） | 已有 PR#3013 SlicingMaxSizedBox 追踪防闪烁 |
+| `/focus` command（v2.1.110） | 可合并到现有 UI 相关 item 作为增强 |
+| `/team-onboarding`（v2.1.101） | 较专一的用例（团队协作），低优先级 |
+| OS CA cert 默认信任（v2.1.101） | 已被 p2-core item-19 企业代理覆盖 |
+| `/powerup` 交互式教程（v2.1.90） | UX 糖衣，不是核心能力 |
+| PID namespace (v2.1.98) | ✅ 已追踪（item-42） |
+| WebFetch strip `<style>/<script>`（v2.1.105） | 微优化，可合并到 Web 工具文档 |
+| Skill description cap 1536（v2.1.105） | 已有 Skill 相关 items 可合并 |
+| Plugin `bin/` executables（v2.1.91） | 已有 plugin 相关 item（OpenCode 对比中） |
+| Session memory auto-discovery + auto-dream | 已追踪（item-4 / item-5 / PR#3087） |
+
+**总项数**：251 → **256**（+5），p2-tools-commands 22→25，p2-stability 41→43。
+
+**审查规则强化**：Claude Code 2.1.82→2.1.112 的 CHANGELOG 是未来**每次版本升级都该做的例行审查源**——新能力可能是**真实功能**或**gated 伪需求**，必须逐项检查源码门控（`tengu_*` GrowthBook flag / `USER_TYPE === 'ant'` / `CLAUDE_CODE_EXPERIMENTAL_*` 等）才能判断。
 
 ### 2026-04-16（伪需求删除：ConfigTool）
 

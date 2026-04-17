@@ -780,3 +780,92 @@ allowed-tools: [read_file, grep]
 **后续**：跨 provider 切换在 follow-up PR。
 
 ---
+
+<a id="item-23"></a>
+
+### 23. PreCompact Hook（压缩前钩子，P2）
+
+**来源**：Claude Code v2.1.105 新增。
+
+**问题**：当前 Qwen Code Hook 系统（PR#2827 已合并）覆盖了会话生命周期的大多数事件——`SessionStart`/`SessionEnd`、`UserPromptSubmit`、`PreToolUse`/`PostToolUse`、`PostCompact`、`StopFailure` 等——但**缺少 `PreCompact` 事件**。用户希望在**压缩执行前**介入：保存未压缩的 transcript 快照、打标签、或直接阻止压缩（如正在 review 的长对话不希望丢失细节）。
+
+**Claude Code 的方案**（v2.1.105）：`PreCompact` hook 在 `compact.ts` 中通过 `executePreCompactHooks()` 在压缩开始前**同步调用**。Hook 可以：
+
+- 返回 `{"decision":"block"}` 或退出码 2 **阻止**压缩
+- 返回 `userDisplayMessage` 作为压缩前的提示
+- 与 `PostCompact` hook 配对工作（两者的 `userDisplayMessage` 合并显示）
+
+源码索引：
+- `commands/compact/compact.ts` — `executePreCompactHooks({ trigger: 'manual', customInstructions })` 调用位置
+- `utils/hooks.ts` — hook 执行逻辑
+
+**Qwen Code 现状**：PR#2825 合并了 `StopFailure` + `PostCompact` 两个新事件，但未包括 `PreCompact`。
+
+**Qwen Code 修改方向**：① `hooks/` 系统新增 `PreCompact` 事件类型（参考 `PostCompact` 已有实现）；② `chatCompressionService.ts` 压缩前触发该 hook；③ 支持 block / continue / modify 三种决策；④ 用户可通过 `settings.json` 注册 PreCompact hook 保存快照。
+
+**实现成本**：
+- 涉及文件：~3 个（`hooks.ts` 新事件类型、`chatCompressionService.ts` 触发点、schema）
+- 新增代码：~100 行
+- 开发周期：~1 天
+- 前置：PR#2827 Hook 系统（已合并）
+
+**意义**：压缩是**破坏性操作**——旧消息被摘要替代，细节永久丢失。用户应有机会在压缩前介入（快照、阻止、或加 metadata）。
+**缺失后果**：长对话自动压缩时无法拦截，review 一半的会话可能在关键节点被压缩导致细节丢失。
+**改进收益**：完整的 Hook 生命周期 = Pre+Post 双向对称，任意阶段可介入。
+
+---
+
+<a id="item-24"></a>
+
+### 24. 模型通过 Skill 工具调用内置 Slash 命令（P2）
+
+**来源**：Claude Code v2.1.108 新增。
+
+**问题**：Agent 执行任务时，如果想调用 `/init` 初始化项目、`/review` 审查代码、`/security-review` 做安全扫描——当前只能**建议用户手动执行**，不能自己触发。这让复杂工作流（例如"先 init 再 review"）难以自动化。
+
+**Claude Code v2.1.108 的方案**：允许模型通过 **Skill 工具** 发现并调用内置 slash 命令。原 changelog：
+
+> The model can now discover and invoke built-in slash commands like `/init`, `/review`, and `/security-review` via the Skill tool
+
+机制：
+- 每个内置 slash 命令暴露为 Skill（有 name + description + 调用约定）
+- 模型在 reasoning 中可以 `skill_manage(action="invoke", name="review")`
+- Skill 工具内部转成对应 slash 命令执行
+
+**Qwen Code 现状**：内置命令（`/review`、`/plan` 等）只能由用户输入触发，Agent 不能自主调用。bundled skill `/review` 存在但也是用户触发型。
+
+**Qwen Code 修改方向**：
+1. `commandRegistry.ts` 为每个内置命令添加 `exposeAsSkill: boolean` 元数据
+2. Skill 发现机制扫描 `exposeAsSkill: true` 的命令，自动注册为 Skill
+3. Skill 调用时通过内部 `executeCommand(name, args)` 转发到 command handler
+4. 安全考量：仅允许**只读/分析**类命令（`/review`、`/security-review`、`/stats`），禁止破坏性命令（`/clear`、`/exit`）
+
+**实现成本**：
+- 涉及文件：~4 个
+- 新增代码：~250 行
+- 开发周期：~3 天
+- 难点：Skill invocation → command execution 的参数传递 + 权限检查
+
+**意义**：让 Agent 能组合内置命令是 **agentic workflow** 的核心——用户说"帮我做个完整的 code review"，Agent 自己决定调用 `/init`（若未初始化）→ `/review` → `/security-review`。
+**缺失后果**：复杂工作流必须用户手动编排，Agent 能力天花板低。
+**改进收益**：Agent 可组合内置命令 = 从"执行单任务"升级为"编排工作流"。
+
+---
+
+<a id="item-25"></a>
+
+### 25. Refresh Interval Statusline（P3）
+
+**来源**：Claude Code v2.1.97 新增 `refreshInterval` statusline setting。
+
+**问题**：当前 statusline（PR#2923 已合并）只在 Agent 状态变化时刷新。如果 statusline 显示的是**外部数据**（Git branch、剩余配额、时间、系统负载），这些数据不会自动刷新。
+
+**Claude Code 的方案**：statusline 配置新增 `refreshInterval` 字段，允许按秒级间隔**主动**重跑 statusline 脚本。
+
+**Qwen Code 修改方向**：PR#2923 的 statusline 实现基础上，在 settings 中添加 `statusline.refreshInterval: number` 字段（单位秒，0 = 禁用）。使用 `setInterval()` 定期触发 statusline 重跑。
+
+**实现成本**：~2 小时（极小改动，扩展 PR#2923 基础）
+
+**意义**：让 statusline 成为**实时仪表盘**（时间/配额/构建状态）而不仅是当前 Agent 状态显示。
+
+---
