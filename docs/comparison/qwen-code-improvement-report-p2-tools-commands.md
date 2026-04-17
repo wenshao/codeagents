@@ -868,6 +868,8 @@ allowed-tools: [read_file, grep]
 
 **意义**：让 statusline 成为**实时仪表盘**（时间/配额/构建状态）而不仅是当前 Agent 状态显示。
 
+**进展**：[PR#3383](https://github.com/QwenLM/qwen-code/pull/3383)（open，2026-04-17）— `feat(cli): support refreshInterval in statusLine for periodic refresh`。实现方向与本 item 建议一致，已进入 review。
+
 ---
 
 <a id="item-26"></a>
