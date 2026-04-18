@@ -1409,29 +1409,83 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 
 **问题**：用户离开几天再打开一个旧会话，往往需要滚动几页才能想起**"我上次在做什么"**。当前 Qwen Code `/resume` 仅重新加载消息，不主动给用户一个"回忆"。
 
-**Claude Code 的方案**（v2.1.108 `/recap` 命令 + v2.1.110 自动展示）：
+**Claude Code 版本时间线**：
 
-- 返回 session 时自动展示 recap（1-3 句话总结"高层任务 + 下一步"）
-- 手动触发 `/recap` 命令
-- 使用**轻量级 small-fast-model**（Haiku）总结最近 30 条消息
-- 集成 session memory（如果启用）获得更广的上下文
-- 遥测禁用的用户也默认启用（用 `CLAUDE_CODE_ENABLE_AWAY_SUMMARY=0` 禁用）
+| 版本 | 变化 |
+|---|---|
+| **v2.1.108** | **首次引入**：`/recap` slash 命令 + 自动展示。可在 `/config` 配置；`CLAUDE_CODE_ENABLE_AWAY_SUMMARY` env var 强制开启（遥测禁用时） |
+| **v2.1.110** | 1) **Bedrock / Vertex / Foundry / `DISABLE_TELEMETRY` 用户也默认启用**（用 `CLAUDE_CODE_ENABLE_AWAY_SUMMARY=0` 退出）<br>2) 修复 recap 在 focus mode 下不显示的问题 |
 
-源码（Claude Code）：
-- `services/awaySummary.ts` — `buildAwaySummaryPrompt()`、`RECENT_MESSAGE_WINDOW = 30`
+**两种触发方式**：
+
+| 类型 | 条件 | 实现 |
+|---|---|---|
+| **自动** | 终端失焦 ≥ 5 分钟（DECSET 1004 焦点协议） + 当前无 turn + 上次 user turn 后还没出现过 recap | `hooks/useAwaySummary.ts`，5 min 计时 + 焦点回归时 abort |
+| **手动** | `/recap` 命令 | 直接调用同一 `generateAwaySummary()` |
+
+**UI 表现**（用户实际看到的"输入框上方一行 dim color 信息"）：
+
+源码 `components/messages/SystemTextMessage.tsx:69-85`：
+
+```tsx
+if (message.subtype === "away_summary") {
+  return <Box minWidth={2}>
+    <Text dimColor={true}>{REFERENCE_MARK}</Text>
+    <Text dimColor={true}>{message.content}</Text>
+  </Box>
+}
+```
+
+- ✅ **dimColor=true**（灰暗色）—— 视觉上明确区分于 Agent 正常回复
+- ✅ **REFERENCE_MARK** 引用符号前缀
+- ✅ 1-3 句话精简内容
+
+**核心实现**（源码 `services/awaySummary.ts`，74 行）：
+
+```typescript
+const RECENT_MESSAGE_WINDOW = 30  // 最近 30 条消息
+
+function buildAwaySummaryPrompt(memory: string | null): string {
+  return `${memoryBlock}The user stepped away and is coming back.
+Write exactly 1-3 short sentences. Start by stating the high-level task
+— what they are building or debugging, not implementation details.
+Next: the concrete next step.
+Skip status reports and commit recaps.`
+}
+```
+
+**关键设计点**：
+
+| 要素 | 设计 | 理由 |
+|---|---|---|
+| **模型** | `getSmallFastModel()` —— Haiku | 摘要任务无需 Frontier 模型 |
+| **窗口** | 最近 30 条消息（≈15 个 user-assistant 对） | 防止"prompt too long" |
+| **Memory 集成** | 注入 SessionMemory 作为 broader context | 让摘要包含项目背景知识 |
+| **Tools** | `tools: []`（**禁用工具调用**） | 摘要是纯文本生成 |
+| **Thinking** | `disabled` | 简单任务不需要扩展推理 |
+| **Cache** | `skipCacheWrite: true` | 一次性查询不污染 prompt cache |
+| **错误处理** | 静默失败（`return null`） | 即使 API 故障也不打断主流程 |
+
+**Prompt 工程要点**（明确禁止 3 类 LLM 倾向）：
+- ❌ "implementation details"（不要罗列做了什么）
+- ❌ "status reports"（不要"已完成 X / 进行中 Y"流水账）
+- ❌ "commit recaps"（不要 git log 复述）
+- ✅ **要求**："**high-level task**" → "**concrete next step**"
 
 **Qwen Code 现状**：`/resume` 仅加载消息，无 recap 机制。PROJECT_SUMMARY.md 提供了类似能力但是人工维护。
 
 **Qwen Code 修改方向**：
-1. 新建 `services/sessionRecap.ts`：输入最近 N 条消息 + 可选 memory block，调用 fastModel（[PR#3120 已合并](https://github.com/QwenLM/qwen-code/pull/3120) 已有 fastModel 选择器）生成 1-3 句摘要
-2. `/resume` 切换会话后自动显示 recap（默认开启，可配置 `showSessionRecap: false`）
-3. 新建 `/recap` 命令手动触发
-4. Recap prompt 模板：高层任务 → 下一步，不做状态汇报和 commit 摘要
+1. **新建 `services/sessionRecap.ts`**：输入最近 30 条消息 + 可选 memory block，调用 fastModel（[PR#3120 已合并](https://github.com/QwenLM/qwen-code/pull/3120) 已有 fastModel 选择器）生成 1-3 句摘要
+2. **新建 `hooks/useAwaySummary.ts`** 等价物：5 min blur 计时 + DECSET 1004 焦点协议监听 + 焦点回归 abort
+3. **`/resume` 切换会话后自动显示 recap**（默认开启，可配置 `showSessionRecap: false`）
+4. **新建 `/recap` 命令手动触发**
+5. **UI**：dim color + 引用符号前缀，区别于 Agent 回复（参考 `components/messages/SystemTextMessage.tsx`）
+6. Recap prompt 模板：高层任务 → 下一步，**禁止 status reports / commit recaps**
 
 **实现成本评估**：
-- 涉及文件：~3 个
-- 新增代码：~150 行
-- 开发周期：~2 天
+- 涉及文件：~5 个（`services/sessionRecap.ts` + `hooks/useAwaySummary.ts` + `commands/recap.ts` + `SystemTextMessage` UI 扩展 + settings）
+- 新增代码：~250 行
+- 开发周期：~3 天
 - 前置：[PR#3120](https://github.com/QwenLM/qwen-code/pull/3120) fastModel 配置（已合并）
 
 **意义**：返回旧会话的体验直接影响**长项目的用户粘性**——想不起上次做什么就容易放弃。
