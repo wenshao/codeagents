@@ -428,6 +428,20 @@
 
 ## 六、更新日志
 
+### 2026-04-18（晚间第三次补更）
+
+自下午扫描（17:00 UTC）至晚间（19:30 UTC），qwen-code 合并节奏显著放缓——仅 **1 个维护性 PR**：
+
+- [PR#3237](https://github.com/QwenLM/qwen-code/pull/3237) ✓ 19:14 UTC — `fix(build): invoke tsx directly via node --import instead of npx`（构建工具链优化，减少 npx 间接层）
+
+**新开 PR**（观察）：
+
+- [PR#3429](https://github.com/QwenLM/qwen-code/pull/3429) — `fix(cli): let /btw use live conversation context`（`/btw` 侧问题的上下文修复，延续 PR#3428 dismiss 方向）
+
+**观察**：合并节奏从全天 15+ PR 的高峰回落到单一维护性合并，符合发布前**清理收尾**的典型模式。结合 PR#3298 bumped version to 0.14.5（昨日合并），推测新版本即将发布。
+
+**计数**：已合并 ✓ **57**（不变，PR#3237 是维护性合并不计入矩阵追踪）。
+
 ### 2026-04-18（下午第二次补更）
 
 继续扫描 qwen-code PR（updated > 上午 05:00 UTC）：
