@@ -428,6 +428,35 @@
 
 ## 六、更新日志
 
+### 2026-04-18（次日清晨补更）
+
+夜间到清晨 qwen-code 又合并了大量 PR：
+
+**追踪范围内的合并**（4 个之前已纳入观察的 PR）：
+
+- [PR#3178](https://github.com/QwenLM/qwen-code/pull/3178) ✓ **2026-04-18 02:24 UTC** — `detect tool validation retry loops and inject stop directive`（**循环检测增强**，防止 schema 验证失败时模型无限重试）
+- [PR#3297](https://github.com/QwenLM/qwen-code/pull/3297) ✓ **2026-04-18 02:31 UTC** — `tool-registry: add lazy factory registration with inflight concurrency dedup`（**工具注册表性能优化**：懒加载工厂 + 并发去重）
+- [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓ **2026-04-18 00:02 UTC** — `reduce terminal redraw cursor movement`（终端重绘性能）
+- [PR#3407](https://github.com/QwenLM/qwen-code/pull/3407) ✓ **2026-04-18 02:03 UTC** — `auto-submit on number key press in AskUserQuestionDialog`
+
+**维护性合并**（11 个，无对应矩阵 item，仅记录）：
+
+- [PR#2962](https://github.com/QwenLM/qwen-code/pull/2962) ✓ sandbox 镜像名 'latest' tag fallback
+- [PR#2963](https://github.com/QwenLM/qwen-code/pull/2963) ✓ JSON schema "undefined Options" fix
+- [PR#2964](https://github.com/QwenLM/qwen-code/pull/2964) ✓ clean script duplicate rmSync
+- [PR#2966](https://github.com/QwenLM/qwen-code/pull/2966) ✓ integration tests stdinDoesNotEnd
+- [PR#2969](https://github.com/QwenLM/qwen-code/pull/2969) ✓ text-buffer offset-to-position 统一
+- [PR#2970](https://github.com/QwenLM/qwen-code/pull/2970) ✓ weixin PNG magic 4-byte 检查
+- [PR#2975](https://github.com/QwenLM/qwen-code/pull/2975) ✓ 重新连接 AcpBridge listener
+- [PR#2977](https://github.com/QwenLM/qwen-code/pull/2977) ✓ dingtalk 续传后缀 '(cont.)' 仅在续段
+- [PR#2978](https://github.com/QwenLM/qwen-code/pull/2978) ✓ dingtalk @mention 后保留空文本
+- [PR#2979](https://github.com/QwenLM/qwen-code/pull/2979) ✓ dingtalk reactionContext 内存泄漏
+- [PR#2981](https://github.com/QwenLM/qwen-code/pull/2981) ✓ SDK Stream.return() promise hang
+
+**计数**：已合并 ✓ 52 → **56**（仅追踪 4 个匹配 item 的合并；维护性的 11 个不计入矩阵跟踪计数）。
+
+**观察**：今天上午（UTC 时间）**单一时间窗口内有 15+ PR 合并**，表明 qwen-code 在做发布前的批量清理（推测下一个 release 即将发布）。`channels/dingtalk` 4 连续修复（PR#2977/2978/2979 + PR#2980 待合并）说明国内 IM 渠道质量在快速打磨。
+
 ### 2026-04-17（晚间第三次补更）
 
 继续扫描 qwen-code PR（updated > 今早）：
@@ -442,12 +471,12 @@
 
 **新开 PR（未追踪，观察）**：
 
-- [PR#3407](https://github.com/QwenLM/qwen-code/pull/3407) — `auto-submit on number key press in AskUserQuestionDialog`（UX 微优化）
+- [PR#3407](https://github.com/QwenLM/qwen-code/pull/3407) ✓（2026-04-18 合并）— `auto-submit on number key press in AskUserQuestionDialog`（UX 微优化）
 - [PR#3404](https://github.com/QwenLM/qwen-code/pull/3404) — **`/doctor` 诊断命令**（对标 Claude Code 的 `/doctor`）。值得后续追踪，Qwen Code 加了一个常用的诊断命令
 - [PR#3398](https://github.com/QwenLM/qwen-code/pull/3398) — vscode OAuth → Coding Plan/API Key（重要 provider 策略调整）
 - [PR#3394](https://github.com/QwenLM/qwen-code/pull/3394) — `feat(arena): add comparison summary for agent results`
 - [PR#3393](https://github.com/QwenLM/qwen-code/pull/3393) — `feat(mcp): add OSC 52 copy hotkey for OAuth authorization URL`
-- [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) — `reduce terminal redraw cursor movement`（性能微优化）
+- [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（2026-04-18 合并）— `reduce terminal redraw cursor movement`（性能微优化）
 
 **计数更新**：已合并 ✓ 48 → **52**（+PR#3076、+PR#3352、+PR#3358、+PR#3402）。
 
@@ -669,7 +698,7 @@
 
 - [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) — session rewind and restore flows（顶替已关闭的 #3022 /branch + #3013 /rewind 方向）
 - [PR#3303](https://github.com/QwenLM/qwen-code/pull/3303) — 检测 macOS 上不在 PATH 的 Zed.app
-- [PR#3297](https://github.com/QwenLM/qwen-code/pull/3297) — tool registry lazy factory with concurrency dedup
+- [PR#3297](https://github.com/QwenLM/qwen-code/pull/3297) ✓（2026-04-18 合并）— tool registry lazy factory with concurrency dedup
 - [PR#3295](https://github.com/QwenLM/qwen-code/pull/3295) — SDK ProcessTransport exit listener leak 修复
 
 **计数变化**：
@@ -860,7 +889,7 @@ function getAutoBackgroundMs(): number {
   - [#3242](https://github.com/QwenLM/qwen-code/pull/3242)（open）— 保证 startup input 穿透 full init 流程不丢失，补充 PR#3085
   - [#3266](https://github.com/QwenLM/qwen-code/pull/3266)（open）— 新增 `PostTurn` hook 事件（每次模型 turn 边界触发），延续 PR#2825 的"新 hook 事件类型"方向
 - **其他新开 PR（观察中，暂不追踪）**：
-  - [#3178](https://github.com/QwenLM/qwen-code/pull/3178) + [#3236](https://github.com/QwenLM/qwen-code/pull/3236) 工具验证重试循环检测 + 停止指令
+  - [#3178](https://github.com/QwenLM/qwen-code/pull/3178) ✓（2026-04-18 合并）+ [#3236](https://github.com/QwenLM/qwen-code/pull/3236) 工具验证重试循环检测 + 停止指令
   - [#3255](https://github.com/QwenLM/qwen-code/pull/3255) Fork Subagent params 构造时注入重构
   - [#3261](https://github.com/QwenLM/qwen-code/pull/3261) `/history` 命令管理已保存的聊天会话
   - [#3248](https://github.com/QwenLM/qwen-code/pull/3248) ACP 集成完整 hooks 支持
