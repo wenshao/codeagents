@@ -49,7 +49,7 @@
 | **P1** | [Nudge 驱动的闭环学习](./closed-learning-loop-deep-dive.md) — 双计数器 + 后台 review 子代理 + 冻结快照 + 自修补（Hermes Agent 参考） [↓](./qwen-code-improvement-report-p0-p1-core.md#item-14) | 被动记忆（无 nudge） | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓（部分覆盖） |
 | **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | 全部工具始终加载 | 小 | — |
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1-core.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ / [Roadmap#2516](https://github.com/QwenLM/qwen-code/issues/2516) |
-| **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | 完全缺失 | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) ✗（关闭，由 #3318 + #3319 替代）/ [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318) preconnect / [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) early input / [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
+| **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | preconnect 开发中 / early input ✓ | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) ✗（关闭，拆分）/ [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318)（preconnect，open）/ [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) ✓（early input，2026-04-18 合并）/ [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
 | **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-9) | 所有指令始终加载 | 中 | [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) ✓ / [Roadmap#125](https://github.com/QwenLM/qwen-code/issues/125) |
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-12) | 缺失 | 小 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | 缺失 | 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) ✗（已关闭）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292)（后续 session rewind + restore flows） |
@@ -428,6 +428,32 @@
 
 ## 六、更新日志
 
+### 2026-04-18（下午第二次补更）
+
+继续扫描 qwen-code PR（updated > 上午 05:00 UTC）：
+
+**追踪范围内的合并**（1 个）：
+
+- [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) ✓ **2026-04-18 16:40 UTC** — `feat(cli): add early input capture to prevent keystroke loss during startup`。**补齐 [item-8 启动优化](./qwen-code-improvement-report-p0-p1-core.md#item-8) 双支柱的下半段**（early input），preconnect 部分 PR#3318 仍 open。item-8 的早期输入捕获能力已落地。
+
+**维护性合并**（5 个，无对应矩阵 item）：
+
+- [PR#3393](https://github.com/QwenLM/qwen-code/pull/3393) ✓ 12:22 UTC — `feat(mcp): add OSC 52 copy hotkey for OAuth authorization URL`（改善 remote/SSH 场景复制 OAuth URL 体验）
+- [PR#3416](https://github.com/QwenLM/qwen-code/pull/3416) ✓ 10:11 UTC — `wait for dual output stream shutdown`（PR#3352 sidecar mode 的后续修复）
+- [PR#3415](https://github.com/QwenLM/qwen-code/pull/3415) ✓ 05:46 UTC — `update scheduler registry mock`（测试稳定性）
+- [PR#2590](https://github.com/QwenLM/qwen-code/pull/2590) ✓ 15:39 UTC — `feat(vscode-ide-companion): add dedicated agent execution display`（VSCode IDE 集成增强）
+- [PR#2550](https://github.com/QwenLM/qwen-code/pull/2550) ✓ 15:43 UTC — `perf(vscode): fix input lag in long conversations`（VSCode 长会话性能）
+
+**批量 Stale 关闭**（~11 个 PR 在 09:21 UTC 同时关闭）：
+
+PR#3375 的 stale 策略（60+30 天）生效后，清理了长期无活动的 PR：PR#2357（Node SEA binary）、PR#2509（anthropic thinking budget）、PR#2568-2585（一批 2026 年 2-3 月的 core 改进 PR）等。这是 qwen-code 项目治理成熟化的标志——**非关闭 = 放弃，而是路线调整**，部分方向已被后续更好的 PR 替代。
+
+**新开 PR**（观察）：
+
+- [PR#3428](https://github.com/QwenLM/qwen-code/pull/3428) — `fix(cli): dismiss /btw side-question dialog on /clear`（/btw UX）
+
+**计数更新**：已合并 ✓ 56 → **57**（+PR#3319 追踪；其他 5 个是维护性合并不计入矩阵跟踪计数；批量 stale 关闭不影响追踪计数，因为那些都不在本报告追踪列表中）。
+
 ### 2026-04-18（次日清晨补更）
 
 夜间到清晨 qwen-code 又合并了大量 PR：
@@ -475,7 +501,7 @@
 - [PR#3404](https://github.com/QwenLM/qwen-code/pull/3404) — **`/doctor` 诊断命令**（对标 Claude Code 的 `/doctor`）。值得后续追踪，Qwen Code 加了一个常用的诊断命令
 - [PR#3398](https://github.com/QwenLM/qwen-code/pull/3398) — vscode OAuth → Coding Plan/API Key（重要 provider 策略调整）
 - [PR#3394](https://github.com/QwenLM/qwen-code/pull/3394) — `feat(arena): add comparison summary for agent results`
-- [PR#3393](https://github.com/QwenLM/qwen-code/pull/3393) — `feat(mcp): add OSC 52 copy hotkey for OAuth authorization URL`
+- [PR#3393](https://github.com/QwenLM/qwen-code/pull/3393) ✓（2026-04-18 合并）— `feat(mcp): add OSC 52 copy hotkey for OAuth authorization URL`
 - [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（2026-04-18 合并）— `reduce terminal redraw cursor movement`（性能微优化）
 
 **计数更新**：已合并 ✓ 48 → **52**（+PR#3076、+PR#3352、+PR#3358、+PR#3402）。
@@ -519,7 +545,7 @@
 
 - [PR#3383](https://github.com/QwenLM/qwen-code/pull/3383)（open）— `support refreshInterval in statusLine for periodic refresh` —— **直接实现我昨天新增的 [item-25 Refresh Interval Statusline](./qwen-code-improvement-report-p2-tools-commands.md#item-25)**！已挂到该 item 的进展列
 - [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) ✓（**2026-04-17 合并**，tanzhenxin）— `add path-based context rule injection from .qwen/rules/` —— **实现 [p0-p1-core item-9 指令条件规则](./qwen-code-improvement-report-p0-p1-core.md#item-9)**！长期等待的功能落地
-- [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318) + [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319)（open）— 启动优化拆分为两个独立 PR（preconnect + early input），原 [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) 已关闭被替代
+- [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318)（open）preconnect + [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) ✓（2026-04-18 16:40 UTC 合并）early input — 启动优化拆分为两个独立 PR，原 [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) 已关闭被替代
 
 **新 hook 类型 PR（暂不单独追踪，归入 hook 系统扩展）**：
 

@@ -397,7 +397,7 @@ Preconnect 实现极简（71 行）——发一个不等响应的 HEAD 请求，
 **进展**：
 - [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) ✗（关闭，由 #3318 + #3319 替代）— 原统一 PR，被拆分为独立两个 PR
 - [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318)（open）— **API preconnect 独立 PR**，专注 TCP/TLS 预握手
-- [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319)（open）— **early input capture 独立 PR**，防止启动期间按键丢失
+- [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) ✓（**2026-04-18 合并**）— **early input capture 独立 PR**，防止启动期间按键丢失
 - [PR#3242](https://github.com/QwenLM/qwen-code/pull/3242)（open）— 补充：保证 startup input 穿透 full init 流程不丢失
 - [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（2026-04-14 合并）— **启动性能剖析器**：`QWEN_CODE_PROFILE_STARTUP=1` 启用，在 `main()` 7 个检查点（`main_entry` / `after_load_settings` / `after_parse_arguments` 等）打点，为后续优化提供测量基线
 
