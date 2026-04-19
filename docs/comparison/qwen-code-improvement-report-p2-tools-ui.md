@@ -676,7 +676,7 @@ Agent 编辑文件后展示的 diff 是基础的 inline 格式——没有行号
 - **改进前**：CI 想知道 prompt 体积变化 → 无法获取 → 版本发布后才发现 token 膨胀
 - **改进后**：`qwen -p --context-usage --output-format json` → CI 自动比较 → 回归立即报警
 
-**进展**：[PR#2916](https://github.com/QwenLM/qwen-code/pull/2916)（open）— 非交互模式支持 `/context`，新增 `getContextUsage()` SDK API。
+**进展**：[PR#2916](https://github.com/QwenLM/qwen-code/pull/2916) ✓（**2026-04-13 合并**）— 非交互模式支持 `/context`，新增 `getContextUsage()` SDK API。
 
 **意义**：上下文诊断是平台能力而非 UI 功能——脚本/CI/IDE 都需要访问。
 **缺失后果**：只有交互式入口 → 自动化场景无法获取上下文健康数据。

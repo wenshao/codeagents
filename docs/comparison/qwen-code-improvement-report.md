@@ -98,7 +98,7 @@
 | **P2** | [文件历史快照](./git-workflow-session-deep-dive.md) — per-file SHA256 备份，按消息粒度恢复（100 个/session） [↓](./qwen-code-improvement-report-p2-core.md#item-10) | git-level checkpoint | 中 | — |
 | **P2** | [Computer Use](./computer-use-deep-dive.md) — macOS 截图 + 鼠标/键盘 + 剪贴板，通过 MCP 桥接 [↓](./qwen-code-improvement-report-p2-core.md#item-6) | 缺失 | 大 | — ⚠️ **Claude Code 侧默认禁用（`tengu_malort_pedway` gate），降级建议** |
 | **P2** | [Deep Link](./deep-link-protocol-deep-dive.md) — `claude-cli://` 一键从浏览器/IDE 启动 Agent + 预填充 prompt [↓](./qwen-code-improvement-report-p2-core.md#item-11) | 缺失 | 中 | — ⚠️ **Claude Code 侧默认禁用（`tengu_lodestone_enabled` gate），降级建议** |
-| **P2** | [`/context` 非交互输出](./context-usage-noninteractive-deep-dive.md) — 将上下文诊断暴露给脚本、CI 与外部控制器 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-20) | 仅交互式 | 小 | [PR#2916](https://github.com/QwenLM/qwen-code/pull/2916) / [PR#3042](https://github.com/QwenLM/qwen-code/pull/3042) ✓ |
+| **P2** | [`/context` 非交互输出](./context-usage-noninteractive-deep-dive.md) — 将上下文诊断暴露给脚本、CI 与外部控制器 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-20) | 仅交互式 | 小 | [PR#2916](https://github.com/QwenLM/qwen-code/pull/2916) ✓ / [PR#3042](https://github.com/QwenLM/qwen-code/pull/3042) ✓ |
 | **P3** | 大粘贴内容自动存到工作区文件 — 粘贴 >30KB 内容自动外化到 tmp 文件 + 输入框显示引用（Copilot CLI v0.0.397 参考） [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-21) | 直接进 prompt | 小 | — |
 | **P1** | [Team Memory](./team-memory-deep-dive.md) — 团队共享项目知识 + 29 条 gitleaks 密钥扫描 + ETag 同步 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-10) | 缺失 | 大 | — |
 | **P2** | [Plan 模式 Interview](./plan-mode-interview-deep-dive.md) — 先澄清需求再形成计划，分离访谈/规划/执行阶段 [↓](./qwen-code-improvement-report-p2-core.md#item-12) | 无 interview 阶段 | 中 | — |
@@ -427,6 +427,18 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-19（勘误 + 追加）
+
+**勘误**：用户指出 [PR#2916](https://github.com/QwenLM/qwen-code/pull/2916)（`/context` 非交互输出 + SDK API）早在 **2026-04-13** 就已合并，但主矩阵 item-20 行仅标注了 PR#3042 的 ✓，遗漏了 PR#2916 本身。现已补标：
+- 主矩阵 item-20 行：PR#2916 → **✓**
+- p2-tools-ui item-20 详细页"进展"段落：`(open)` → **`✓（2026-04-13 合并）`**
+
+此 item 的两个 PR 均已合并：
+- [PR#2916](https://github.com/QwenLM/qwen-code/pull/2916) ✓ — 非交互模式 `/context` + `getContextUsage()` SDK API
+- [PR#3042](https://github.com/QwenLM/qwen-code/pull/3042) ✓ — `/context` 新增 `detail` 子命令
+
+**追踪合并数**：63 → **64**（+PR#2916）。
 
 ### 2026-04-19（凌晨大合并潮 🎉）
 
