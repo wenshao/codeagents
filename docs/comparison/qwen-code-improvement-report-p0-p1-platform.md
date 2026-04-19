@@ -89,7 +89,7 @@
 | PR | 主题 | 合并日期 |
 |---|---|---|
 | [#2348](https://github.com/QwenLM/qwen-code/pull/2348) | 初版 `/review` skill | 2026-03-14 |
-| [#2376](https://github.com/QwenLM/qwen-code/pull/2376) | 多模型仲裁（multi-model arbitration） | 2026-03-14 |
+| [#2376](https://github.com/QwenLM/qwen-code/pull/2376) | 多模型仲裁（multi-model arbitration） | ✗ **已关闭**（未合并，2026-04-13 closed） |
 | [#2380](https://github.com/QwenLM/qwen-code/pull/2380) | `extends: bundled` 允许扩展 bundled skill | ✗ **已关闭**（未合并）|
 | [#2687](https://github.com/QwenLM/qwen-code/pull/2687) | 验证机制 + 误报控制 + PR 评论 | 2026-04-01 |
 | [#2932](https://github.com/QwenLM/qwen-code/pull/2932) | **确定性分析 + autofix + 安全加固** | 2026-04-09 |

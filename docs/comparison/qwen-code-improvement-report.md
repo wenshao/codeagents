@@ -54,7 +54,7 @@
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-12) | 缺失 | 小 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | 缺失 | 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) ✗（已关闭）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292)（后续 session rewind + restore flows） |
 | **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-1) | 缺失 | 中 | — |
-| **P1** | GitHub Code Review — 多 Agent自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-2) | **已实现**（内置 `/review` skill，5 agent 并行 + Create Review API） | — | [PR#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [PR#2376](https://github.com/QwenLM/qwen-code/pull/2376) ✓ / [PR#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [PR#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ / [PR#3276](https://github.com/QwenLM/qwen-code/pull/3276)（弱模型并行强化） / [Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742) |
+| **P1** | GitHub Code Review — 多 Agent自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-2) | **已实现**（内置 `/review` skill，5 agent 并行 + Create Review API） | — | [PR#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [PR#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [PR#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ / [PR#3276](https://github.com/QwenLM/qwen-code/pull/3276)（弱模型并行强化） / [Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742) |
 | **P1** | [HTTP Hooks](./http-hooks-deep-dive.md) — Hook 可 POST JSON 到 URL 并接收响应（不仅 shell 命令）[↓](./qwen-code-improvement-report-p0-p1-platform.md#item-3) | 仅 shell 命令 | 小 | [PR#2827](https://github.com/QwenLM/qwen-code/pull/2827) ✓ |
 | **P1** | [Structured Output](./structured-output-deep-dive.md) — `--json-schema` 强制 JSON Schema 验证输出 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-4) | 缺失 | 小 | — |
 | **P1** | [Agent SDK 增强](./agent-sdk-python-deep-dive.md) — Python SDK + 流式回调 + 工具审批回调（Qwen 仅 TS SDK）[↓](./qwen-code-improvement-report-p0-p1-platform.md#item-5) | 仅 TypeScript SDK | 中 | — |
@@ -121,7 +121,7 @@
 | **P2** | [Transcript Search 会话记录搜索](./transcript-search-navigation-deep-dive.md) — 按 `/` 搜索会话记录，`n`/`N` 导航匹配项 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-2) | 缺失 | 小 | — |
 | **P2** | [Bash File Watcher](./file-watcher-stale-edit-deep-dive.md) — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-3) | 缺失 | 小 | — |
 | **P2** | [/batch 并行操作](./batch-parallel-execution-deep-dive.md) — 编排大规模并行变更（多文件/多任务）[↓](./qwen-code-improvement-report-p2-tools-commands.md#item-4) | 缺失 | 中 | [PR#3079](https://github.com/QwenLM/qwen-code/pull/3079) ✓ |
-| **P2** | PDF / 二进制文件读取 — read_file 内置 PDF + 图片 + Notebook 支持 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-21) | 拒绝 PDF（[#2024](https://github.com/QwenLM/qwen-code/pull/2024)） | 中 | [Issue#38](https://github.com/QwenLM/qwen-code/issues/38) |
+| **P2** | PDF / 二进制文件读取 — read_file 内置 PDF + 图片 + Notebook 支持 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-21) | 拒绝 PDF（[#2024](https://github.com/QwenLM/qwen-code/pull/2024) ✓ 合并） | 中 | [Issue#38](https://github.com/QwenLM/qwen-code/issues/38)、[PR#3160](https://github.com/QwenLM/qwen-code/pull/3160) 🟡 |
 | **P2** | Skill 级模型覆盖 — SKILL.md frontmatter `model:` 字段，按阶段切换模型 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-22) | 仅 session 级 | 小 | [PR#2949](https://github.com/QwenLM/qwen-code/pull/2949) ✓ |
 | **P2** | PreCompact Hook — 压缩前钩子，支持 block/modify/continue（Claude Code v2.1.105 新增） [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-23) | 仅 PostCompact | 小 | — |
 | **P2** | 模型通过 Skill 工具调用内置 Slash 命令 — Agent 自主调用 `/init` / `/review` / `/security-review`（v2.1.108 新增） [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-24) | 用户手动触发 | 中 | — |
@@ -439,6 +439,18 @@
 - [PR#3042](https://github.com/QwenLM/qwen-code/pull/3042) ✓ — `/context` 新增 `detail` 子命令
 
 **追踪合并数**：63 → **64**（+PR#2916）。
+
+### 2026-04-19（晚间追加 · PDF/Notebook 支持 PR#3160）
+
+**用户指出**：[p2-tools-commands item-21 PDF / 二进制文件读取](./qwen-code-improvement-report-p2-tools-commands.md#item-21) 应该跟踪 [PR#3160](https://github.com/QwenLM/qwen-code/pull/3160)（`feat(core): PDF text extraction fallback and Jupyter notebook parsing`）——此 PR 为 `read_file` 增加 PDF 文本提取 fallback + `.ipynb` Notebook 解析支持，合并后可直接覆盖 item-21 的 P0（PDF）+ P2（Notebook）两个目标。
+
+**已更新**：
+- 主矩阵 item-21 行：追踪 PR 列补充 [PR#3160](https://github.com/QwenLM/qwen-code/pull/3160) 🟡（OPEN），并将历史引用 PR#2024（拒绝 PDF）标记为 ✓ 合并
+- [p2-tools-commands.md item-21](./qwen-code-improvement-report-p2-tools-commands.md#item-21)：新增 "追踪中的 PR" 小节 + 在修改方向中标注 PR#3160 正在推进 P0/P2 目标
+
+**勘误**：此前主矩阵只标了 PR#2024 但未在该 PR 后打 ✓ 标记（该 PR 2026-03-15 已合并，拒绝 PDF 以防 session 污染）。现已补 ✓。
+
+**待关注**：PR#3160 合并后需回头将 item-21 状态更新为"部分实现"——覆盖 PDF + Notebook，仅剩图片支持 + DOCX/XLSX/PPTX 两项尚未覆盖。
 
 ### 2026-04-19（凌晨大合并潮 🎉）
 
@@ -960,7 +972,7 @@ function getAutoBackgroundMs(): number {
 - **`.qwen/review-rules.md`** 项目规则（等同 REVIEW.md 概念）
 - **增量 cache**、**worktree 隔离**、**跨仓库 lightweight 模式**等额外能力
 
-实现深度**已超过 Claude Code 托管的 GitHub Code Review**。涉及 PR：[#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [#2376](https://github.com/QwenLM/qwen-code/pull/2376) ✓ / [#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ —— 4 个 PR 已合并。[#2380](https://github.com/QwenLM/qwen-code/pull/2380)（`extends: bundled`）**已关闭**（未合并，勘误：之前错标为 merged）。
+实现深度**已超过 Claude Code 托管的 GitHub Code Review**。涉及 PR：[#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ —— **3 个 PR 已合并**。[#2376](https://github.com/QwenLM/qwen-code/pull/2376)（multi-model arbitration，CLOSED 2026-04-13）和 [#2380](https://github.com/QwenLM/qwen-code/pull/2380)（`extends: bundled`）**均已关闭**（未合并，勘误：之前错标为 merged）。
 
 更新 platform item-2 状态为"✓ 已实现"，新增 5 个 PR 的 ✓ 标记到主矩阵。
 
@@ -984,7 +996,7 @@ function getAutoBackgroundMs(): number {
   - [#3248](https://github.com/QwenLM/qwen-code/pull/3248) ACP 集成完整 hooks 支持
 - **其他维护合并**（未对应矩阵条目）：
   - [#3217](https://github.com/QwenLM/qwen-code/pull/3217) docs：更新 quota 耗尽后的替代方案（OpenRouter/Fireworks）
-  - [#3249](https://github.com/QwenLM/qwen-code/pull/3249) VS Code 会话 tab 标题长度限制
+  - [#3249](https://github.com/QwenLM/qwen-code/pull/3249) ✓ VS Code 会话 tab 标题长度限制
 - 总追踪 PR：**40 个（21 已合并 ✓，2 已关闭移除）**
 
 ### 2026-04-13（全量审计 + 晚间更新）
@@ -1004,11 +1016,11 @@ function getAutoBackgroundMs(): number {
 - **勘误**：从 item-1 Conditional Hooks 移除错误的 PR#2825 关联——PR#2825 实际实现的是 StopFailure + PostCompact 两个新 hook 事件，和 Hook `if` 字段条件过滤完全不同
 - **item-37 状态更新**：重写为"已合并"版本，对比 PR#2864 与 Claude Code `StreamingToolExecutor` 在 Kind 分类、batching 策略、shell 读写检测上的差异
 - **观察到的重要维护性合并**（未对应改进矩阵条目）：
-  - [#3138](https://github.com/QwenLM/qwen-code/pull/3138) 文件爬虫 100k OOM 保护（对应 [Issue#3164](https://github.com/QwenLM/qwen-code/issues/3164) heap exhaustion）
-  - [#3197](https://github.com/QwenLM/qwen-code/pull/3197) `@file` 注入遵循 `respectGitIgnore`（对应 [Issue#3142](https://github.com/QwenLM/qwen-code/issues/3142) feature request）
-  - [#3192](https://github.com/QwenLM/qwen-code/pull/3192) MCP server cwd 不存在时明确报错（对应 [Issue#3163](https://github.com/QwenLM/qwen-code/issues/3163)）
-  - [#3194](https://github.com/QwenLM/qwen-code/pull/3194) agent 名称支持 Unicode / 中文（对应 [Issue#3149](https://github.com/QwenLM/qwen-code/issues/3149)）
-  - [#3201](https://github.com/QwenLM/qwen-code/pull/3201) 输入 `exit` / `quit` 直接退出（对应 [Issue#3169](https://github.com/QwenLM/qwen-code/issues/3169)）
+  - [#3138](https://github.com/QwenLM/qwen-code/pull/3138) ✓ 文件爬虫 100k OOM 保护（对应 [Issue#3164](https://github.com/QwenLM/qwen-code/issues/3164) heap exhaustion）
+  - [#3197](https://github.com/QwenLM/qwen-code/pull/3197) ✓ `@file` 注入遵循 `respectGitIgnore`（对应 [Issue#3142](https://github.com/QwenLM/qwen-code/issues/3142) feature request）
+  - [#3192](https://github.com/QwenLM/qwen-code/pull/3192) ✓ MCP server cwd 不存在时明确报错（对应 [Issue#3163](https://github.com/QwenLM/qwen-code/issues/3163)）
+  - [#3194](https://github.com/QwenLM/qwen-code/pull/3194) ✓ agent 名称支持 Unicode / 中文（对应 [Issue#3149](https://github.com/QwenLM/qwen-code/issues/3149)）
+  - [#3201](https://github.com/QwenLM/qwen-code/pull/3201) ✓ 输入 `exit` / `quit` 直接退出（对应 [Issue#3169](https://github.com/QwenLM/qwen-code/issues/3169)）
 - 总追踪 PR：**38 个（19 已合并 ✓，2 已关闭移除）**
 
 ### 2026-04-13

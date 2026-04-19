@@ -712,12 +712,16 @@ Word/Excel/PowerPoint 通过 Managed Agents 的预置 Skill（`xlsx`/`docx`/`ppt
 | `utils/pdfUtils.ts` | `isPDFSupported()` 环境检测 |
 | `utils/notebook.ts` | `.ipynb` 解析 |
 
-**Qwen Code 现状**：`read_file` 工具仅支持纯文本文件。PDF/图片/Notebook 均无法读取。
+**Qwen Code 现状**：`read_file` 工具当前仅支持纯文本文件。PDF 通过 [PR#2024](https://github.com/QwenLM/qwen-code/pull/2024)（2026-03-15 ✓ 合并）明确拒绝以防 session 上下文被二进制流污染；图片/Notebook 仍无法读取。
+
+**追踪中的 PR**：
+- [PR#3160](https://github.com/QwenLM/qwen-code/pull/3160)（🟡 OPEN）——"feat(core): PDF text extraction fallback and Jupyter notebook parsing"：为 `read_file` 增加 PDF 文本提取 fallback 以及 `.ipynb` 解析支持。合并后可覆盖本 item 的 P0 + P2 目标（PDF + Notebook），图片支持仍需补齐。
 
 **Qwen Code 修改方向**：
-1. **P0：PDF 支持**——在 `read_file` 中检测 `.pdf` 扩展名，调用 `pdftotext`（poppler-utils）转换为文本，或用 base64 传给多模态 API
+1. **P0：PDF 支持**（由 PR#3160 推进）——在 `read_file` 中检测 `.pdf` 扩展名，调用 `pdftotext`（poppler-utils）转换为文本，或用 base64 传给多模态 API
 2. **P1：图片支持**——`.png`/`.jpg` 等直接 base64 编码传给 Vision API
 3. **P2：DOCX/XLSX/PPTX**——通过 MCP 集成 [MarkItDown](https://github.com/microsoft/markitdown)（102K stars，Microsoft 开源），或内置 Skill
+4. **P2：Jupyter Notebook 支持**（由 PR#3160 推进）——解析 `.ipynb` JSON，返回所有 cell + 输出
 
 **实现成本评估**：
 - PDF 支持：~100 行，~2 天（依赖 poppler-utils）
