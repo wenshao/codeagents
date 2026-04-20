@@ -1646,3 +1646,161 @@ export function getMaxOutputLength(): number {
 **改进收益**：三级设防保证单次交互 token 预算可控；env var 允许用户按需调整。
 
 **验证方法**：`grep -rn "BASH_MAX_OUTPUT\|truncateOutput\|MAX_TOOL_RESULTS_PER_MESSAGE" packages/` 看命中情况；改进后应 ≥ 3 处命中。
+
+---
+
+<a id="item-46"></a>
+
+### 46. Bash 执行中 "5 行窗口 + `+N lines` 计数"（P2）
+
+> **配套阅读**：[Bash 任务展示 Deep-Dive](./bash-task-display-deep-dive.md) 第 2.1 节。
+
+**来源**：Claude Code `components/shell/ShellProgressMessage.tsx`。
+
+**问题**：Qwen Code 执行长时间 Bash 命令（`npm install` / `find /` / `build`）时，`shellExecutionService.ts` 维护完整 xterm headless Terminal（默认 30 行 × 80 列），每 100ms 整屏重渲染。**屏幕被 PTY 滚动占满，用户也不知道"总共输出了多少行"——以为完成时已输出完整，实际可能只是 Web UI 500 字符预览。**
+
+**Claude Code 的解决方案**：进行中仅显示**最后 5 行**（`lines.slice(-5)`），右侧 dim color 提示 `+N lines`（多出的行数）或 `~N lines`（大概总行数）。verbose 模式（`ExpandShellOutputContext`）才展开完整输出。
+
+**Claude Code 核心代码**（`components/shell/ShellProgressMessage.tsx:42-82`）：
+
+```tsx
+// L42-44：永远只取最后 5 行
+const strippedOutput = stripAnsi(output.trim())
+lines = strippedOutput.split("\n").filter(notEmpty)
+t2 = verbose ? strippedFullOutput : lines.slice(-5).join("\n")
+
+// L74-81：计算多出的行数
+const extraLines = totalLines ? Math.max(0, totalLines - 5) : 0
+let lineStatus = ""
+if (!verbose && totalBytes && totalLines) {
+  lineStatus = `~${totalLines} lines`     // 字节 + 行数都可得 → 大概总行数
+} else if (!verbose && extraLines > 0) {
+  lineStatus = `+${extraLines} lines`     // 仅行数可得 → 精确"多出 N 行"
+}
+
+// L65：无输出时用 MessageResponse + OffscreenFreeze（复用 item-44 基础设施）
+return <MessageResponse>
+  <OffscreenFreeze>
+    <Text dimColor>Running… </Text>
+    <ShellTimeDisplay elapsedTimeSeconds={...} timeoutMs={...} />
+  </OffscreenFreeze>
+</MessageResponse>
+```
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/shell/ShellProgressMessage.tsx:42-44` | `lines.slice(-5).join("\n")` 5 行截断 |
+| `components/shell/ShellProgressMessage.tsx:74-81` | `extraLines` + `+N lines` / `~N lines` 两种提示 |
+| `components/shell/ShellProgressMessage.tsx:65` | `<MessageResponse><OffscreenFreeze>` 复用 item-44 |
+| `components/shell/OutputLine.tsx` | 单行输出组件（含自适应截断） |
+| `components/shell/ExpandShellOutputContext.tsx` | 上下文展开，verbose 模式切换 |
+
+**Qwen Code 现状**：`shellExecutionService.ts:612-706` 渲染整个 xterm Terminal 缓冲区（30 行默认），每 100ms 一次（`RENDER_THROTTLE_MS = 100`）。无行数计数提示。
+
+**Qwen Code 修改方向**：
+1. **新建 `packages/cli/src/ui/components/ShellProgressMessage.tsx`**：接收 `output` / `verbose` / `totalLines` / `totalBytes` props
+2. 在其中实现 `lines.slice(-5).join('\n')` + `+${extraLines} lines` / `~${totalLines} lines` 双模式提示
+3. 非 verbose 模式下替代当前整屏 PTY 渲染（PTY 状态仍然在 service 层维护，UI 层只取最后 5 行快照）
+4. verbose 模式（`/expand` 命令或 Ctrl+O）切换到完整 PTY
+5. **前置依赖**：最好先落地 [item-44](./qwen-code-improvement-report-p2-stability.md#item-44)（MessageResponse + OffscreenFreeze），也可独立实现最小版只做 slice + counter
+
+**实现成本评估**：
+- 涉及文件：~3 个（新组件 + 集成点 + 切换模式）
+- 新增代码：~100 行
+- 开发周期：~1-2 天
+- 难点：verbose / non-verbose 切换的状态管理；PTY service 层与 UI 层数据流同步
+
+**改进前后对比**：
+- **改进前**：`find /` 输出 5000 行 → 整屏 PTY 滚动 30 行，用户不知道还有多少
+- **改进后**：`Running… (12.3s) +4995 lines` 3 行占用，用户清楚知道剩余量
+
+**意义**：长任务场景 "屏幕紧凑 + 进度可见" 是最核心的 UX。
+**缺失后果**：屏幕被 PTY 滚动占满，用户误判输出已完整，错过关键 log。
+**改进收益**：3 行屏占替代 30 行整屏；`+N lines` 让用户准确判断何时进入"还有很多要跑"的状态。
+
+---
+
+<a id="item-47"></a>
+
+### 47. `ShellTimeDisplay` 执行时间 + timeout 倒计时（P2）
+
+> **配套阅读**：[Bash 任务展示 Deep-Dive](./bash-task-display-deep-dive.md) 第 2.2 节。
+
+**来源**：Claude Code `components/shell/ShellTimeDisplay.tsx`（73 行完整组件）。
+
+**问题**：Qwen Code 执行耗时命令（`npm install` 2 分钟、`cargo build` 5 分钟）时，用户看不到"已跑了多久 / 还有多久 timeout"。只能靠 spinner 图标和字节计数（`2.5MB received`）间接判断。**长任务场景 Claude 的"时间维度"是 Qwen 最明显的 UX 差距。**
+
+**Claude Code 的解决方案**：`ShellTimeDisplay` 根据 `elapsedTimeSeconds` + `timeoutMs` 自动选择三种格式，用 `dim color` 显示避免视觉干扰。
+
+**Claude Code 完整实现**（`components/shell/ShellTimeDisplay.tsx`）：
+
+```tsx
+export function ShellTimeDisplay({ elapsedTimeSeconds, timeoutMs }: Props) {
+  if (elapsedTimeSeconds === undefined && !timeoutMs) return null
+
+  const timeout = timeoutMs
+    ? formatDuration(timeoutMs, { hideTrailingZeros: true })
+    : undefined
+
+  // 模式 1：仅 timeout（尚未开始）→ "(timeout 30s)"
+  if (elapsedTimeSeconds === undefined) {
+    return <Text dimColor>{`(timeout ${timeout})`}</Text>
+  }
+
+  const elapsed = formatDuration(elapsedTimeSeconds * 1000)
+
+  // 模式 2：elapsed + timeout → "(10.5s · timeout 30s)"
+  if (timeout) {
+    return <Text dimColor>{`(${elapsed} · timeout ${timeout})`}</Text>
+  }
+
+  // 模式 3：仅 elapsed → "(10.5s)"
+  return <Text dimColor>{`(${elapsed})`}</Text>
+}
+```
+
+**三种格式对照**：
+
+| 状态 | 显示 | 源码行 |
+|-----|-----|-------|
+| 命令尚未开始 / 无 elapsed | `(timeout 30s)` | L30 |
+| 执行中且有 timeout | `(10.5s · timeout 30s)` | L52 |
+| 执行中无 timeout | `(10.5s)` | L63 |
+
+**关键细节**：
+- `formatDuration(timeoutMs, { hideTrailingZeros: true })` 避免 `30s0ms` 冗余
+- 中点符号 `·` 作为分隔（ASCII/Unicode 混排时对齐更好）
+- 整个组件用 `Text dimColor` 降低视觉权重——长任务时不抢占用户注意力
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/shell/ShellTimeDisplay.tsx` | 73 行完整组件 + 三种格式分支 |
+| `utils/format.ts:formatDuration()` | ms → 人类友好字符串（`65000ms` → `1m5s`） |
+
+**Qwen Code 现状**：`shellExecutionService.ts` 提供 elapsed 但 UI 层未展示时间信息；timeout 也未在 UI 显示。
+
+**Qwen Code 修改方向**：
+1. **新建 `packages/cli/src/ui/components/ShellTimeDisplay.tsx`**：~30 行组件，复刻三种格式分支
+2. **新建 `packages/cli/src/utils/formatDuration.ts`**（若不存在）：`ms → "1m23s"` 人类友好格式化
+3. 在 `ShellProgressMessage`（item-46）和完成后结果组件中集成
+4. 提供 `shell_execution.timeoutMs` 配置项（已有则复用）
+
+**实现成本评估**：
+- 涉及文件：~2-3 个
+- 新增代码：~80 行（含 `formatDuration` 实现和单元测试）
+- 开发周期：~1 天
+- 难点：elapsed 时间的 tick 更新（1s 粒度）需要 `useEffect` + `setInterval`，注意 cleanup
+
+**改进前后对比**：
+- **改进前**：`npm install` 跑了 2 分钟，用户不知道。看不出是"快完了"还是"刚开始"
+- **改进后**：`Running… (1m23s · timeout 5m) +234 lines`——时间 + 进度 + 剩余窗口一眼可见
+
+**意义**：长任务场景"还剩多久"是用户关心的第一维度。
+**缺失后果**：用户盯着屏幕等待，无法判断何时该放弃或切其他任务。
+**改进收益**：elapsed + timeout 倒计时让用户形成"可预测的等待体验"。
+
+**组合效果**：item-44（MessageResponse + OffscreenFreeze）+ item-46（5 行 + 计数）+ item-47（时间显示）三项合并后，Qwen Code 的 Bash UI 将达到与 Claude Code 相当的"紧凑 + 进度可见"效果。总投入 **~4-5 天**。

@@ -168,6 +168,8 @@
 | **P2** | 会话 Recap（返回时上下文摘要）— `/recap` 命令 + 自动展示（v2.1.108/v2.1.110 新增）[↓](./qwen-code-improvement-report-p2-stability.md#item-43) | **已实现**（/recap + auto-show） | 小 | [PR#3434](https://github.com/QwenLM/qwen-code/pull/3434) ✓（2026-04-19 合并） |
 | **P2** | [瞬态消息单行容器 + 离屏历史冻结](./task-display-height-deep-dive.md) — MessageResponse `height=1 overflowY=hidden` + OffscreenFreeze 引用缓存避免历史 spinner 拖累 [↓](./qwen-code-improvement-report-p2-stability.md#item-44) | 无统一容器/无离屏冻结 | 中 | — |
 | **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 无统一上限 | 小 | — |
+| **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | 整屏 PTY 30 行 / 100ms 刷新 / 无计数 | 小 | — |
+| **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | 无时间展示 | 小 | — |
 | **P2** | [终端渲染优化（紧凑 + 低闪烁）](./terminal-low-flicker-deep-dive.md) — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 + PR#3381 游标移动优化 | 大 | [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（局部） |
 | **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-9) | 缺失 | 小 | — |
 | **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-10) | 缺失 | 小 | — |
@@ -318,7 +320,7 @@
 | [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退、Skill 模型覆盖、PreCompact Hook、模型调用 Slash 命令、/experimental 门控等） | 26 |
 | [P2 界面与 UX](./qwen-code-improvement-report-p2-tools-ui.md) | 中等优先级（Token 警告、Spinner、/rewind、Diff 渲染、/plan、大粘贴外化等） | 21 |
 | [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并、指令文件去重等） | 35 |
-| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap、显示高度控制、输出截断 等） | 45 |
+| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap、显示高度控制、输出截断、Bash UI 等） | 47 |
 | [P3 功能特性](./qwen-code-improvement-report-p3-features.md) | 低优先级功能特性（动态状态栏、Feature Gates、Vim、语音、插件市场、--config-dir 等） | 17 |
 | [P3 用户体验](./qwen-code-improvement-report-p3-ux.md) | 低优先级用户体验（Virtual Scrolling、Turn Diffs、Buddy、settingsSync 等） | 9 |
 | [P3 Hook 与组件](./qwen-code-improvement-report-p3-hooks.md) | 低优先级 Hook 与组件（useInboxPoller、AgentSummary、usePrStatus 等） | 33 |
@@ -429,6 +431,33 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-20（晚间新增 2 项 · Bash 任务展示）
+
+**用户提问**："Claude Code 展示 Bash 任务时和 Qwen Code 的差别是怎样的？" —— 触发对 Bash 工具 UI 差异的深度研究。
+
+**新增 Deep-Dive**：[Bash 任务展示 Deep-Dive](./bash-task-display-deep-dive.md) —— 归纳两条完全不同的路线：
+- **Claude = 极简 + 时间轴**：5 行窗口 + `+N lines` 计数 + elapsed/timeout 倒计时
+- **Qwen = 完整 + 数据维度**：整屏 PTY 30 行 + 100ms 刷新 + 字节计数 + 二进制检测
+
+4 个用户场景对比（find 5000 行 / npm install 2m / ls 错误 / 并行 20 工具），揭示 Qwen 在**长任务时间维度**和**并行屏幕占用**上的明显劣势。
+
+**新增 2 个追踪 item**（p2-stability 45 → 47）：
+- **[item-46](./qwen-code-improvement-report-p2-stability.md#item-46)** Bash 执行中 "5 行窗口 + `+N lines` 计数" —— 复刻 `ShellProgressMessage` 的 `lines.slice(-5)` + `extraLines` 模式（~100 行，1-2 天，前置 item-44）
+- **[item-47](./qwen-code-improvement-report-p2-stability.md#item-47)** `ShellTimeDisplay` 时间 + timeout 倒计时 —— 三种格式 `(timeout X)` / `(elapsed · timeout X)` / `(elapsed)`，dim color 显示（~80 行，1 天）
+
+**组合效果**：item-44（MessageResponse + OffscreenFreeze）+ item-46（5 行 + 计数）+ item-47（时间显示）三项合并后，Qwen 的 Bash UI 达到与 Claude 相当的"紧凑 + 进度可见"效果。总投入 **~4-5 天**。
+
+**关键源码验证**：
+- `components/shell/ShellProgressMessage.tsx:42-82` 确认 `lines.slice(-5)` + `+${extraLines} lines` / `~${totalLines} lines` 双模式
+- `components/shell/ShellProgressMessage.tsx:65` 确认 `<MessageResponse><OffscreenFreeze>` 包裹（复用 item-44 基础设施）
+- `components/shell/ShellTimeDisplay.tsx` 完整 73 行，三种格式分支 L30/L52/L63 全部对应
+- Qwen `packages/core/src/services/shellExecutionService.ts:636` 确认 `RENDER_THROTTLE_MS = 100`
+- Qwen `shellExecutionService.ts:179-182` 确认二进制流检测 `MAX_SNIFF_SIZE = 4096`（**反向借鉴点**：Claude 无此保护）
+
+**反向借鉴**：Claude Code 可从 Qwen 学习**二进制流检测**，防止 `cat /bin/ls` / `curl -o image.png` 破坏终端渲染。
+
+**总项数**：261 → **263**（+2）。p2-stability 45 → **47**。
 
 ### 2026-04-20（下午新增 2 项 · 任务显示高度控制）
 
