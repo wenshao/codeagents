@@ -255,6 +255,8 @@ Claude Code → CLI binary → localhost HTTP → Bun.serve() → Chromium (CDP)
 
 ### 8. 终端渲染优化（P2）
 
+> **📘 配套阅读**：[终端紧凑显示与低闪烁 Deep-Dive](./terminal-low-flicker-deep-dive.md)——把本 item 的 7 项技术按 "影响 × 成本" 排序，给出 3 阶段分期借鉴路径（阶段 1：1 周非侵入改造；阶段 2：3-5 周架构改动；阶段 3：细节打磨）。
+
 在 tmux、低性能终端或流式输出场景中，终端画面频繁闪烁——Agent 每输出一行文字，整个屏幕都重绘一次。这种闪烁不仅视觉上不舒适，还给人"工具不成熟"的印象。Claude Code 为此定制了 Ink 渲染引擎（`ink/` 目录 ~7,000 行），实现了 8 层防闪烁机制。核心技术：DEC 2026 同步输出（BSU/ESU 包裹所有输出，终端原子渲染）+ cell-level 差分（仅写变化的 cell）+ 双缓冲（frontFrame/backFrame swap）。
 
 **Claude Code 源码索引**：

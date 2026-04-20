@@ -166,7 +166,7 @@
 | **P2** | 压缩后身份重注入 — 上下文压缩后 messages<3 条时注入 Agent 身份块，防止 Agent "忘记自己是谁" [↓](./qwen-code-improvement-report-p2-stability.md#item-41) | 无身份重注入 | 小 | — |
 | **P2** | 子进程 PID 命名空间沙箱 + 脚本次数限制 — Linux PID namespace + env scrub + SCRIPT_CAPS（v2.1.98 新增） [↓](./qwen-code-improvement-report-p2-stability.md#item-42) | 无 PID 隔离 | 中 | — |
 | **P2** | 会话 Recap（返回时上下文摘要）— `/recap` 命令 + 自动展示（v2.1.108/v2.1.110 新增）[↓](./qwen-code-improvement-report-p2-stability.md#item-43) | **已实现**（/recap + auto-show） | 小 | [PR#3434](https://github.com/QwenLM/qwen-code/pull/3434) ✓（2026-04-19 合并） |
-| **P2** | 终端渲染优化 — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 | 大 | — |
+| **P2** | [终端渲染优化（紧凑 + 低闪烁）](./terminal-low-flicker-deep-dive.md) — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 + PR#3381 游标移动优化 | 大 | [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（局部） |
 | **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-9) | 缺失 | 小 | — |
 | **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-10) | 缺失 | 小 | — |
 | **P2** | --max-budget-usd — headless 模式 USD 花费上限 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-11) | 缺失 | 小 | — |
