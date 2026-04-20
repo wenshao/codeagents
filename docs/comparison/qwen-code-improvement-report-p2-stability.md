@@ -1804,3 +1804,190 @@ export function ShellTimeDisplay({ elapsedTimeSeconds, timeoutMs }: Props) {
 **改进收益**：elapsed + timeout 倒计时让用户形成"可预测的等待体验"。
 
 **组合效果**：item-44（MessageResponse + OffscreenFreeze）+ item-46（5 行 + 计数）+ item-47（时间显示）三项合并后，Qwen Code 的 Bash UI 将达到与 Claude Code 相当的"紧凑 + 进度可见"效果。总投入 **~4-5 天**。
+
+---
+
+<a id="item-48"></a>
+
+### 48. 语义化 hunk 模型 + `singleHunk` 智能上下文（P2）
+
+> **配套阅读**：[Update 工具展示 Deep-Dive](./update-tool-display-deep-dive.md) 第 2.1 节。
+
+**来源**：Claude Code `utils/diff.ts`（`structuredPatch` + `singleHunk` 启发式）。
+
+**问题**：Qwen Code 的 `Edit` 工具在 core 层用 `Diff.createPatch()`（`packages/core/src/tools/edit.ts:308, 433`）返回**字符串 patch**，UI 层 `DiffRenderer.tsx:23-81` 用 regex `parseDiffWithLineNumbers()` 重新解析字符串——**语义信息在序列化/反序列化过程中丢失**，每次渲染都重复 regex 解析（性能浪费）。同时，Qwen 固定使用上下文行数（`MAX_CONTEXT_LINES_WITHOUT_GAP = 5`），**无法根据 hunk 数量智能调整**——单处小修改时看不到完整函数上下文。
+
+**Claude Code 的解决方案（两部分）**：
+
+#### (A) `structuredPatch` 语义化 hunk 模型
+
+使用 `diff` npm library 的 `structuredPatch()` 直接返回 `StructuredPatchHunk[]`：
+
+```typescript
+// utils/diff.ts:81-114
+export function getPatchFromContents({
+  filePath, oldContent, newContent, ignoreWhitespace = false,
+  singleHunk = false,
+}): StructuredPatchHunk[] {
+  const result = structuredPatch(
+    filePath, filePath,
+    escapeForDiff(oldContent), escapeForDiff(newContent),
+    undefined, undefined,
+    {
+      ignoreWhitespace,
+      context: singleHunk ? 100_000 : CONTEXT_LINES,  // ⭐ 智能上下文
+      timeout: DIFF_TIMEOUT_MS,
+    }
+  )
+  return result?.hunks.map(h => ({ ...h, lines: h.lines.map(unescapeFromDiff) }))
+}
+```
+
+#### (B) `singleHunk` 智能上下文（核心启发式）
+
+**`utils/diff.ts:103`**：
+- **单 hunk**（整个 diff 只有一处修改）→ `context: 100_000` = **全量上下文**
+- **多 hunk**（修改多处）→ `context: 3` = **紧凑模式**
+
+**设计意图**：单处修改时用户想看**完整上下文**（"这个函数整体改后长什么样"）；多处修改时用户想看**每处变更的紧凑预览**。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/diff.ts:9` | `CONTEXT_LINES = 3` |
+| `utils/diff.ts:10` | `DIFF_TIMEOUT_MS = 5_000` |
+| `utils/diff.ts:103` | `context: singleHunk ? 100_000 : CONTEXT_LINES` |
+| `utils/diff.ts:81-114` | `getPatchFromContents()` 返回 `StructuredPatchHunk[]` |
+| `components/StructuredDiff.tsx` | 直接消费 hunk，无 regex 解析 |
+
+**Qwen Code 现状**：
+
+| 文件 | 现状 |
+|------|------|
+| `packages/core/src/tools/edit.ts:308, 433` | `Diff.createPatch()` 返回字符串 patch |
+| `packages/cli/src/ui/components/messages/DiffRenderer.tsx:23-81` | `parseDiffWithLineNumbers()` 用 regex 重新解析字符串 |
+| `DiffRenderer.tsx:245` | `MAX_CONTEXT_LINES_WITHOUT_GAP = 5`（固定，不根据 hunk 数调整）|
+
+**Qwen Code 修改方向**：
+1. **core 层改用 `Diff.structuredPatch()`**——修改 `edit.ts:308, 433` 两处，返回 `StructuredPatchHunk[]`
+2. **增加 `singleHunk` 启发式**：`hunks.length === 1` 时调整 context 参数
+3. **UI 层直接消费 hunk 数据**——`DiffRenderer.tsx` 接收 `StructuredPatchHunk[]`，**移除 `parseDiffWithLineNumbers()`**（60+ 行 regex 代码可删）
+4. **测试**：添加单 hunk / 多 hunk 上下文差异的快照测试
+
+**实现成本评估**：
+- 涉及文件：~3 个（`edit.ts` + `DiffRenderer.tsx` + 类型定义）
+- 改动代码：+100 / -60 行
+- 开发周期：~2-3 天
+- 难点：core 层类型改动可能影响 tool result 序列化格式，需要兼容性处理
+
+**改进前后对比**：
+- **改进前**：每次渲染都 regex re-parse；单行小修改时只看到 5 行上下文，看不到函数签名和返回值
+- **改进后**：直接消费 hunk（~10x 性能提升）；单 hunk 时看到完整函数上下文，理解变更意图更容易
+
+**意义**：语义化数据流是 diff UI 演进的基础设施。
+**缺失后果**：UI 层承担 regex 维护成本；上下文展示不智能。
+**改进收益**：消除 60+ 行 regex 代码 + 性能 10x + 单修改场景看到完整上下文。
+
+---
+
+<a id="item-49"></a>
+
+### 49. 多 hunk `...` 省略分隔符（StructuredDiffList 模式）（P2）
+
+> **配套阅读**：[Update 工具展示 Deep-Dive](./update-tool-display-deep-dive.md) 第 2.2 节。
+
+**来源**：Claude Code `components/StructuredDiffList.tsx`（~30 行完整实现）。
+
+**问题**：当 Edit/MultiEdit 产生多个 hunk（修改多处位置）时，Qwen Code CLI 的 `DiffRenderer` 用 `═` 全宽横线分隔**同一 hunk 内的无修改 gap**，但**不区分 hunk 之间**——多处修改堆叠在一起，视觉上难以识别"这是第几处变更"。Qwen WebUI 则完全单行摘要，更是没有多 hunk 视觉分隔。
+
+**Claude Code 的解决方案**：在 hunk 之间插入 dim color `...` 省略符号。
+
+**完整实现**（`components/StructuredDiffList.tsx:16-29`）：
+
+```tsx
+export function StructuredDiffList({
+  hunks, dim, width, filePath, firstLine, fileContent
+}: Props): React.ReactNode {
+  return intersperse(
+    hunks.map(hunk => (
+      <Box flexDirection="column" key={hunk.newStart}>
+        <StructuredDiff patch={hunk} dim={dim} width={width}
+          filePath={filePath} firstLine={firstLine} fileContent={fileContent} />
+      </Box>
+    )),
+    i => (
+      <NoSelect fromLeftEdge key={`ellipsis-${i}`}>
+        <Text dimColor>...</Text>
+      </NoSelect>
+    )
+  )
+}
+```
+
+**效果（用户视角）**：
+
+```
+--- foo/bar.ts
+@@ -10,3 +10,3 @@
+  function hello() {
+-   return "world"
++   return "world!"
+  }
+
+...                                 ← 省略分隔符（dim color）
+
+@@ -42,3 +42,3 @@
+  function goodbye() {
+-   return "bye"
++   return "see ya"
+  }
+
+...                                 ← 又一个分隔
+
+@@ -87,3 +87,3 @@
+  function farewell() {
+-   return "adios"
++   return "hasta luego"
+  }
+```
+
+**关键设计细节**：
+- **`intersperse` 工具函数**：数组元素间插入分隔符（比 `.map(...).join(...)` 更语义化）
+- **`NoSelect` 组件**：分隔符不响应文本选中，复制 diff 时不会带进 `...`
+- **`fromLeftEdge` 属性**：省略号贴左边缘对齐
+- **`dimColor`**：视觉上降低权重，不与 diff 内容竞争注意力
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/StructuredDiffList.tsx:16-29` | 完整实现（30 行） |
+| `utils/array.ts:intersperse()` | 数组插入分隔符工具函数 |
+| `ink.js:NoSelect` | 不响应文本选中的 wrapper 组件 |
+
+**Qwen Code 现状**：
+- CLI `DiffRenderer.tsx:248-276` 用 `═` 全宽横线分隔 gap，但处理的是**同一 hunk 内大段无修改**，不是 hunk 之间
+- 多 hunk 场景直接堆叠（或由 MaxSizedBox 截断）
+- WebUI 单行摘要，无多 hunk 展开
+
+**Qwen Code 修改方向**：
+1. **前置依赖**：先落地 item-48（语义化 hunk 模型），才有 `StructuredPatchHunk[]` 可迭代
+2. 在 `DiffRenderer.tsx` 中检测 `hunks.length > 1`，渲染每个 hunk 后插入 `<Text dimColor>...</Text>`
+3. WebUI 可选：提供"展开所有 hunk"按钮，展开后用相同 `...` 分隔
+4. 考虑新增 `NoSelect` 组件（若不存在）避免复制时带分隔符
+
+**实现成本评估**：
+- 涉及文件：~2 个（`DiffRenderer.tsx` + 可能的 `NoSelect.tsx`）
+- 新增代码：~30 行
+- 开发周期：~0.5 天
+- 前置：item-48（语义化 hunk 模型）
+- 难点：与现有 `═` 间隙符（hunk 内）的视觉协调——建议使用两种不同符号区分"hunk 内 gap"和"hunk 之间"
+
+**改进前后对比**：
+- **改进前**：3 处修改的 diff 视觉上是一整块，用户需要靠行号反跳识别位置
+- **改进后**：`...` 明确分隔，用户一眼看到"有 3 处修改，分别在 10/42/87 行附近"
+
+**意义**：多处修改是 refactor / rename 的常见场景，视觉分隔直接影响 review 效率。
+**缺失后果**：MultiEdit 多处修改的 UI 不如 Claude 清晰。
+**改进收益**：30 行代码换来多 hunk 场景的视觉层次感；与 item-48 配合实现完整的 Claude 风格 diff 展示。

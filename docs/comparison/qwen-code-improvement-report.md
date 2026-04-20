@@ -170,6 +170,8 @@
 | **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 无统一上限 | 小 | — |
 | **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | 整屏 PTY 30 行 / 100ms 刷新 / 无计数 | 小 | — |
 | **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | 无时间展示 | 小 | — |
+| **P2** | [语义化 hunk 模型 + singleHunk 智能上下文](./update-tool-display-deep-dive.md) — `structuredPatch` + `singleHunk ? 100_000 : 3` 智能 context + 消除 UI 层 regex re-parse [↓](./qwen-code-improvement-report-p2-stability.md#item-48) | `createPatch` 字符串 + UI regex 重解析 + 固定 5 行上下文 | 中 | — |
+| **P2** | [多 hunk `...` 省略分隔符](./update-tool-display-deep-dive.md) — StructuredDiffList 在 hunk 之间插入 dim color `...` [↓](./qwen-code-improvement-report-p2-stability.md#item-49) | 多 hunk 直接堆叠无分隔 | 小 | — |
 | **P2** | [终端渲染优化（紧凑 + 低闪烁）](./terminal-low-flicker-deep-dive.md) — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 + PR#3381 游标移动优化 | 大 | [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（局部） |
 | **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-9) | 缺失 | 小 | — |
 | **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-10) | 缺失 | 小 | — |
@@ -320,7 +322,7 @@
 | [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退、Skill 模型覆盖、PreCompact Hook、模型调用 Slash 命令、/experimental 门控等） | 26 |
 | [P2 界面与 UX](./qwen-code-improvement-report-p2-tools-ui.md) | 中等优先级（Token 警告、Spinner、/rewind、Diff 渲染、/plan、大粘贴外化等） | 21 |
 | [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并、指令文件去重等） | 35 |
-| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap、显示高度控制、输出截断、Bash UI 等） | 47 |
+| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap、显示高度控制、输出截断、Bash UI、Update/Diff UI 等） | 49 |
 | [P3 功能特性](./qwen-code-improvement-report-p3-features.md) | 低优先级功能特性（动态状态栏、Feature Gates、Vim、语音、插件市场、--config-dir 等） | 17 |
 | [P3 用户体验](./qwen-code-improvement-report-p3-ux.md) | 低优先级用户体验（Virtual Scrolling、Turn Diffs、Buddy、settingsSync 等） | 9 |
 | [P3 Hook 与组件](./qwen-code-improvement-report-p3-hooks.md) | 低优先级 Hook 与组件（useInboxPoller、AgentSummary、usePrStatus 等） | 33 |
@@ -431,6 +433,36 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-20（深夜新增 2 项 · Update 工具展示）
+
+**用户提问**："Update 的展示区别也调查一下" —— 延续前两轮对 Bash / 高度控制的分析，覆盖 Edit / Write / MultiEdit 类工具的 UI 差异。
+
+**反直觉的发现**：**这个维度两边各有优势**——与 Bash/高度控制不同：
+- Claude Code 默认展示**完整 diff**（`FileEditToolUpdatedMessage.tsx:88-97`）
+- Qwen Code **WebUI 默认单行摘要**（`EditToolCall.tsx:149-181`），比 Claude 更紧凑
+- Qwen Code **CLI 中等**，用 `MaxSizedBox` 自适应高度 + `═` 间隙符
+
+**新增 Deep-Dive**：[Update 工具展示 Deep-Dive](./update-tool-display-deep-dive.md) —— 4 个场景对比（3 行小改 / 200 行大重构 / 500 行新文件 / string not found 失败），双向借鉴分析。
+
+**新增 2 个追踪 item**（p2-stability 47 → 49）：
+- **[item-48](./qwen-code-improvement-report-p2-stability.md#item-48)** 语义化 hunk 模型 + `singleHunk` 智能上下文——把 `Diff.createPatch()` 字符串改为 `Diff.structuredPatch()` 的 `StructuredPatchHunk[]`，消除 UI 层 `parseDiffWithLineNumbers()` regex（60 行代码可删），加入 `singleHunk ? 100_000 : 3` 智能 context（~150 行净改动，2-3 天）
+- **[item-49](./qwen-code-improvement-report-p2-stability.md#item-49)** 多 hunk `...` 省略分隔符——参考 `StructuredDiffList.tsx` 用 `intersperse` 在 hunk 之间插入 dim color `...`（~30 行，0.5 天，依赖 item-48）
+
+**关键源码验证**：
+- `utils/diff.ts:9` `CONTEXT_LINES = 3`
+- `utils/diff.ts:103` `context: singleHunk ? 100_000 : CONTEXT_LINES` ⭐ 智能上下文核心
+- `utils/diff.ts:81-114` `getPatchFromContents()` 返回 `StructuredPatchHunk[]`
+- `components/StructuredDiffList.tsx:16-29` 完整 `intersperse` + `NoSelect` + `Text dimColor` 实现
+- `components/FileEditToolUpdatedMessage.tsx:62-110` 三种展示模式（preview hint / condensed / 默认完整 diff）
+- Qwen `packages/core/src/tools/edit.ts:308, 433` `Diff.createPatch()` 字符串 patch
+- Qwen `DiffRenderer.tsx:23-81` `parseDiffWithLineNumbers()` regex re-parse
+
+**反向借鉴**（Qwen → Claude 的亮点，写入 Deep-Dive 第 7 节）：
+- WebUI 默认单行摘要 + 展开交互（Claude 可作为用户选项）
+- `═` 全宽横线 gap 折叠（Claude 的 `...` 仅 hunk 间，不处理 hunk 内大段无修改）
+
+**总项数**：263 → **265**（+2）。p2-stability 47 → **49**。
 
 ### 2026-04-20（晚间新增 2 项 · Bash 任务展示）
 
