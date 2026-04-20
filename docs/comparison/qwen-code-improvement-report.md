@@ -121,7 +121,7 @@
 | **P2** | [Transcript Search 会话记录搜索](./transcript-search-navigation-deep-dive.md) — 按 `/` 搜索会话记录，`n`/`N` 导航匹配项 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-2) | 缺失 | 小 | — |
 | **P2** | [Bash File Watcher](./file-watcher-stale-edit-deep-dive.md) — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-3) | 缺失 | 小 | — |
 | **P2** | [/batch 并行操作](./batch-parallel-execution-deep-dive.md) — 编排大规模并行变更（多文件/多任务）[↓](./qwen-code-improvement-report-p2-tools-commands.md#item-4) | 缺失 | 中 | [PR#3079](https://github.com/QwenLM/qwen-code/pull/3079) ✓ |
-| **P2** | PDF / 二进制文件读取 — read_file 内置 PDF + 图片 + Notebook 支持 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-21) | 拒绝 PDF（[#2024](https://github.com/QwenLM/qwen-code/pull/2024) ✓ 合并） | 中 | [Issue#38](https://github.com/QwenLM/qwen-code/issues/38)、[PR#3160](https://github.com/QwenLM/qwen-code/pull/3160) 🟡 |
+| **P2** | PDF / 二进制文件读取 — read_file 内置 PDF + 图片 + Notebook 支持 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-21) | ✓ PDF + Notebook 已实现（[PR#3160](https://github.com/QwenLM/qwen-code/pull/3160) ✓ 2026-04-20 合并）；图片/DOCX/XLSX 仍缺 | 中 | [Issue#38](https://github.com/QwenLM/qwen-code/issues/38)、[PR#2024](https://github.com/QwenLM/qwen-code/pull/2024) ✓ |
 | **P2** | Skill 级模型覆盖 — SKILL.md frontmatter `model:` 字段，按阶段切换模型 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-22) | 仅 session 级 | 小 | [PR#2949](https://github.com/QwenLM/qwen-code/pull/2949) ✓ |
 | **P2** | PreCompact Hook — 压缩前钩子，支持 block/modify/continue（Claude Code v2.1.105 新增） [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-23) | 仅 PostCompact | 小 | — |
 | **P2** | 模型通过 Skill 工具调用内置 Slash 命令 — Agent 自主调用 `/init` / `/review` / `/security-review`（v2.1.108 新增） [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-24) | 用户手动触发 | 中 | — |
@@ -427,6 +427,29 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-20（清晨合并潮 🎉）
+
+**昨晚 item 规格 → 今晨直接合并**——再次出现 "今天完整规格补充 → 次日合并实现" 的正反馈循环。
+
+**🎯 追踪 item 直接落地（1 个）**：
+
+| PR | 合并时间 | 对应 item | 意义 |
+|---|---|---|---|
+| **[PR#3160](https://github.com/QwenLM/qwen-code/pull/3160) ✓** | 2026-04-20 03:09 UTC | [p2-tools-commands item-21 PDF / 二进制文件读取](./qwen-code-improvement-report-p2-tools-commands.md#item-21) | **昨晚刚加入追踪（09:09 UTC 左右），6 小时后即合并**——`read_file` 现已支持 PDF 文本提取 + Jupyter Notebook 解析。item-21 状态：🟡 追踪 → ✓ 部分实现（P0 + P2 完成，仅剩图片/Office 两项） |
+
+**🆕 新合并（3 个，维护/新能力但未在追踪 item 内）**：
+
+- [PR#3448](https://github.com/QwenLM/qwen-code/pull/3448) ✓ **2026-04-20 02:01 UTC** — `feat(cli): add bare startup mode`：新增 `--bare` 启动模式（CI/脚本专用），跳过 hooks/LSP/auto memory/skills/ambient extensions/MCP 等所有隐式启动发现，仅保留最小工具集 `read_file + edit + run_shell_command`，也可通过 `QWEN_CODE_SIMPLE=1` 环境变量启用。对标 Claude Code 的 `--print`/非交互模式。**可考虑加入追踪 item**（CI 场景启动优化新方向）。
+- [PR#3445](https://github.com/QwenLM/qwen-code/pull/3445) ✓ **2026-04-20 03:06 UTC** — `feat(cli): add slashCommands.disabled setting to gate slash commands`：新增 `slashCommands.disabled` 配置以禁用特定 slash 命令，是 [item-26 /experimental 实验特性统一门控](./qwen-code-improvement-report-p2-tools-commands.md#item-26) 思路的部分实现（gate 层已就位，但不是专门的 "experimental" 注册表）。
+- [PR#3450](https://github.com/QwenLM/qwen-code/pull/3450) ✓ **2026-04-20 02:01 UTC** — `fix(vscode-ide-companion): preserve split stream message ordering`（VSCode IDE companion 消息排序修复）
+- [PR#2593](https://github.com/QwenLM/qwen-code/pull/2593) ✓ **2026-04-20 02:02 UTC** — `feat(vscode-ide-companion): support /insight command`（VSCode companion 支持 `/insight` 命令）
+
+**⭐ 新开的重磅 PR（1 个）**：
+
+- **[PR#3455](https://github.com/QwenLM/qwen-code/pull/3455)**（🟡 OPEN，2026-04-20 02:25 UTC 创建）— **`perf(filesearch): move @-picker crawl and fzf index to worker_threads`**：将 `@`-picker 的递归文件爬取 + fzf 索引构建移出主线程到 `worker_threads`，避免在大仓库（100k 文件）按 `@` 时卡住 1–9 秒；同时引入 ripgrep 作为大仓库爬取后端（50k+ 文件下 3–4× 快于 `fdir`），CLI 启动时 pre-warm 索引。**这是对 [p2-perf item-9 延迟初始化与按需加载](./qwen-code-improvement-report-p2-perf.md#item-9) 的强化实现**（线程卸载 + ripgrep fast path）。
+
+**计数更新**：已合并 ✓ 64 → **65**（+PR#3160 覆盖追踪 item-21 的 P0+P2）。其他 4 个 PR（#3448/#3445/#3450/#2593）属于能力扩展或维护修复，暂不计入 "追踪 item 直接实现" 计数。
 
 ### 2026-04-19（勘误 + 追加）
 
