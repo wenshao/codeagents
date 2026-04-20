@@ -166,6 +166,8 @@
 | **P2** | 压缩后身份重注入 — 上下文压缩后 messages<3 条时注入 Agent 身份块，防止 Agent "忘记自己是谁" [↓](./qwen-code-improvement-report-p2-stability.md#item-41) | 无身份重注入 | 小 | — |
 | **P2** | 子进程 PID 命名空间沙箱 + 脚本次数限制 — Linux PID namespace + env scrub + SCRIPT_CAPS（v2.1.98 新增） [↓](./qwen-code-improvement-report-p2-stability.md#item-42) | 无 PID 隔离 | 中 | — |
 | **P2** | 会话 Recap（返回时上下文摘要）— `/recap` 命令 + 自动展示（v2.1.108/v2.1.110 新增）[↓](./qwen-code-improvement-report-p2-stability.md#item-43) | **已实现**（/recap + auto-show） | 小 | [PR#3434](https://github.com/QwenLM/qwen-code/pull/3434) ✓（2026-04-19 合并） |
+| **P2** | [瞬态消息单行容器 + 离屏历史冻结](./task-display-height-deep-dive.md) — MessageResponse `height=1 overflowY=hidden` + OffscreenFreeze 引用缓存避免历史 spinner 拖累 [↓](./qwen-code-improvement-report-p2-stability.md#item-44) | 无统一容器/无离屏冻结 | 中 | — |
+| **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 无统一上限 | 小 | — |
 | **P2** | [终端渲染优化（紧凑 + 低闪烁）](./terminal-low-flicker-deep-dive.md) — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 + PR#3381 游标移动优化 | 大 | [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（局部） |
 | **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-9) | 缺失 | 小 | — |
 | **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-10) | 缺失 | 小 | — |
@@ -316,7 +318,7 @@
 | [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退、Skill 模型覆盖、PreCompact Hook、模型调用 Slash 命令、/experimental 门控等） | 26 |
 | [P2 界面与 UX](./qwen-code-improvement-report-p2-tools-ui.md) | 中等优先级（Token 警告、Spinner、/rewind、Diff 渲染、/plan、大粘贴外化等） | 21 |
 | [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并、指令文件去重等） | 35 |
-| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap 等） | 43 |
+| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap、显示高度控制、输出截断 等） | 45 |
 | [P3 功能特性](./qwen-code-improvement-report-p3-features.md) | 低优先级功能特性（动态状态栏、Feature Gates、Vim、语音、插件市场、--config-dir 等） | 17 |
 | [P3 用户体验](./qwen-code-improvement-report-p3-ux.md) | 低优先级用户体验（Virtual Scrolling、Turn Diffs、Buddy、settingsSync 等） | 9 |
 | [P3 Hook 与组件](./qwen-code-improvement-report-p3-hooks.md) | 低优先级 Hook 与组件（useInboxPoller、AgentSummary、usePrStatus 等） | 33 |
@@ -427,6 +429,29 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-20（下午新增 2 项 · 任务显示高度控制）
+
+**用户提问**："Claude Code 的任务怎么控制显示高度，有哪些值得借鉴的？" —— 触发对 Claude Code UI 高度控制机制的深度研究。
+
+**新增 Deep-Dive**：[任务显示高度控制 Deep-Dive](./task-display-height-deep-dive.md) —— 归纳 Claude Code 的 4 条高度控制机制：
+- `MessageResponse` 单行容器（`height=1 overflowY=hidden`）—— 所有瞬态消息压缩到 1 行
+- `OffscreenFreeze` 离屏冻结（`useRef` 引用缓存 + `useTerminalViewport`）—— 历史 spinner 0 CPU
+- `Ratchet` 最小高度锁定 —— 滚动不抖动
+- 三级输出截断（Bash 30K / 单工具 50K / 单消息 200K）—— 防 context 爆炸
+
+**新增 2 个追踪 item**（p2-stability 43 → 45）：
+- **[item-44](./qwen-code-improvement-report-p2-stability.md#item-44)** 瞬态消息单行容器 + 离屏历史冻结 —— 复刻 MessageResponse + OffscreenFreeze 模式（~200 行，~3-4 天）
+- **[item-45](./qwen-code-improvement-report-p2-stability.md#item-45)** 三级输出截断 —— Bash 30K default / 150K upper + env var `QWEN_BASH_MAX_OUTPUT_LENGTH` + 单工具 50K 持久化 + 单消息 200K 批量预算（~250 行，~4 天，可拆 3 PR）
+
+**关键源码验证**（`/root/git/claude-code-leaked/`）：
+- `components/MessageResponse.tsx:37` 确认 `<Box height={height} overflowY="hidden">`
+- `components/OffscreenFreeze.tsx:23-42` 确认 `'use no memo'` + `useRef` 冻结
+- `components/design-system/Ratchet.tsx:38-65` 确认 `measureElement` + `setMinHeight`
+- `utils/shell/outputLimits.ts:3-14` 确认 `BASH_MAX_OUTPUT_DEFAULT=30_000` + `UPPER_LIMIT=150_000`
+- `constants/toolLimits.ts:13-56` 确认 6 个常量（`DEFAULT_MAX_RESULT_SIZE_CHARS=50_000`、`MAX_TOOL_RESULTS_PER_MESSAGE_CHARS=200_000` 等）
+
+**总项数**：260 → **261**（+2，同时修正历史计数 1 处偏差）。p2-stability 43 → **45**。
 
 ### 2026-04-20（清晨合并潮 🎉）
 

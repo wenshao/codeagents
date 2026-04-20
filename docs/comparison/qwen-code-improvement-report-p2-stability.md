@@ -1491,3 +1491,158 @@ Skip status reports and commit recaps.`
 **意义**：返回旧会话的体验直接影响**长项目的用户粘性**——想不起上次做什么就容易放弃。
 **缺失后果**：用户打开长会话 → 滚动几页回忆 → 体验差 → 倾向于开新会话丢弃旧上下文。
 **改进收益**：recap = 3 秒钟回忆上次做到哪里。
+
+---
+
+<a id="item-44"></a>
+
+### 44. 瞬态消息单行容器 + 离屏历史冻结（P2）
+
+> **配套阅读**：[任务显示高度控制 Deep-Dive](./task-display-height-deep-dive.md) —— 本 item 第 1.1/1.2 节的完整分析。
+
+**来源**：Claude Code 的 4 条高度控制机制之 2 条。
+
+**问题**：长任务执行时，Qwen Code 屏幕容易被"爆"——工具进度消息可能占多行，历史消息里的 spinner 还在动导致每个 tick 整个终端 reset。Claude Code 通过**瞬态消息统一高度容器**（`MessageResponse`）+ **离屏 React 子树冻结**（`OffscreenFreeze`）两条机制压缩活跃区并消除历史区重排。
+
+**Claude Code 的解决方案（两条配合）**：
+
+#### (A) `MessageResponse` 单行容器
+
+所有瞬态消息（工具进度 / Waiting / Running hook / Done / (No output) / 图像检测消息）共享一个 `<Box height={1} overflowY="hidden">` 容器。外部可传 `height` 扩展，但默认 1。`overflowY="hidden"` 是 clip 而非 scroll——看不到就是看不到。
+
+```tsx
+// components/MessageResponse.tsx:37
+<Box flexDirection="row" height={height} overflowY="hidden">
+  {prefixIcon}{mainText}
+</Box>
+```
+
+#### (B) `OffscreenFreeze` 离屏冻结
+
+滚出视口的历史消息用 `useRef` 缓存 React element 引用，reconciler 看到相同引用直接 bail out → 子树 **0 diff**。
+
+```tsx
+// components/OffscreenFreeze.tsx:23-42
+export function OffscreenFreeze({ children }): React.ReactNode {
+  'use no memo'  // React Compiler: 手动缓存是整个冻结机制，memo 会破坏它
+  const [ref, { isVisible }] = useTerminalViewport()
+  const cached = useRef(children)
+  if (isVisible || inVirtualList) cached.current = children
+  return <Box ref={ref}>{cached.current}</Box>
+}
+```
+
+**为什么需要冻结**（源码注释原话）：
+
+> Any content change above the viewport forces `log-update.ts` into a **full terminal reset**. For content that updates on a timer — spinners, elapsed counters — this produces a reset per tick.
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `components/MessageResponse.tsx:37` | `<Box height={height} overflowY="hidden">` 统一容器 |
+| `components/OffscreenFreeze.tsx:23-42` | `useRef` 引用缓存 + `useTerminalViewport` 可见性检测 |
+| `components/messages/HookProgressMessage.tsx:66-113` | Hook 进度消息使用 MessageResponse |
+| `tools/BashTool/BashToolResultMessage.tsx:103-189` | 图像检测/(No output) 均 `height={1}` |
+| `ink/hooks/use-terminal-viewport.ts` | 可见性检测 hook 实现 |
+
+**Qwen Code 现状**：消息组件分散，进度/工具结果没有统一高度容器；所有消息每帧参与 reconcile，历史区 spinner 动画拖累全屏重排。
+
+**Qwen Code 修改方向**：
+1. **新建 `packages/cli/src/ui/components/MessageResponse.tsx`**：复刻 `<Box flexDirection="row" height={height} overflowY="hidden">` 抽象（~20 行）
+2. 改造 `ToolGroupMessage` / 工具进度组件 / Waiting 组件用 `<MessageResponse>` 包裹
+3. **新建 `packages/cli/src/ui/hooks/useTerminalViewport.ts`**：基于 `measureElement` + 全局 scroll 位置检测可见性（难点）
+4. **新建 `packages/cli/src/ui/components/OffscreenFreeze.tsx`**：复刻 useRef 冻结模式（~20 行），wrap 所有历史消息
+
+**实现成本评估**：
+- 涉及文件：~6 个
+- 新增代码：~200 行（其中 viewport hook 占 ~100 行）
+- 开发周期：~3-4 天
+- 难点：Ink 无内建 `useTerminalViewport`，需要自定义基于 scroll 位置和元素 offset 的检测
+
+**改进前后对比**：
+- **改进前**：10 条历史工具调用 × 每条 spinner 动画 → 每秒 >30 次终端 reset → 交互卡顿
+- **改进后**：离屏历史 0 CPU / 活跃区固定 1 行/工具 → 屏幕始终紧凑，交互流畅
+
+**意义**：屏幕紧凑 + 历史零成本是 "感觉丝滑" 的核心来源。
+**缺失后果**：Qwen Code 长任务执行时屏幕容易失控，历史 spinner 动画拖累全局性能。
+**改进收益**：MessageResponse 单行压缩活跃区 + OffscreenFreeze 消除历史 reset = 90% 的"屏幕爆"感知问题解决。
+
+---
+
+<a id="item-45"></a>
+
+### 45. 三级输出截断（Bash 30K / 单工具 50K / 单消息 200K）（P2）
+
+> **配套阅读**：[任务显示高度控制 Deep-Dive](./task-display-height-deep-dive.md) —— 本 item 第 1.4 节的完整分析。
+
+**来源**：Claude Code 的 `constants/toolLimits.ts` + `utils/shell/outputLimits.ts`。
+
+**问题**：Qwen Code 没有统一的工具输出字符截断策略——`cat large.log` 可能输出几 MB、`find /` 可能上万行、10 个并行 `read_file` 可能累计吃掉 500K context。大输出直接塞进 API 上下文会：(a) 爆 token 预算、(b) 后续交互变慢、(c) 屏幕被刷爆。
+
+**Claude Code 的解决方案（三级设防）**：
+
+| 层级 | 常量 | 值 | 作用 |
+|-----|-----|-----|-----|
+| 1 | `BASH_MAX_OUTPUT_DEFAULT` | **30,000 字符** | Bash 命令默认输出上限（~300-500 行） |
+| 1' | `BASH_MAX_OUTPUT_UPPER_LIMIT` | **150,000 字符** | env var `BASH_MAX_OUTPUT_LENGTH` 可在 [30K, 150K] 调整 |
+| 2 | `DEFAULT_MAX_RESULT_SIZE_CHARS` | **50,000 字符** | 单工具结果超限持久化到磁盘，model 收到文件路径 preview |
+| 2' | `MAX_TOOL_RESULT_TOKENS` | **100,000 tokens** (~400KB) | 单工具 token 硬上限（防御性） |
+| 3 | `MAX_TOOL_RESULTS_PER_MESSAGE_CHARS` | **200,000 字符** | 单 user 消息所有工具结果总预算——按大小排序持久化最大的 |
+| 4 | `TOOL_SUMMARY_MAX_LENGTH` | **50 字符** | 折叠视图的工具 summary 截断长度 |
+
+**层 3 的精妙之处（源码注释原话）**：
+
+> This prevents **N parallel tools** from each hitting the per-tool max and collectively producing e.g. 10 × 40K = 400K in one turn's user message.
+
+**层 1 的 env var 调整机制**：
+
+```typescript
+// utils/shell/outputLimits.ts:6-14
+export function getMaxOutputLength(): number {
+  const result = validateBoundedIntEnvVar(
+    'BASH_MAX_OUTPUT_LENGTH',
+    process.env.BASH_MAX_OUTPUT_LENGTH,
+    BASH_MAX_OUTPUT_DEFAULT,      // 30_000
+    BASH_MAX_OUTPUT_UPPER_LIMIT,  // 150_000
+  )
+  return result.effective  // 超出自动 clamp
+}
+```
+
+**截断后的 UX**：保留前 30K 字符 + 显示 `[N lines truncated]`，完整内容持久化到磁盘供后续检索。
+
+**GrowthBook 运行时调整**：`tengu_hawthorn_window` flag 调整 per-message 预算（`toolResultStorage.ts:getPerMessageBudgetLimit()`）。
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键函数/常量 |
+|------|-------------|
+| `utils/shell/outputLimits.ts:3-14` | `BASH_MAX_OUTPUT_DEFAULT`、`BASH_MAX_OUTPUT_UPPER_LIMIT`、`getMaxOutputLength()` |
+| `constants/toolLimits.ts:13-49` | 6 个常量定义 + 注释说明设计意图 |
+| `services/toolResultStorage.ts` | 持久化到磁盘 + path preview 生成（实现细节）|
+| `tools/BashTool/utils.ts:147-157` | 截断逻辑 + `[N lines truncated]` 提示 |
+
+**Qwen Code 现状**：`grep -rn "BASH_MAX_OUTPUT\|MAX_RESULT_SIZE\|overflowY" packages/` 未命中。ShellTool 可能直接把全部输出塞进上下文。
+
+**Qwen Code 修改方向**：
+1. **P0：Bash 输出层**——新建 `packages/cli/src/utils/shell/outputLimits.ts`，实现 `getMaxOutputLength()` + `truncateOutput()`，env var `QWEN_BASH_MAX_OUTPUT_LENGTH` 在 [1K, 150K] 可调。在 ShellExecutionService 调用 `truncateOutput()`。
+2. **P1：单工具结果层**——新建 `packages/core/src/constants/toolLimits.ts` 定义 50K 上限；新建 `toolResultStorage.ts` 超限时持久化到 `.qwen/tool-results/<hash>.txt` 并返回 path preview（前 2K 字符 + 文件路径）。
+3. **P2：消息层 200K 预算**——在消息组装阶段统计单 user 消息所有工具结果总字节，超限时按大小排序持久化最大的。
+
+**实现成本评估**：
+- P0：~20 行 + 测试 = **0.5 天**
+- P1：~150 行（含持久化 I/O）= 2-3 天
+- P2：~80 行 = 1 天
+- 总计：~4 天，可分 3 个独立 PR 提交
+- 难点：P1 需要磁盘 I/O + hash 生成 + 后续 read 流程适配（Agent 需要知道可以 `read_file` 拉回完整内容）
+
+**改进前后对比**：
+- **改进前**：`cat production.log` 1.2MB → 直接塞进 context → 后续 token 预算告急 → 对话只能 3 轮就压缩
+- **改进后**：截断到 30K + `[18750 lines truncated]` 提示 → context 保护 → Agent 若需要可 `read_file` 分页拉回
+
+**意义**：工具输出不设防是 context 爆炸的头号元凶。
+**缺失后果**：大日志 / 大 find 结果直接爆 context，单次交互无法完成。
+**改进收益**：三级设防保证单次交互 token 预算可控；env var 允许用户按需调整。
+
+**验证方法**：`grep -rn "BASH_MAX_OUTPUT\|truncateOutput\|MAX_TOOL_RESULTS_PER_MESSAGE" packages/` 看命中情况；改进后应 ≥ 3 处命中。
