@@ -160,7 +160,7 @@
 | **P2** | Status Line 自定义 — shell 脚本在状态栏展示自定义信息 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-7) | 缺失 | 小 | [PR#2923](https://github.com/QwenLM/qwen-code/pull/2923) ✓ / [Roadmap#2418](https://github.com/QwenLM/qwen-code/issues/2418) |
 | **P2** | Query TransitionReason 枚举 — 6 种查询转换原因显式标记（tool_result/max_tokens/compaction/retry/stop_hook/budget） [↓](./qwen-code-improvement-report-p2-stability.md#item-36) | 隐式 if-else | 小 | — |
 | **P2** | 工具并发安全分类 — 每个工具标记 `concurrencySafe`，并发分区后批量执行 [↓](./qwen-code-improvement-report-p2-stability.md#item-37) | 仅 Agent 工具并行 | 中 | — |
-| **P2** | 工具执行进度消息 — 长时间工具（>3s）发射进度事件 + elapsed time + shell stats bar + OSC 9;4 标签进度 [↓](./qwen-code-improvement-report-p2-stability.md#item-38) | **已实现**（3 合 1 补丁） | 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（2026-04-20 合并） |
+| **P2** | 工具执行进度消息 — 长时间工具（>3s）发射进度事件 + elapsed time + shell stats bar + OSC 9;4 标签进度 [↓](./qwen-code-improvement-report-p2-stability.md#item-38) | 🟡 部分实现（墙钟/字节 ✓ / 语义 progress events 未覆盖）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（2026-04-20 合并，视觉反馈部分）|
 | **P2** | 运行时任务模型 — 区分 work-graph task（持久目标）vs runtime task（执行槽），防止状态混淆 [↓](./qwen-code-improvement-report-p2-stability.md#item-39) | 仅 TodoWriteTool | 中 | — |
 | **P2** | 后台通知 drain-before-call — LLM 调用前排空后台任务通知队列，确保模型看到最新结果 [↓](./qwen-code-improvement-report-p2-stability.md#item-40) | 无通知排空 | 小 | — |
 | **P2** | 压缩后身份重注入 — 上下文压缩后 messages<3 条时注入 Agent 身份块，防止 Agent "忘记自己是谁" [↓](./qwen-code-improvement-report-p2-stability.md#item-41) | 无身份重注入 | 小 | — |
@@ -169,7 +169,7 @@
 | **P2** | [瞬态消息单行容器 + 离屏历史冻结](./task-display-height-deep-dive.md) — MessageResponse `height=1 overflowY=hidden` + OffscreenFreeze 引用缓存避免历史 spinner 拖累 [↓](./qwen-code-improvement-report-p2-stability.md#item-44) | 无统一容器/无离屏冻结 | 中 | — |
 | **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 无统一上限 | 小 | — |
 | **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | 🟡 部分实现（`+N lines` 已有，5 行窗口缺） | 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（部分） |
-| **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | **已实现**（全工具 + 右对齐 3s 阈值）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（2026-04-20 合并） |
+| **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | 🟡 变体实现（3s 阈值 + 右对齐，分散到 elapsed + stats bar 两处，非 Claude 的单单元组合）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（变体，2026-04-20 合并）|
 | **P2** | [语义化 hunk 模型 + singleHunk 智能上下文](./update-tool-display-deep-dive.md) — `structuredPatch` + `singleHunk ? 100_000 : 3` 智能 context + 消除 UI 层 regex re-parse [↓](./qwen-code-improvement-report-p2-stability.md#item-48) | `createPatch` 字符串 + UI regex 重解析 + 固定 5 行上下文 | 中 | — |
 | **P2** | [多 hunk `...` 省略分隔符](./update-tool-display-deep-dive.md) — StructuredDiffList 在 hunk 之间插入 dim color `...` [↓](./qwen-code-improvement-report-p2-stability.md#item-49) | 多 hunk 直接堆叠无分隔 | 小 | — |
 | **P2** | [终端渲染优化（紧凑 + 低闪烁）](./terminal-low-flicker-deep-dive.md) — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 + PR#3381 游标移动优化 | 大 | [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（局部） |
@@ -433,6 +433,31 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-21（勘误 · PR#3155 与 item-47 的设计差异）
+
+**勘误动机**：用户指出应"结合 PR#3155 仔细看 item-47"。经逐行对比 PR#3155 代码与 item-47 原规格，发现之前标记 "✓ 完整实现" 不准确——**PR#3155 和 Claude Code 的 `ShellTimeDisplay` 功能等价但设计差异显著**。
+
+**PR#3155 vs item-47 spec 5 处关键差异**：
+
+| 方面 | Claude `ShellTimeDisplay` | PR#3155 | 判断 |
+|---|---|---|---|
+| 起始可见性 | 始终可见 | 3s 阈值 | 设计哲学差异（连续反馈 vs 静默到慢才显示）|
+| 格式 | `(10.5s · timeout 30s)` 组合单元 | `3s` 独立 + `timeout 3s` 在 stats bar | 信息分散——Claude 的组合更紧凑 |
+| 亚秒精度 | `formatDuration` `hideTrailingZeros: true`，支持 `10.5s` | 自定义 `formatElapsed`，仅整数秒 | PR 精度损失 |
+| 位置 | 与 `Running…` 前缀**内联** | 工具行**右对齐**独立 flex child | Claude 语义连贯 vs PR 状态行装饰 |
+| 工具范围 | Shell only | **所有工具**（覆盖更广）| PR 优势 |
+
+**状态变更**：
+- item-47 主矩阵：**✓ 完整实现 → 🟡 变体实现**（5 处差异明确列出）
+- item-38 主矩阵：**✓ 完整实现 → 🟡 部分实现**（重要发现：PR#3155 覆盖墙钟/字节视觉反馈，**未**覆盖 Claude Code 的"语义化 progress events"——即 `yield { type: 'progress', toolUseCount }` 类结构化进度 + "Installing packages 42/100" 类 stdout 解析）
+- item-46：保持 🟡 部分实现（之前就已正确标注）
+
+**补齐成本（若要做 Claude 风格）**：
+- item-47 补齐：~1 天（在现有 `ToolElapsedTime.tsx` 基础上增加组合格式选项 + Shell 专属 ShellProgressMessage 包装）
+- item-38 补齐（真正的 progress events）：~3-5 天（core tool.execute 支持 yield + Shell stdout 解析器 + UI 语义映射）
+
+**反思**：这次反馈循环教训——**"功能等价" 不等于 "完整实现"**。PR 合并后应该对比**设计细节**而非仅是**功能名称**。后续对 PR #3478/#3482/#3080 也需同样的精细比对。
 
 ### 2026-04-21（两日合并潮 · 项目史上反馈闭环最快的一次 🎯）
 

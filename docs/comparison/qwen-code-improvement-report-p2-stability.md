@@ -1244,9 +1244,26 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 
 <a id="item-38"></a>
 
-### 38. 工具执行进度消息（P2）✓ 已实现
+### 38. 工具执行进度消息（P2）🟡 部分实现
 
-**状态**：**已通过 [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) 实现**（2026-04-20 08:04 UTC 合并）—— 三合一补丁：(a) 3 秒阈值后显示右对齐 elapsed time，(b) Shell stats bar 展示 `+N lines` / 字节数 / timeout，(c) 发射 OSC 9;4 让 iTerm2 / Ghostty / ConEmu / Windows Terminal 标签显示进度指示（含 tmux/screen DCS passthrough）。同时覆盖 [item-47 ShellTimeDisplay](#item-47) 和 [item-46 部分](#item-46) 的诉求。
+**状态**：**[PR#3155](https://github.com/QwenLM/qwen-code/pull/3155)（2026-04-20 08:04 UTC 合并）实现了"时间 + 数量"视觉反馈，但未实现"语义化进度事件"**。这两类是不同的解决方案：
+
+**PR#3155 覆盖的部分**（墙钟/字节反馈）：
+- ✓ 3 秒阈值后显示 elapsed time（"工具慢"信号）
+- ✓ Shell stats bar：`+N lines` / 字节数 / timeout
+- ✓ OSC 9;4 终端标签进度指示（iTerm2/Ghostty/ConEmu/Windows Terminal + tmux/screen DCS passthrough）
+
+**PR#3155 **未**覆盖的部分**（Claude Code 原设计的核心）：
+- ✗ 语义化 progress events：Claude 在 `query/stopHooks.ts:204, 412` 处理 `type: 'progress' && toolUseID` 消息，tools 可在执行中 `yield { type: 'progress', toolUseCount, data }` 发射语义进度
+- ✗ "Installing packages 42/100..." 类的**结构化进度解析**（如 npm install 的包计数、pip 的下载进度）
+- ✗ Agent 工具 / Skill 工具的 `// Report progress for tool uses`（`tools/AgentTool/agentToolUtils.ts:384`、`tools/SkillTool/SkillTool.ts:239`）
+
+**判断**：PR#3155 和 Claude Code 原设计**并非二选一**——墙钟反馈 + 语义进度可以共存。墙钟部分已落地，**语义进度仍是 gap**。若要完整覆盖，需要：
+1. Tool execute 函数支持 `yield` progress events（core 改造）
+2. Shell 工具 stdout 解析器（如 `/added \d+ packages/` regex for npm）
+3. UI 层将 progress event 映射到工具行（例如"installing package 42/100..." 替代 elapsed time）
+
+**同时影响（衍生效应）**：[item-47 ShellTimeDisplay](#item-47) 和 [item-46](#item-46) 也受 PR#3155 部分覆盖，具体差异见各自章节。
 
 **问题**：`npm install` 执行 30 秒，用户看到的只是一个 Spinner 在转——不知道进度、不知道卡在哪。
 
@@ -1728,11 +1745,49 @@ return <MessageResponse>
 
 <a id="item-47"></a>
 
-### 47. `ShellTimeDisplay` 执行时间 + timeout 倒计时（P2）✓ 已实现
+### 47. `ShellTimeDisplay` 执行时间 + timeout 倒计时（P2）🟡 变体实现
 
 > **配套阅读**：[Bash 任务展示 Deep-Dive](./bash-task-display-deep-dive.md) 第 2.2 节。
 
-**状态**：**已通过 [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) 实现**（2026-04-20 08:04 UTC 合并）。PR#3155 新增 `ToolElapsedTime.tsx` 组件：3 秒阈值后显示右对齐 elapsed time（`3s` → `1m 30s` → `2h 15m`），应用于**所有工具**（不仅 shell）；shell stats bar 额外显示 `timeout 3s`；elapsed 指示器右对齐避免宽度变化引起工具名抖动。比 Claude Code 覆盖面更广（全工具而非仅 Shell）。
+**状态**：**[PR#3155](https://github.com/QwenLM/qwen-code/pull/3155)（2026-04-20 08:04 UTC 合并）实现了功能等价的时间反馈，但设计与 Claude Code 的 `ShellTimeDisplay` 存在 5 处关键差异**。需根据具体 UX 目标判断是否补齐 Claude 风格。
+
+**PR#3155 实际实现**：
+- 新增 `components/shared/ToolElapsedTime.tsx`（67 行）：**3 秒阈值后**显示右对齐 elapsed time（`3s` → `1m 30s` → `2h 15m`），`color={theme.text.secondary}`
+- 新增 `components/AnsiOutput.tsx` 的 `ShellStatsBar`：shell 输出下方另起一行显示 `+N lines` / `timeout 3s` / memoryUsage
+- elapsed 指示器应用于**所有工具**，右对齐到 `ToolInfo` 右边缘
+
+**PR#3155 vs item-47 spec 差异对比**：
+
+| 方面 | Claude `ShellTimeDisplay` | PR#3155 实现 | 影响 |
+|---|---|---|---|
+| 起始可见性 | **始终可见**（哪怕 0.5s 也显示） | **3s 阈值**后才出现 | UX 哲学差异：Claude = "工具运行中"信号；Qwen = "这个工具慢"信号 |
+| 格式 | `(10.5s · timeout 30s)` **组合单元** | `3s`（独立）+ `timeout 3s`（stats bar 另一处） | **信息分散**——用户需要在两个位置查看时间上下文 |
+| 括号 | `(...)` 包裹 | 无 | 视觉辨识度差异 |
+| 分隔符 | 中点 `·` (U+00B7) | 无（独立字段） | Claude 的组合表达更紧凑 |
+| 时间格式函数 | `formatDuration(ms, { hideTrailingZeros: true })` | 自定义 `formatElapsed(seconds)`——仅整数秒粒度 | Claude 能显示 `10.5s`，PR 只能 `10s`→`11s` |
+| 颜色 | `<Text dimColor={true}>`（Ink 内置 dim） | `color={theme.text.secondary}`（theme 语义色） | 实现差异，视觉上接近 |
+| 位置 | 与 `Running…` 前缀**内联**（同一行、同一 flex 区域） | **右对齐**到工具行末，独立 flex child | Claude = 连续语义单元；PR = 状态行的装饰元素 |
+| 工具范围 | Shell only（在 `ShellProgressMessage` 内）| **所有工具**（CompactToolGroupDisplay 等多个调用点） | PR 覆盖面更广，但失去与 Running… 语境的直接绑定 |
+
+**设计哲学差异**：
+- **Claude**：时间是执行态的**一部分**——`Running… (10.5s · timeout 30s)` 是一个完整语义单元
+- **PR#3155**：时间是执行态的**延迟装饰**——前 3 秒静默以避免视觉噪音，超过阈值再提示"这个工具偏慢"
+
+**哪种更好？取决于用户偏好**：
+- 偏爱持续反馈的用户会觉得 Claude 风格更连贯
+- 偏爱 "fast tools stay quiet" 的用户会觉得 PR#3155 的 3s 阈值更克制
+
+**剩余 Claude 风格 gap（若要补齐）**：
+1. **组合格式**：把 elapsed + timeout 合并到一个 `(... · ...)` 单元，而非分散在两处
+2. **亚秒精度**：`formatElapsed` 改为 `formatDuration(ms, { hideTrailingZeros: true })`，支持 `10.5s`
+3. **无阈值模式**：提供 settings 选项 `showElapsedImmediately: true`，禁用 3s 阈值
+4. **Shell 专属包装**：为 shell 工具提供 `ShellProgressMessage` 风格的内联组合展示（保留通用 ToolElapsedTime 给其他工具）
+
+**实现补齐成本**：~1 天（在现有 `ToolElapsedTime.tsx` 基础上增加配置项 + 新增 `ShellProgressMessage` 包装组件）。
+
+---
+
+**原规格（未变）**：
 
 **来源**：Claude Code `components/shell/ShellTimeDisplay.tsx`（73 行完整组件）。
 
