@@ -74,7 +74,7 @@
 | **P1** | [持久化重试模式](./persistent-retry-deep-dive.md) — CI/后台无限重试 + 5min 退避上限 + 30s 心跳 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-11) | 失败即退出 | 中 | [PR#3080](https://github.com/QwenLM/qwen-code/pull/3080) |
 | **P1** | [原子文件写入与事务回滚](./atomic-file-write-deep-dive.md) — temp+rename 原子写 + 大结果persist to disk [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-12) | 直接 writeFileSync | 中 | — |
 | **P1** | [自动检查点默认启用](./automatic-checkpoint-restore-deep-dive.md) — 每轮工具执行后自动创建文件快照 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-13) | 检查点默认关闭 | 小 | — |
-| **P1** | [Coordinator/Swarm 多 Agent编排](./coordinator-swarm-orchestration-deep-dive.md) — Leader/Worker 团队 + 3 种执行后端 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-14) | 仅 Arena 竞赛 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3433](https://github.com/QwenLM/qwen-code/pull/3433) ✓（动态 swarm worker） / [Roadmap#1815](https://github.com/QwenLM/qwen-code/issues/1815) |
+| **P1** | [Coordinator/Swarm 多 Agent编排](./coordinator-swarm-orchestration-deep-dive.md) — Leader/Worker 团队 + 3 种执行后端 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-14) | 仅 Arena 竞赛 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3433](https://github.com/QwenLM/qwen-code/pull/3433) ⚠️ **已 revert**（[PR#3468](https://github.com/QwenLM/qwen-code/pull/3468) 2026-04-20 合并 revert） / [Roadmap#1815](https://github.com/QwenLM/qwen-code/issues/1815) |
 | **P1** | [Task Management 任务协同与跨进程并发调度](./task-management-deep-dive.md) — 支持 blocks/blockedBy 的任务拓扑、跨进程安全锁与 Swarm 集成 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-25) | 仅提供简易无状态 TodoWriteTool | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) |
 | **P1** | [Agent 工具细粒度访问控制](./agent-tool-access-control-deep-dive.md) — 3 层allowlist/denylist + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-15) | 全部或指定列表 | 中 | [PR#3064](https://github.com/QwenLM/qwen-code/pull/3064) ✓ / [PR#3066](https://github.com/QwenLM/qwen-code/pull/3066) ✓ |
 | **P1** | [InProcess 同进程多 Agent隔离](./in-process-agent-isolation-deep-dive.md) — AsyncLocalStorage 上下文隔离 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-16) | 全局状态可能泄漏 | 中 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) |
@@ -160,7 +160,7 @@
 | **P2** | Status Line 自定义 — shell 脚本在状态栏展示自定义信息 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-7) | 缺失 | 小 | [PR#2923](https://github.com/QwenLM/qwen-code/pull/2923) ✓ / [Roadmap#2418](https://github.com/QwenLM/qwen-code/issues/2418) |
 | **P2** | Query TransitionReason 枚举 — 6 种查询转换原因显式标记（tool_result/max_tokens/compaction/retry/stop_hook/budget） [↓](./qwen-code-improvement-report-p2-stability.md#item-36) | 隐式 if-else | 小 | — |
 | **P2** | 工具并发安全分类 — 每个工具标记 `concurrencySafe`，并发分区后批量执行 [↓](./qwen-code-improvement-report-p2-stability.md#item-37) | 仅 Agent 工具并行 | 中 | — |
-| **P2** | 工具执行进度消息 — 长时间工具（>3s）发射进度事件，UI 显示"正在安装依赖 42/100..." [↓](./qwen-code-improvement-report-p2-stability.md#item-38) | 仅 Spinner | 小 | — |
+| **P2** | 工具执行进度消息 — 长时间工具（>3s）发射进度事件 + elapsed time + shell stats bar + OSC 9;4 标签进度 [↓](./qwen-code-improvement-report-p2-stability.md#item-38) | **已实现**（3 合 1 补丁） | 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（2026-04-20 合并） |
 | **P2** | 运行时任务模型 — 区分 work-graph task（持久目标）vs runtime task（执行槽），防止状态混淆 [↓](./qwen-code-improvement-report-p2-stability.md#item-39) | 仅 TodoWriteTool | 中 | — |
 | **P2** | 后台通知 drain-before-call — LLM 调用前排空后台任务通知队列，确保模型看到最新结果 [↓](./qwen-code-improvement-report-p2-stability.md#item-40) | 无通知排空 | 小 | — |
 | **P2** | 压缩后身份重注入 — 上下文压缩后 messages<3 条时注入 Agent 身份块，防止 Agent "忘记自己是谁" [↓](./qwen-code-improvement-report-p2-stability.md#item-41) | 无身份重注入 | 小 | — |
@@ -168,8 +168,8 @@
 | **P2** | 会话 Recap（返回时上下文摘要）— `/recap` 命令 + 自动展示（v2.1.108/v2.1.110 新增）[↓](./qwen-code-improvement-report-p2-stability.md#item-43) | **已实现**（/recap + auto-show） | 小 | [PR#3434](https://github.com/QwenLM/qwen-code/pull/3434) ✓（2026-04-19 合并） |
 | **P2** | [瞬态消息单行容器 + 离屏历史冻结](./task-display-height-deep-dive.md) — MessageResponse `height=1 overflowY=hidden` + OffscreenFreeze 引用缓存避免历史 spinner 拖累 [↓](./qwen-code-improvement-report-p2-stability.md#item-44) | 无统一容器/无离屏冻结 | 中 | — |
 | **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 无统一上限 | 小 | — |
-| **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | 整屏 PTY 30 行 / 100ms 刷新 / 无计数 | 小 | — |
-| **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | 无时间展示 | 小 | — |
+| **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | 🟡 部分实现（`+N lines` 已有，5 行窗口缺） | 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（部分） |
+| **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | **已实现**（全工具 + 右对齐 3s 阈值）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（2026-04-20 合并） |
 | **P2** | [语义化 hunk 模型 + singleHunk 智能上下文](./update-tool-display-deep-dive.md) — `structuredPatch` + `singleHunk ? 100_000 : 3` 智能 context + 消除 UI 层 regex re-parse [↓](./qwen-code-improvement-report-p2-stability.md#item-48) | `createPatch` 字符串 + UI regex 重解析 + 固定 5 行上下文 | 中 | — |
 | **P2** | [多 hunk `...` 省略分隔符](./update-tool-display-deep-dive.md) — StructuredDiffList 在 hunk 之间插入 dim color `...` [↓](./qwen-code-improvement-report-p2-stability.md#item-49) | 多 hunk 直接堆叠无分隔 | 小 | — |
 | **P2** | [终端渲染优化（紧凑 + 低闪烁）](./terminal-low-flicker-deep-dive.md) — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 + PR#3381 游标移动优化 | 大 | [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（局部） |
@@ -433,6 +433,60 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-21（两日合并潮 · 项目史上反馈闭环最快的一次 🎯）
+
+**极其重要的 48 小时**：我在 2026-04-20 晚间新增的 item-46/47（Bash 5 行窗口 + ShellTimeDisplay），被同一天上午已合并的 **[PR#3155](https://github.com/QwenLM/qwen-code/pull/3155)** 基本覆盖——这是**文档补上标签的速度落后于实现速度**的首次出现。
+
+**🎯 追踪 item 直接落地（6 个 item，覆盖度不等）**：
+
+| PR | 合并时间 | 对应 item | 状态变更 |
+|---|---|---|---|
+| **[PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓** | 2026-04-20 08:04 UTC | [item-38 工具执行进度消息](./qwen-code-improvement-report-p2-stability.md#item-38) | 未实现 → **✓ 完整实现**（3 合 1：elapsed + stats bar + OSC 9;4）|
+| **同 PR#3155** | 同上 | [item-47 ShellTimeDisplay](./qwen-code-improvement-report-p2-stability.md#item-47) | 刚加入追踪 → **✓ 完整实现**（全工具右对齐 3s 阈值，覆盖面比 Claude Code 更广）|
+| **同 PR#3155** | 同上 | [item-46 "5 行窗口 + +N lines 计数"](./qwen-code-improvement-report-p2-stability.md#item-46) | 刚加入追踪 → **🟡 部分实现**（`+N lines` 已实现，5 行窗口未实现）|
+| **[PR#3478](https://github.com/QwenLM/qwen-code/pull/3478) ✓** | 2026-04-20 15:58 UTC | [item-43 会话 Recap](./qwen-code-improvement-report-p2-stability.md#item-43) | ✓ 进一步打磨（`/recap` pin 到输入框上方 + fastModel 默认对齐）|
+| **[PR#3482](https://github.com/QwenLM/qwen-code/pull/3482) ✓** | 2026-04-21 06:39 UTC | 同上 item-43 | ✓ 进一步打磨（rework rendering + blur threshold setting）|
+| **[PR#3080](https://github.com/QwenLM/qwen-code/pull/3080) ✓** | 2026-04-21 14:08 UTC | [item-21 CI 环境检测](./qwen-code-improvement-report-p2-stability.md#item-21) | ✓ 部分实现（persistent retry mode for unattended CI/CD）|
+
+**⚠️ Revert**：
+
+- **[PR#3468](https://github.com/QwenLM/qwen-code/pull/3468) ✓** 2026-04-20 08:40 UTC — **Revert "feat(core): add dynamic swarm worker tool"**。[PR#3433](https://github.com/QwenLM/qwen-code/pull/3433) 昨日刚合的动态 swarm worker 今天被整体回滚。[item-14 Coordinator/Swarm](./qwen-code-improvement-report-p0-p1-engine.md#item-14) 主矩阵标记从 ✓ 改为 ⚠️ revert。
+
+**🆕 其他值得关注的合并（维护/新能力）**：
+
+- [PR#3467](https://github.com/QwenLM/qwen-code/pull/3467) ✓ 2026-04-20 10:56 UTC — **安全修复**：防止格式不合法的 permission rule 退化为工具级 catch-all（权限系统 bug 防御）
+- [PR#3329](https://github.com/QwenLM/qwen-code/pull/3329) ✓ 2026-04-21 09:01 UTC — `display real-time token consumption during streaming (#2742)`——对应 item-20 `/context` 的交互增强
+- [PR#3313](https://github.com/QwenLM/qwen-code/pull/3313) ✓ 2026-04-21 09:04 UTC — `recover from truncated tool calls via multi-turn continuation`——截断工具调用的恢复机制
+- [PR#3229](https://github.com/QwenLM/qwen-code/pull/3229) ✓ 2026-04-21 03:44 UTC — `/stats` 按起源 subagent 分行归因
+- [PR#3469](https://github.com/QwenLM/qwen-code/pull/3469) ✓ 2026-04-21 07:53 UTC — `render markdown in generic and web-fetch tool outputs`（WebUI）
+- [PR#3398](https://github.com/QwenLM/qwen-code/pull/3398) ✓ 2026-04-21 14:20 UTC — VSCode OAuth → Coding Plan / API Key provider setup
+- [PR#3303](https://github.com/QwenLM/qwen-code/pull/3303) ✓ 2026-04-21 09:06 UTC — detect Zed.app on macOS
+- [PR#3451](https://github.com/QwenLM/qwen-code/pull/3451) ✓ 2026-04-20 07:22 UTC — Windows PATH normalization for MCP stdio servers
+- [PR#3458](https://github.com/QwenLM/qwen-code/pull/3458) ✓ 2026-04-21 13:47 UTC — OpenAI samplingParams pass-through
+- [PR#3283](https://github.com/QwenLM/qwen-code/pull/3283) ✓ 2026-04-20 06:34 UTC — slash command capability-based filtering（Phase 1）
+- [PR#3489](https://github.com/QwenLM/qwen-code/pull/3489) ✓ 2026-04-21 08:44 UTC — MCP OAuth URL clickable when wrapped
+- [PR#3394](https://github.com/QwenLM/qwen-code/pull/3394) ✓ 2026-04-21 21:31 UTC — arena comparison summary
+
+**⭐ 新开的重磅 PR**：
+
+- **[PR#3491](https://github.com/QwenLM/qwen-code/pull/3491)**（OPEN）— `feat: add /diff command and git diff statistics utility` —— 新增 `/diff` 命令 + git diff 统计
+- **[PR#3488](https://github.com/QwenLM/qwen-code/pull/3488)**（OPEN）— `feat(cli): background-agent UI — pill, combined dialog, detail view` —— background agent UI，对应 PR#3076（显式 run_in_background）的 UI 侧
+- **[PR#3471](https://github.com/QwenLM/qwen-code/pull/3471)**（OPEN）— `feat(core): model-facing agent control (task_stop, send_message, per-agent transcript)` —— Agent 内部对 sub-agent 的控制能力
+- **[PR#3507](https://github.com/QwenLM/qwen-code/pull/3507)**（OPEN）— `feat(cli): add sticky todo panel to app layouts` —— **sticky todo 面板**，新 UI 方向
+- **[PR#3505](https://github.com/QwenLM/qwen-code/pull/3505)**（OPEN）— `fix(core): reject truncated subagent write_file calls` —— subagent 截断写入防护
+- **[PR#3460](https://github.com/QwenLM/qwen-code/pull/3460)**（OPEN）— `feat(cli): auto-detect terminal theme ('auto' or unset)` —— 对应 terminal theme 检测方向
+
+**📊 反馈循环观察**：PR#3155 的存在证明 Qwen Code 团队**在我写 item-46/47 规格时已经在做同样的事情**——这是**社区驱动优先级**和**独立工程推进**的巧合共振。我的规格不是因果原因，但文档的存在帮助未来开发者理解 PR#3155 的设计空间。
+
+**计数更新**：
+- 已合并 ✓ 65 → **66**（+PR#3155 覆盖 item-38+47，同时部分覆盖 item-46）
+- 主矩阵 item-14 Coordinator/Swarm 状态：PR#3433 ✓ → ⚠️ revert（PR#3468）
+- 主矩阵 item-38 状态：未实现 → ✓ 完整实现
+- 主矩阵 item-47 状态：未实现 → ✓ 完整实现
+- 主矩阵 item-46 状态：未实现 → 🟡 部分实现
+- 主矩阵 item-43 Recap 继续累积合并：增 PR#3478 + PR#3482 两次打磨
+- 主矩阵 item-21 CI 检测：PR#3080 ✓ persistent retry mode 补充
 
 ### 2026-04-20（深夜新增 2 项 · Update 工具展示）
 

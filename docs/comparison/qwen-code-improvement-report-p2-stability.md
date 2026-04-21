@@ -1244,7 +1244,9 @@ Agent 读取了项目中的 `.env` 文件，文件内容包含 AWS 密钥和 Str
 
 <a id="item-38"></a>
 
-### 38. 工具执行进度消息（P2）
+### 38. 工具执行进度消息（P2）✓ 已实现
+
+**状态**：**已通过 [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) 实现**（2026-04-20 08:04 UTC 合并）—— 三合一补丁：(a) 3 秒阈值后显示右对齐 elapsed time，(b) Shell stats bar 展示 `+N lines` / 字节数 / timeout，(c) 发射 OSC 9;4 让 iTerm2 / Ghostty / ConEmu / Windows Terminal 标签显示进度指示（含 tmux/screen DCS passthrough）。同时覆盖 [item-47 ShellTimeDisplay](#item-47) 和 [item-46 部分](#item-46) 的诉求。
 
 **问题**：`npm install` 执行 30 秒，用户看到的只是一个 Spinner 在转——不知道进度、不知道卡在哪。
 
@@ -1651,9 +1653,11 @@ export function getMaxOutputLength(): number {
 
 <a id="item-46"></a>
 
-### 46. Bash 执行中 "5 行窗口 + `+N lines` 计数"（P2）
+### 46. Bash 执行中 "5 行窗口 + `+N lines` 计数"（P2）🟡 部分实现
 
 > **配套阅读**：[Bash 任务展示 Deep-Dive](./bash-task-display-deep-dive.md) 第 2.1 节。
+
+**状态**：**[PR#3155](https://github.com/QwenLM/qwen-code/pull/3155)（2026-04-20 合并）已实现 "+N lines" 计数部分**（shell stats bar 显示 `+N lines` + UTF-8 字节数 + explicit timeout），但**"5 行窗口" 部分尚未实现**——shell 仍流式完整 ANSI 输出，未裁剪到最后 5 行。剩余目标：在流式渲染路径加 `lines.slice(-5)` 非 verbose 模式 + `ExpandShellOutputContext` 按需展开。
 
 **来源**：Claude Code `components/shell/ShellProgressMessage.tsx`。
 
@@ -1724,9 +1728,11 @@ return <MessageResponse>
 
 <a id="item-47"></a>
 
-### 47. `ShellTimeDisplay` 执行时间 + timeout 倒计时（P2）
+### 47. `ShellTimeDisplay` 执行时间 + timeout 倒计时（P2）✓ 已实现
 
 > **配套阅读**：[Bash 任务展示 Deep-Dive](./bash-task-display-deep-dive.md) 第 2.2 节。
+
+**状态**：**已通过 [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) 实现**（2026-04-20 08:04 UTC 合并）。PR#3155 新增 `ToolElapsedTime.tsx` 组件：3 秒阈值后显示右对齐 elapsed time（`3s` → `1m 30s` → `2h 15m`），应用于**所有工具**（不仅 shell）；shell stats bar 额外显示 `timeout 3s`；elapsed 指示器右对齐避免宽度变化引起工具名抖动。比 Claude Code 覆盖面更广（全工具而非仅 Shell）。
 
 **来源**：Claude Code `components/shell/ShellTimeDisplay.tsx`（73 行完整组件）。
 
