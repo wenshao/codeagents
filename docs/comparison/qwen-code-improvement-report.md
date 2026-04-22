@@ -168,7 +168,7 @@
 | **P2** | 会话 Recap（返回时上下文摘要）— `/recap` 命令 + 自动展示（v2.1.108/v2.1.110 新增）[↓](./qwen-code-improvement-report-p2-stability.md#item-43) | **已实现**（/recap + auto-show） | 小 | [PR#3434](https://github.com/QwenLM/qwen-code/pull/3434) ✓（2026-04-19 合并） |
 | **P2** | [瞬态消息单行容器 + 离屏历史冻结](./task-display-height-deep-dive.md) — MessageResponse `height=1 overflowY=hidden` + OffscreenFreeze 引用缓存避免历史 spinner 拖累 [↓](./qwen-code-improvement-report-p2-stability.md#item-44) | 无统一容器/无离屏冻结 | 中 | — |
 | **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 无统一上限 | 小 | — |
-| **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | 🟡 部分实现（`+N lines` 已有，5 行窗口缺） | 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（部分） |
+| **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | 🟡 拆分实现中（两 PR 合后 ✓ 完整）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（`+N lines`）+ [PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) 🟡 OPEN（5 行窗口 + 6 bypasses + settings）|
 | **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | 🟡 变体实现（3s 阈值 + 右对齐，分散到 elapsed + stats bar 两处，非 Claude 的单单元组合）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（变体，2026-04-20 合并）|
 | **P2** | [语义化 hunk 模型 + singleHunk 智能上下文](./update-tool-display-deep-dive.md) — `structuredPatch` + `singleHunk ? 100_000 : 3` 智能 context + 消除 UI 层 regex re-parse [↓](./qwen-code-improvement-report-p2-stability.md#item-48) | `createPatch` 字符串 + UI regex 重解析 + 固定 5 行上下文 | 中 | — |
 | **P2** | [多 hunk `...` 省略分隔符](./update-tool-display-deep-dive.md) — StructuredDiffList 在 hunk 之间插入 dim color `...` [↓](./qwen-code-improvement-report-p2-stability.md#item-49) | 多 hunk 直接堆叠无分隔 | 小 | — |
@@ -433,6 +433,43 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-22（反馈循环最快记录 · item-46 5-line window 由用户本人补齐）
+
+**[PR#3508](https://github.com/QwenLM/qwen-code/pull/3508)（2026-04-21 23:10 UTC 提交，OPEN）—— 作者 `wenshao`（即 codeagents 项目维护者本人）**。
+
+**闭环链路**：
+1. 2026-04-20 深夜——我添加 item-46 / item-47 / Bash Deep-Dive，明确"5 行窗口"缺失
+2. 2026-04-21 09:00——扫描 PR#3155，标记 item-46 为 🟡 部分实现（`+N lines` 有 / 5 行窗口缺）
+3. 2026-04-21 17:00——用户追问 "结合 PR#3155 看 item-47"，勘误 ✓ → 🟡 变体实现
+4. 2026-04-21 23:10 UTC——**用户亲自提交 PR#3508**，补齐 5 行窗口部分
+
+**PR#3508 设计亮点**（超越 Claude Code 原设计）：
+
+| 特性 | Claude `ShellProgressMessage` | PR#3508 |
+|---|---|---|
+| 默认行数 | 硬编码 `lines.slice(-5)` | `ui.shellOutputMaxLines: 5`（settings dialog 可视化编辑）|
+| bypass 机制 | 1 种（verbose mode）| **6 种**（`!` 用户命令 / 确认等待 / 真实失败 / Ctrl+F focus / opt-out / 自定义值）|
+| 覆盖面 | Streaming 流式 | Streaming + 完成态字符串渲染器（两处都裁剪）|
+| 语义区分 | 无 | **exit≠0 不算 tool failure**——避免命令偶然失败导致整屏输出 |
+
+**设计决策的精妙**（PR 原文）：
+
+> A shell command exiting with non-zero status (e.g. `seq 1 30 && false`, `command not found`) does **not** trigger the Error bypass — **the tool itself succeeded**, the spawned command failed. This is intentional: cap behavior stays consistent regardless of command exit code.
+
+这是 Claude Code 原设计**没有**体现的语义分离——tool success ≠ command exit code。
+
+**状态变更**：
+- item-46 主矩阵：🟡 部分实现 → 🟡 **拆分实现中**（PR#3155 ✓ `+N lines` + PR#3508 🟡 OPEN 5 行窗口，合并后 ✓ 完整）
+- item-46 的追踪 PR 列表：从 PR#3155 单独 → **PR#3155 + PR#3508 组合**
+
+**反馈链路观察**：**从规格补充到 PR 提交耗时约 24 小时**——创纪录的闭环速度。项目的规格文档**不仅描述现状，还在主动塑造实现方向**。
+
+**PR#3508 合并后应跟进**：
+1. 将 item-46 状态从 🟡 → ✓ 完整实现
+2. 更新 Bash Deep-Dive 第 2.1 节的"Qwen Code 现状"描述
+3. README 已合并 ✓ 66 → 67（+PR#3508）
+4. 考虑是否基于 PR#3508 的 6-bypass 模式，反向优化 Claude Code（可写入 update-tool-display-deep-dive 第 7 节）
 
 ### 2026-04-21（勘误 · PR#3155 与 item-47 的设计差异）
 

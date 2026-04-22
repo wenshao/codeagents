@@ -1670,11 +1670,56 @@ export function getMaxOutputLength(): number {
 
 <a id="item-46"></a>
 
-### 46. Bash 执行中 "5 行窗口 + `+N lines` 计数"（P2）🟡 部分实现
+### 46. Bash 执行中 "5 行窗口 + `+N lines` 计数"（P2）🟡 拆分实现中（PR#3155 ✓ + PR#3508 OPEN）
 
 > **配套阅读**：[Bash 任务展示 Deep-Dive](./bash-task-display-deep-dive.md) 第 2.1 节。
 
-**状态**：**[PR#3155](https://github.com/QwenLM/qwen-code/pull/3155)（2026-04-20 合并）已实现 "+N lines" 计数部分**（shell stats bar 显示 `+N lines` + UTF-8 字节数 + explicit timeout），但**"5 行窗口" 部分尚未实现**——shell 仍流式完整 ANSI 输出，未裁剪到最后 5 行。剩余目标：在流式渲染路径加 `lines.slice(-5)` 非 verbose 模式 + `ExpandShellOutputContext` 按需展开。
+**状态**：已拆分为两个 PR，各自覆盖一半：
+- **[PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（2026-04-20 合并）**：实现 `+N lines` 计数部分（`ShellStatsBar` 组件：`+N lines` + UTF-8 字节数 + explicit timeout）
+- **[PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) 🟡（OPEN，2026-04-21 提交）**：实现 5 行窗口部分——"feat(cli): cap inline shell output with configurable line limit"。**两个 PR 合并后 item-46 完整落地**。
+
+**PR#3508 设计要点**（在 Claude 原设计基础上增强）：
+
+| 方面 | Claude `ShellProgressMessage` | PR#3508 实现 |
+|---|---|---|
+| 默认行数 | `lines.slice(-5)`（硬编码 5）| `ui.shellOutputMaxLines: 5`（**可配置**，默认 5 匹配 Claude）|
+| 可调性 | verbose mode 开关（二选一）| **`0` 禁用 / `15` 自定义**（settings dialog 可视化编辑）|
+| verbose 触发 | `ExpandShellOutputContext` | 6 个 bypass 机制（见下表）|
+| 作用范围 | Streaming + 完成态都裁剪 | **同 Claude**：AnsiOutputText（流式）+ StringResultRenderer（完成态）都裁剪 |
+
+**6 个 bypass 机制**（比 Claude 覆盖更全）：
+
+| Trigger | Behavior |
+|---|---|
+| `!` 前缀用户手动命令 | `isUserInitiated → forceShowResult` → 完整输出 |
+| 工具等待确认时 | `forceShowResult=true` → 完整输出 |
+| 真实工具失败（timeout / abort / throw） | `ToolCallStatus.Error` → 完整输出 |
+| 嵌入式 PTY shell 聚焦（Ctrl+F） | `isThisShellFocused=true` → 完整；释放后重新 collapse |
+| 用户 opt-out | `ui.shellOutputMaxLines: 0` → 完全禁用 |
+| 自定义值 | `ui.shellOutputMaxLines: 15` → 任意 cap |
+
+**精妙的设计决策**（PR#3508 原文）：
+
+> 命令非零 exit（如 `seq 1 30 && false`、`command not found`）**不**触发 Error bypass —— **工具本身成功**，spawned command 失败。cap 行为保持一致不依赖命令退出码，避免用户因为命令偶然失败而意外看到整屏输出。
+
+这是**语义正确**的决策——Claude Code 的原 `ShellProgressMessage` 无此区分，PR#3508 体现了更清晰的 tool success vs command exit code 分离。
+
+**实施摘要**（`packages/cli/src/ui/components/messages/ToolMessage.tsx`）：
+```ts
+const isShellTool = name === SHELL_COMMAND_NAME || name === SHELL_NAME;
+const shellCapHeight =
+  isShellTool &&
+  shellOutputMaxLines > 0 &&
+  !forceShowResult &&
+  !isThisShellFocused
+    ? Math.min(availableHeight ?? shellOutputMaxLines, shellOutputMaxLines)
+    : availableHeight;
+```
+非 shell 工具 `shellCapHeight === availableHeight`，保证其他工具的 string renderer 不受影响。
+
+**测试覆盖**：6 个新 `ToolMessage` 单元测试 + 8 个手动 tmux 场景验证（AI shell / `!` 用户触发 / exit≠0 / Ctrl+F focus / 配置禁用 / 自定义值 / settings dialog / `+N lines` 流式）。
+
+**合并后最终状态**：item-46 将从 🟡 → ✓ 完整实现（配合 PR#3155 的 `+N lines` 计数已合并）。
 
 **来源**：Claude Code `components/shell/ShellProgressMessage.tsx`。
 
