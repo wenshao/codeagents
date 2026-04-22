@@ -6,63 +6,223 @@
 
 ## 一、Claude Code 的 18 处 fast-model 调用
 
-基于 `/root/git/claude-code-leaked/` 源码全量搜索 `getSmallFastModel()` + `queryHaiku()` 调用点。
+基于 `/root/git/claude-code-leaked/` 源码全量搜索 `getSmallFastModel()` + `queryHaiku()` 调用点。每条都给出**触发时机 / 用户视角 / 为什么用 fast model / 源码位置**四要素，方便学习模仿。
+
+---
 
 ### 1.1 会话元信息生成（3 处）
 
-| # | 用途 | 源码 | Prompt 精髓 |
-|---|---|---|---|
-| 1 | **会话标题自动生成** | `utils/sessionTitle.ts:87` | "Generate a concise, sentence-case title (3-7 words) ... **git-commit-subject**" |
-| 2 | `/rename` 命令生成会话名 | `commands/rename/generateSessionName.ts:20` | kebab-case name for session |
-| 3 | **Session Recap** | `services/awaySummary.ts` | "stepped away and is coming back ... 1-3 short sentences ... skip status reports" |
+#### ① 会话标题自动生成
 
-**共性**：JSON schema 强制输出格式（`{ title: string }`），短 prompt + 短输出，强 example 引导（good/bad 各 4 例）。
+- 🎯 **触发时机**：任意 session 结束/保存时后台异步生成；`/resume` 列表打开前也会触发
+- 👁️ **用户视角**：`/resume` 列表从 `abc123 · 2h ago` → `Fix login button on mobile · 2h ago`——可以从长列表中扫读找回目标 session
+- 💡 **为什么 fast model**：摘要任务（输入 → 3-7 词标题），无需推理深度；JSON schema 强制 `{ title: string }` 避免冗余解释
+- 📝 **Prompt 精髓**：`"Generate a concise, sentence-case title (3-7 words) ... git-commit-subject"`，附 4 good + 3 bad 示例（太模糊/太长/错误大小写）
+- 📂 **源码**：`utils/sessionTitle.ts:56-100`，`MAX_CONVERSATION_TEXT = 1000` tail-slice 对话末尾
+
+#### ② `/rename` 命令生成会话名
+
+- 🎯 **触发时机**：用户在 session 中输入 `/rename`，或从 Web/桌面 app 端选择 "rename this session"
+- 👁️ **用户视角**：当前 session 文件名从 `session-uuid.jsonl` → `fix-login-button-mobile.jsonl`（kebab-case，可在 OS 文件管理器中辨识）
+- 💡 **为什么 fast model**：与①类似的短摘要任务；kebab-case 格式约束简单
+- 📝 **区别于①**：kebab-case 输出（文件系统安全）而非 sentence-case
+- 📂 **源码**：`commands/rename/generateSessionName.ts:20`（遗留实现，新调用应走 `sessionTitle.ts` 的统一入口）
+
+#### ③ Session Recap（"while you were away" card）
+
+- 🎯 **触发时机**：失焦 ≥5 分钟（DECSET 1004 焦点协议）+ 当前无 turn + 上次 user turn 后无 recap；或用户 `/recap` 手动
+- 👁️ **用户视角**：回到终端时输入框上方显示 dim color 1-3 句 `"You were refactoring the auth middleware to use OAuth2. Next: implement the token refresh endpoint."`
+- 💡 **为什么 fast model**：1-3 句话生成成本低；Prompt 显式禁止 "status reports" / "commit recaps" 避免 Haiku 模板化输出
+- 📝 **Prompt 精髓**：`"The user stepped away and is coming back. Write exactly 1-3 short sentences. Start by stating the high-level task ... Skip status reports and commit recaps."`
+- 📂 **源码**：`services/awaySummary.ts`，`RECENT_MESSAGE_WINDOW = 30` 限制输入
+
+**共性**：都是**从对话抽取/压缩为短文本**，JSON schema 强制输出格式，tail-slice 限制输入长度，示例引导输出风格。
+
+---
 
 ### 1.2 语义搜索（2 处）
 
-| # | 用途 | 源码 |
-|---|---|---|
-| 4 | **`/resume` 会话检索** — 基于历史对话语义匹配当前查询 | `utils/agenticSessionSearch.ts:261` |
-| 5 | **Web 搜索工具** (feature-gated `tengu_plum_vx3`) | `tools/WebSearchTool/WebSearchTool.ts:280` |
+#### ④ `/resume` 会话检索（Agentic Search）
 
-**设计点**：Web 搜索走 Haiku 变体时 `toolChoice: { type: 'tool', name: 'web_search' }` 强制走 tool，`thinkingConfig: disabled` 避免 Haiku 浪费 thinking token。
+- 🎯 **触发时机**：用户输入 `/resume <query>`，如 `/resume "auth bug"` 或 `/resume "yesterday's refactor"`
+- 👁️ **用户视角**：输入自然语言 query，系统返回最相关的 N 个 session（按相关性排序），而非按时间
+- 💡 **为什么 fast model**：对 M 个 session 元数据（title + first prompt + transcript excerpt）做语义匹配——**M 可能达几百**，用 Sonnet 每次查询成本过高
+- 📝 **Prompt 结构**：
+  ```
+  Sessions:
+  - session_1: First message: "..." Transcript: "..."
+  - session_2: ...
+  Search query: "{用户 query}"
+  Find the sessions that are most relevant to this query.
+  ```
+- 📂 **源码**：`utils/agenticSessionSearch.ts:248-270`，`sideQuery` 调用而非主循环
+
+#### ⑤ Web 搜索工具（Haiku 变体）
+
+- 🎯 **触发时机**：feature flag `tengu_plum_vx3` 启用时，WebSearch tool 调用走 Haiku 而非主模型
+- 👁️ **用户视角**：对用户透明——主模型调用 `WebSearch` tool → 内部转给 Haiku 生成精确 query、选择候选 → 返回结果给主模型
+- 💡 **为什么 fast model**：**"生成搜索 query + 筛选结果"本身就是 LLM 元任务**，用 Haiku 节省 token；主模型专注于 "基于结果回答"
+- 📝 **设计点**：`toolChoice: { type: 'tool', name: 'web_search' }` 强制走 tool；`thinkingConfig: disabled` 避免 Haiku 浪费 thinking token
+- 📂 **源码**：`tools/WebSearchTool/WebSearchTool.ts:262-290`，`useHaiku` 由 feature flag 决定
+
+**核心洞察**：**语义搜索 = Haiku 大规模元数据筛选 + Sonnet 少量内容理解**，是经典的"分级推理"模式。
+
+---
 
 ### 1.3 Hook LLM 评估（3 处）
 
-| # | 用途 | 源码 | 特点 |
-|---|---|---|---|
-| 6 | **Prompt Hook 条件判断** | `utils/hooks/execPromptHook.ts:79` | JSON schema `{ ok: bool, reason?: string }` |
-| 7 | **Agent Hook stop condition 验证** | `utils/hooks/execAgentHook.ts:118` | 支持**工具调用**（检查 codebase），最多 50 turns，独立 `agentId` |
-| 8 | **Skill 改进建议** (feature-gated `tengu_copper_panda`) | `utils/hooks/skillImprovement.ts:169, 241` | post-sampling hook，分析刚完成的 assistant message，建议修订 skill |
+#### ⑥ Prompt Hook 条件判断
 
-**价值**：让用户用自然语言（而非脚本）定义 hook 条件——例如 `if.condition: "user is discussing security issues"` 交给 Haiku 判断。
+- 🎯 **触发时机**：用户定义了 `hooks.if.condition: "<自然语言>"` 的 hook，每次 hook 事件（PreToolUse/UserPromptSubmit 等）触发时评估
+- 👁️ **用户视角**：用户写 `hooks.yaml`：
+  ```yaml
+  - event: PreToolUse
+    if:
+      condition: "The user is trying to delete production data"
+      model: haiku
+    run: { deny: true, message: "Production data deletion requires manual approval" }
+  ```
+  非程序员也能定义精准 hook
+- 💡 **为什么 fast model**：Hook 条件评估是**高频调用**（每个工具调用都可能触发），低延迟低成本至关重要
+- 📝 **Prompt 约束**：JSON schema `{ok: bool, reason?: string}`——`ok: false` 时可选 reason 写入 audit log
+- 📂 **源码**：`utils/hooks/execPromptHook.ts:62-99`
+
+#### ⑦ Agent Hook stop condition 验证
+
+- 🎯 **触发时机**：Agent 声明完成（`SubagentStop` event），但用户定义了 stop condition verification hook
+- 👁️ **用户视角**：Agent 说"完成了实现 X 功能"——hook 启动一个**独立的 Haiku agent**（最多 50 turns + 工具访问）去**真的验证**：read 代码、跑 test、grep 关键词，确认后才允许主 agent 退出
+- 💡 **为什么 fast model**：验证过程可能需要多次 tool use，Sonnet 成本过高；Haiku 足以完成验证类任务
+- 📝 **关键约束**：独立 `agentId`（`hook-agent-${randomUUID()}`）避免与主 agent 状态混淆；`MAX_AGENT_TURNS = 50` 硬上限
+- 📂 **源码**：`utils/hooks/execAgentHook.ts:100-130`
+
+#### ⑧ Skill 改进建议（post-sampling hook）
+
+- 🎯 **触发时机**：feature flag `tengu_copper_panda` 启用时，每次 assistant message 完成后触发
+- 👁️ **用户视角**：用户不主动感知；后台 Haiku 分析 "这个 skill 的本次表现，有没有值得改进的 prompt 片段"，结果暂存到 `appState.skillImprovement`，用户可在 `/skills --review` 中查看建议并决定应用
+- 💡 **为什么 fast model**：持续后台任务，成本敏感；风险：LLM 建议可能不准确，必须 opt-in + 人工审核
+- 📂 **源码**：`utils/hooks/skillImprovement.ts:155-182`
+
+**共性**：都把"判断/验证"从主循环剥离给 Haiku，主循环保持纯净（Sonnet 专注 reasoning + tool use）。
+
+---
 
 ### 1.4 内容处理/转换（5 处）
 
-| # | 用途 | 源码 | 输入 → 输出 |
-|---|---|---|---|
-| 9 | **WebFetch HTML 处理** | `tools/WebFetchTool/utils.ts:503` | HTML → prompt-consumable 内容 |
-| 10 | **工具调用摘要生成** | `services/toolUseSummary/toolUseSummaryGenerator.ts:69` | N 个 tool calls → "**30 字符**" git-commit-subject 风格 label（移动端行显示用）|
-| 11 | **Shell 命令前缀提取**（权限分类）| `utils/shell/prefix.ts:220` | `git commit -m "fix"` → `git commit` 前缀，供权限规则匹配 |
-| 12 | **MCP 日期时间解析** | `utils/mcp/dateTimeParser.ts:68` | `@tomorrow 3pm` → ISO 8601 |
-| 13 | **`/bug` 反馈内容处理** | `components/Feedback.tsx:449` | 对话内容 → 结构化反馈 |
+#### ⑨ WebFetch HTML 内容清洗
 
-**`prefix.ts:220` 的精妙之处**：Shell 权限分类是安全关键路径，用 Haiku + `policySpec` 精确提取命令前缀，避免 regex 的边界错误（如 `git commit && rm -rf /` 的解析）。Feature-gated `tengu_cork_m4q` 控制是否把 policy spec 放 system prompt 走 prompt caching（10 秒超时告警）。
+- 🎯 **触发时机**：`WebFetch(url, prompt)` 返回的 HTML/Markdown 过大（navigation / ads / tracking script 占多数）
+- 👁️ **用户视角**：Agent 调用 `WebFetch("https://docs.stripe.com/...")` 后，只看到核心文档而非整页 HTML，回答质量提升
+- 💡 **为什么 fast model**：内容清洗是纯"信号 vs 噪音"分类，不需要 reasoning；大文档 → 核心内容 = token 压缩 70%+
+- 📂 **源码**：`tools/WebFetchTool/utils.ts:503`
+
+#### ⑩ 工具调用摘要生成（compact mode / SDK progress）
+
+- 🎯 **触发时机**：compact view（subagent 视图、移动端行显示）需要把 N 个并行 tool calls 折叠为一行
+- 👁️ **用户视角**：主 agent 看 subagent 的进度时，不再是 `Read × 5 + Grep × 3 + Bash × 2` 列表，而是 `"Debugged auth middleware"` 30 字符 label
+- 💡 **为什么 fast model**：30 字符输出量极小；移动端 SDK 客户端需要低延迟进度推送
+- 📝 **Prompt 精髓（git-commit-subject 风格）**：
+  ```
+  think git-commit-subject, not sentence.
+  Keep the verb in past tense and the most distinctive noun.
+  Drop articles, connectors, and long location context first.
+  
+  Examples:
+  - Searched in auth/
+  - Fixed NPE in UserService
+  ```
+- 📂 **源码**：`services/toolUseSummary/toolUseSummaryGenerator.ts:15-85`
+
+#### ⑪ Shell 命令前缀提取（权限分类 · 安全关键）
+
+- 🎯 **触发时机**：每次 Shell 工具执行前，需要对照权限规则判断"这个命令属于哪个类别"
+- 👁️ **用户视角**：用户定义 `allow: ["git commit", "npm install"]`——系统需要正确识别 `git commit -m "fix" && rm -rf /` 中的**两个前缀**，而不是错判为仅 `git commit`
+- 💡 **为什么 fast model**：安全关键路径——regex 的边界错误（alias / subshell / backtick / pipe）可能导致权限绕过；Haiku + policy spec 更鲁棒
+- 📝 **高级优化**：feature flag `tengu_cork_m4q` 控制是否把 `policySpec` 放 **system prompt 走 prompt caching**（后续所有 Shell 命令复用同一缓存）；10 秒超时告警
+- 📂 **源码**：`utils/shell/prefix.ts:215-245`
+
+#### ⑫ MCP 日期时间解析（`@date` 表达式）
+
+- 🎯 **触发时机**：MCP tool 参数中出现自然语言日期表达式，如 `@tomorrow 3pm` / `@next monday` / `@2 hours ago`
+- 👁️ **用户视角**：MCP 工具（如 calendar/issue tracker）无需教用户 ISO 8601 格式，直接写 `reminder_at: "@tomorrow 3pm"` 即可
+- 💡 **为什么 fast model**：解析是纯 pattern matching 任务；`INVALID` 字面量返回值让调用方明确错误处理
+- 📝 **Prompt 注入 context**：当前 UTC 时间 + 本地时区 + 星期几（让 Haiku 能正确处理 "next monday" 这类相对表达）
+- 📂 **源码**：`utils/mcp/dateTimeParser.ts:55-80`
+
+#### ⑬ `/bug` 反馈标题生成
+
+- 🎯 **触发时机**：用户输入 `/bug`，触发 bug report 提交流程，生成 GitHub issue 标题
+- 👁️ **用户视角**：用户只需描述 bug 现象，系统自动生成 `"[Bug] Auto-Compact triggers too soon"` 规范化标题，直接用于 GitHub issue URL
+- 💡 **为什么 fast model**：80 字符标题，短输出；提取 key error 而非整条消息（"Missing Tool Result Block" 而非完整 stack trace）
+- 📝 **风格约束**：`[Bug]` / `[Feature Request]` 前缀；技术术语；不含任何 "commentary or explanation"（直接用作 issue 标题）
+- 📂 **源码**：`components/Feedback.tsx:447-462`
+
+**共性**：都是**输入大 → 输出小**的压缩/结构化任务，zero reasoning 需求，用 Sonnet 属于"杀鸡用牛刀"。
+
+---
 
 ### 1.5 系统级查询（3 处）
 
-| # | 用途 | 源码 | 场景 |
-|---|---|---|---|
-| 14 | **Token 计数** | `services/tokenEstimation.ts:277` | 用 Haiku `count_tokens` API（而非 Sonnet）节省成本；Vertex global / Bedrock with thinking 时 fallback 到 Sonnet |
-| 15 | **Quota 配额检查** | `services/claudeAiLimits.ts:200` | 1-token 测试请求，`max_tokens: 1` |
-| 16 | **API key 验证**（交互式启动时）| `services/api/claude.ts:541` | `isNonInteractiveSession` 跳过 |
+#### ⑭ Token 计数 API
 
-### 1.6 实用功能（2 处）
+- 🎯 **触发时机**：每次 prompt 组装前需要估算 token 数（判断是否超上限、是否触发 compact）
+- 👁️ **用户视角**：context meter `/context` 显示的百分比，依赖频繁调用 token counting API
+- 💡 **为什么 fast model**：**count_tokens endpoint 不产生完整回答，仅返回 token 数**——用 Haiku endpoint 节省路由成本
+- 📝 **Fallback 逻辑**：Vertex global endpoint（Haiku 不可用）/ Bedrock with thinking（Haiku 3.5 不支持 thinking）/ Vertex with thinking 时自动 fallback 到 Sonnet
+- 📂 **源码**：`services/tokenEstimation.ts:255-290`
 
-| # | 用途 | 源码 |
-|---|---|---|
-| 17 | **`/teleport` 跨设备会话迁移** | `utils/teleport.tsx:107` |
-| 18 | `queryHaiku()` 通用 wrapper | `services/api/claude.ts:3241-3290` |
+#### ⑮ Quota 配额检查（1-token 测试请求）
+
+- 🎯 **触发时机**：系统定期（或启动时）检查用户 Claude.ai 订阅配额状态
+- 👁️ **用户视角**：看到 `/status` 中显示 "12% of quota used this session"——背后是定期发送的 1-token 测试请求
+- 💡 **为什么 fast model + `max_tokens: 1`**：这是**纯连通性测试**，不需要实际输出；Haiku + 1 token 成本最低
+- 📂 **源码**：`services/claudeAiLimits.ts:199-218`
+
+#### ⑯ API key 验证（启动时）
+
+- 🎯 **触发时机**：交互式启动时（`isNonInteractiveSession: false`），需要验证 API key 是否有效、可访问哪些模型
+- 👁️ **用户视角**：启动时的 "Connecting..." 阶段——失败时明确报错而非在用户输入第一句话时才失败
+- 💡 **为什么 fast model**：仅需一次握手验证；非交互式模式（`--print`）跳过以加速 CI/CD 启动
+- 📂 **源码**：`services/api/claude.ts:534-550`
+
+**共性**：都是**系统侧的 probe/validation**，对用户透明，Haiku 是成本/延迟最优解。
+
+---
+
+### 1.6 实用功能 + 基础设施（2 处）
+
+#### ⑰ `/teleport` 跨设备会话迁移（CCR）
+
+- 🎯 **触发时机**：用户在设备 A 用 `/teleport` 命令，把当前 session 转移到设备 B（Claude Code Router）
+- 👁️ **用户视角**：打包当前 session → 生成 `title + branchName` 元数据 → 推送到 CCR → 设备 B 接收时看到 `Fix login button mobile` 标题 + `claude/fix-login` 分支名
+- 💡 **为什么 fast model**：`title + branchName` 两个字段都是短文本生成，JSON schema 约束输出
+- 📝 **与①②的区别**：`/teleport` 一次生成**两个字段**（title + branch name），`/rename` 只生成一个
+- 📂 **源码**：`utils/teleport.tsx:97-120`，`generateTitleAndBranch()`
+
+#### ⑱ `queryHaiku()` 通用 wrapper（基础设施）
+
+- 🎯 **触发时机**：上面 ①②③⑨⑩⑪⑫⑬⑰ 等多数场景的底层入口
+- 💡 **为什么独立**：统一 6 条默认约束（thinking disabled / tools [] / 非流式 / prompt caching 可选 / JSON schema 可选 / VCR 录制支持）
+- 📂 **源码**：`services/api/claude.ts:3241-3290`
+
+```typescript
+// queryHaiku 最小使用示例：
+const result = await queryHaiku({
+  systemPrompt: asSystemPrompt([SYSTEM_PROMPT_STRING]),
+  userPrompt: USER_INPUT,
+  outputFormat: { type: 'json_schema', schema: {...} },  // 可选
+  signal: abortSignal,
+  options: {
+    querySource: 'your_use_case_tag',  // 遥测用
+    enablePromptCaching: false,         // 默认 false，显式设 true 才启用
+    agents: [],
+    isNonInteractiveSession: false,
+    hasAppendSystemPrompt: false,
+    mcpTools: [],
+  }
+})
+```
+
+**18 处的统一模式**：`queryHaiku()` wrapper + system prompt（定义任务 + 格式约束 + 示例）+ user prompt（实际输入，常带 tail-slice/truncate）+ JSON schema（确定性输出）。
 
 ---
 
