@@ -172,6 +172,12 @@
 | **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | 🟡 变体实现（3s 阈值 + 右对齐，分散到 elapsed + stats bar 两处，非 Claude 的单单元组合）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（变体，2026-04-20 合并）|
 | **P2** | [语义化 hunk 模型 + singleHunk 智能上下文](./update-tool-display-deep-dive.md) — `structuredPatch` + `singleHunk ? 100_000 : 3` 智能 context + 消除 UI 层 regex re-parse [↓](./qwen-code-improvement-report-p2-stability.md#item-48) | `createPatch` 字符串 + UI regex 重解析 + 固定 5 行上下文 | 中 | — |
 | **P2** | [多 hunk `...` 省略分隔符](./update-tool-display-deep-dive.md) — StructuredDiffList 在 hunk 之间插入 dim color `...` [↓](./qwen-code-improvement-report-p2-stability.md#item-49) | 多 hunk 直接堆叠无分隔 | 小 | — |
+| **P2** | [会话标题自动生成 Fast Model](./fast-model-usage-deep-dive.md) — Haiku 3-7 词 sentence-case title + tail-1000 字符 + JSON schema [↓](./qwen-code-improvement-report-p2-stability.md#item-50) | UUID/时间戳 | 小 | — |
+| **P2** | [工具调用摘要 Compact Mode Fast Model](./fast-model-usage-deep-dive.md) — Haiku 30 字符 git-commit-subject 风格 label 折叠 N 个工具 [↓](./qwen-code-improvement-report-p2-stability.md#item-51) | 工具名列表 | 小 | — |
+| **P2** | [Hook LLM 条件评估 Fast Model](./fast-model-usage-deep-dive.md) — `if.condition: "自然语言"` + Haiku JSON `{ok, reason}` [↓](./qwen-code-improvement-report-p2-stability.md#item-52) | 仅代码条件 | 中 | — |
+| **P2** | [WebFetch 内容 LLM 清洗 Fast Model](./fast-model-usage-deep-dive.md) — Haiku 抽取核心内容 + 去 nav/ads/tracker [↓](./qwen-code-improvement-report-p2-stability.md#item-53) | 直接截断/HTML parser | 小 | — |
+| **P2** | [Shell 命令前缀 LLM 提取（权限）Fast Model](./fast-model-usage-deep-dive.md) — Haiku + policySpec 精确分类复合命令/alias/subshell [↓](./qwen-code-improvement-report-p2-stability.md#item-54) | Regex 分类（边界有漏洞）| 中 | — |
+| **P2** | [Skill 改进建议 Post-Sampling Hook Fast Model](./fast-model-usage-deep-dive.md) — Haiku 分析刚完成 turn，建议 skill 修订（opt-in）[↓](./qwen-code-improvement-report-p2-stability.md#item-55) | 无自动改进机制 | 中 | — |
 | **P2** | [终端渲染优化（紧凑 + 低闪烁）](./terminal-low-flicker-deep-dive.md) — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 + PR#3381 游标移动优化 | 大 | [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（局部） |
 | **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-9) | 缺失 | 小 | — |
 | **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-10) | 缺失 | 小 | — |
@@ -322,7 +328,7 @@
 | [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退、Skill 模型覆盖、PreCompact Hook、模型调用 Slash 命令、/experimental 门控等） | 26 |
 | [P2 界面与 UX](./qwen-code-improvement-report-p2-tools-ui.md) | 中等优先级（Token 警告、Spinner、/rewind、Diff 渲染、/plan、大粘贴外化等） | 21 |
 | [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并、指令文件去重等） | 35 |
-| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap、显示高度控制、输出截断、Bash UI、Update/Diff UI 等） | 49 |
+| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap、显示高度控制、输出截断、Bash UI、Update/Diff UI、Fast Model 应用 等） | 55 |
 | [P3 功能特性](./qwen-code-improvement-report-p3-features.md) | 低优先级功能特性（动态状态栏、Feature Gates、Vim、语音、插件市场、--config-dir 等） | 17 |
 | [P3 用户体验](./qwen-code-improvement-report-p3-ux.md) | 低优先级用户体验（Virtual Scrolling、Turn Diffs、Buddy、settingsSync 等） | 9 |
 | [P3 Hook 与组件](./qwen-code-improvement-report-p3-hooks.md) | 低优先级 Hook 与组件（useInboxPoller、AgentSummary、usePrStatus 等） | 33 |
@@ -433,6 +439,37 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-22（Fast Model 应用场景扩充 · 新增 6 项）
+
+**用户提问**："除了 follow-up suggestion/recap，Claude Code 还有哪些事情是用 fast model 来做的？" —— 触发对 Claude Code 全部 `getSmallFastModel()` + `queryHaiku()` 调用点的梳理。
+
+**发现**：Claude Code 共 **18 处**独立 fast-model 调用，远超已知的 Recap 和 follow-up suggestion。按用途分 6 类：(1) 会话元信息生成 3 处 / (2) 语义搜索 2 处 / (3) Hook LLM 评估 3 处 / (4) 内容处理 5 处 / (5) 系统级查询 3 处 / (6) 实用功能 2 处。
+
+**新增 Deep-Dive**：[Fast Model 应用场景 Deep-Dive](./fast-model-usage-deep-dive.md) —— 完整 18 处调用点索引 + 6 条共同设计哲学 + Qwen Code 借鉴路线图。
+
+**新增 6 个追踪 item**（p2-stability 49 → 55）：
+
+| # | 方向 | 优先级 | 成本 | 风险 |
+|---|------|------|------|------|
+| [item-50](./qwen-code-improvement-report-p2-stability.md#item-50) | 会话标题自动生成（3-7 词 sentence-case）| 🥇 | 1-1.5 天 | 低 |
+| [item-51](./qwen-code-improvement-report-p2-stability.md#item-51) | 工具调用摘要（30 字符 commit-subject 风格）| 🥇 | 1 天 | 低 |
+| [item-52](./qwen-code-improvement-report-p2-stability.md#item-52) | Hook LLM 条件评估（自然语言 `if.condition`）| 🥈 | 2 天 | 低 |
+| [item-53](./qwen-code-improvement-report-p2-stability.md#item-53) | WebFetch 内容 LLM 清洗（去 nav/ads/tracker）| 🥈 | 1.5 天 | 低 |
+| [item-54](./qwen-code-improvement-report-p2-stability.md#item-54) | Shell 命令前缀 LLM 提取（权限分类）| 🥉 | 2 天 + 大量测试 | **⚠️ 安全关键**（需默认关闭 + 完整测试） |
+| [item-55](./qwen-code-improvement-report-p2-stability.md#item-55) | Skill 改进建议（post-sampling hook，opt-in）| 🥉 | 1.5 天 | 中（opt-in）|
+
+**共同设计模式**（所有 fast-model 调用共享）：
+1. `thinkingConfig: { type: 'disabled' }` —— 禁用 thinking
+2. `tools: []` —— 禁用 tool use（多数情况）
+3. 非流式 `queryModelWithoutStreaming` —— 减少 UI 渲染开销
+4. `outputFormat: { type: 'json_schema' }` —— 结构化输出（Hook / title 类）
+5. `ANTHROPIC_SMALL_FAST_MODEL` env var 兜底 —— Bedrock/Vertex 自选
+6. Vertex global / Bedrock with thinking 场景 fallback 到 Sonnet
+
+**总投入**：~12-15 天覆盖 6 个最高 ROI 方向。
+
+**总项数**：265 → **271**（+6）。p2-stability 49 → **55**。
 
 ### 2026-04-22（PR#3508 合并 · 闭环完成 🎉）
 

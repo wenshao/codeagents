@@ -2114,3 +2114,297 @@ export function StructuredDiffList({
 **意义**：多处修改是 refactor / rename 的常见场景，视觉分隔直接影响 review 效率。
 **缺失后果**：MultiEdit 多处修改的 UI 不如 Claude 清晰。
 **改进收益**：30 行代码换来多 hunk 场景的视觉层次感；与 item-48 配合实现完整的 Claude 风格 diff 展示。
+
+---
+
+<a id="item-50"></a>
+
+### 50. 会话标题自动生成（Fast Model）（P2）
+
+> **配套阅读**：[Fast Model 应用场景 Deep-Dive](./fast-model-usage-deep-dive.md) 第 4 节"优先级 1"。
+
+**问题**：Qwen Code 的 `/resume` 列表中，会话用 UUID 或时间戳标识——用户滚动长列表难以识别"哪个会话是修登录按钮的"。Claude Code 用 Haiku 自动生成 3-7 词 sentence-case 标题（如 "Fix login button on mobile"），类似 git commit subject。
+
+**Claude Code 的解决方案**（`utils/sessionTitle.ts:56-100`）：
+
+```typescript
+const SESSION_TITLE_PROMPT = `Generate a concise, sentence-case title (3-7 words)...
+Good examples:
+{"title": "Fix login button on mobile"}
+{"title": "Add OAuth authentication"}
+Bad (too vague): {"title": "Code changes"}
+Bad (too long): {"title": "Investigate and fix the issue..."}
+Bad (wrong case): {"title": "Fix Login Button On Mobile"}`
+
+const result = await queryHaiku({
+  systemPrompt: asSystemPrompt([SESSION_TITLE_PROMPT]),
+  userPrompt: extractConversationText(messages).slice(-1000),  // tail-1000
+  outputFormat: {
+    type: 'json_schema',
+    schema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] }
+  }
+})
+```
+
+**精妙细节**：
+- `MAX_CONVERSATION_TEXT = 1000` 字符 tail-slice——长对话只看最近 1000 字符
+- Prompt 提供 4 good + 3 bad examples（vague / too long / wrong case）
+- `extractConversationText()` 过滤 meta 消息和非 human origin
+- JSON schema 强制输出 `{ title: string }`——避免 Haiku 返回冗余说明
+
+**Qwen Code 修改方向**：
+1. 新建 `packages/core/src/services/sessionTitle.ts`，复刻 Claude 的 prompt + schema
+2. 存储在 session metadata（下次打开直接读，不重复生成）
+3. `/resume` 列表 UI 改用生成的 title
+4. 考虑 `/rename` 命令手动触发重新生成
+
+**实现成本评估**：~120 行，~1-1.5 天。前置：[PR#3120](https://github.com/QwenLM/qwen-code/pull/3120) fastModel 配置（已合并）。
+
+**改进前后对比**：
+- **改进前**：`/resume` 列表 `2026-04-22 14:30 (session-abc123)` × N
+- **改进后**：`Fix login button on mobile` / `Add OAuth authentication` / `Debug failing CI tests`——一眼辨识
+
+**意义**：`/resume` 的可用性取决于能不能快速找到目标会话。
+**改进收益**：从"翻 UUID 找会话"到"扫标题选会话"。
+
+---
+
+<a id="item-51"></a>
+
+### 51. 工具调用摘要生成（Compact Mode · Fast Model）（P2）
+
+> **配套阅读**：[Fast Model 应用场景 Deep-Dive](./fast-model-usage-deep-dive.md) 第 4 节"优先级 2"。
+
+**问题**：当 Agent 一次并行调用 N 个工具（`Read × 5` + `Grep × 3`）时，compact 视图下每个工具占一行——用户仍看到长列表。Claude Code 用 Haiku 生成**30 字符 git-commit-subject 风格 label**（"Fixed NPE in UserService" / "Searched in auth/"），把 N 个 tool calls 折叠为一行。
+
+**Claude Code 的解决方案**（`services/toolUseSummary/toolUseSummaryGenerator.ts:15-25`）：
+
+```typescript
+const TOOL_USE_SUMMARY_SYSTEM_PROMPT = `Write a short summary label describing
+what these tool calls accomplished. It appears as a single-line row in a
+mobile app and truncates around 30 characters, so think git-commit-subject,
+not sentence.
+
+Keep the verb in past tense and the most distinctive noun.
+Drop articles, connectors, and long location context first.
+
+Examples:
+- Searched in auth/
+- Fixed NPE in UserService
+- Created signup endpoint
+- Read config.json
+- Ran failing tests`
+```
+
+**关键 prompt 工程**（原文引用）：
+- **"git-commit-subject, not sentence"**——明确风格要求
+- **"past tense"**——动词时态
+- **"most distinctive noun"**——名词选择优先级
+- **"drop articles, connectors, long location context first"**——字符预算不够时的删减顺序
+
+**Qwen Code 修改方向**：
+1. 新建 `packages/core/src/services/toolUseSummary.ts`，输入 `ToolCall[]`（含 name/input/output 摘要，各字段 300 字符截断）
+2. 输出 30 字符标签
+3. 在 `ToolGroupMessage.tsx` / compact mode UI 集成
+4. 兼容 SDK 客户端（手机 app 可以用这个 label 做单行显示）
+
+**实现成本评估**：~100 行，~1 天。
+
+**改进前后对比**：
+- **改进前**：折叠后仍是 `Read × 5 + Grep × 3` 一串工具名
+- **改进后**：`Searched auth module for login bug` ——用户一眼理解 batch 意图
+
+**意义**：compact mode 是移动端/小屏/subagent 视图的关键 UX。
+**改进收益**：工具名列表 → 语义化 label，信息密度提升 5-10×。
+
+---
+
+<a id="item-52"></a>
+
+### 52. Hook LLM 条件评估（自然语言 if.condition）（P2）
+
+> **配套阅读**：[Fast Model 应用场景 Deep-Dive](./fast-model-usage-deep-dive.md) 第 4 节"优先级 3"。
+
+**问题**：Qwen Code Hook 系统（HTTP/Function/Async，已超越 Claude Code）目前**所有 `if` 条件都是代码逻辑**——无法写 `if: "user is discussing security issues"` 这类自然语言条件。Claude Code 用 Haiku 评估任意自然语言条件，返回 `{ok: bool, reason?: string}`。
+
+**Claude Code 的解决方案**（`utils/hooks/execPromptHook.ts:62-99`）：
+
+```typescript
+const response = await queryModelWithoutStreaming({
+  systemPrompt: asSystemPrompt([`You are evaluating a hook in Claude Code.
+Your response must be a JSON object matching one of:
+1. {"ok": true}
+2. {"ok": false, "reason": "Reason for why it is not met"}`]),
+  thinkingConfig: { type: 'disabled' },
+  options: {
+    model: hook.model ?? getSmallFastModel(),
+    outputFormat: {
+      type: 'json_schema',
+      schema: {
+        type: 'object',
+        properties: { ok: { type: 'boolean' }, reason: { type: 'string' } },
+        required: ['ok']
+      }
+    }
+  }
+})
+```
+
+**Agent Hook 变体**（`execAgentHook.ts:118`）更深度——允许 LLM **调用工具**去 verify 条件（读文件、跑 grep），最多 50 turns，独立 `agentId`。
+
+**Qwen Code 修改方向**：
+1. 在 Hook schema 增加 `if.condition: string` 字段和可选 `if.model: fastModel | 'default'`
+2. Hook runner 新增"LLM 评估"分支，调用 fastModel 得 `{ok, reason}`
+3. `ok: false` 时 short-circuit（不触发 hook action），记录 reason 到 audit log
+4. （可选）实现 Agent Hook 变体——允许 LLM 调用白名单工具验证条件
+
+**Prompt 约束**（对齐 Claude）：
+- `thinkingConfig: disabled`
+- JSON schema 强制输出
+- `outputFormat.schema.required: ['ok']`（reason 可选）
+
+**实现成本评估**：
+- Prompt Hook：~2 天，~200 行
+- Agent Hook（可选）：~5 天，~400 行
+- 配合 Qwen 现有 hook 基础设施（HTTP/Function/Async）无冲突
+
+**改进前后对比**：
+- **改进前**：`if: (event.tool === 'Shell') && event.args.command.includes('rm')`
+- **改进后**：`if: "user is discussing production database deletion"`——用户可读 + LLM 语义判断
+
+**意义**：自然语言 hook 条件让**非程序员用户**也能用 hook。
+**改进收益**：Hook 用户群体从"能写 JS/TS"扩大到"会写自然语言"。
+
+---
+
+<a id="item-53"></a>
+
+### 53. WebFetch 内容 LLM 清洗（Fast Model）（P2）
+
+> **配套阅读**：[Fast Model 应用场景 Deep-Dive](./fast-model-usage-deep-dive.md) 第 4 节"优先级 4"。
+
+**问题**：WebFetch 抓回的 HTML/Markdown 常含大量 navigation / ads / footer / tracking script，直接塞进上下文浪费 token。Claude Code 用 Haiku 预处理——抽取核心内容 + 关键 metadata，丢弃噪音。
+
+**Claude Code 的解决方案**（`tools/WebFetchTool/utils.ts:503`）：在 WebFetch tool 返回前，大文档（>5K chars）先走 Haiku 清洗。
+
+**Qwen Code 修改方向**：
+1. 在 `packages/core/src/tools/web-fetch.ts` 增加"LLM 清洗"步骤，gated by size threshold（默认 5K chars）
+2. Prompt：`"Extract the main content of this webpage. Remove navigation, ads, cookie banners, footers. Preserve headings, code blocks, and tables. Return as markdown."`
+3. 保留原始内容路径作为 fallback（LLM 失败时降级为 `strip-scripts`）
+4. Feature flag `webfetch.llmCleaning: true` 控制启用
+
+**实现成本评估**：~150 行，~1.5 天。
+
+**改进前后对比**：
+- **改进前**：3K HTML → 3K 塞进 context（含 80% 噪音）
+- **改进后**：3K HTML → 800 字核心内容 → 节省 70% context + Agent 回答质量提升
+
+**意义**：WebFetch 是 Agent 获取实时信息的主要入口，context 效率直接影响对话深度。
+**改进收益**：同 context 预算下能查更多网页；Agent 回答更聚焦。
+
+---
+
+<a id="item-54"></a>
+
+### 54. Shell 命令前缀 LLM 提取（权限分类 · Fast Model）（P2）
+
+> **配套阅读**：[Fast Model 应用场景 Deep-Dive](./fast-model-usage-deep-dive.md) 第 4 节"优先级 5"。
+
+**问题**：Shell 权限分类是**安全关键路径**——`git commit && rm -rf /` 这类复合命令、shell alias / subshell / backtick 等边界情况下，regex 容易误判（漏判 = 安全漏洞；误判 = 阻塞合法命令）。Claude Code 用 Haiku + `policySpec` 精确提取命令前缀。
+
+**Claude Code 的解决方案**（`utils/shell/prefix.ts:215-245`）：
+
+```typescript
+const useSystemPromptPolicySpec = getFeatureValue_CACHED_MAY_BE_STALE(
+  'tengu_cork_m4q', false,
+)
+
+const response = await queryHaiku({
+  systemPrompt: asSystemPrompt(
+    useSystemPromptPolicySpec
+      ? [`Your task is to process ${toolName} commands...\n\n${policySpec}`]
+      : [`Your task is to process ${toolName} commands...`],
+  ),
+  userPrompt: useSystemPromptPolicySpec
+    ? `Command: ${command}`
+    : `${policySpec}\n\nCommand: ${command}`,
+  options: {
+    enablePromptCaching: useSystemPromptPolicySpec,  // policy spec 放 system 走 cache
+    // ...
+  },
+})
+// 10 秒超时告警："[${tn}Tool] Pre-flight check is taking longer than expected."
+```
+
+**精妙细节**：
+- **feature flag `tengu_cork_m4q`** 控制 policy spec 放 system prompt（走 prompt caching）还是 user prompt
+- **10 秒 timeout 警告**——pre-flight 检查超时提示
+- 失败时降级为 regex（保持可用性）
+
+**Qwen Code 修改方向**：
+1. 新建 `packages/core/src/utils/shell/llmPrefix.ts`
+2. 在权限检查路径（目前走 regex）前增加 LLM 分支
+3. Feature flag `shell.llmPrefixClassification: false`（**默认关闭**），有完整 test suite 后再开
+4. 10 秒超时降级到 regex
+5. 单元测试覆盖：复合命令 / alias / subshell / backtick / pipe
+
+**实现成本评估**：~200 行 + **大量测试**，~2 天（主要成本在测试）。
+
+**改进前后对比**：
+- **改进前**：`git commit && rm -rf /` 可能被 regex 判为 `git commit`（安全漏洞）
+- **改进后**：LLM 正确切分为 `[git commit, rm -rf]`，触发 `rm -rf` 权限检查
+
+**意义**：安全关键路径，regex 边界错误 = 安全漏洞。
+**⚠️ 风险**：**默认关闭**很重要——LLM 分类在生产前需大量测试。
+
+---
+
+<a id="item-55"></a>
+
+### 55. Skill 改进建议（Post-Sampling Hook · Fast Model）（P2）
+
+> **配套阅读**：[Fast Model 应用场景 Deep-Dive](./fast-model-usage-deep-dive.md) 第 4 节"优先级 6"。
+
+**问题**：Qwen Code Skill 系统（2673 行，超越 Claude Code 的 393 行）缺少"自我改进"机制——用户发现 skill 行为不对只能手动编辑。Claude Code 通过 post-sampling hook 让 Haiku 分析刚完成的 assistant message，自动建议 skill 修订。
+
+**Claude Code 的解决方案**（`utils/hooks/skillImprovement.ts:155-182`）：
+
+```typescript
+// feature-gated via tengu_copper_panda
+if (feature('SKILL_IMPROVEMENT') &&
+    getFeatureValue_CACHED_MAY_BE_STALE('tengu_copper_panda', false)) {
+  registerPostSamplingHook(createSkillImprovementHook())
+}
+
+// Hook 在 assistant message 完成后触发：
+await queryHaiku({
+  userPrompt: `Skill: ${skillName}\nAssistant turn: ${assistantMessage}\nIs this skill worth improving?`,
+  outputFormat: {
+    type: 'json_schema',
+    schema: { skillName: 'string', updates: 'string' }
+  }
+})
+
+// 结果暂存在 appState.skillImprovement，用户可选择应用
+context.toolUseContext.setAppState(prev => ({
+  ...prev,
+  skillImprovement: { suggestion: { skillName, updates: result.result } }
+}))
+```
+
+**Qwen Code 修改方向**：
+1. 在 Qwen Skill 系统（`packages/core/src/skills/`）加 post-sampling hook
+2. Hook 接收刚完成的 turn + 关联 skill 名 → fastModel 分析 → 返回可选修订建议
+3. 用户 UI（`/skills --review` 命令或 footer 提示）让用户选择应用/忽略
+4. **默认关闭**（类似 `tengu_copper_panda` gate），通过 settings `skills.autoImprove: true` opt-in
+
+**实现成本评估**：~150 行，~1.5 天。
+
+**改进前后对比**：
+- **改进前**：skill 行为不对 → 用户 notice → 手动编辑 SKILL.md
+- **改进后**：LLM 检测到潜在改进 → 建议推送给用户 → 一键应用
+
+**⚠️ 风险**：LLM 建议可能不准确——必须 opt-in + 用户审核后才能修改 skill 源码。不直接 auto-apply。
+
+**意义**：Qwen Skill 的规模优势（6.8× Claude）可进一步放大——active improvement loop。
+**改进收益**：Skill 从静态资源变为会"自我进化"的 asset。
