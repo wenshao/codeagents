@@ -1515,7 +1515,7 @@ Skip status reports and commit recaps.`
 
 <a id="item-44"></a>
 
-### 44. 瞬态消息单行容器 + 离屏历史冻结（P2）
+### 44. 消息响应统一容器 + 离屏历史冻结（P2）
 
 > **配套阅读**：[任务显示高度控制 Deep-Dive](./task-display-height-deep-dive.md) —— 本 item 第 1.1/1.2 节的完整分析。
 
@@ -1523,156 +1523,186 @@ Skip status reports and commit recaps.`
 
 #### 🎯 一句话理解
 
-这一项做两件事：
+两个**独立的基础设施组件**，各解决一类问题：
 
-1. **机制 A（`MessageResponse`）**：**正在跑的工具**强制只占 1 行 —— 不管命令多长、输出多大。
-2. **机制 B（`OffscreenFreeze`）**：**滚出屏幕的历史**冻结不动 —— 里面的 spinner 动画不再每秒 30 次拖慢整个终端。
+1. **`MessageResponse`**：**所有工具响应的统一视觉容器**——加上 `⎿ ` 前缀（dim color），自带**滚动防抖**（默认 `Ratchet lock="offscreen"`），跨 15+ 种消息类型视觉一致。
+2. **`OffscreenFreeze`**：**屏外消息子树 element 引用缓存**——当前屏内有 spinner/elapsed 触发 render 时，屏外历史子树**跳过 React walk**，屏外的 live 更新不触发终端整屏 reset。
 
-**用一句话概括用户感知**：屏幕**不抖不闪不卡**，即使同时跑 10 个工具、带 spinner 动画的历史消息也不会让你打字卡顿。
-
----
-
-#### 📺 机制 A：`MessageResponse` 单行容器——解决"屏幕被工具撑爆"
-
-**问题场景**：用户让 Agent 执行 `grep -rn "TODO" .` 找 TODO 注释。
-
-**Qwen Code 现状**（工具进度消息没有统一高度约束）：
-
-```
-├─ Shell grep -rn "TODO" .
-│  Running shell command...
-│  ↓ (输出开始流出来，占满屏幕)
-│  src/auth.ts:42: // TODO: validate email
-│  src/auth.ts:67: // TODO: handle expiry
-│  src/db.ts:15:   // TODO: retry on deadlock
-│  src/db.ts:28:   // TODO: log slow queries
-│  ... (屏幕被 20 行 TODO 占满)
-```
-
-工具还在跑的时候，**屏幕已经被流式输出撑爆**。用户想在底部输入框敲字发现光标已滚到最上方 18 行的历史区。
-
-**Claude Code 做法**（`components/MessageResponse.tsx:37`）：
-
-```tsx
-<Box flexDirection="row" height={1} overflowY="hidden">
-  {prefixIcon}{mainText}
-</Box>
-```
-
-**关键**：`height={1}` + `overflowY="hidden"`——**多余的行被 clip 掉**（不是滚动，是"看不见"）。
-
-**改进后用户看到**：
-
-```
-⏺ grep -rn "TODO" .                              (12.3s)
-```
-
-**就 1 行**。输出流到哪是后台的事，屏幕活跃区**永远固定 1 行**。用户可以在输入框稳定打字。
-
-**适用范围**：所有"瞬态消息"（工具进度 / Waiting / Running hook / Done / (No output) / 图像检测消息）全部共享这个 1 行容器。
+**⚠️ 重要说明**：这两个组件**不解决"工具输出爆屏"**——那是 [item-46](#item-46) 5 行窗口的职责，**已被 PR#3155 + PR#3508 实现（2026-04-22 合并）**。本 item 是**基础设施层**：提供统一视觉 + 滚动防抖 + 离屏优化，让上层组件（包括 `ShellProgressMessage`）可以组合使用。
 
 ---
 
-#### 📺 机制 B：`OffscreenFreeze` 离屏冻结——解决"滚动历史时卡顿"
+#### 📺 机制 A：`MessageResponse` 统一视觉容器
 
-**问题场景**：用户已经跑了 10 个工具，现在想滚回去看第 3 个工具的输出。前面每个工具都有 elapsed time 在动（`3s → 4s → 5s`）。
-
-**Qwen Code 现状**（无离屏冻结，所有消息每帧参与 React reconcile）：
-
-```
-╭──────────────────────────────────────╮
-│ [可见视口]                            │
-│ ⏺ Shell: npm install (12.3s)         │  ← 当前活跃，spinner 每秒变化
-╰──────────────────────────────────────╯
-[滚出屏幕的历史，肉眼看不到但还在"运行"]
-⏺ Shell: lint     (45s)  ← 已完成但还在每秒重渲染 ❌
-⏺ Shell: typecheck (32s) ← 已完成但还在每秒重渲染 ❌
-⏺ Shell: build    (18s)  ← 已完成但还在每秒重渲染 ❌
-...（10 条类似历史）
-```
-
-**问题**：虽然用户看不到历史，但 **React 仍然在后台给每条历史 rerender**——每秒 30 次 × 10 条 = **每秒 300 次无用更新**，终端 `log-update.ts` 每次都要触发**整屏 reset**（因为屏外内容变化会导致 diff 引擎放弃增量更新，走全量重绘）。
-
-**用户感知**：输入卡顿、spinner 顿挫、CPU 占用高。
-
-**Claude Code 做法**（`components/OffscreenFreeze.tsx:23-42`）：
+**真实用途**（源码 `components/MessageResponse.tsx:10-57` 完整验证）：
 
 ```tsx
-export function OffscreenFreeze({ children }): React.ReactNode {
-  'use no memo'  // 关键：禁用 React Compiler memoization，让我们手动控制缓存
+export function MessageResponse({ children, height }) {
+  const isNested = useContext(MessageResponseContext)
+  if (isNested) return children  // ① 嵌套时退化为透传，避免重复 ⎿
+
+  const content = (
+    <MessageResponseProvider>
+      <Box flexDirection="row" height={height} overflowY="hidden">
+        <NoSelect fromLeftEdge flexShrink={0}>
+          <Text dimColor>{'  '}⎿  </Text>      {/* ② 统一的 dim color ⎿ 前缀 */}
+        </NoSelect>
+        <Box flexShrink={1} flexGrow={1}>
+          {children}
+        </Box>
+      </Box>
+    </MessageResponseProvider>
+  )
+
+  if (height !== undefined) return content       // ③ 传了 height 直接返回（clip）
+
+  return <Ratchet lock="offscreen">{content}</Ratchet>  // ④ 默认 Ratchet 防滚动抖动
+}
+```
+
+**4 个关键设计**：
+
+| # | 设计 | 作用 |
+|---|---|---|
+| ① | **Context 嵌套检测** | 嵌套调用只渲染一次 `⎿ ` 前缀 |
+| ② | **统一 `⎿ ` 前缀**（dim color）| 所有工具响应视觉一致，明确区分"发起信息"和"响应内容" |
+| ③ | **可选 `height` 硬限制** | 某些场景（spinner / Done / No output）显式传 `height={1}` 做 clip |
+| ④ | **默认 `Ratchet lock="offscreen"`** | 滚出视口后锁定最小高度——**向下滚动时 UI 不跳动** |
+
+**⚠️ 纠正**：此容器**不是"默认 1 行"**——默认不设 height（走 Ratchet 分支），高度跟随内容自适应。只在具体使用方显式传 `height={1}` 时才做 clip。
+
+**使用范围**（源码 `grep MessageResponse` 命中 **15 个组件**）：`FileEditToolUpdatedMessage` / `FileEditToolUseRejectedMessage` / `Diagnostics` / `Spinner` / `CompactSummary` / `UserTextMessage` / `AssistantToolUseMessage` / `SystemAPIErrorMessage` / `SystemTextMessage` / `AdvisorMessage` / `FallbackToolUseRejectedMessage` / `NotebookEditToolUseRejectedMessage` / `HookProgressMessage` / `CtrlOToExpand` / `FallbackToolUseErrorMessage` —— 覆盖**几乎所有工具响应/状态消息**。
+
+**视觉效果对比**：
+
+```
+Qwen 现状（各消息组件前缀分散）：    Claude Code（⎿ 统一前缀）：
+                                     
+⏺ FileEdit foo.ts                    ⏺ FileEdit foo.ts
+  Added 5 lines                        ⎿  Added 5 lines           ← dim ⎿
+                                     
+⏺ Shell ls -la                       ⏺ Shell ls -la
+  (No output)                          ⎿  (No output)
+                                     
+⏺ Running hook                       ⏺ Running hook
+  Checking secret scanner...           ⎿  Checking secret scanner...
+```
+
+**`⎿ ` 的语义价值**：视觉上把**"工具发起信息"（`⏺` 开头的一行）**与**"响应内容"（`⎿ ` 前缀的若干行）**明确区分。用户滚动历史时一眼看出层级。
+
+---
+
+#### 📺 机制 B：`OffscreenFreeze` 离屏冻结
+
+**源码**（`components/OffscreenFreeze.tsx:23-42`）：
+
+```tsx
+export function OffscreenFreeze({ children }) {
+  'use no memo'  // React Compiler 会自动 memo 这个组件，反而破坏手动缓存逻辑
+  const inVirtualList = useContext(InVirtualListContext)
   const [ref, { isVisible }] = useTerminalViewport()
   const cached = useRef(children)
+
   if (isVisible || inVirtualList) {
-    cached.current = children  // 在视口内 → 更新缓存
+    cached.current = children  // 在视口内 → 更新缓存（新 element ref）
   }
-  // 返回 React element 引用——如果离屏，引用不变
   return <Box ref={ref}>{cached.current}</Box>
+  //                    ↑ 离屏时返回**上次缓存的 element 引用**（不是新的）
 }
 ```
 
-**关键**：
-- 在视口内 → 正常 rerender（缓存更新）
-- **离屏 → 返回同一个 React element 引用**
-- React reconciler 看到"这个 element 引用跟上次一样"，**直接跳过整个子树**
+**React reconciler 的 bailout 机制**：如果新老 tree 上**同一位置的 element 引用完全相同**（`===`），reconciler **直接跳过整个子树**——不做 diff、不重新 render 子组件、不产生 DOM 变更。OffscreenFreeze 精确利用了这个机制。
 
-**改进后**：离屏历史消息**零 CPU 开销**。即使 spinner 在 "更新" 也没人渲染它。
+**真正防的是什么**（源码注释 `OffscreenFreeze.tsx:16-22` 原话）：
 
-**源码注释原话**（最精炼地说清楚了动机）：
+> Any content change above the viewport forces `log-update.ts` into a **full terminal reset** (it cannot partially update rows that have scrolled out). For content that updates on a timer — spinners, elapsed counters — this produces a reset per tick.
 
-> Any content change above the viewport forces `log-update.ts` into a **full terminal reset**. For content that updates on a timer — spinners, elapsed counters — this produces a reset per tick.
+**准确翻译**：**屏外内容变化**时强制终端做 full reset（因为 `log-update.ts` 无法只更新已滚出的行）。对 timer 驱动的内容（spinner / elapsed），这就是每 tick 一次 reset。
 
-翻译：**屏外任何变化都强制整终端重置**；带 timer 的内容（spinner / elapsed）每 tick 一次 reset，直接把用户体验打爆。
+**⚠️ 纠正**：已完成的工具 **elapsed time 已冻结**（例如定格在 `45s`）——**不会**触发 rerender。真正有问题的是**屏外还有 live 更新的场景**：
+
+**典型触发场景——并发执行**：同时跑 2 个工具，第一个已滚出视口但还在运行：
+
+```
+[屏幕上方已滚出，肉眼看不到]
+⏺ Shell test-suite     (60s) ← 还在跑！elapsed 每秒 60→61→62
+
+╭──────────────────────────────────────╮  ← 当前视口
+│ ⏺ Shell typecheck      (15s)         │  ← 可见 spinner
+│ ...                                   │
+╰──────────────────────────────────────╯
+```
+
+- **无 OffscreenFreeze**：`test-suite` 的 elapsed 每秒变化 → React 产生新的 JSX element → `log-update.ts` 检测到屏外内容变化 → **整个终端 full reset**（因为无法只 patch 已滚出的行）
+- **有 OffscreenFreeze**：屏外 `test-suite` 的 element ref 保持不变 → React reconciler bailout → **屏外无内容变化** → 终端只更新视口内行
+
+**次要收益**（非并发场景）：
+- 即使屏外无变化，视口内 spinner 每次 tick 仍会触发 React 对整棵树做 reconcile walk（遍历 fiber 树比较 props）
+- OffscreenFreeze 让屏外子树 walk 阶段直接 bailout，节省 JSX 创建 + props 比较的 CPU
+
+**⚠️ 纠正之前夸张数字**：原版写"每秒 300 次 rerender / 30+ 次整屏 reset"是不准确的。真实情况：
+- **已完成工具不会 rerender**（elapsed 冻结）
+- **整屏 full reset 仅发生在屏外有 live 变化时**（主要是并发场景）
+- 视口内 render tick（通常 ~16ms 节流，而非每秒 30 次）会 walk 整棵树，但**不触发终端 I/O**
 
 ---
 
-#### 🔥 两机制协同效果——具体数字
+#### 📊 收益总结（修订版·精确描述）
 
-**场景**：一个长会话，用户跑了 10 个工具（每个带 elapsed time + spinner），当前还在跑 1 个工具。
+| 维度 | 改进前 | 改进后 | 受益场景 |
+|------|------|------|---------|
+| 🎨 **视觉一致性** | Qwen 各消息组件前缀不统一 | 全部走 `⎿ ` + dim color | 所有滚动历史场景 |
+| 💨 **向下滚动抖动** | 历史消息可能因内容变化而抖动 | `Ratchet lock="offscreen"` 锁定最小高度 | 鼠标滚轮/键盘翻页 |
+| ⚡ **屏外 live 更新** | 屏外 spinner/elapsed 变化触发终端 full reset | `OffscreenFreeze` 引用缓存 → bailout | 并发工具（屏外还有 running）场景 |
+| 🧠 **视口内 render 时屏外 CPU** | React walk 整棵树 | 屏外子树直接 bailout | 所有渲染场景（次要收益）|
 
-| 场景 | Qwen 现状 | 改进后（两机制协同）|
-|---|---|---|
-| 当前工具屏占行数 | 不定（5-30 行视输出）| **固定 1 行** |
-| 历史工具 React reconcile/秒 | ~300 次（10 条 × 30fps）| **0 次** |
-| 终端 reset/秒 | >30 次（每次 timer tick 触发整屏）| **≤1 次**（只刷新当前工具那 1 行）|
-| 用户输入延迟 | 明显卡顿 | **无感** |
-
-**简单说**：CPU 干的活从"10×30fps=300 次渲染/秒 + 30+ 次整屏重绘"降到"**1 行渲染 + 1 行局部重绘**"。
+**⚠️ 重要边界**：
+- 这个 item **不解决** "工具输出撑爆屏幕" —— 那是 [item-46](#item-46) 5 行窗口的职责，**已被 PR#3508 实现**
+- 本 item 是基础设施层：MessageResponse 提供统一视觉外壳，OffscreenFreeze 在**并发工具 + 长滚动历史**场景有明显效果
 
 ---
 
-#### 🔧 技术改造（两部分配合）
+#### 🔧 技术改造
 
-**(A) MessageResponse 单行容器**（~20 行）：
+**(A) MessageResponse**（~30 行）：
 
 ```tsx
-// 新建 packages/cli/src/ui/components/MessageResponse.tsx
-import { Box } from 'ink'
-export function MessageResponse({ children, height = 1 }) {
-  return (
-    <Box flexDirection="row" height={height} overflowY="hidden">
-      {children}
-    </Box>
+// packages/cli/src/ui/components/MessageResponse.tsx
+import { createContext, useContext } from 'react'
+import { Box, Text } from 'ink'
+import { Ratchet } from './design-system/Ratchet.js'  // 前置：需要先有 Ratchet 组件
+
+const MessageResponseContext = createContext(false)
+
+export function MessageResponse({ children, height }) {
+  const isNested = useContext(MessageResponseContext)
+  if (isNested) return children
+
+  const content = (
+    <MessageResponseContext.Provider value={true}>
+      <Box flexDirection="row" height={height} overflowY="hidden">
+        <Box flexShrink={0}><Text dimColor>{'  '}⎿  </Text></Box>
+        <Box flexShrink={1} flexGrow={1}>{children}</Box>
+      </Box>
+    </MessageResponseContext.Provider>
   )
+
+  if (height !== undefined) return content
+  return <Ratchet lock="offscreen">{content}</Ratchet>
 }
 ```
 
-然后把 `ToolGroupMessage`、工具进度、Waiting、`Done` 等组件都用 `<MessageResponse>` 包起来。
+然后把 `ToolGroupMessage` / `ToolMessage` 等组件的**结果段**用 `<MessageResponse>` 包起来。
 
-**(B) OffscreenFreeze + useTerminalViewport**（~100+20 行）：
+**(B) OffscreenFreeze + useTerminalViewport**（~120 行）：
 
 ```tsx
-// 新建 packages/cli/src/ui/hooks/useTerminalViewport.ts
-export function useTerminalViewport() {
-  const [isVisible, setVisible] = useState(true)
-  const scrollRef = useContext(ScrollContext)  // 需要全局滚动位置 context
-  // 通过 measureElement + scroll offset 计算元素是否在可见区内
-  // ...（~100 行：监听 scroll 事件、节流、初始 measure）
-  return [refCallback, { isVisible }]
-}
+// packages/cli/src/ui/hooks/useTerminalViewport.ts (~100 行)
+// 基于 measureElement + 滚动位置 context 检测元素可见性
+export function useTerminalViewport(): [RefCallback, { isVisible: boolean }] { /* ... */ }
 
-// 新建 packages/cli/src/ui/components/OffscreenFreeze.tsx
+// packages/cli/src/ui/components/OffscreenFreeze.tsx (~20 行)
 export function OffscreenFreeze({ children }) {
-  'use no memo'
   const [ref, { isVisible }] = useTerminalViewport()
   const cached = useRef(children)
   if (isVisible) cached.current = children
@@ -1680,26 +1710,16 @@ export function OffscreenFreeze({ children }) {
 }
 ```
 
-然后把历史消息的每个 item 用 `<OffscreenFreeze>` 包起来。
-
----
-
-#### 📊 三项收益总结
-
-| 维度 | 改进前 | 改进后 |
-|------|------|------|
-| 🎯 **活跃区稳定性** | 工具输出撑爆屏（5-30 行抖动）| **固定 1 行**，输入区位置稳定 |
-| 💨 **历史区 CPU** | 10 条历史 × 30fps = 300 render/s | **0**（引用缓存 bail out）|
-| ⚡ **终端 reset** | >30 次/秒（timer tick 触发全屏）| **≤1 次/秒**（只刷新当前行）|
+然后把历史消息的每个 item 用 `<OffscreenFreeze>` 包起来（特别是那些可能有 live 更新的——shell 工具、agent 工具等）。
 
 ---
 
 #### 🎯 实现成本
 
-- 涉及文件：~6 个
-- 新增代码：~200 行（其中 `useTerminalViewport` 约占 100 行）
+- 涉及文件：~6 个（含前置 `Ratchet` 组件）
+- 新增代码：~150-200 行（其中 `useTerminalViewport` 约 100 行）
 - 开发周期：~3-4 天
-- **难点**：Ink 标准库没有 `useTerminalViewport`，需要自己实现基于 scroll 位置 + `measureElement` 的可见性检测
+- **难点**：Ink 标准库没有 `useTerminalViewport`——需要基于 `measureElement` + 全局 scroll 位置 context + 节流监听实现
 
 ---
 
@@ -1707,17 +1727,19 @@ export function OffscreenFreeze({ children }) {
 
 | 文件 | 关键 |
 |------|------|
-| `components/MessageResponse.tsx:37` | `<Box height={height} overflowY="hidden">` 统一容器 |
+| `components/MessageResponse.tsx:10-57` | 完整实现（含 Context / Ratchet / nested 检测）|
 | `components/OffscreenFreeze.tsx:23-42` | `useRef` + `useTerminalViewport` 冻结机制 |
-| `components/messages/HookProgressMessage.tsx:66-113` | Hook 进度消息用 MessageResponse |
-| `tools/BashTool/BashToolResultMessage.tsx:103-189` | `(No output)` / 图像检测用 `height={1}` |
+| `components/design-system/Ratchet.tsx:38-65` | `lock="offscreen"` 最小高度锁定（MessageResponse 默认依赖）|
 | `ink/hooks/use-terminal-viewport.ts` | viewport 可见性检测 hook |
+| `components/shell/ShellProgressMessage.tsx:65` | 组合使用示例（`MessageResponse` + `OffscreenFreeze` 嵌套在空输出路径）|
+
+**Claude 中 15 个使用点**（`grep MessageResponse`）：FileEdit / Diagnostics / Spinner / CompactSummary / UserText / SystemAPIError / SystemText / AssistantToolUse / AdvisorMessage / FallbackToolUseRejected / NotebookEditToolUseRejected / HookProgressMessage / FileEditToolUseRejected / CtrlOToExpand / FallbackToolUseError
 
 ---
 
-**意义**：屏幕紧凑 + 历史零成本 = "感觉丝滑"的核心来源。
-**缺失后果**：Qwen Code 长任务执行时屏幕抖动、历史 spinner 拖慢全局性能。
-**改进收益**：**MessageResponse 固定活跃区 1 行 + OffscreenFreeze 消除历史 reset = 90% 的"屏幕爆"问题解决**。
+**意义**：视觉一致性 + 滚动防抖 + 离屏优化这三条基础设施是 Claude Code 看起来"精致"的底层。
+**缺失后果**：Qwen Code 各消息组件前缀不统一；滚动时可能抖动；并发屏外 spinner 触发终端整屏重置。
+**改进收益**：**统一 `⎿ ` 前缀视觉 + 向下滚动不抖动 + 屏外 live 更新不触发终端 full reset**。此 item 属于基础设施改造，与 [item-46](#item-46)（已合并的 5 行窗口 cap）互补。
 
 ---
 
