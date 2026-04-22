@@ -1807,11 +1807,43 @@ return <MessageResponse>
 
 <a id="item-47"></a>
 
-### 47. `ShellTimeDisplay` 执行时间 + timeout 倒计时（P2）🟡 变体实现
+### 47. `ShellTimeDisplay` 执行时间 + timeout 倒计时（P2）🟡 增强中（PR#3512 OPEN 补齐剩余 gap）
 
 > **配套阅读**：[Bash 任务展示 Deep-Dive](./bash-task-display-deep-dive.md) 第 2.2 节。
 
-**状态**：**[PR#3155](https://github.com/QwenLM/qwen-code/pull/3155)（2026-04-20 08:04 UTC 合并）实现了功能等价的时间反馈，但设计与 Claude Code 的 `ShellTimeDisplay` 存在 5 处关键差异**。需根据具体 UX 目标判断是否补齐 Claude 风格。
+**最新状态（2026-04-22 07:32 UTC）**：[PR#3512](https://github.com/QwenLM/qwen-code/pull/3512) OPEN——"feat(cli): combine elapsed + timeout in shell time indicator"，**直接补齐 2026-04-21 勘误中列出的 4 个 Claude-style gap**。合并后 item-47 将升级为 ✓ 完整实现。
+
+**PR#3512 对 gap 的覆盖**：
+
+| Gap | 2026-04-21 勘误描述 | PR#3512 实现 |
+|---|---|---|
+| ① 组合格式 | elapsed + timeout 合并到一个 `(... · ...)` | ✅ `(10s · timeout 5s)` inline |
+| ② 亚秒精度 | `formatDuration` 加 `hideTrailingZeros` option | ✅ `formatters.ts` 新增 option，`5s` vs `5.5s` 正确 |
+| ③ 无阈值模式 | settings 选项禁用 3s 阈值 | ✅ **更优雅**——条件化：有 `timeoutMs` 时 t=0 立刻显示，无 `timeoutMs` 保持 3s 阈值（无需用户配置）|
+| ④ Shell 专属包装 | shell 内联展示，其他工具保持 quiet | ✅ 自然达成——只有 shell 工具有 `timeoutMs`，自动区分 |
+
+**PR#3512 设计亮点**：
+1. **Conditional quiet threshold**——"工具自己告诉 UI：用户是否明确关心时间"（timeoutMs 存在 = 关心 = t=0 显示）
+2. **`hideTrailingZeros` 作为 formatter option 而非组件逻辑**——其他 duration 场景（测试耗时等）可复用
+3. **消除自定义 `formatElapsed`**——统一走 `formatDuration`，所有 duration 输出一致（hour-range `1h 2m 6s`）
+4. **ShellStatsBar 瘦身**——`timeoutMs` 搬到 `ToolElapsedTime` inline，`+N lines` + memory usage 留在 stats bar，职责清晰
+
+**测试覆盖**（PR 原文）：
+- `formatters.test.ts` 5 个新 case（whole seconds / fractional / ms-range / multi-unit）
+- `ToolElapsedTime.test.tsx` 8 个 case（Pending/Executing/Success / 3s 阈值 / 组合格式 t=0 / fractional timeout `5.5s` / minute-range / non-positive timeout fallback）
+- 手动 tmux 验证：t=0 / 3s 阈值后 / 1h+ elapsed / `timeoutMs` 中途 `undefined → 10_000` / 防御性 fallback
+
+**合并前状态总结**（PR#3155 单独）：
+
+| 方面 | Claude `ShellTimeDisplay` | PR#3155 |
+|---|---|---|
+| 起始可见性 | 始终可见 | 3s 阈值 |
+| 格式 | `(10.5s · timeout 30s)` 组合 | 分散到 elapsed + stats bar |
+| 亚秒精度 | `formatDuration` hideTrailingZeros | 自定义 `formatElapsed` 仅整数秒 |
+| 位置 | 与 Running… 前缀内联 | 右对齐独立 flex |
+| 工具范围 | Shell only | 所有工具 |
+
+**合并后状态**（PR#3512 补齐后）：5 处差异中 4 处对齐 Claude 设计 + 1 处保留 Qwen 优势（全工具覆盖）。
 
 **PR#3155 实际实现**：
 - 新增 `components/shared/ToolElapsedTime.tsx`（67 行）：**3 秒阈值后**显示右对齐 elapsed time（`3s` → `1m 30s` → `2h 15m`），`color={theme.text.secondary}`

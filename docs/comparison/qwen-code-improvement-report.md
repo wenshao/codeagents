@@ -169,7 +169,7 @@
 | **P2** | [瞬态消息单行容器 + 离屏历史冻结](./task-display-height-deep-dive.md) — MessageResponse `height=1 overflowY=hidden` + OffscreenFreeze 引用缓存避免历史 spinner 拖累 [↓](./qwen-code-improvement-report-p2-stability.md#item-44) | 无统一容器/无离屏冻结 | 中 | — |
 | **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 无统一上限 | 小 | — |
 | **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | **✓ 已完整实现**（超越 Claude 原设计 · 可配置 + 6 bypasses + 语义化 tool success ≠ exit code）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（`+N lines`，2026-04-20）+ [PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) ✓（5 行窗口 + 6 bypasses + settings，2026-04-22）|
-| **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | 🟡 变体实现（3s 阈值 + 右对齐，分散到 elapsed + stats bar 两处，非 Claude 的单单元组合）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（变体，2026-04-20 合并）|
+| **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | 🟡 增强中（PR#3512 合并后将补齐 4/4 gap → ✓ 完整）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（变体，2026-04-20）+ [PR#3512](https://github.com/QwenLM/qwen-code/pull/3512) 🟡 OPEN（补齐组合格式 + 亚秒精度 + 条件阈值）|
 | **P2** | [语义化 hunk 模型 + singleHunk 智能上下文](./update-tool-display-deep-dive.md) — `structuredPatch` + `singleHunk ? 100_000 : 3` 智能 context + 消除 UI 层 regex re-parse [↓](./qwen-code-improvement-report-p2-stability.md#item-48) | `createPatch` 字符串 + UI regex 重解析 + 固定 5 行上下文 | 中 | — |
 | **P2** | [多 hunk `...` 省略分隔符](./update-tool-display-deep-dive.md) — StructuredDiffList 在 hunk 之间插入 dim color `...` [↓](./qwen-code-improvement-report-p2-stability.md#item-49) | 多 hunk 直接堆叠无分隔 | 小 | — |
 | **P2** | [会话标题自动生成 Fast Model](./fast-model-usage-deep-dive.md) — Haiku 3-7 词 sentence-case title + tail-1000 字符 + JSON schema [↓](./qwen-code-improvement-report-p2-stability.md#item-50) | UUID/时间戳 | 小 | — |
@@ -439,6 +439,46 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-22（PR#3512 OPEN · item-47 剩余 gap 的精确补齐）
+
+**[PR#3512](https://github.com/QwenLM/qwen-code/pull/3512) OPEN（2026-04-22 07:32 UTC 提交，作者 `wenshao`）**——"feat(cli): combine elapsed + timeout in shell time indicator"。直接响应 2026-04-21 勘误中列出的 item-47 剩余 4 个 Claude-style gap，**4/4 全部覆盖**。
+
+**覆盖度**：
+
+| Gap | 2026-04-21 勘误描述 | PR#3512 实现 |
+|---|---|---|
+| ① 组合格式 | elapsed + timeout 合并 `(... · ...)` | ✅ `(10s · timeout 5s)` inline |
+| ② 亚秒精度 | `hideTrailingZeros` option | ✅ `formatters.ts` 新增 option，`5s` / `5.5s` 正确 |
+| ③ 无阈值模式 | settings toggle | ✅ **更优雅**——有 `timeoutMs` 时 t=0 显示，无 `timeoutMs` 保持 3s 阈值，**无需配置** |
+| ④ Shell 专属包装 | 仅 shell 内联 | ✅ 自然达成——只有 shell 工具有 `timeoutMs` |
+
+**设计亮点（4 条）**：
+1. **Conditional quiet threshold**："工具自己告诉 UI：用户是否关心时间"（比我建议的 settings toggle 更优雅，**零配置**）
+2. **`hideTrailingZeros` 作为 formatter option**——复用到其他 duration 场景（测试耗时等）
+3. **消除自定义 `formatElapsed`**——统一走 `formatDuration`，所有 duration 输出一致（hour-range `1h 2m 6s`）
+4. **ShellStatsBar 瘦身**——`timeoutMs` 搬到 `ToolElapsedTime` inline，stats bar 只留 `+N lines` + memory usage，职责清晰
+
+**状态变更**：
+- item-47 主矩阵：🟡 变体实现 → 🟡 **增强中**（PR#3512 合并后 → ✓ 完整）
+- 追踪 PR 列：PR#3155 单独 → PR#3155 + PR#3512 组合
+
+**闭环加速观察**（24h 内 2 次反馈循环）：
+
+| 时间 | 事件 |
+|---|---|
+| 2026-04-21 17:00 | 我在 2026-04-21 勘误中列出 item-47 的 4 个 Claude-style gap |
+| **2026-04-22 07:32 UTC** | **wenshao 提交 PR#3512 精确覆盖 4/4 gap**（距勘误 ~14 小时）|
+
+**对比 item-46 的闭环（PR#3508，31 小时）**：PR#3512 更快。**规格文档 → PR 提交**的延迟从 31h → 14h。
+
+**CI 状态**（PR#3512 当前）：Lint + CodeQL ✓ SUCCESS；Test (ubuntu/macos/windows × 3 版本) IN_PROGRESS/QUEUED。review 尚未提交。
+
+**合并后跟进**：
+1. item-47 状态 🟡 → ✓ 完整（5/5 对齐 Claude + 1 处 Qwen 优势保留）
+2. 主矩阵 item-47 行补充 PR#3512 ✓ 标记
+3. 已合并 ✓ 67 → 68
+4. [Bash Deep-Dive](./bash-task-display-deep-dive.md) 第 2.2 节更新 Qwen 现状——从"设计差异大"到"对齐 Claude + 全工具覆盖"
 
 ### 2026-04-22（Fast Model 应用场景扩充 · 新增 6 项）
 
