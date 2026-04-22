@@ -2591,3 +2591,202 @@ context.toolUseContext.setAppState(prev => ({
 
 **意义**：Qwen Skill 的规模优势（6.8× Claude）可进一步放大——active improvement loop。
 **改进收益**：Skill 从静态资源变为会"自我进化"的 asset。
+
+---
+
+<a id="item-56"></a>
+
+### 56. 真正后台并发 SubAgent + TTL 驱逐（P2）
+
+> **配套阅读**：[SubAgent 展示 Deep-Dive](./subagent-display-deep-dive.md) 第 6 节"优先级 1"。
+
+**问题**：Qwen Code 的 SubAgent 必须在 tool 调用周期内完成——`AgentExecutionDisplay` 嵌入在工具消息里，tool 返回 = subagent 结束。用户**无法**启动"长时研究任务"然后继续其他工作，长任务完全阻塞主交互流。
+
+**Claude Code 的解决方案**（`components/CoordinatorAgentStatus.tsx`）：
+
+**核心机制 —— `evictAfter` 时间戳驱动**：
+
+```typescript
+// CoordinatorAgentStatus.tsx:31-33
+export function getVisibleAgentTasks(tasks): LocalAgentTaskState[] {
+  return Object.values(tasks)
+    .filter(t => isPanelAgentTask(t) && t.evictAfter !== 0)  // ⭐ 三种状态：
+    // evictAfter === undefined    → 运行中或保留（永久显示）
+    // evictAfter === timestamp    → 定时驱逐（30s 后）
+    // evictAfter === 0            → 立即驱逐（x 键）
+    .sort((a, b) => a.startTime - b.startTime)
+}
+
+// CoordinatorAgentStatus.tsx:51-63 — 1s tick：刷新 elapsed + 驱逐
+React.useEffect(() => {
+  if (!hasTasks) return
+  const interval = setInterval(() => {
+    const now = Date.now()
+    for (const t of Object.values(tasksRef.current)) {
+      if (isPanelAgentTask(t) && (t.evictAfter ?? Infinity) <= now) {
+        evictTerminalTask(t.id, setAppState)  // 过期 → 从 AppState 移除
+      }
+    }
+    setTick(prev => prev + 1)  // 触发 elapsed 重渲染
+  }, 1000)
+  return () => clearInterval(interval)
+}, [hasTasks, setAppState])
+```
+
+**设计精妙**：
+- `evictAfter` 不是 boolean "是否已完成"，而是**时间戳**——数据驱动的可见性，无需额外 flag
+- 单一 1s `setInterval` 同时负责 elapsed refresh + 驱逐，**避免多定时器竞争**
+- `tasksRef` + `setTick` 解耦：`useEffect` 依赖仅 `hasTasks`，不随 tasks 变化重建 interval
+- `TaskListV2.tsx:21` `RECENT_COMPLETED_TTL_MS = 30_000` 默认 30s TTL
+
+**Claude Code 源码索引**：
+
+| 文件 | 关键 |
+|---|---|
+| `components/CoordinatorAgentStatus.tsx:34-76` | `CoordinatorTaskPanel` 组件 |
+| `components/CoordinatorAgentStatus.tsx:31-33` | `getVisibleAgentTasks` 过滤排序 |
+| `components/CoordinatorAgentStatus.tsx:51-63` | 1s tick 驱动 |
+| `components/TaskListV2.tsx:21` | `RECENT_COMPLETED_TTL_MS = 30_000` |
+| `utils/task/framework.ts:evictTerminalTask` | 驱逐实现 |
+| `tasks/LocalAgentTask/LocalAgentTask.ts` | LocalAgentTask 状态机 |
+| `state/teammateViewHelpers.ts` | `enterTeammateView` / `exitTeammateView` 视图切换 |
+
+**Qwen Code 修改方向**（3 步走）：
+
+1. **数据层**：新建 `packages/core/src/tasks/LocalAgentTask.ts`——subagent 数据结构独立于 tool call，字段含 `startTime` / `evictAfter` / `status` / `toolCalls` / `agentName` / `tokens`
+2. **持久层**：扩展 `AppState.tasks` 存储 `LocalAgentTaskState`，与消息树解耦
+3. **UI 层**：新建 `packages/cli/src/ui/components/CoordinatorTaskPanel.tsx`，渲染在 footer 上方；1s tick + 驱逐逻辑
+4. **命令层**：新增 `/agents --spawn "task" --background` 启动后台 subagent；或扩展 Agent tool schema 加 `run_in_background: true` 参数
+5. **交互层**：`↑↓` 导航、`Enter` 进入详情（切换到 AgentChatView）、`x` 立即驱逐（`evictAfter = 0`）
+
+**实现成本评估**：
+- 涉及文件：~8 个新建 + ~5 个修改
+- 新增代码：~800 行
+- 开发周期：~2-3 周
+- 难点：
+  - 主 loop 与后台 agent 的 AbortController 分离（防止主 loop Ctrl+C 误终止后台任务）
+  - 消息流与后台 task 的同步（subagent 完成时如何通知主 agent）
+  - 生命周期管理（session 关闭时后台任务的处理）
+
+**改进前后对比**：
+
+- **改进前**：用户调用 `/research "long topic"` → subagent 跑 5 分钟，期间整个 UI 阻塞，用户无法做其他事
+- **改进后**：用户调用 `/research "long topic" --background` → footer 上方出现 `◯ researcher · ▶ 0:05`，用户继续在主 loop 干别的事；5 分钟后 subagent 完成，面板变 `◯ researcher · ✓ 5m12s · 2.5K tokens`；30s 后自动消失（或用户按 Enter 查看详情）
+
+**意义**：**SubAgent 的 "async" 本质**——长任务不阻塞主交互流。
+**缺失后果**：Qwen 用户不敢发起 >1min 的 subagent 任务，因为会卡住整个会话。
+**改进收益**：长研究/数据分析场景的可用性从 0 → 1。
+
+---
+
+<a id="item-57"></a>
+
+### 57. `/agents` 独立管理视图（SubAgent 历史归档）（P2）
+
+> **配套阅读**：[SubAgent 展示 Deep-Dive](./subagent-display-deep-dive.md) 第 6 节"优先级 2"。
+
+**问题**：Qwen Code 的 SubAgent 历史只能在消息流中**线性回滚**查找——用户想"看看上周那个 research 跑了什么工具"需要滚动半屏。Claude Code 有 `/agents` 专用管理面板 + 独立 history 归档。
+
+**Claude Code 的解决方案**（`components/agents/` 目录 19 个文件）：
+
+| 文件 | 功能 |
+|---|---|
+| `AgentsMenu.tsx` | `/agents` 命令入口菜单 |
+| `AgentsList.tsx` | 列表视图（agent 定义 + 运行历史）|
+| `AgentDetail.tsx` | 详情页 |
+| `AgentEditor.tsx` | 编辑 agent 定义 |
+| `new-agent-creation/CreateAgentWizard.tsx` + 10 个 wizard step | 创建向导（Method → Type → Description → Prompt → Tools → Model → Color → Location → Confirm → Generate）|
+
+**Qwen Code 现状**：
+- `packages/cli/src/ui/components/subagents/` 目录存在（创建流程基础）
+- 但**缺少 runtime history 归档**——subagent 跑完后数据在消息流里，无独立索引
+
+**Qwen Code 修改方向**：
+
+1. **`/agents --history`** 列出最近 N 个 subagent 运行：
+   - 按时间倒序
+   - 支持 `--filter agent-name` / `--filter status=failed` 过滤
+   - 每行展示 `agent_name · status · duration · tokens · start_time`
+2. **详情视图**：选中任一历史项 → 显示完整 task / tools / summary
+3. **对比视图**：选中两个同名 agent 运行 → diff tool list 和 output
+4. **持久化**：历史存到 `.qwen/subagent-history/<session-id>/<run-id>.json`
+
+**实现成本评估**：
+- 涉及文件：~4 个新增
+- 新增代码：~400 行
+- 开发周期：~1-1.5 周
+- 前置：Qwen 需决定是否依赖 item-56（后台 agent 数据结构）——如果有 LocalAgentTask，可直接复用
+
+**改进前后对比**：
+
+- **改进前**：用户问"上周 refactor-reviewer 跑过几次？" → 滚半屏消息流人工找
+- **改进后**：`/agents --history agent=refactor-reviewer` → 5 秒内列出所有运行
+
+**意义**：SubAgent 生态成熟后**"历史追溯"能力**变得关键。
+**改进收益**：从"线性回滚"到"结构化查询"。
+
+---
+
+<a id="item-58"></a>
+
+### 58. Coordinator 协调器面板（Footer 上方多 Agent 概览）（P2）
+
+> **配套阅读**：[SubAgent 展示 Deep-Dive](./subagent-display-deep-dive.md) 第 6 节"优先级 3"。
+
+**问题**：并发多 subagent 场景下，Qwen Code 把它们塞进同一工具组内 `.map()` 渲染——**纵向堆叠**，屏幕占用大。用户难以一眼看到"3 个 subagent 各自进度"。Claude Code 的 Coordinator 面板**渲染在 footer 上方**，每行一个后台 agent，紧凑且不侵占主消息流。
+
+**Claude Code 的解决方案**：
+
+`CoordinatorAgentStatus.tsx` 的 `CoordinatorTaskPanel`（文件头注释原文）：
+
+> Renders below the prompt input footer whenever local_agent tasks exist.
+> Enter to view/steer, x to dismiss.
+
+**UI 布局**：
+
+```
+[主消息流 ...]
+
+[prompt input footer]
+╭──────────────────╮
+│ Type your msg... │
+╰──────────────────╯
+◯ main
+◯ researcher-A · ▶ 2m3s · 850 tokens      ← ↑↓ 导航
+◯ researcher-B · ▶ 1m42s · 620 tokens
+◯ researcher-C · ✓ 3m15s · 1.2K tokens    ← 30s 后自动消失
+```
+
+**交互**：
+- `↑↓` 在 agent 之间导航（`coordinatorTaskIndex` state）
+- `Enter` 进入详情视图（`enterTeammateView(task.id)`）——切换到该 subagent 的完整 chat 视图
+- `ESC` 返回主视图（`exitTeammateView`）
+- `x` 立即驱逐（`evictAfter = 0`）
+
+**Qwen Code 修改方向**：
+
+1. **前置**：完成 item-56（LocalAgentTask 数据结构）
+2. 新建 `packages/cli/src/ui/components/CoordinatorTaskPanel.tsx`
+3. 在 App 根组件中渲染：footer 上方（或 sticky todo panel 下方）
+4. 复刻交互：
+   - `↑↓` 导航 `visibleTasks[selectedIndex]`
+   - `Enter` 切到 `AgentChatView(task.id)`
+   - `x` 设置 `evictAfter = 0`
+5. 1s tick 驱动 elapsed + 驱逐
+
+**实现成本评估**：
+- 涉及文件：~2 个新建 + ~2 个修改（App 根 + teammate view helpers）
+- 新增代码：~250 行
+- 开发周期：~3-5 天（item-56 完成后）
+
+**改进前后对比**：
+
+- **改进前**：3 个并发 subagent × 每个占 5-10 行 = 30 行嵌入式消息，挤压主消息流
+- **改进后**：3 行紧凑面板贴在 footer 上方 + 主消息流保持干净
+
+**与 Qwen 现有 Arena 的区别**：
+- **Arena** 偏"比赛"——多 agent 跑同一 prompt 比结果
+- **Coordinator** 偏"团队管理"——多 agent 并发执行不同子任务，统一视角
+
+**意义**：SubAgent 数量增长（5-10 并发）时，嵌入式展示不可持续。
+**改进收益**：保持主消息流整洁 + 并发概览一眼可见。

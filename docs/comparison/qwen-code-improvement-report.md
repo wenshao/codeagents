@@ -178,6 +178,9 @@
 | **P2** | [WebFetch 内容 LLM 清洗 Fast Model](./fast-model-usage-deep-dive.md) — Haiku 抽取核心内容 + 去 nav/ads/tracker [↓](./qwen-code-improvement-report-p2-stability.md#item-53) | 直接截断/HTML parser | 小 | — |
 | **P2** | [Shell 命令前缀 LLM 提取（权限）Fast Model](./fast-model-usage-deep-dive.md) — Haiku + policySpec 精确分类复合命令/alias/subshell [↓](./qwen-code-improvement-report-p2-stability.md#item-54) | Regex 分类（边界有漏洞）| 中 | — |
 | **P2** | [Skill 改进建议 Post-Sampling Hook Fast Model](./fast-model-usage-deep-dive.md) — Haiku 分析刚完成 turn，建议 skill 修订（opt-in）[↓](./qwen-code-improvement-report-p2-stability.md#item-55) | 无自动改进机制 | 中 | — |
+| **P2** | [真正后台并发 SubAgent + TTL 驱逐](./subagent-display-deep-dive.md) — `evictAfter` 时间戳 + 1s tick + 30s TTL，长时任务不阻塞主 loop [↓](./qwen-code-improvement-report-p2-stability.md#item-56) | 嵌入 tool 周期（无后台）| 大 | — |
+| **P2** | [`/agents` 独立管理视图](./subagent-display-deep-dive.md) — subagent 历史归档 + 过滤 + 对比 [↓](./qwen-code-improvement-report-p2-stability.md#item-57) | 仅消息流线性回滚 | 中 | — |
+| **P2** | [Coordinator 协调器面板](./subagent-display-deep-dive.md) — footer 上方紧凑多 agent 列表 + `↑↓` 导航 + `Enter` 详情 + `x` 驱逐 [↓](./qwen-code-improvement-report-p2-stability.md#item-58) | 纵向嵌入堆叠 | 中 | — |
 | **P2** | [终端渲染优化（紧凑 + 低闪烁）](./terminal-low-flicker-deep-dive.md) — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 + PR#3381 游标移动优化 | 大 | [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（局部） |
 | **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-9) | 缺失 | 小 | — |
 | **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-10) | 缺失 | 小 | — |
@@ -328,7 +331,7 @@
 | [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退、Skill 模型覆盖、PreCompact Hook、模型调用 Slash 命令、/experimental 门控等） | 26 |
 | [P2 界面与 UX](./qwen-code-improvement-report-p2-tools-ui.md) | 中等优先级（Token 警告、Spinner、/rewind、Diff 渲染、/plan、大粘贴外化等） | 21 |
 | [P2 性能优化](./qwen-code-improvement-report-p2-perf.md) | 中等优先级（流式执行、缓存模式、延迟初始化、请求合并、指令文件去重等） | 35 |
-| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap、显示高度控制、输出截断、Bash UI、Update/Diff UI、Fast Model 应用 等） | 55 |
+| [P2 稳定性、安全与 CI/CD](./qwen-code-improvement-report-p2-stability.md) | 中等优先级（Unicode sanitization、sandbox集成、SSRF 防护、密钥扫描、PID namespace、Session Recap、显示高度控制、输出截断、Bash UI、Update/Diff UI、Fast Model 应用、SubAgent 展示 等） | 58 |
 | [P3 功能特性](./qwen-code-improvement-report-p3-features.md) | 低优先级功能特性（动态状态栏、Feature Gates、Vim、语音、插件市场、--config-dir 等） | 17 |
 | [P3 用户体验](./qwen-code-improvement-report-p3-ux.md) | 低优先级用户体验（Virtual Scrolling、Turn Diffs、Buddy、settingsSync 等） | 9 |
 | [P3 Hook 与组件](./qwen-code-improvement-report-p3-hooks.md) | 低优先级 Hook 与组件（useInboxPoller、AgentSummary、usePrStatus 等） | 33 |
@@ -439,6 +442,32 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-22（SubAgent 展示对比 · 新增 3 项）
+
+**用户提问**："现在 Claude Code 和 Qwen Code 运行 SubAgent 的显示界面有什么区别？"
+
+**新增 Deep-Dive**：[SubAgent 展示 Deep-Dive](./subagent-display-deep-dive.md) —— 两条 UI 哲学对比（Claude 双模式 Task/Coordinator vs Qwen 单一嵌入式 AgentExecutionDisplay），4 个场景逐帧比对（单 agent 10s / 3 并发 + 审批 / 失败处理 / 中断）。
+
+**双向借鉴机会**：
+- **Qwen ← Claude**：真后台并发（evictAfter TTL）/ `/agents` 独立管理视图 / Coordinator footer 面板
+- **Claude ← Qwen**：Ctrl+E/F 三档切换 / 焦点锁并发审批 / 执行摘要长期保留
+
+**新增 3 个追踪 item**（p2-stability 55 → 58）：
+
+| # | 方向 | 优先级 | 成本 |
+|---|---|---|---|
+| [item-56](./qwen-code-improvement-report-p2-stability.md#item-56) | 真正后台并发 SubAgent + TTL 驱逐（`evictAfter` + 1s tick + 30s TTL）| 🥇 | 2-3 周 |
+| [item-57](./qwen-code-improvement-report-p2-stability.md#item-57) | `/agents` 独立管理视图（subagent 历史归档）| 🥈 | 1-1.5 周 |
+| [item-58](./qwen-code-improvement-report-p2-stability.md#item-58) | Coordinator 协调器面板（footer 上方多 agent 列表）| 🥉 | 3-5 天（前置 item-56）|
+
+**关键源码验证**：
+- `CoordinatorAgentStatus.tsx:31-63` `evictAfter` 过滤 + 1s tick + 驱逐逻辑
+- `TaskListV2.tsx:21` `RECENT_COMPLETED_TTL_MS = 30_000`
+- `AgentExecutionDisplay.tsx:124-140` Ctrl+E/F 三档切换
+- `ToolGroupMessage.tsx:99-123` 焦点锁 `focusedSubagentRef` + `isWaitingForOtherApproval`
+
+**总项数**：271 → **274**（+3）。p2-stability 55 → **58**。
 
 ### 2026-04-22（PR#3512 OPEN · item-47 剩余 gap 的精确补齐）
 
