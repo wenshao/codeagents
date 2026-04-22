@@ -65,7 +65,27 @@ if (!verbose && totalBytes && totalLines) {
 
 **用户感知**：一眼看到 `Running… (42.1s · timeout 2m) +1234 lines`——**时间 + 进度** 同框。
 
-### 2.3 Qwen Code：完整 PTY 缓冲区实时渲染
+### 2.3 Qwen Code：PR#3508 落地后——可配置 N 行窗口 + 6 bypasses（超越 Claude）
+
+**2026-04-22 更新**：[PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) ✓ 合并，Qwen Code 已实现可配置 shell 输出窗口：
+- **默认 `ui.shellOutputMaxLines: 5`**（匹配 Claude 硬编码）
+- **6 种 bypass**（vs Claude 的 1 种 verbose mode）：
+  1. `!`-prefix 用户手动命令 → 完整输出
+  2. 工具等待确认时 → 完整输出
+  3. 真实工具失败（timeout/abort/throw）→ 完整输出（注意：**exit≠0 不算 tool failure**，保持 cap）
+  4. 嵌入式 PTY shell 聚焦（Ctrl+F）→ 完整输出；释放后 re-collapse
+  5. 用户 opt-out `ui.shellOutputMaxLines: 0` → 完全禁用
+  6. 自定义值（如 `15`）→ 任意 cap
+- **ANSI + 完成态字符串双路径对齐**：两路径都显示 N 可见内容行（off-by-one 通过 `shellStringCapHeight = shellCapHeight + 1` 补偿）
+- **Input validation**：`Math.max(0, Math.floor(rawShellCap || 0))`——负数/分数/NaN 统一降级到 opt-out
+
+**超越 Claude 原设计的地方**：Claude 硬编码 5 行 + verbose mode 二选一；Qwen 配置化 + 多 bypass + 语义化 tool success vs exit code 分离。
+
+**反向借鉴建议**：Claude 可学习 PR#3508 的 (1) 配置化默认值、(2) 多 bypass 机制、(3) exit≠0 语义区分。
+
+---
+
+### 2.4 Qwen Code 历史实现（PR#3508 前的参照）
 
 **源码**：`packages/core/src/services/shellExecutionService.ts`
 

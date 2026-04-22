@@ -1670,13 +1670,13 @@ export function getMaxOutputLength(): number {
 
 <a id="item-46"></a>
 
-### 46. Bash 执行中 "5 行窗口 + `+N lines` 计数"（P2）🟡 拆分实现中（PR#3155 ✓ + PR#3508 OPEN）
+### 46. Bash 执行中 "5 行窗口 + `+N lines` 计数"（P2）✓ 已完整实现
 
 > **配套阅读**：[Bash 任务展示 Deep-Dive](./bash-task-display-deep-dive.md) 第 2.1 节。
 
-**状态**：已拆分为两个 PR，各自覆盖一半：
+**状态**：**两个 PR 均已合并，item-46 完整落地**：
 - **[PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（2026-04-20 合并）**：实现 `+N lines` 计数部分（`ShellStatsBar` 组件：`+N lines` + UTF-8 字节数 + explicit timeout）
-- **[PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) 🟡（OPEN，2026-04-21 提交）**：实现 5 行窗口部分——"feat(cli): cap inline shell output with configurable line limit"。**两个 PR 合并后 item-46 完整落地**。
+- **[PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) ✓（2026-04-22 06:37 UTC 合并）**：实现 5 行窗口部分——"feat(cli): cap inline shell output with configurable line limit"。3 个 commit 含 review 修复（off-by-one + input validation）。
 
 **PR#3508 设计要点**（在 Claude 原设计基础上增强）：
 
@@ -1719,7 +1719,24 @@ const shellCapHeight =
 
 **测试覆盖**：6 个新 `ToolMessage` 单元测试 + 8 个手动 tmux 场景验证（AI shell / `!` 用户触发 / exit≠0 / Ctrl+F focus / 配置禁用 / 自定义值 / settings dialog / `+N lines` 流式）。
 
-**合并后最终状态**：item-46 将从 🟡 → ✓ 完整实现（配合 PR#3155 的 `+N lines` 计数已合并）。
+**合并历程（3 个 commit，工程实践典范）**：
+
+| Commit | 时间 | 内容 |
+|---|---|---|
+| 1 `a427c0f` | 2026-04-21 23:09 UTC | 主实现——cap 流式 ANSI + 新 setting + 4 单元测试 |
+| 2 `fdf8835` | 2026-04-21 23:24 UTC | **tmux 手动验证发现 gap**——补齐完成态字符串路径（`StringResultRenderer`）|
+| 3 `4bd3579` | 2026-04-22 06:27 UTC | **review 反馈修复**（reviewer `tanzhenxin`）—— off-by-one + input validation |
+
+**Review 反馈的两个发现**（2026-04-22 06:13 UTC）：
+1. **ANSI vs 完成态字符串的 off-by-one**：`MaxSizedBox.tsx:147-150` 的 `visibleContentHeight = targetMaxHeight - 1` 预留一行给 overflow banner，导致 cap=5 时 ANSI 路径显示 5 行但 string 路径显示 4 行。PR 描述里的"After"示例（只有 4 行）实际反映的是 bug 而非 spec
+2. **Setting validation**：`-1`、`1.5` 等边界值——negatives 静默禁用（只有 `0` 被文档化为关闭）、fractions 产生 fractional slice
+
+**修复方案**：
+- Off-by-one: `shellStringCapHeight = shellCapHeight + 1` 传给 StringResultRenderer，让 MaxSizedBox 的 banner 补偿正好抵消，两路径对齐到 N 可见内容行
+- Input validation: Use-site guard `Math.max(0, Math.floor(rawShellCap || 0))`——negatives → 0 → 禁用（匹配 opt-out 语义）/ fractions → floor / 非数字 → 0
+- 新增 parameterized 测试覆盖 `-1` / `1.5` / 非数字三种输入
+
+**状态**：item-46 ✓ **完整实现**——超越 Claude 原设计（可配置 + 6 bypasses + 语义化 tool success ≠ exit code + 对称行数）。
 
 **来源**：Claude Code `components/shell/ShellProgressMessage.tsx`。
 

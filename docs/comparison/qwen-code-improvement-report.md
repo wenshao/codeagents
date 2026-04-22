@@ -168,7 +168,7 @@
 | **P2** | 会话 Recap（返回时上下文摘要）— `/recap` 命令 + 自动展示（v2.1.108/v2.1.110 新增）[↓](./qwen-code-improvement-report-p2-stability.md#item-43) | **已实现**（/recap + auto-show） | 小 | [PR#3434](https://github.com/QwenLM/qwen-code/pull/3434) ✓（2026-04-19 合并） |
 | **P2** | [瞬态消息单行容器 + 离屏历史冻结](./task-display-height-deep-dive.md) — MessageResponse `height=1 overflowY=hidden` + OffscreenFreeze 引用缓存避免历史 spinner 拖累 [↓](./qwen-code-improvement-report-p2-stability.md#item-44) | 无统一容器/无离屏冻结 | 中 | — |
 | **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 无统一上限 | 小 | — |
-| **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | 🟡 拆分实现中（两 PR 合后 ✓ 完整）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（`+N lines`）+ [PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) 🟡 OPEN（5 行窗口 + 6 bypasses + settings）|
+| **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | **✓ 已完整实现**（超越 Claude 原设计 · 可配置 + 6 bypasses + 语义化 tool success ≠ exit code）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（`+N lines`，2026-04-20）+ [PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) ✓（5 行窗口 + 6 bypasses + settings，2026-04-22）|
 | **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | 🟡 变体实现（3s 阈值 + 右对齐，分散到 elapsed + stats bar 两处，非 Claude 的单单元组合）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（变体，2026-04-20 合并）|
 | **P2** | [语义化 hunk 模型 + singleHunk 智能上下文](./update-tool-display-deep-dive.md) — `structuredPatch` + `singleHunk ? 100_000 : 3` 智能 context + 消除 UI 层 regex re-parse [↓](./qwen-code-improvement-report-p2-stability.md#item-48) | `createPatch` 字符串 + UI regex 重解析 + 固定 5 行上下文 | 中 | — |
 | **P2** | [多 hunk `...` 省略分隔符](./update-tool-display-deep-dive.md) — StructuredDiffList 在 hunk 之间插入 dim color `...` [↓](./qwen-code-improvement-report-p2-stability.md#item-49) | 多 hunk 直接堆叠无分隔 | 小 | — |
@@ -433,6 +433,56 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-22（PR#3508 合并 · 闭环完成 🎉）
+
+**[PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) ✓ 2026-04-22 06:37:14 UTC 合并**——"feat(cli): cap inline shell output with configurable line limit"，reviewer `tanzhenxin` APPROVED。item-46 从 🟡 拆分实现中 → **✓ 完整实现**。
+
+**完整闭环时间线**（从规格补充到合并 **~31 小时**）：
+
+| 时间 (UTC) | 事件 |
+|---|---|
+| 2026-04-20 深夜 | 添加 item-46/47 + Bash Deep-Dive，标注 5-line window 缺失 |
+| 2026-04-21 09:00 | 扫描 PR#3155，标记 item-46 🟡 部分实现 |
+| 2026-04-21 17:00 | 勘误 item-47 为 🟡 变体实现 |
+| **2026-04-21 23:09** | **wenshao 提交 PR#3508 commit 1**（主实现：cap 流式 ANSI + setting + 4 测试）|
+| 2026-04-21 23:24 | Commit 2：tmux 手动验证发现 gap，补齐完成态字符串路径 |
+| 2026-04-22 06:13 | reviewer `tanzhenxin` 提交 COMMENTED review，两个非阻塞观察 |
+| 2026-04-22 06:27 | Commit 3：修复 off-by-one + input validation + parameterized test |
+| 2026-04-22 06:36 | `tanzhenxin` APPROVED |
+| **2026-04-22 06:37** | **MERGED**（CI 大部分 SUCCESS，少数 IN_PROGRESS 未阻塞）|
+
+**3 个 commit 演化**（工程实践典范）：
+
+1. **主实现**——cap 流式 ANSI + `ui.shellOutputMaxLines` setting + 4 单元测试
+2. **tmux 手动验证发现 gap**——完成态字符串路径（`StringResultRenderer` 也需 cap，因为 `shell.ts:returnDisplayMessage = result.output` 是 plain string）
+3. **Review 反馈修复**：
+   - **Off-by-one**：`MaxSizedBox.tsx:147-150` 的 `visibleContentHeight = targetMaxHeight - 1` 导致 cap=5 时 ANSI 显示 5 行但 string 显示 4 行。修复：`shellStringCapHeight = shellCapHeight + 1` 让两路径对齐到 N 可见内容行
+   - **Input validation**：负数/分数/NaN 边界。use-site guard `Math.max(0, Math.floor(rawShellCap || 0))`——negatives → 0 → 禁用 / fractions → floor / 非数字 → 0
+
+**Reviewer 观察的精妙之处**：tanzhenxin 的第一条反馈**不是**"实现有 bug"，而是**"off-by-one 如果不是 intentional 的话……"**。wenshao 在回复中承认——PR 描述里 "After" 示例的 4 行（lines 27-30）确实是 bug 而非 spec。这种"可能是 spec 也可能是 bug"的表达方式是 code review 的高水平体现。
+
+**超越 Claude Code 的设计亮点**（最终定版）：
+
+| 特性 | Claude `ShellProgressMessage` | PR#3508 |
+|---|---|---|
+| 默认行数 | 硬编码 `lines.slice(-5)` | `ui.shellOutputMaxLines: 5`（settings dialog 可视化编辑）|
+| bypass 机制 | 1 种（verbose mode） | **6 种**（! 用户命令 / 确认等待 / 真实失败 / Ctrl+F focus / opt-out / 自定义值） |
+| 覆盖面 | Streaming 流式 | Streaming + 完成态字符串渲染器（两路径 N 对齐）|
+| 语义区分 | 无 | **exit≠0 不触发 Error bypass**——tool success ≠ command exit code |
+| 输入鲁棒性 | 不涉及（硬编码）| **负数/分数/NaN 统一降级到 opt-out 语义**|
+
+**ANSI vs string 双路径对称性的细节**：
+- ANSI 路径：`AnsiOutputText` 内部 pre-slice 到 N 行 → MaxSizedBox 不触发 overflow banner → 显示 N 行 + 单独的 `ShellStatsBar`
+- String 路径：直接传 raw content 给 MaxSizedBox → MaxSizedBox 自动截断 → 显示 N-1 行 + overflow banner
+- 对齐方案：string 路径传 `shellCapHeight + 1`，让 banner 补偿正好抵消，两路径都显示 N 可见内容行
+
+**计数更新**：
+- 主矩阵 item-46：🟡 拆分实现中 → **✓ 完整实现**
+- 已合并 ✓ 66 → **67**（+PR#3508）
+- README 已合并 ✓ 66 → 67
+
+**后续**：Bash Deep-Dive 第 2.1 节"Qwen Code 现状"应更新——不再是"整屏 PTY 30 行"，而是"5 行窗口（可配）+ 6 bypasses，超越 Claude 原设计"。可考虑新增反向借鉴 item（Claude Code 可学习 PR#3508 的可配置 + 多 bypass + 语义分离）。
 
 ### 2026-04-22（反馈循环最快记录 · item-46 5-line window 由用户本人补齐）
 
