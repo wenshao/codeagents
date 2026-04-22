@@ -1519,73 +1519,205 @@ Skip status reports and commit recaps.`
 
 > **配套阅读**：[任务显示高度控制 Deep-Dive](./task-display-height-deep-dive.md) —— 本 item 第 1.1/1.2 节的完整分析。
 
-**来源**：Claude Code 的 4 条高度控制机制之 2 条。
+---
 
-**问题**：长任务执行时，Qwen Code 屏幕容易被"爆"——工具进度消息可能占多行，历史消息里的 spinner 还在动导致每个 tick 整个终端 reset。Claude Code 通过**瞬态消息统一高度容器**（`MessageResponse`）+ **离屏 React 子树冻结**（`OffscreenFreeze`）两条机制压缩活跃区并消除历史区重排。
+#### 🎯 一句话理解
 
-**Claude Code 的解决方案（两条配合）**：
+这一项做两件事：
 
-#### (A) `MessageResponse` 单行容器
+1. **机制 A（`MessageResponse`）**：**正在跑的工具**强制只占 1 行 —— 不管命令多长、输出多大。
+2. **机制 B（`OffscreenFreeze`）**：**滚出屏幕的历史**冻结不动 —— 里面的 spinner 动画不再每秒 30 次拖慢整个终端。
 
-所有瞬态消息（工具进度 / Waiting / Running hook / Done / (No output) / 图像检测消息）共享一个 `<Box height={1} overflowY="hidden">` 容器。外部可传 `height` 扩展，但默认 1。`overflowY="hidden"` 是 clip 而非 scroll——看不到就是看不到。
+**用一句话概括用户感知**：屏幕**不抖不闪不卡**，即使同时跑 10 个工具、带 spinner 动画的历史消息也不会让你打字卡顿。
+
+---
+
+#### 📺 机制 A：`MessageResponse` 单行容器——解决"屏幕被工具撑爆"
+
+**问题场景**：用户让 Agent 执行 `grep -rn "TODO" .` 找 TODO 注释。
+
+**Qwen Code 现状**（工具进度消息没有统一高度约束）：
+
+```
+├─ Shell grep -rn "TODO" .
+│  Running shell command...
+│  ↓ (输出开始流出来，占满屏幕)
+│  src/auth.ts:42: // TODO: validate email
+│  src/auth.ts:67: // TODO: handle expiry
+│  src/db.ts:15:   // TODO: retry on deadlock
+│  src/db.ts:28:   // TODO: log slow queries
+│  ... (屏幕被 20 行 TODO 占满)
+```
+
+工具还在跑的时候，**屏幕已经被流式输出撑爆**。用户想在底部输入框敲字发现光标已滚到最上方 18 行的历史区。
+
+**Claude Code 做法**（`components/MessageResponse.tsx:37`）：
 
 ```tsx
-// components/MessageResponse.tsx:37
-<Box flexDirection="row" height={height} overflowY="hidden">
+<Box flexDirection="row" height={1} overflowY="hidden">
   {prefixIcon}{mainText}
 </Box>
 ```
 
-#### (B) `OffscreenFreeze` 离屏冻结
+**关键**：`height={1}` + `overflowY="hidden"`——**多余的行被 clip 掉**（不是滚动，是"看不见"）。
 
-滚出视口的历史消息用 `useRef` 缓存 React element 引用，reconciler 看到相同引用直接 bail out → 子树 **0 diff**。
+**改进后用户看到**：
+
+```
+⏺ grep -rn "TODO" .                              (12.3s)
+```
+
+**就 1 行**。输出流到哪是后台的事，屏幕活跃区**永远固定 1 行**。用户可以在输入框稳定打字。
+
+**适用范围**：所有"瞬态消息"（工具进度 / Waiting / Running hook / Done / (No output) / 图像检测消息）全部共享这个 1 行容器。
+
+---
+
+#### 📺 机制 B：`OffscreenFreeze` 离屏冻结——解决"滚动历史时卡顿"
+
+**问题场景**：用户已经跑了 10 个工具，现在想滚回去看第 3 个工具的输出。前面每个工具都有 elapsed time 在动（`3s → 4s → 5s`）。
+
+**Qwen Code 现状**（无离屏冻结，所有消息每帧参与 React reconcile）：
+
+```
+╭──────────────────────────────────────╮
+│ [可见视口]                            │
+│ ⏺ Shell: npm install (12.3s)         │  ← 当前活跃，spinner 每秒变化
+╰──────────────────────────────────────╯
+[滚出屏幕的历史，肉眼看不到但还在"运行"]
+⏺ Shell: lint     (45s)  ← 已完成但还在每秒重渲染 ❌
+⏺ Shell: typecheck (32s) ← 已完成但还在每秒重渲染 ❌
+⏺ Shell: build    (18s)  ← 已完成但还在每秒重渲染 ❌
+...（10 条类似历史）
+```
+
+**问题**：虽然用户看不到历史，但 **React 仍然在后台给每条历史 rerender**——每秒 30 次 × 10 条 = **每秒 300 次无用更新**，终端 `log-update.ts` 每次都要触发**整屏 reset**（因为屏外内容变化会导致 diff 引擎放弃增量更新，走全量重绘）。
+
+**用户感知**：输入卡顿、spinner 顿挫、CPU 占用高。
+
+**Claude Code 做法**（`components/OffscreenFreeze.tsx:23-42`）：
 
 ```tsx
-// components/OffscreenFreeze.tsx:23-42
 export function OffscreenFreeze({ children }): React.ReactNode {
-  'use no memo'  // React Compiler: 手动缓存是整个冻结机制，memo 会破坏它
+  'use no memo'  // 关键：禁用 React Compiler memoization，让我们手动控制缓存
   const [ref, { isVisible }] = useTerminalViewport()
   const cached = useRef(children)
-  if (isVisible || inVirtualList) cached.current = children
+  if (isVisible || inVirtualList) {
+    cached.current = children  // 在视口内 → 更新缓存
+  }
+  // 返回 React element 引用——如果离屏，引用不变
   return <Box ref={ref}>{cached.current}</Box>
 }
 ```
 
-**为什么需要冻结**（源码注释原话）：
+**关键**：
+- 在视口内 → 正常 rerender（缓存更新）
+- **离屏 → 返回同一个 React element 引用**
+- React reconciler 看到"这个 element 引用跟上次一样"，**直接跳过整个子树**
+
+**改进后**：离屏历史消息**零 CPU 开销**。即使 spinner 在 "更新" 也没人渲染它。
+
+**源码注释原话**（最精炼地说清楚了动机）：
 
 > Any content change above the viewport forces `log-update.ts` into a **full terminal reset**. For content that updates on a timer — spinners, elapsed counters — this produces a reset per tick.
 
-**Claude Code 源码索引**：
+翻译：**屏外任何变化都强制整终端重置**；带 timer 的内容（spinner / elapsed）每 tick 一次 reset，直接把用户体验打爆。
 
-| 文件 | 关键函数/常量 |
-|------|-------------|
-| `components/MessageResponse.tsx:37` | `<Box height={height} overflowY="hidden">` 统一容器 |
-| `components/OffscreenFreeze.tsx:23-42` | `useRef` 引用缓存 + `useTerminalViewport` 可见性检测 |
-| `components/messages/HookProgressMessage.tsx:66-113` | Hook 进度消息使用 MessageResponse |
-| `tools/BashTool/BashToolResultMessage.tsx:103-189` | 图像检测/(No output) 均 `height={1}` |
-| `ink/hooks/use-terminal-viewport.ts` | 可见性检测 hook 实现 |
+---
 
-**Qwen Code 现状**：消息组件分散，进度/工具结果没有统一高度容器；所有消息每帧参与 reconcile，历史区 spinner 动画拖累全屏重排。
+#### 🔥 两机制协同效果——具体数字
 
-**Qwen Code 修改方向**：
-1. **新建 `packages/cli/src/ui/components/MessageResponse.tsx`**：复刻 `<Box flexDirection="row" height={height} overflowY="hidden">` 抽象（~20 行）
-2. 改造 `ToolGroupMessage` / 工具进度组件 / Waiting 组件用 `<MessageResponse>` 包裹
-3. **新建 `packages/cli/src/ui/hooks/useTerminalViewport.ts`**：基于 `measureElement` + 全局 scroll 位置检测可见性（难点）
-4. **新建 `packages/cli/src/ui/components/OffscreenFreeze.tsx`**：复刻 useRef 冻结模式（~20 行），wrap 所有历史消息
+**场景**：一个长会话，用户跑了 10 个工具（每个带 elapsed time + spinner），当前还在跑 1 个工具。
 
-**实现成本评估**：
+| 场景 | Qwen 现状 | 改进后（两机制协同）|
+|---|---|---|
+| 当前工具屏占行数 | 不定（5-30 行视输出）| **固定 1 行** |
+| 历史工具 React reconcile/秒 | ~300 次（10 条 × 30fps）| **0 次** |
+| 终端 reset/秒 | >30 次（每次 timer tick 触发整屏）| **≤1 次**（只刷新当前工具那 1 行）|
+| 用户输入延迟 | 明显卡顿 | **无感** |
+
+**简单说**：CPU 干的活从"10×30fps=300 次渲染/秒 + 30+ 次整屏重绘"降到"**1 行渲染 + 1 行局部重绘**"。
+
+---
+
+#### 🔧 技术改造（两部分配合）
+
+**(A) MessageResponse 单行容器**（~20 行）：
+
+```tsx
+// 新建 packages/cli/src/ui/components/MessageResponse.tsx
+import { Box } from 'ink'
+export function MessageResponse({ children, height = 1 }) {
+  return (
+    <Box flexDirection="row" height={height} overflowY="hidden">
+      {children}
+    </Box>
+  )
+}
+```
+
+然后把 `ToolGroupMessage`、工具进度、Waiting、`Done` 等组件都用 `<MessageResponse>` 包起来。
+
+**(B) OffscreenFreeze + useTerminalViewport**（~100+20 行）：
+
+```tsx
+// 新建 packages/cli/src/ui/hooks/useTerminalViewport.ts
+export function useTerminalViewport() {
+  const [isVisible, setVisible] = useState(true)
+  const scrollRef = useContext(ScrollContext)  // 需要全局滚动位置 context
+  // 通过 measureElement + scroll offset 计算元素是否在可见区内
+  // ...（~100 行：监听 scroll 事件、节流、初始 measure）
+  return [refCallback, { isVisible }]
+}
+
+// 新建 packages/cli/src/ui/components/OffscreenFreeze.tsx
+export function OffscreenFreeze({ children }) {
+  'use no memo'
+  const [ref, { isVisible }] = useTerminalViewport()
+  const cached = useRef(children)
+  if (isVisible) cached.current = children
+  return <Box ref={ref}>{cached.current}</Box>
+}
+```
+
+然后把历史消息的每个 item 用 `<OffscreenFreeze>` 包起来。
+
+---
+
+#### 📊 三项收益总结
+
+| 维度 | 改进前 | 改进后 |
+|------|------|------|
+| 🎯 **活跃区稳定性** | 工具输出撑爆屏（5-30 行抖动）| **固定 1 行**，输入区位置稳定 |
+| 💨 **历史区 CPU** | 10 条历史 × 30fps = 300 render/s | **0**（引用缓存 bail out）|
+| ⚡ **终端 reset** | >30 次/秒（timer tick 触发全屏）| **≤1 次/秒**（只刷新当前行）|
+
+---
+
+#### 🎯 实现成本
+
 - 涉及文件：~6 个
-- 新增代码：~200 行（其中 viewport hook 占 ~100 行）
+- 新增代码：~200 行（其中 `useTerminalViewport` 约占 100 行）
 - 开发周期：~3-4 天
-- 难点：Ink 无内建 `useTerminalViewport`，需要自定义基于 scroll 位置和元素 offset 的检测
+- **难点**：Ink 标准库没有 `useTerminalViewport`，需要自己实现基于 scroll 位置 + `measureElement` 的可见性检测
 
-**改进前后对比**：
-- **改进前**：10 条历史工具调用 × 每条 spinner 动画 → 每秒 >30 次终端 reset → 交互卡顿
-- **改进后**：离屏历史 0 CPU / 活跃区固定 1 行/工具 → 屏幕始终紧凑，交互流畅
+---
 
-**意义**：屏幕紧凑 + 历史零成本是 "感觉丝滑" 的核心来源。
-**缺失后果**：Qwen Code 长任务执行时屏幕容易失控，历史 spinner 动画拖累全局性能。
-**改进收益**：MessageResponse 单行压缩活跃区 + OffscreenFreeze 消除历史 reset = 90% 的"屏幕爆"感知问题解决。
+#### 📂 Claude Code 源码索引
+
+| 文件 | 关键 |
+|------|------|
+| `components/MessageResponse.tsx:37` | `<Box height={height} overflowY="hidden">` 统一容器 |
+| `components/OffscreenFreeze.tsx:23-42` | `useRef` + `useTerminalViewport` 冻结机制 |
+| `components/messages/HookProgressMessage.tsx:66-113` | Hook 进度消息用 MessageResponse |
+| `tools/BashTool/BashToolResultMessage.tsx:103-189` | `(No output)` / 图像检测用 `height={1}` |
+| `ink/hooks/use-terminal-viewport.ts` | viewport 可见性检测 hook |
+
+---
+
+**意义**：屏幕紧凑 + 历史零成本 = "感觉丝滑"的核心来源。
+**缺失后果**：Qwen Code 长任务执行时屏幕抖动、历史 spinner 拖慢全局性能。
+**改进收益**：**MessageResponse 固定活跃区 1 行 + OffscreenFreeze 消除历史 reset = 90% 的"屏幕爆"问题解决**。
 
 ---
 
