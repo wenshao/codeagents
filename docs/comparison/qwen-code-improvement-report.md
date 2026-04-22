@@ -170,9 +170,9 @@
 | **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 无统一上限 | 小 | — |
 | **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | **✓ 已完整实现**（超越 Claude 原设计 · 可配置 + 6 bypasses + 语义化 tool success ≠ exit code）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（`+N lines`，2026-04-20）+ [PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) ✓（5 行窗口 + 6 bypasses + settings，2026-04-22）|
 | **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | 🟡 增强中（PR#3512 合并后将补齐 4/4 gap → ✓ 完整）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（变体，2026-04-20）+ [PR#3512](https://github.com/QwenLM/qwen-code/pull/3512) 🟡 OPEN（补齐组合格式 + 亚秒精度 + 条件阈值）|
-| **P2** | [语义化 hunk 模型 + singleHunk 智能上下文](./update-tool-display-deep-dive.md) — `structuredPatch` + `singleHunk ? 100_000 : 3` 智能 context + 消除 UI 层 regex re-parse [↓](./qwen-code-improvement-report-p2-stability.md#item-48) | `createPatch` 字符串 + UI regex 重解析 + 固定 5 行上下文 | 中 | — |
+| **P2** | [语义化 hunk 模型（消除双重 diff 序列化）](./update-tool-display-deep-dive.md) — `structuredPatch` 替代 `createPatch` 字符串 + 删除 UI 层 62 行 regex re-parse [↓](./qwen-code-improvement-report-p2-stability.md#item-48) | core createPatch 字符串 → UI regex 反解析（双序列化浪费）| 中 | — |
 | **P2** | [多 hunk `...` 省略分隔符](./update-tool-display-deep-dive.md) — StructuredDiffList 在 hunk 之间插入 dim color `...` [↓](./qwen-code-improvement-report-p2-stability.md#item-49) | 多 hunk 直接堆叠无分隔 | 小 | — |
-| **P2** | [会话标题自动生成 Fast Model](./fast-model-usage-deep-dive.md) — Haiku 3-7 词 sentence-case title + tail-1000 字符 + JSON schema [↓](./qwen-code-improvement-report-p2-stability.md#item-50) | UUID/时间戳 | 小 | — |
+| **P2** | [会话标题自动生成 Fast Model](./fast-model-usage-deep-dive.md) — Haiku 3-7 词 sentence-case title + tail-1000 字符 + JSON schema [↓](./qwen-code-improvement-report-p2-stability.md#item-50) | **✓ 已实现**（kebab-case / current model / 手动触发 —— 剩余可优化切 fastModel + auto 生成）| 小 | [PR#3093](https://github.com/QwenLM/qwen-code/pull/3093) ✓（2026-04-22 合并）|
 | **P2** | [工具调用摘要 Compact Mode Fast Model](./fast-model-usage-deep-dive.md) — Haiku 30 字符 git-commit-subject 风格 label 折叠 N 个工具 [↓](./qwen-code-improvement-report-p2-stability.md#item-51) | 工具名列表 | 小 | — |
 | **P2** | [Hook LLM 条件评估 Fast Model](./fast-model-usage-deep-dive.md) — `if.condition: "自然语言"` + Haiku JSON `{ok, reason}` [↓](./qwen-code-improvement-report-p2-stability.md#item-52) | 仅代码条件 | 中 | — |
 | **P2** | [WebFetch 内容 LLM 清洗 Fast Model](./fast-model-usage-deep-dive.md) — Haiku 抽取核心内容 + 去 nav/ads/tracker [↓](./qwen-code-improvement-report-p2-stability.md#item-53) | 直接截断/HTML parser | 小 | — |
@@ -442,6 +442,65 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-22（审计勘误 · item-48 / item-50 修正）
+
+**用户要求**："再次多轮无方向审计、反向审计直至没问题"。严格审计 items 44-58 的技术准确性后发现 **2 处实质错误**。
+
+#### 🔴 错误 1：item-48 `singleHunk` 机制描述错误
+
+**声称**：Claude 根据 `hunks.length === 1` 自动切换 `context: 100_000` 显示完整函数。
+
+**实际（源码验证）**：
+- `hooks/useDiffInIDE.ts:170-196` 是**唯一**设置 `singleHunk=true` 的路径，仅 **IDE 扩展** 使用
+- 判断依据是 `editMode: 'single' | 'multiple'` **参数传入**，**不是** `hunks.length === 1` 启发式
+- `tools/FileEditTool/utils.ts:343`（终端 UI 路径）**不传** `singleHunk`，始终 `context: 3`
+- **"改 1 行看完整函数"在 Claude 终端 UI 不成立**——只在 IDE 扩展中
+
+**修正**：
+- item-48 标题：`语义化 hunk 模型 + singleHunk 智能上下文` → **`语义化 hunk 模型（消除双重 diff 序列化）`**
+- 删除"改 1 行看完整函数"的终端 UI 场景（不成立）
+- 重写 Qwen 修改方向——聚焦真正有价值的 `structuredPatch` 改造 + 删除 UI 层 62 行 regex；`singleHunk` 作为可选 IDE 扩展增强
+- 补充：Qwen 的 `diffOptions.ts:41, 52` **已部分使用** `structuredPatch`——改造路径已验证可行
+- Deep-Dive `update-tool-display-deep-dive.md` 3 处标注勘误
+
+#### 🔴 错误 2：item-50 添加时已被实现
+
+**声称**：Qwen Code 缺少"会话标题自动生成"功能。
+
+**实际**：[PR#3093](https://github.com/QwenLM/qwen-code/pull/3093)（`feat(session): add rename, delete, and auto-title generation for session`）**2026-04-22 03:48 UTC 已合并**，commit `0c423deed`——早于我添加 item-50 的时间。
+
+**Qwen 已实现**：
+- `packages/cli/src/ui/commands/renameCommand.ts:43, 128` `generateSessionTitle`
+- `/rename` 无参数触发自动生成 kebab-case title
+- CLI prompt tag / VSCode / WebUI 三端展示
+- `--resume <title>` 按 title 恢复 session
+- Append-only system record 存储
+
+**与 Claude 的 3 处差异**（剩余优化空间）：
+1. 用 "current model" 而非 fastModel（成本偏高）
+2. kebab-case 而非 sentence-case
+3. 手动触发而非自动生成
+
+**修正**：
+- item-50 状态：🆕 新增建议 → **✓ 已实现**（剩余优化 ~50 行，0.5 天）
+- 主矩阵 item-50 行：`UUID/时间戳` → `✓ 已实现`，追踪 PR#3093 ✓
+- README 已合并 ✓ 67 → **68**
+
+#### ✅ 审计验证通过项
+
+items 44（已修订）/ 45-47 / 49 / 51-58 逐项验证：
+- PR 状态（PR#3155/3508 已合并，PR#3512 OPEN）正确
+- 常量值（`BASH_MAX_OUTPUT_DEFAULT = 30_000` / `CONTEXT_LINES = 3` / `RECENT_COMPLETED_TTL_MS = 30_000`）验证与源码一致
+- "Qwen 没有 X" 声明（item-45/52-55）通过 grep 验证
+- Feature flag（`tengu_plum_vx3` / `tengu_copper_panda` / `tengu_cork_m4q`）逐一验证
+
+#### 📊 本轮审计方法论（从 item-44 学到）
+
+1. **基础设施层 vs 用户可见效果层**——原 item-44 把 MessageResponse（基础设施）描述成"活跃区压缩"（效果层）
+2. **多机制混为一谈**——原 item-44 把 `MessageResponse` 和 `ShellProgressMessage` 5 行窗口混讲
+3. **未扫描 latest merges 就提建议**——原 item-50 错误，未来添加 item 前必须 `gh pr list --state merged` 扫最新
+4. **源码引用必须 open the file 验证**——item-48 的 `singleHunk` 机制凭印象写，实际看源码才知只在 IDE 扩展
 
 ### 2026-04-22（SubAgent 展示对比 · 新增 3 项）
 
@@ -718,7 +777,7 @@
 **新增 Deep-Dive**：[Update 工具展示 Deep-Dive](./update-tool-display-deep-dive.md) —— 4 个场景对比（3 行小改 / 200 行大重构 / 500 行新文件 / string not found 失败），双向借鉴分析。
 
 **新增 2 个追踪 item**（p2-stability 47 → 49）：
-- **[item-48](./qwen-code-improvement-report-p2-stability.md#item-48)** 语义化 hunk 模型 + `singleHunk` 智能上下文——把 `Diff.createPatch()` 字符串改为 `Diff.structuredPatch()` 的 `StructuredPatchHunk[]`，消除 UI 层 `parseDiffWithLineNumbers()` regex（60 行代码可删），加入 `singleHunk ? 100_000 : 3` 智能 context（~150 行净改动，2-3 天）
+- **[item-48](./qwen-code-improvement-report-p2-stability.md#item-48)** 语义化 hunk 模型（消除双重 diff 序列化）——把 `Diff.createPatch()` 字符串改为 `Diff.structuredPatch()` 的 `StructuredPatchHunk[]`，消除 UI 层 `parseDiffWithLineNumbers()` 62 行 regex（~50 行净改动，2-3 天）。**⚠️ 勘误**：`singleHunk ? 100_000 : 3` 智能上下文**只在 IDE 扩展** `useDiffInIDE.ts` 触发，不在终端 UI——不是本 item 的收益（之前误写）
 - **[item-49](./qwen-code-improvement-report-p2-stability.md#item-49)** 多 hunk `...` 省略分隔符——参考 `StructuredDiffList.tsx` 用 `intersperse` 在 hunk 之间插入 dim color `...`（~30 行，0.5 天，依赖 item-48）
 
 **关键源码验证**：

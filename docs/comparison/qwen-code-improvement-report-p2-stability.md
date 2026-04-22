@@ -2118,236 +2118,161 @@ export function ShellTimeDisplay({ elapsedTimeSeconds, timeoutMs }: Props) {
 
 <a id="item-48"></a>
 
-### 48. 语义化 hunk 模型 + `singleHunk` 智能上下文（P2）
+### 48. 语义化 hunk 模型（消除双重 diff 序列化）（P2）
 
 > **配套阅读**：[Update 工具展示 Deep-Dive](./update-tool-display-deep-dive.md) 第 2.1 节。
 
-**来源**：Claude Code `utils/diff.ts`（`structuredPatch` + `singleHunk` 启发式）。
+**来源**：Claude Code `utils/diff.ts` 的 `structuredPatch()`-based pipeline。
 
 ---
 
 #### 🎯 一句话理解
 
-**改进前**：改 1 行代码 → Qwen 屏幕上显示 11 行（改动 ± 5 行固定上下文）→ **看不到函数名、参数、返回值**——只看到变更但不知道在哪个函数里。
+**改进前**：Qwen Code 的 Edit 工具在 **core 层** 调 `Diff.createPatch()` 把 diff **序列化为字符串**，然后在 **UI 层** 用 60+ 行 regex 把字符串 **反序列化回结构化行号**——**同一份 diff 数据来回转换两次**，每次 React 重渲染都重跑 regex。
 
-**改进后（Claude 风格）**：改 1 行代码 → 如果只改了 1 处（`singleHunk`），显示**整个函数**（~20-30 行）→ 用户一眼知道"是在 `loginUser()` 里把 `return false` 改成 `return { error: 'invalid' }`"。
+**改进后**：core 层直接传 `StructuredPatchHunk[]` 对象给 UI，**零解析开销**、代码更干净。
 
----
-
-#### 📺 效果对比（具体场景）
-
-**场景 A：单 hunk 修改——改 `loginUser()` 函数的 return 语句**
-
-**改进前（Qwen 现状，`MAX_CONTEXT_LINES_WITHOUT_GAP = 5` 固定）**：
-
-```
-  42 |   }
-  43 |
-  44 | export async function loginUser(email, password) {
-  45 |   const user = await db.users.findOne({ email })
-  46 |   if (!user) return false
-- 47 |   if (!await bcrypt.compare(password, user.hash)) return false
-+ 47 |   if (!await bcrypt.compare(password, user.hash)) return { error: 'invalid' }
-  48 |   return user
-  49 | }
-  50 |
-  51 |
-```
-
-11 行上下文**能看到函数名**（刚好 3 行上方），但如果修改点在函数中间偏下，会只看到后半部分、不知道函数叫什么。
-
-**改进后（Claude 风格 `singleHunk` 启发式 → `context: 100_000`）**：
-
-```
-   1 | import bcrypt from 'bcryptjs'
-   2 | import { db } from '../db.js'
-   3 |
-   4 | export async function loginUser(email, password) {
-   5 |   const user = await db.users.findOne({ email })
-   6 |   if (!user) return false
--  7 |   if (!await bcrypt.compare(password, user.hash)) return false
-+  7 |   if (!await bcrypt.compare(password, user.hash)) return { error: 'invalid' }
-   8 |   return user
-   9 | }
-  10 |
-```
-
-用户立刻看到**整个函数 + import 语句**——"这是 login 流程，原来失败返回 `false`，现在返回 `{error: 'invalid'}`，调用方需要改 `if (!result)` 为 `if (result.error)`"。**"整体改变"一目了然**。
+**⚠️ 纠正之前版本**：
+- **`singleHunk` 机制不在终端 UI 生效**——它只在 **IDE 扩展**的 diff 视图中使用（`hooks/useDiffInIDE.ts:170-196`），由 `editMode: 'single' | 'multiple'` 参数传入，**不是根据 `hunks.length === 1` 动态判断**
+- **"改 1 行看到完整函数"场景在 Claude 终端 UI 不成立**——终端 UI 走 `tools/FileEditTool/utils.ts:343` 路径，不传 `singleHunk`，永远用 `context: 3`
+- Qwen Code 的 `packages/core/src/tools/diffOptions.ts:41, 52` **已部分使用** `Diff.structuredPatch()`，只是 `edit.ts` 和 `write-file.ts` 主路径未改
 
 ---
 
-**场景 B：多 hunk 修改——大型 refactor 改 5 处方法签名**
-
-**改进前（Qwen 现状）**：5 处修改 × 每处 5 行上下文 + `═` 间隙符 = **30-40 行堆一起**，仍占大半屏。
-
-**改进后（Claude 风格 multi-hunk → `context: 3` 紧凑模式）**：
-
-```
-  88 |   async createUser(data) {
-- 89 |     return this.db.insert('users', data)
-+ 89 |     return this.db.insert('users', { ...data, createdAt: Date.now() })
-  90 |   }
-...
- 142 |   async updateUser(id, data) {
-- 143 |     return this.db.update('users', id, data)
-+ 143 |     return this.db.update('users', id, { ...data, updatedAt: Date.now() })
- 144 |   }
-...
- 198 |   async deleteUser(id) {
-- 199 |     return this.db.delete('users', id)
-+ 199 |     return this.db.softDelete('users', id)
- 200 |   }
-```
-
-3 处改动 × 每处 3 行 = **9 行 + 2 个 `...` 分隔符 = 11 行**——紧凑且清晰，用户扫一眼知道"是批量加时间戳 + 把硬删改成软删"。
-
-**关键对比**：
-
-| 场景 | Qwen 现状（固定 5 行） | Claude 智能 `singleHunk` |
-|---|---|---|
-| 单处修改 | 11 行（够看到函数名，但上下文不够） | **~20-30 行整函数**（完整语境）|
-| 多处修改（5 处）| 40-60 行（堆一起）| **15-20 行紧凑预览**（每处 3 行 + `...`）|
-
-**逻辑**：单处用户要**深度**（完整上下文），多处用户要**宽度**（快速扫描所有变更）。Claude 用 `hunks.length === 1` 作为区分信号，**自动切换** context 参数。
-
----
-
-#### 🐌 另一个隐性痛点：滚动卡顿
-
-**问题**：Qwen Code UI 层 `DiffRenderer.tsx:23-81` 的 `parseDiffWithLineNumbers()` 用 **60+ 行 regex** 把字符串 patch 重新解析成行号和标记。**每次 React 重渲染都跑一次** regex。
-
-**用户感知**：
-- 滚动有多个 Edit 历史消息时，每条消息 DiffRenderer 都重新解析 → 滚动卡顿
-- 有 spinner 动画时，每 100ms 一次 rerender → 每 100ms 跑一次 regex
-
-**改进后**：core 层直接传 `StructuredPatchHunk[]` 对象（已结构化，无需解析）→ UI 层直接消费 → **零解析开销**。
-
----
-
-#### 🔧 技术改造（两部分）
+#### 🐌 核心痛点：双重序列化 + UI 层 regex 重解析
 
 **Qwen Code 现状**：
 
 ```typescript
-// packages/core/src/tools/edit.ts:308, 433
+// core 层（packages/core/src/tools/edit.ts:308, 433）
 const fileDiff = Diff.createPatch(filePath, oldContent, newContent, /*...*/)
-// fileDiff 是 string，类似："@@ -10,3 +10,3 @@\n function hello() {\n-..."
-```
+// fileDiff 是 string：
+//   "@@ -10,3 +10,3 @@\n function hello() {\n-  return 'world'\n+  return 'world!'\n }"
 
-```typescript
-// packages/cli/src/ui/components/messages/DiffRenderer.tsx:23-81
+// UI 层（packages/cli/src/ui/components/messages/DiffRenderer.tsx:23-81）
 function parseDiffWithLineNumbers(diffContent: string): DiffLine[] {
-  // 60+ 行 regex 解析——每次 render 都跑
-  const hunkMatch = line.match(/^@@ -(\d+),?\d* \+(\d+),?\d* @@/)
+  // 62 行 regex 解析——把刚序列化的字符串再反序列化回结构化数据
+  const hunkHeaderRegex = /^@@ -(\d+),?\d* \+(\d+),?\d* @@/
+  // 扫描每行，维护 currentOldLine / currentNewLine / inHunk 状态机
   // ...
 }
 ```
 
-**Claude Code 做法**：
+**两个层面的浪费**：
+1. **数据流浪费**：core 层本来有 `Diff.structuredPatch()` 能直接返回 `StructuredPatchHunk[]`——被 `createPatch()` 字符串化后，UI 又花 62 行代码反解回来
+2. **性能浪费**：`parseDiffWithLineNumbers()` 在 `DiffRenderer` 组件中 **每次 render 都调用**。滚动包含多个 Edit 历史消息时，每条都重解析；配合 spinner 动画 rerender 时，每 ~16ms 就再跑一次
+
+**Qwen Code 已有部分迁移**：`diffOptions.ts:41, 52` 里的 `Diff.structuredPatch()` 调用证明改造路径可行——只是没推广到 edit.ts 主路径。
+
+---
+
+#### 🔧 技术改造
+
+**Claude Code 的参考实现**（`utils/diff.ts:81-114`）：
 
 ```typescript
-// utils/diff.ts:81-114 (改造后的 Qwen 目标)
+export const CONTEXT_LINES = 3
+export const DIFF_TIMEOUT_MS = 5_000
+
 export function getPatchFromContents({
-  filePath, oldContent, newContent, singleHunk = false,
-}): StructuredPatchHunk[] {
-  const result = structuredPatch(filePath, filePath, oldContent, newContent, undefined, undefined, {
-    context: singleHunk ? 100_000 : 3,  // ⭐ 核心智能判断
-    timeout: 5_000,
-  })
-  return result?.hunks  // 直接返回对象数组，UI 层零解析
-}
-```
-
-**`singleHunk` 判断启发式**：
-
-```typescript
-// 调用方示例
-const initialHunks = getPatchFromContents({ filePath, oldContent, newContent })
-const isSingleHunk = initialHunks.length === 1
-
-// 如果单 hunk，重新用 100_000 context 重算一遍（获取完整函数上下文）
-const finalHunks = isSingleHunk
-  ? getPatchFromContents({ filePath, oldContent, newContent, singleHunk: true })
-  : initialHunks
-```
-
-**原问题完整描述**：Qwen Code 的 `Edit` 工具在 core 层用 `Diff.createPatch()` 返回**字符串 patch**，UI 层用 regex 重新解析——语义信息在序列化/反序列化过程中丢失，每次渲染都重复 regex 解析。同时固定 5 行上下文无法智能调整。
-
-**Claude Code 的解决方案（两部分）**：
-
-#### (A) `structuredPatch` 语义化 hunk 模型
-
-使用 `diff` npm library 的 `structuredPatch()` 直接返回 `StructuredPatchHunk[]`：
-
-```typescript
-// utils/diff.ts:81-114
-export function getPatchFromContents({
-  filePath, oldContent, newContent, ignoreWhitespace = false,
+  filePath, oldContent, newContent,
+  ignoreWhitespace = false,
   singleHunk = false,
 }): StructuredPatchHunk[] {
   const result = structuredPatch(
     filePath, filePath,
-    escapeForDiff(oldContent), escapeForDiff(newContent),
+    escapeForDiff(oldContent),   // 转义 & / $ 避免 diff 库误识别
+    escapeForDiff(newContent),
     undefined, undefined,
     {
       ignoreWhitespace,
-      context: singleHunk ? 100_000 : CONTEXT_LINES,  // ⭐ 智能上下文
+      context: singleHunk ? 100_000 : CONTEXT_LINES,  // 见下方说明
       timeout: DIFF_TIMEOUT_MS,
     }
   )
-  return result?.hunks.map(h => ({ ...h, lines: h.lines.map(unescapeFromDiff) }))
+  return result?.hunks.map(h => ({
+    ...h,
+    lines: h.lines.map(unescapeFromDiff),  // 反转义
+  })) ?? []
 }
 ```
 
-#### (B) `singleHunk` 智能上下文（核心启发式）
+**`singleHunk` 参数的真实用途**（必须澄清）：
 
-**`utils/diff.ts:103`**：
-- **单 hunk**（整个 diff 只有一处修改）→ `context: 100_000` = **全量上下文**
-- **多 hunk**（修改多处）→ `context: 3` = **紧凑模式**
+| 调用点 | 传入值 | 使用场景 |
+|---|---|---|
+| `tools/FileEditTool/utils.ts:343` | **不传**（默认 `false`）| 终端 UI 的 diff 展示——始终 `context: 3` |
+| `hooks/useDiffInIDE.ts:177` | `editMode === 'single'` 决定 | **IDE 扩展** diff 视图（VSCode/Cursor），`editMode` 由调用者根据 "single replace vs MultiEdit" 语义传入 |
 
-**设计意图**：单处修改时用户想看**完整上下文**（"这个函数整体改后长什么样"）；多处修改时用户想看**每处变更的紧凑预览**。
+**所以 `context: 100_000` 路径仅在 IDE 扩展中触发**。Qwen Code 如果没有相应 IDE 扩展，这个分支暂时没有借鉴价值。
 
-**Claude Code 源码索引**：
+**Qwen Code 修改方向（聚焦真正有用的部分）**：
 
-| 文件 | 关键函数/常量 |
-|------|-------------|
-| `utils/diff.ts:9` | `CONTEXT_LINES = 3` |
-| `utils/diff.ts:10` | `DIFF_TIMEOUT_MS = 5_000` |
-| `utils/diff.ts:103` | `context: singleHunk ? 100_000 : CONTEXT_LINES` |
-| `utils/diff.ts:81-114` | `getPatchFromContents()` 返回 `StructuredPatchHunk[]` |
-| `components/StructuredDiff.tsx` | 直接消费 hunk，无 regex 解析 |
+1. **core 层**：把 `edit.ts:308, 433` 和 `write-file.ts:142, 251` 的 `Diff.createPatch()` 替换为 `Diff.structuredPatch()`，返回 `StructuredPatchHunk[]`
+2. **类型传递**：调整 tool result 的 `ReturnDisplay` 类型让 hunk 数组可传递
+3. **UI 层**：`DiffRenderer.tsx:23-81` 的 `parseDiffWithLineNumbers()` 改为直接消费 `StructuredPatchHunk[]`——**删除 62 行 regex**（验证：`wc -l` 确认函数体 62 行）
+4. **兼容性**：Qwen `modifiable-tool.ts:118` 也用 `Diff.createPatch()`，需一并改造；或保留字符串输出作为 SDK 兼容接口
+5. **可选 IDE 扩展增强**：如果未来 Qwen 有 IDE 扩展，可参考 `useDiffInIDE.ts` 加入 `editMode` 参数驱动的 `context: 100_000` 分支
 
-**Qwen Code 现状**：
+---
 
-| 文件 | 现状 |
-|------|------|
-| `packages/core/src/tools/edit.ts:308, 433` | `Diff.createPatch()` 返回字符串 patch |
-| `packages/cli/src/ui/components/messages/DiffRenderer.tsx:23-81` | `parseDiffWithLineNumbers()` 用 regex 重新解析字符串 |
-| `DiffRenderer.tsx:245` | `MAX_CONTEXT_LINES_WITHOUT_GAP = 5`（固定，不根据 hunk 数调整）|
-
-**Qwen Code 修改方向**：
-1. **core 层改用 `Diff.structuredPatch()`**——修改 `edit.ts:308, 433` 两处，返回 `StructuredPatchHunk[]`
-2. **增加 `singleHunk` 启发式**：`hunks.length === 1` 时调整 context 参数
-3. **UI 层直接消费 hunk 数据**——`DiffRenderer.tsx` 接收 `StructuredPatchHunk[]`，**移除 `parseDiffWithLineNumbers()`**（60+ 行 regex 代码可删）
-4. **测试**：添加单 hunk / 多 hunk 上下文差异的快照测试
-
-**实现成本评估**：
-- 涉及文件：~3 个（`edit.ts` + `DiffRenderer.tsx` + 类型定义）
-- 改动代码：+100 / -60 行
-- 开发周期：~2-3 天
-- 难点：core 层类型改动可能影响 tool result 序列化格式，需要兼容性处理
-
-**三项收益总结**：
+#### 📊 收益（修订版·只列真实成立的）
 
 | 维度 | 改进前 | 改进后 |
 |------|------|------|
-| 🎨 单处修改的**上下文丰富度** | 5 行（看不到整函数）| **整个函数 + imports**（`singleHunk → context: 100_000`）|
-| 🏃 多处修改的**屏幕占用** | 50+ 行堆一起 | **紧凑 10-15 行 + `...` 分隔**（`multi-hunk → context: 3`）|
-| ⚡ **滚动性能** | 每次 rerender 跑 60 行 regex | 直接消费对象，**零解析开销** |
+| ⚡ **DiffRenderer 解析开销** | 每次 rerender 跑 62 行 regex | 直接消费对象，**零解析开销** |
+| 🧹 **代码量** | core 字符串化 + UI 反解析共 ~80 行 | 删 62 行 regex，新增 ~20 行转发代码 |
+| 🔄 **数据一致性** | 序列化/反序列化两次可能丢失细节 | 结构化数据直通，信息无损 |
 
-**意义**：`singleHunk` 是"用户意图的信号提取"——当用户只改一处，往往是在**深入思考某个函数**，需要完整语境；当用户改多处，往往是在**系统性 refactor**，需要快速扫描所有变更点。Claude Code 用单一 flag 自动切换两种模式。
+**❌ 不要列这些虚假收益**：
+- ~~"改 1 行代码看到整函数"~~（Claude 终端 UI 也不这样，只在 IDE 扩展中）
+- ~~"多 hunk 场景屏占从 50+ 行降到 10-15 行"~~（这是 `CONTEXT_LINES = 3` 的功劳，与 structuredPatch 改造无关；且对比基准不准确——Qwen 当前 `MAX_CONTEXT_LINES_WITHOUT_GAP = 5` 已经很紧凑）
 
-**风险**：core 层类型改动可能影响 tool result 的序列化格式（如 session 持久化、SDK 消息传递），需要兼容旧 session 文件。
+---
+
+#### 📂 Claude Code 源码索引（已逐行验证）
+
+| 文件 | 关键 |
+|------|------|
+| `utils/diff.ts:9` | `CONTEXT_LINES = 3` |
+| `utils/diff.ts:10` | `DIFF_TIMEOUT_MS = 5_000` |
+| `utils/diff.ts:81-114` | `getPatchFromContents()` 封装 `structuredPatch` |
+| `utils/diff.ts:103` | `context: singleHunk ? 100_000 : CONTEXT_LINES` |
+| `hooks/useDiffInIDE.ts:170-196` | **唯一**设置 `singleHunk=true` 的路径（IDE 扩展） |
+| `hooks/useDiffInIDE.ts:177` | `const singleHunk = editMode === 'single'` |
+| `tools/FileEditTool/utils.ts:343` | 终端 UI 路径——调 `getPatchFromContents` 但**不传** `singleHunk` |
+| `components/StructuredDiff.tsx` | UI 直接消费 `StructuredPatchHunk`，无 regex |
+
+**Qwen Code 对照**：
+
+| 文件 | 当前状态 |
+|------|------|
+| `packages/core/src/tools/edit.ts:308, 433` | `Diff.createPatch()` 字符串（**改造目标**）|
+| `packages/core/src/tools/write-file.ts:142, 251` | `Diff.createPatch()` 字符串（**改造目标**）|
+| `packages/core/src/tools/modifiable-tool.ts:118` | `Diff.createPatch()` 字符串（**改造目标**）|
+| `packages/core/src/tools/diffOptions.ts:41, 52` | **已用** `Diff.structuredPatch()` ✓（改造范本）|
+| `packages/cli/src/ui/components/messages/DiffRenderer.tsx:23-81` | 62 行 `parseDiffWithLineNumbers` regex（**可删**）|
+| `DiffRenderer.tsx:245` | `MAX_CONTEXT_LINES_WITHOUT_GAP = 5` |
+
+---
+
+#### 🎯 实现成本评估
+
+- 涉及文件：~6 个（core 层 3 处 + diffOptions 参考 + DiffRenderer + 类型定义）
+- 改动代码：+50 / -80 行（净减少 30 行）
+- 开发周期：~2-3 天
+- **难点**：
+  - tool result 的序列化格式改动可能影响 session 持久化（历史会话兼容）和 SDK 消息传递
+  - 存量测试（比如 `modifiable-tool.test.ts:31` mock 的 `createPatch`）需要调整
+  - 如果要保留 SDK 字符串接口兼容，需要双通道（core 内部用 structured，对外转字符串）
+
+---
+
+**意义**：消除 core ↔ UI 之间 diff 数据的双重序列化，是**架构清理**层面的改造；附带 DiffRenderer 渲染性能提升（滚动历史时不再每帧重跑 regex）。
+
+**不要期待**：此 item 不会让"单处修改显示整函数"——那是 IDE 扩展专属能力。本 item 只解决**数据流与解析开销**问题。
+
+**风险**：tool result 类型改动涉及 session 持久化兼容性，改造前需规划好数据迁移路径。
 
 ---
 
@@ -2456,11 +2381,62 @@ export function StructuredDiffList({
 
 <a id="item-50"></a>
 
-### 50. 会话标题自动生成（Fast Model）（P2）
+### 50. 会话标题自动生成（Fast Model）（P2）✓ 已实现（PR#3093）
 
 > **配套阅读**：[Fast Model 应用场景 Deep-Dive](./fast-model-usage-deep-dive.md) 第 4 节"优先级 1"。
 
-**问题**：Qwen Code 的 `/resume` 列表中，会话用 UUID 或时间戳标识——用户滚动长列表难以识别"哪个会话是修登录按钮的"。Claude Code 用 Haiku 自动生成 3-7 词 sentence-case 标题（如 "Fix login button on mobile"），类似 git commit subject。
+**⚠️ 状态勘误**：**此 item 在添加追踪时已被实现**——[PR#3093](https://github.com/QwenLM/qwen-code/pull/3093)（`feat(session): add rename, delete, and auto-title generation for session`）**2026-04-22 03:48 UTC 合并**，commit `0c423deed`。添加 item-50 时（2026-04-22 下午）已错过此合并，属于**审计疏漏**。
+
+**Qwen Code 实际实现**（来自 PR#3093 body）：
+
+> When `/rename` is called without arguments, it extracts the last ~1000 chars of conversation history and sends a single request to the current model asking for a kebab-case title (e.g., `fix-login-bug`). A pending indicator ("Generating session name…") is shown during the request.
+
+**对比 Claude Code 的 3 个差异**：
+
+| 方面 | Claude `sessionTitle.ts` | Qwen PR#3093 `renameCommand.ts` |
+|---|---|---|
+| 模型 | `getSmallFastModel()` (Haiku)——专门用 fast model | **"current model"**——用当前主模型（Sonnet/Pro 等，成本更高）|
+| 风格 | Sentence-case `"Fix login button on mobile"` | kebab-case `"fix-login-bug"` |
+| 触发 | 自动（session 结束时后台生成）| **手动**（`/rename` 无参数触发）|
+| 存储 | Session metadata | Append-only system record（`subtype: "custom_title"`）|
+| UI 展示 | `/resume` 列表 title 列 | **CLI 输入 prompt tag** + `/resume` picker + `--resume <title>` 按 title 恢复 |
+
+**剩余可改进空间**（次要）：
+1. 切换到 **fastModel**（Haiku-类）——当前用主模型成本偏高
+2. 增加**自动生成**——session 结束时后台触发（当前仅手动）
+3. 风格选项（kebab-case vs sentence-case 配置化）
+
+**源码**：`packages/cli/src/ui/commands/renameCommand.ts:43` `generateSessionTitle` + `L128` 调用。
+
+**Claude 原实现参考**（保留作对比）：
+
+```typescript
+// utils/sessionTitle.ts:56-100
+const SESSION_TITLE_PROMPT = `Generate a concise, sentence-case title (3-7 words)...
+Good examples:
+{"title": "Fix login button on mobile"}
+...
+Bad (too vague): {"title": "Code changes"}
+Bad (too long): {"title": "Investigate and fix the issue..."}
+Bad (wrong case): {"title": "Fix Login Button On Mobile"}`
+
+const result = await queryHaiku({
+  systemPrompt: asSystemPrompt([SESSION_TITLE_PROMPT]),
+  userPrompt: extractConversationText(messages).slice(-1000),
+  outputFormat: {
+    type: 'json_schema',
+    schema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] }
+  }
+})
+```
+
+**剩余改进成本**：~50 行（切 fastModel + auto 生成选项）， ~0.5 天。
+
+---
+
+**以下为原 item 内容（添加时以为 Qwen 没此功能）**：
+
+**问题**（已失效）：Qwen Code 的 `/resume` 列表中，会话用 UUID 或时间戳标识——用户滚动长列表难以识别"哪个会话是修登录按钮的"。Claude Code 用 Haiku 自动生成 3-7 词 sentence-case 标题（如 "Fix login button on mobile"），类似 git commit subject。
 
 **Claude Code 的解决方案**（`utils/sessionTitle.ts:56-100`）：
 
