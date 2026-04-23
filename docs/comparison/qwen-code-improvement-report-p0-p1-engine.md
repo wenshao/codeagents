@@ -723,46 +723,60 @@ Claude Code 把系统提示拆成 **独立 section**，分为两类：
 
 <a id="item-20"></a>
 
-### 20. @include 指令与嵌套记忆自动发现（P1）
+### 20. @include 指令与嵌套记忆自动发现（P1）✓ 已实现（核心机制已到位，实现路径与 Claude 不同）
 
-**思路**：大型 monorepo 中不同目录有完全不同的技术栈和编码规范——`src/frontend/` 用 React + TypeScript，`src/backend/` 用 Go，`docs/` 用 Markdown。如果把所有规范都写在一个 QWEN.md 中，会出现两个问题：① token 浪费——编辑 Go 代码时不需要加载 React 规范；② 规则冲突——前端用 camelCase、后端用 snake_case，全局规则无法兼容。
+**⚠️ 状态勘误（2026-04-23 审计）**：本 item 添加时（早期），误判为"Qwen 完全缺失"。深入审计 Qwen 源码后发现**两层机制都已实现**，只是架构路径与 Claude 不同。本 item 应**从 P1 降级为 ✓ 已实现**，保留文档记录两套机制的对比。
 
-Claude Code 用两个机制解决这个问题：
+---
 
-**机制一：`@include` 指令**——CLAUDE.md 支持 `@path` 语法引用外部文件，拆分规则到各目录：
+**Qwen Code 实际实现对照**：
 
-```
-# 根目录 CLAUDE.md
-@./src/frontend/CLAUDE.md   # 前端规范
-@./src/backend/CLAUDE.md    # 后端规范
-@./docs/CLAUDE.md           # 文档规范
-```
+| Claude 机制 | Qwen Code 对应实现 | 源码位置 | 对齐度 |
+|---|---|---|---|
+| `@include` 指令（`@path` 语法） | `memoryImportProcessor.processImports()` —— `@path/to/file` 语法 | `utils/memoryImportProcessor.ts:80-188` (findImports) / `L200-` (processImports) | ✅ 完全对齐 |
+| `MAX_INCLUDE_DEPTH = 5` 递归上限 | `maxDepth: 5` 默认值 | `utils/memoryImportProcessor.ts:205` | ✅ 数字都一致 |
+| 循环引用检测 | `processedFiles: Set<string>` | `utils/memoryImportProcessor.ts:19, 230` | ✅ 等价 |
+| 代码块内 `@` 不解析 | `findCodeRegions()` 提取代码块区域后跳过 | `utils/memoryImportProcessor.ts:251-267` | ✅ 等价 |
+| `@./relative` / `@~/home` / `@/absolute` | `validateImportPath()` + `path.resolve(basePath, importPath)` | `utils/memoryImportProcessor.ts:270-276` | ✅ 功能等价 |
+| 嵌套记忆自动发现（目录遍历） | **Upward scan** —— CWD 向上扫到项目根，收集沿途所有 `QWEN.md` | `utils/memoryDiscovery.ts:186-226` | 🟡 **机制不同**（见下） |
+| 文件操作触发 `.claude/rules/*.md` | **Conditional rules** —— `.qwen/rules/*.md` 带 `paths:` frontmatter，工具调用时按 path glob 匹配并注入 `<system-reminder>` | `utils/rulesDiscovery.ts:232-300` (`ConditionalRulesRegistry`) + `core/coreToolScheduler.ts:1703-1716` (`matchAndConsume(filePath)`) | 🟢 **Qwen 更精细**（见下） |
 
-支持 `@./relative`、`@~/home`、`@/absolute` 三种路径格式，递归深度上限 5 层（`MAX_INCLUDE_DEPTH = 5`），防止循环引用。
+---
 
-**机制二：嵌套记忆自动发现**——Agent 操作文件时，自动从 CWD 到目标文件路径逐级遍历目录，加载沿途的 `.claude/rules/*.md` 规则。比如编辑 `src/frontend/components/Button.tsx` 时，自动加载 `src/CLAUDE.md` → `src/frontend/CLAUDE.md` 的规范——无需手动 @include。
+**两家的机制差异**（功能等价，路径不同）：
 
-**Claude Code 源码索引**：
+**Claude Code**：目录向下遍历（downward）——Agent 操作 `src/frontend/Button.tsx` 时，从 CWD 一路扫到目标目录，累积加载沿途的 `.claude/rules/*.md`。
 
-| 文件 | 关键函数/常量 |
-|------|-------------|
-| `utils/claudemd.ts` (L451-535) | `extractIncludePathsFromTokens()` @include 路径提取 |
-| `utils/claudemd.ts` (L618-685) | `processMemoryFile()` 递归处理、`MAX_INCLUDE_DEPTH = 5` |
-| `utils/attachments.ts` (L1646-1862) | 嵌套记忆发现——文件操作触发目录遍历 + 3 阶段加载 |
+**Qwen Code**：上启动时扫描 + 工具调用时路径匹配（两段式）：
+1. **启动时**（`memoryDiscovery.ts:196-223`）：从 CWD 向上扫到项目根（`upwardPaths.unshift`），读入所有 QWEN.md 作为**基线上下文**
+2. **工具调用时**（`coreToolScheduler.ts:1703-1716`）：每次工具读/写文件时，用 `ConditionalRulesRegistry.matchAndConsume(filePath)` 按 `paths:` glob 匹配 `.qwen/rules/*.md`，**首次匹配注入 `<system-reminder>`**（"at most once per session per rule file"——防重复）
 
-**Qwen Code 现状**：QWEN.md 不支持 @include 引用外部文件，也没有嵌套记忆自动发现——所有规则必须写在同一个文件中。
+---
 
-**Qwen Code 修改方向**：① `@path` 语法解析——仅在叶文本节点处理（不影响代码块）；② `MAX_INCLUDE_DEPTH = 5` 防止递归爆炸；③ 文件操作时触发 `getNestedMemoryAttachmentsForFile(targetPath)`——从 CWD 到目标路径遍历，加载沿途 `.qwen/rules/*.md`。
+**Qwen 超出 Claude 的设计点**：
+1. **`paths:` frontmatter 声明式匹配**——`.qwen/rules/react-style.md` 里写 `paths: ["src/frontend/**/*.tsx"]` 就够了，不必依赖目录结构放置规则文件；Claude 依赖 `.claude/rules/` 在目录层级树上的物理位置。
+2. **Baseline vs Conditional 分离**（`rulesDiscovery.ts:348-358`）：无 `paths:` = baseline（启动时入 system prompt），有 `paths:` = conditional（运行时懒注入）。Claude Code 未做此区分。
+3. **Once-per-session 注入**——同一 rule 被多次触发只注入一次，避免 context 污染；Claude 的 downward 遍历每次都重新加载。
+4. **Global + project 两层目录**——`~/.qwen/rules/` + `<project>/.qwen/rules/` 分开，global 永远启用，project 受 `folderTrust` 保护。
 
-**实现成本评估**：
-- 涉及文件：~3 个
-- 新增代码：~300 行
-- 开发周期：~4 天（1 人）
-- 难点：循环引用检测与 MAX_DEPTH 防护
+---
 
-**意义**：大型项目不同目录有不同规范——`src/` 用 TypeScript，`docs/` 用 Markdown。
-**缺失后果**：所有规范堆在一个 QWEN.md 中 = token 浪费 + 规则互相冲突。
-**改进收益**：@include 拆分 + 嵌套发现 = 操作文件时自动注入该目录的规范——精准且省 token。
+**剩余可优化空间**（细节）：
+1. Claude 的**目录放置即生效**符合直觉——把规则文件丢到 `src/frontend/.claude/rules/` 不用写任何 glob；Qwen 要在 frontmatter 里写 `paths:`。
+2. Claude 的 `.claude/rules/*.md` 可以按层级继承（子目录规则覆盖父目录）；Qwen 的 conditional rules 是**并集注入**，无继承语义。
+
+这些是 UX 细节，不影响核心能力。
+
+**源码索引（Qwen Code）**：
+
+| 文件 | 关键函数 |
+|---|---|
+| `utils/memoryImportProcessor.ts:80-188` | `findImports()` — `@path` 解析（非 regex 状态机）|
+| `utils/memoryImportProcessor.ts:200+` | `processImports()` — tree / flat 两种 import 格式 |
+| `utils/memoryDiscovery.ts:186-226` | upward scan（CWD → project root，收集 QWEN.md）|
+| `utils/rulesDiscovery.ts:232-300` | `ConditionalRulesRegistry` — `paths:` 匹配 + 去重注入 |
+| `core/coreToolScheduler.ts:1703-1716` | 工具调用时触发 `matchAndConsume(filePath)` |
+| `config/config.ts:1136-1163` | `setConditionalRulesRegistry` 装配到 Config |
 
 ---
 

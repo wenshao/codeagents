@@ -1961,11 +1961,11 @@ return <MessageResponse>
 
 <a id="item-47"></a>
 
-### 47. `ShellTimeDisplay` 执行时间 + timeout 倒计时（P2）🟡 增强中（PR#3512 OPEN 补齐剩余 gap）
+### 47. `ShellTimeDisplay` 执行时间 + timeout 倒计时（P2）✓ 已完整实现（PR#3155 + PR#3512）
 
 > **配套阅读**：[Bash 任务展示 Deep-Dive](./bash-task-display-deep-dive.md) 第 2.2 节。
 
-**最新状态（2026-04-22 07:32 UTC）**：[PR#3512](https://github.com/QwenLM/qwen-code/pull/3512) OPEN——"feat(cli): combine elapsed + timeout in shell time indicator"，**直接补齐 2026-04-21 勘误中列出的 4 个 Claude-style gap**。合并后 item-47 将升级为 ✓ 完整实现。
+**最新状态（2026-04-23 00:52 UTC · PR#3512 合并）**：[PR#3512](https://github.com/QwenLM/qwen-code/pull/3512) **MERGED**——"feat(cli): combine elapsed + timeout in shell time indicator"，**直接补齐 2026-04-21 勘误中列出的 4 个 Claude-style gap**。本 item 正式升级为 ✓ 完整实现。
 
 **PR#3512 对 gap 的覆盖**：
 
@@ -2381,32 +2381,38 @@ export function StructuredDiffList({
 
 <a id="item-50"></a>
 
-### 50. 会话标题自动生成（Fast Model）（P2）✓ 已实现（PR#3093）
+### 50. 会话标题自动生成（Fast Model）（P2）✓ 已完整实现（PR#3093 + PR#3540）
 
 > **配套阅读**：[Fast Model 应用场景 Deep-Dive](./fast-model-usage-deep-dive.md) 第 4 节"优先级 1"。
 
-**⚠️ 状态勘误**：**此 item 在添加追踪时已被实现**——[PR#3093](https://github.com/QwenLM/qwen-code/pull/3093)（`feat(session): add rename, delete, and auto-title generation for session`）**2026-04-22 03:48 UTC 合并**，commit `0c423deed`。添加 item-50 时（2026-04-22 下午）已错过此合并，属于**审计疏漏**。
+**最新状态（2026-04-23 12:37 UTC · PR#3540 合并）**：[PR#3540](https://github.com/QwenLM/qwen-code/pull/3540) **MERGED**——"feat(session): auto-title sessions via fast model, add /rename --auto"，**完全对齐 Claude Code 设计**，之前 item-50 列出的 3 个差异全部消除。
 
-**Qwen Code 实际实现**（来自 PR#3093 body）：
+**PR#3540 对原 3 个差异的闭合**：
 
-> When `/rename` is called without arguments, it extracts the last ~1000 chars of conversation history and sends a single request to the current model asking for a kebab-case title (e.g., `fix-login-bug`). A pending indicator ("Generating session name…") is shown during the request.
-
-**对比 Claude Code 的 3 个差异**：
-
-| 方面 | Claude `sessionTitle.ts` | Qwen PR#3093 `renameCommand.ts` |
+| 原差异（2026-04-22 勘误） | PR#3540 实现 | 对齐度 |
 |---|---|---|
-| 模型 | `getSmallFastModel()` (Haiku)——专门用 fast model | **"current model"**——用当前主模型（Sonnet/Pro 等，成本更高）|
-| 风格 | Sentence-case `"Fix login button on mobile"` | kebab-case `"fix-login-bug"` |
-| 触发 | 自动（session 结束时后台生成）| **手动**（`/rename` 无参数触发）|
-| 存储 | Session metadata | Append-only system record（`subtype: "custom_title"`）|
-| UI 展示 | `/resume` 列表 title 列 | **CLI 输入 prompt tag** + `/resume` picker + `--resume <title>` 按 title 恢复 |
+| 用主模型（Sonnet/Pro，成本高） | **切换到 `fastModel`**——`services/sessionTitle.ts` 使用 `config.getFastModel()`，无 fastModel 时**直接 no-op**（不静默 fallback 主模型，避免隐性成本） | ✅ 完全对齐 |
+| kebab-case `fix-login-bug` | **Sentence-case 3-7 词**——`"Debug login button on mobile"`；bare `/rename` 的 kebab-case 生成路径也改为 `fastModel ?? mainModel`，输出走 `stripTerminalControlSequences` | ✅ 完全对齐 |
+| 仅手动（`/rename` 无参数触发） | **自动触发**——首个 assistant 回合后背景 IIFE 生成；`maybeTriggerAutoTitle` 6 层守卫（无 `currentCustomTitle` / 单次 in-flight / `attempts<3` / `isInteractive()` / `!autoTitleDisabledByEnv()` / `getFastModel()`）；手动触发入口升级为 `/rename --auto` | ✅ 完全对齐 |
 
-**剩余可改进空间**（次要）：
-1. 切换到 **fastModel**（Haiku-类）——当前用主模型成本偏高
-2. 增加**自动生成**——session 结束时后台触发（当前仅手动）
-3. 风格选项（kebab-case vs sentence-case 配置化）
+**PR#3540 额外亮点**（Claude 未覆盖的工程细节）：
+1. **`titleSource: 'auto' \| 'manual'` 元数据**——持久化到 JSONL `custom_title` 记录，session picker 以**暗色**渲染 auto 标题、亮色渲染 manual，用户能一眼分辨"模型生成 vs 手动设置"
+2. **Cross-process 并发安全**——Append 前重读 JSONL 尾部 64KB，若另一个 CLI tab 先写了 manual 记录就**让位**并同步内存状态（防止 auto 覆盖 manual 的时序 bug）
+3. **Defense in depth**——strip OSC-8 / CSI / SS2-3 / C0-C1-DEL 终端控制序列；JSONL 截断防护（要求记录有闭合引号）；UTF-16 orphan surrogate 剥离；`O_NOFOLLOW` 防 symlink 攻击；64MB 扫描上限防病态 JSONL 冻结 picker
+4. **`QWEN_DISABLE_AUTO_TITLE=1` 环境变量**——独立于 `fastModel` 的关闭开关（让 `/rename --auto` 显式触发仍可用）
+5. **非交互模式默认禁用**——`qwen -p "..."` CI 跑不花 fastModel token
+6. **3 次重试上限**——`autoTitleAttempts < 3` 守卫，避免持续失败（如 fast model 不可达）无限重试
 
-**源码**：`packages/cli/src/ui/commands/renameCommand.ts:43` `generateSessionTitle` + `L128` 调用。
+**源码**：
+- `packages/core/src/services/sessionTitle.ts` —— 生成器（prompt + schema + sanitize）
+- `packages/core/src/services/chatRecordingService.ts` —— `maybeTriggerAutoTitle` 背景 IIFE + resume 水化
+- `packages/cli/src/ui/commands/renameCommand.ts` —— `/rename --auto` UX + 失败原因映射
+- `packages/cli/src/ui/components/SessionPicker.tsx` —— auto 标题暗色渲染
+
+**Qwen 超出 Claude 的部分**：
+- `titleSource` 显式元数据（Claude Code session metadata 不区分 auto vs manual，用户改过的会被后续 auto 覆盖；Qwen 永不覆盖 manual）
+- Cross-process append race 的 64KB 重读保护（Claude 单进程假设，Qwen 考虑了多 tab 场景）
+- 环境变量级开关（Claude 必须通过 settings / GrowthBook）
 
 **Claude 原实现参考**（保留作对比）：
 
@@ -2592,9 +2598,11 @@ Your response must be a JSON object matching one of:
 
 <a id="item-53"></a>
 
-### 53. WebFetch 内容 LLM 清洗（Fast Model）（P2）
+### 53. WebFetch 内容 LLM 清洗（Fast Model）（P2）🟡 PR 进行中（PR#3537 OPEN）
 
 > **配套阅读**：[Fast Model 应用场景 Deep-Dive](./fast-model-usage-deep-dive.md) 第 4 节"优先级 4"。
+
+**最新状态（2026-04-23）**：[PR#3537](https://github.com/QwenLM/qwen-code/pull/3537) OPEN——"feat(core): route web-fetch processing to fastModel when configured"，核心方向和本 item 一致：把 `web_fetch` 的 LLM 处理路由到 `fastModel`。合并后可升级为 ✓ 完整实现。
 
 **问题**：WebFetch 抓回的 HTML/Markdown 常含大量 navigation / ads / footer / tracking script，直接塞进上下文浪费 token。Claude Code 用 Haiku 预处理——抽取核心内容 + 关键 metadata，丢弃噪音。
 
@@ -2726,9 +2734,18 @@ context.toolUseContext.setAppState(prev => ({
 
 <a id="item-56"></a>
 
-### 56. 真正后台并发 SubAgent + TTL 驱逐（P2）
+### 56. 真正后台并发 SubAgent + TTL 驱逐（P2）🟡 基础设施建设中（PR#3471 + PR#3488 OPEN）
 
 > **配套阅读**：[SubAgent 展示 Deep-Dive](./subagent-display-deep-dive.md) 第 6 节"优先级 1"。
+
+**最新状态（2026-04-23）**：Qwen Code 正在并行推进**本 item 所需的两层基础设施**：
+
+| PR | 方向 | 对应本 item 的哪部分 |
+|---|---|---|
+| [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) OPEN | **模型侧控制面**：`task_stop` / `send_message` / per-agent transcript 工具 | 对标 Claude `TaskStop` / `SendMessage` tool —— 允许主 agent 动态终止/发消息给后台 subagent（后台并发的前提）|
+| [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) OPEN | **UI 层**：background-agent pill + combined dialog + detail view | 对标 `CoordinatorAgentStatus.tsx` 的面板渲染（详见 item-58）|
+
+两 PR 合并后本 item 的 P2 位置可能下调——核心"后台并发 + 状态面板 + 控制通道"基本就位，剩下的仅是 `evictAfter` TTL 驱逐语义微调。
 
 **问题**：Qwen Code 的 SubAgent 必须在 tool 调用周期内完成——`AgentExecutionDisplay` 嵌入在工具消息里，tool 返回 = subagent 结束。用户**无法**启动"长时研究任务"然后继续其他工作，长任务完全阻塞主交互流。
 
@@ -2859,9 +2876,11 @@ React.useEffect(() => {
 
 <a id="item-58"></a>
 
-### 58. Coordinator 协调器面板（Footer 上方多 Agent 概览）（P2）
+### 58. Coordinator 协调器面板（Footer 上方多 Agent 概览）（P2）🟡 UI 层建设中（PR#3488 OPEN）
 
 > **配套阅读**：[SubAgent 展示 Deep-Dive](./subagent-display-deep-dive.md) 第 6 节"优先级 3"。
+
+**最新状态（2026-04-23）**：[PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) OPEN——"feat(cli): background-agent UI — pill, combined dialog, detail view"，**直接对标** `CoordinatorAgentStatus.tsx` 的三层视图（pill 紧凑形态 + 合并对话框 + 详情视图）。合并后本 item 可升级为 ✓ 完整实现。搭配 [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) OPEN（控制面 `task_stop` / `send_message`）形成完整 Coordinator 体验。
 
 **问题**：并发多 subagent 场景下，Qwen Code 把它们塞进同一工具组内 `.map()` 渲染——**纵向堆叠**，屏幕占用大。用户难以一眼看到"3 个 subagent 各自进度"。Claude Code 的 Coordinator 面板**渲染在 footer 上方**，每行一个后台 agent，紧凑且不侵占主消息流。
 
