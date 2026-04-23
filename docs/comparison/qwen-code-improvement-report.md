@@ -52,7 +52,7 @@
 | **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | preconnect 开发中 / early input ✓ | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) ✗（关闭，拆分）/ [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318)（preconnect，open）/ [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) ✓（early input，2026-04-18 合并）/ [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
 | **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-9) | 所有指令始终加载 | 中 | [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) ✓ / [Roadmap#125](https://github.com/QwenLM/qwen-code/issues/125) |
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-12) | 缺失 | 小 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
-| **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | 缺失 | 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) ✗（已关闭）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292)（后续 session rewind + restore flows） |
+| **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | 🟡 PR 进行中 | 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) ✗（已关闭）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) / [PR#3539](https://github.com/QwenLM/qwen-code/pull/3539) 🟡 OPEN（`/branch` 分叉当前会话，2026-04-23）|
 | **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-1) | 缺失 | 中 | — |
 | **P1** | GitHub Code Review — 多 Agent自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-2) | **已实现**（内置 `/review` skill，5 agent 并行 + Create Review API） | — | [PR#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [PR#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [PR#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ / [PR#3276](https://github.com/QwenLM/qwen-code/pull/3276)（弱模型并行强化） / [Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742) |
 | **P1** | [HTTP Hooks](./http-hooks-deep-dive.md) — Hook 可 POST JSON 到 URL 并接收响应（不仅 shell 命令）[↓](./qwen-code-improvement-report-p0-p1-platform.md#item-3) | 仅 shell 命令 | 小 | [PR#2827](https://github.com/QwenLM/qwen-code/pull/2827) ✓ |
@@ -109,7 +109,7 @@
 | **P2** | 自定义快捷键 — multi-chord 组合键 + 跨平台适配 + `keybindings.json` 自定义 [↓](./qwen-code-improvement-report-p2-core.md#item-17) | 缺失 | 中 | — |
 | **P2** | [Session Ingress Auth](./session-ingress-auth-deep-dive.md) — 远程会话 bearer token 认证（企业多用户环境） [↓](./qwen-code-improvement-report-p2-core.md#item-18) | 缺失 | 中 | — |
 | **P2** | [企业代理](./enterprise-proxy-support-deep-dive.md) — CONNECT relay + CA cert 注入 + NO_PROXY allowlist（容器环境） [↓](./qwen-code-improvement-report-p2-core.md#item-19) | 缺失 | 大 | — |
-| **P2** | [终端主题检测](./terminal-theme-detection-deep-dive.md) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-20) | 缺失 | 小 | — |
+| **P2** | [终端主题检测](./terminal-theme-detection-deep-dive.md) — OSC 11 查询 dark/light + COLORFGBG 环境变量回退 [↓](./qwen-code-improvement-report-p2-core.md#item-20) | **✓ 已实现** | 小 | [PR#3460](https://github.com/QwenLM/qwen-code/pull/3460) ✓（2026-04-22 合并，`'auto'` 或未设置 theme 时自动检测）|
 | **P2** | Denial Tracking — 连续权限拒绝自动回退到手动确认模式，防止静默阻塞 [↓](./qwen-code-improvement-report-p2-core.md#item-7) | 缺失 | 小 | — |
 | **P2** | [队列输入编辑](./input-queue-deep-dive.md) — 排队中的指令可通过方向键弹出到输入框重新编辑 [↓](./qwen-code-improvement-report-p2-core.md#item-21) | 缺失 | 小 | [PR#2871](https://github.com/QwenLM/qwen-code/pull/2871) ✓ |
 | **P2** | [状态栏紧凑布局](./compact-status-bar-deep-dive.md) — 固定高度不伸缩，最大化终端内容区域 [↓](./qwen-code-improvement-report-p2-core.md#item-22) | Footer 占用偏高 | 小 | — |
@@ -357,9 +357,9 @@
 | 多 Agent通信 | SendMessageTool | 无 | 缺失 | — |
 | 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | [PR#3214](https://github.com/QwenLM/qwen-code/pull/3214)（git ls-files + rg） |
 | Commit Attribution | Co-Authored-By 追踪 | 无 | 缺失 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
-| 会话分支 | /branch 对话分叉 | 无 | 缺失 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) ✗（已关闭）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292)（跟进） |
+| 会话分支 | /branch 对话分叉 | 🟡 PR 进行中 | 缺失→进行中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) ✗（已关闭）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) / [PR#3539](https://github.com/QwenLM/qwen-code/pull/3539) 🟡 OPEN（2026-04-23）|
 | Output Styles | Learning / Explanatory 模式 | 无 | 缺失 | — |
-| Fast Mode | 速度/成本分级推理 | `fastModel` 不同方案（另一个模型） | ⚠️ 部分 | [PR#3077](https://github.com/QwenLM/qwen-code/pull/3077) ✓ / [PR#3086](https://github.com/QwenLM/qwen-code/pull/3086) ✓ / [PR#3120](https://github.com/QwenLM/qwen-code/pull/3120) ✓ |
+| Fast Mode | 速度/成本分级推理 | `fastModel` 不同方案 + 多场景应用（auto-title / web-fetch 待合并）| ⚠️ 部分→扩展中 | [PR#3077](https://github.com/QwenLM/qwen-code/pull/3077) ✓ / [PR#3086](https://github.com/QwenLM/qwen-code/pull/3086) ✓ / [PR#3120](https://github.com/QwenLM/qwen-code/pull/3120) ✓ / [PR#3540](https://github.com/QwenLM/qwen-code/pull/3540) ✓（auto-title via fastModel，2026-04-23）/ [PR#3537](https://github.com/QwenLM/qwen-code/pull/3537) 🟡 OPEN（web-fetch via fastModel）|
 | 并发 Session | 多终端 PID 追踪 + 后台脱附 | 无 | 缺失 | — |
 | Git Diff 统计 | 结构化 diff + 按文件统计 | 无 git-aware stats | 中等差距 | — |
 | 文件历史快照 | per-file SHA256 + 按消息恢复 | checkpoint（git 级） | 小差距 | — |
@@ -387,7 +387,7 @@
 | Team Memory | 组织级记忆同步 | 无 | 缺失 | — |
 | 自定义快捷键 | multi-chord + keybindings.json | 无 | 缺失 | — |
 | 企业代理 | CONNECT relay + CA cert 注入 | 无 | 缺失 | — |
-| 终端主题 | OSC 11 dark/light 检测 | 无 | 缺失 | — |
+| 终端主题 | OSC 11 dark/light 检测 | ✓ 已实现 | **已对齐** | [PR#3460](https://github.com/QwenLM/qwen-code/pull/3460) ✓（2026-04-22 合并）|
 | Denial Tracking | 权限拒绝学习 + 自动回退 | 无 | 缺失 | — |
 
 ## 五、相关 Deep-Dive 文章
@@ -458,10 +458,16 @@
 - 补齐 PR#3093 之前留下的：fastModel 路由 + sentence-case 风格 + 首个 assistant 回合后自动触发
 - 额外防御：strip 终端控制序列 / JSONL 截断防护 / UTF-16 surrogate / `O_NOFOLLOW` / 64MB 扫描上限
 
+**[PR#3460](https://github.com/QwenLM/qwen-code/pull/3460) 合并 2026-04-22 08:58 UTC** —— "feat(cli): auto-detect terminal theme ('auto' or unset)"
+- p2-core item-20（终端主题检测）从 "缺失" → **✓ 已实现**
+- 主矩阵 + 架构差异总结（section 四）同步更新
+- OSC 11 查询 + COLORFGBG 环境变量回退检测链已就位
+
 #### 🟡 OPEN · 进入实现阶段（追踪中）
 
 | Item | PR | 方向 |
 |---|---|---|
+| item-13（会话分支 /branch）| [PR#3539](https://github.com/QwenLM/qwen-code/pull/3539) 🟡 | `/branch` fork 当前会话——本 item 第三次尝试（前两次 #3022 closed + #3292 跟进） |
 | item-53（WebFetch LLM 清洗）| [PR#3537](https://github.com/QwenLM/qwen-code/pull/3537) 🟡 | 把 web-fetch processing 路由到 `fastModel` |
 | item-56（后台并发 SubAgent）| [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) 🟡 + [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) 🟡 | 控制面（`task_stop` / `send_message` / per-agent transcript）+ UI 层（pill + 合并对话 + 详情视图）|
 | item-58（Coordinator 面板）| [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) 🟡 | 对标 `CoordinatorAgentStatus.tsx` 三层视图 |
