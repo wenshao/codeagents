@@ -39,9 +39,9 @@
 
 <a id="item-2"></a>
 
-### 2. 文件读取缓存 + 批量并行 I/O（P1）🟡 PR 进行中（PR#3581 OPEN 部分覆盖）
+### 2. 文件读取缓存 + 批量并行 I/O（P1）🟡 部分实现（PR#3581 ✓ 合并 · 查询层已做）
 
-**最新状态（2026-04-24）**：[PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) OPEN——hot-path fs 缓存部分覆盖本 item 的 "文件查询缓存"方向（但不是完整的 FileReadCache，是 `workspaceContext` / `validatePath` / `ripGrep .qwenignore` 三个模块的 bounded LRU）。合并后本 item 升级为 🟡 **部分实现**（查询缓存 ✓，文件内容缓存 + 32 并行读取仍待实现）。
+**最新状态（2026-04-24 13:17 UTC 合并）**：[PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓ 合并——hot-path fs 缓存部分覆盖本 item 的 "文件查询缓存"方向（不是完整的 FileReadCache，是 `workspaceContext` / `validatePath` / `ripGrep .qwenignore` 三个模块的 bounded LRU）。本 item 状态从"未实现"升级为 🟡 **部分实现**：查询缓存 ✓，文件内容缓存（1000 条 LRU + mtime 失效） + 32 并行读取仍待实现。
 
 ---
 
@@ -129,9 +129,9 @@
 
 <a id="item-5"></a>
 
-### 5. 同步 I/O 异步化 — 事件循环解阻塞（P1）🟡 PR 进行中（PR#3581 OPEN）
+### 5. 同步 I/O 异步化 — 事件循环解阻塞（P1）✓ 已实现（PR#3581 ✓ 2026-04-24 合并）
 
-**最新状态（2026-04-24）**：[PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) OPEN——"perf(core): cut runtime sync I/O on tool hot path by 91%"，**直接命中本 item 与 item-2**。
+**最新状态（2026-04-24 13:17 UTC 合并）**：[PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓ 合并——"perf(core): cut runtime sync I/O on tool hot path by 91%"，**直接命中本 item 与 item-2 的查询缓存方向**。本 item 状态从"未实现"升级为 ✓ **已实现**。
 
 **度量**：单轮 prompt 主循环 sync fs 调用 **110 → 10（-91%）**。
 
@@ -145,7 +145,7 @@ PR 拆 3 个 commit：
 
 **工程质量亮点**：PR body 含完整 tracer 脚本（`trace-sync-io.cjs` ~160 行）+ 可复现度量步骤 + reentrancy guard / PID-suffixed 输出 / warmup 窗口等细节。
 
-合并后本 item + item-2 可合并升级为 **✓ 已实现**。
+**合并后结论**：本 item 升级为 **✓ 已实现**；item-2 升级为 **🟡 部分实现**（查询缓存 ✓，文件内容 1000 LRU + 32 并行仍待实现）。
 
 ---
 
