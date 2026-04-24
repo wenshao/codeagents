@@ -47,7 +47,7 @@
 | **P1** | [会话记忆](./memory-system-deep-dive.md) — 关键决策/文件结构自动提取，新 session 自动注入 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-4) | 仅简单笔记工具 | 大 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓ |
 | **P1** | [Auto Dream](./memory-system-deep-dive.md) — 后台 agent 自动合并去重过时记忆 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-5) | 缺失 | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓（managed auto-memory + auto-dream） |
 | **P1** | [Nudge 驱动的闭环学习](./closed-learning-loop-deep-dive.md) — 双计数器 + 后台 review 子代理 + 冻结快照 + 自修补（Hermes Agent 参考） [↓](./qwen-code-improvement-report-p0-p1-core.md#item-14) | 被动记忆（无 nudge） | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓（部分覆盖） |
-| **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | 全部工具始终加载 | 小 | — |
+| **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | 🟡 PR 进行中 | 小 | [PR#3589](https://github.com/QwenLM/qwen-code/pull/3589) 🟡 OPEN（ToolSearch + `shouldDefer`/`alwaysLoad`/`searchHint` + MCP/lsp/cron 默认 deferred，度量 39 工具省 ~15K tokens/request）|
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1-core.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ / [Roadmap#2516](https://github.com/QwenLM/qwen-code/issues/2516) |
 | **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | preconnect 开发中 / early input ✓ | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) ✗（关闭，拆分）/ [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318)（preconnect，open）/ [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) ✓（early input，2026-04-18 合并）/ [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
 | **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-9) | 所有指令始终加载 | 中 | [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) ✓ / [Roadmap#125](https://github.com/QwenLM/qwen-code/issues/125) |
@@ -63,10 +63,10 @@
 | **P1** | [/teleport 跨端双向迁移](./teleport-session-migration-deep-dive.md) — Web session → 终端 session 双向迁移 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-8) | 缺失 | 大 | — |
 | **P1** | [GitLab CI/CD](./gitlab-ci-cd-deep-dive.md) — 官方 GitLab pipeline 集成 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-9) | 缺失 | 中 | — |
 | **P1** | [流式工具执行流水线](./streaming-tool-execution-deep-dive.md) — API 流式返回 tool_use 时立即开始执行，不等完整响应 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-1) | 等完整响应后执行 | 中 | — |
-| **P1** | [文件读取缓存 + 批量并行 I/O](./file-read-cache-deep-dive.md) — 1000 条 LRU + mtime 失效 + 32 批并行 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-2) | 无缓存，顺序读取 | 小 | — |
+| **P1** | [文件读取缓存 + 批量并行 I/O](./file-read-cache-deep-dive.md) — 1000 条 LRU + mtime 失效 + 32 批并行 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-2) | 🟡 PR 部分覆盖（查询缓存 ✓，内容缓存 + 32 并行待实现）| 小 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) 🟡 OPEN（`workspaceContext` / `validatePath` / `.qwenignore` 查询缓存）|
 | **P1** | [记忆/附件异步prefetch](./memory-prefetch-deep-dive.md) — 工具执行期间并行搜索相关记忆 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-3) | 无prefetch | 中 | — |
 | **P1** | [Token Budget 续行与自动交接](./token-budget-continuation-deep-dive.md) — 90% 续行 + 递减检测 + 分层压缩回退 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-4) | 70% 一次性压缩 | 中 | — |
-| **P1** | 同步 I/O 异步化 — readFileSync/statSync 替换为 async，解阻塞事件循环 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-5) | 多处 readFileSync | 中 | — |
+| **P1** | 同步 I/O 异步化 — readFileSync/statSync 替换为 async，解阻塞事件循环 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-5) | 🟡 PR 进行中 | 中 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) 🟡 OPEN（度量 hot path 110→10 syscall/prompt，-91%）|
 | **P1** | [Prompt Cache 分段与工具稳定排序](./prompt-cache-optimization-deep-dive.md) — static/dynamic 分界 + 内置工具前缀 + schema 锁定 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-6) | 无分段缓存 | 中 | — |
 | **P1** | [API 指数退避与降级重试](./api-retry-fallback-deep-dive.md) — 10 次退避 + 529 模型降级 + 401 token 刷新 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-8) | 仅配置重试次数 | 中 | [PR#3246](https://github.com/QwenLM/qwen-code/pull/3246) ✓（SSE 流式 429 检测） |
 | **P1** | [优雅关闭序列与信号处理](./graceful-shutdown-deep-dive.md) — SIGINT/SIGTERM + 清理注册 + 5s failsafe [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-9) | 无信号处理 | 中 | — |
@@ -353,7 +353,7 @@
 | Shell 安全增强 | 25+ 检查 + tree-sitter | AST-only 读写分类 | 中等差距 | — |
 | MDM 企业策略 | plist + Registry + 远程 API | 无 | 缺失 | — |
 | Token 实时计数 | API 计数 + VCR 缓存 | 静态模式匹配 | 中等差距 | — |
-| 工具发现 | ToolSearchTool | 无 | 缺失 | — |
+| 工具发现 | ToolSearchTool | 🟡 PR 进行中 | 缺失→进行中 | [PR#3589](https://github.com/QwenLM/qwen-code/pull/3589) 🟡 OPEN（2026-04-24，+1051/-11 行，20 test case）|
 | 多 Agent通信 | SendMessageTool | 无 | 缺失 | — |
 | 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | [PR#3214](https://github.com/QwenLM/qwen-code/pull/3214)（git ls-files + rg） |
 | Commit Attribution | Co-Authored-By 追踪 | 无 | 缺失 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
@@ -364,12 +364,12 @@
 | Git Diff 统计 | 结构化 diff + 按文件统计 | 无 git-aware stats | 中等差距 | — |
 | 文件历史快照 | per-file SHA256 + 按消息恢复 | checkpoint（git 级） | 小差距 | — |
 | **流式工具执行** | StreamingToolExecutor 流水线 | 等完整响应 | 显著落后 | — |
-| **文件读取缓存** | FileReadCache 1000 LRU + 批量并行 | 无缓存/顺序读取 | 显著落后 | — |
+| **文件读取缓存** | FileReadCache 1000 LRU + 批量并行 | 🟡 部分覆盖（查询缓存在做）| 显著落后→部分 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) 🟡 OPEN（查询层 LRU，内容层仍缺）|
 | **记忆异步prefetch** | Memory prefetch + skill prefetch | 无 | 缺失 | — |
 | **Token Budget 续行** | 90% 续行 + 递减检测 + 分层回退 | 70% 一次性压缩 | 中等差距 | — |
 | **MCP 动态插槽** | pMap + dual-tier concurrency | 无并发限制 | 小差距 | — |
 | **通用缓存模式** | memoizeWithTTL + memoizeWithLRU | 仅搜索缓存 | 中等差距 | — |
-| **同步 I/O** | 绝大多数 async | 多处 readFileSync | 显著落后 | — |
+| **同步 I/O** | 绝大多数 async | 🟡 PR 进行中 | 显著落后→进行中 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) 🟡 OPEN（hot path 110→10 syscall/prompt，-91%）|
 | **Prompt Cache** | 分段 + schema 锁定 + 缓存失效检测 | 无分段 | 显著落后 | — |
 | **请求合并** | coalescing + BoundedUUIDSet | 无 | 缺失 | — |
 | **延迟初始化** | lazySchema + 延迟 import + 延迟prefetch | 全量同步加载 | 中等差距 | — |
@@ -442,6 +442,46 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-24（大性能/架构 PR 进入开发 · 3 项 P1 状态升级）
+
+**用户要求**：跟踪 PR#3581 + PR#3589（均由 `wenshao` 于 2026-04-24 同日开启的大型性能/架构 PR）。
+
+#### 🟡 新开的 2 个大 PR —— 直接命中 3 项 P1
+
+| PR | 标题 | 命中 item | 度量 |
+|---|---|---|---|
+| [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) 🟡 OPEN | `perf(core): cut runtime sync I/O on tool hot path by 91%` | p0-p1-engine **item-5 同步 I/O 异步化** + **item-2 文件读取缓存**（部分覆盖）| hot path 110 → 10 syscall/prompt，-91% |
+| [PR#3589](https://github.com/QwenLM/qwen-code/pull/3589) 🟡 OPEN | `feat(tools): add ToolSearch for on-demand loading of deferred tool schemas` | 主矩阵 P1 **工具动态发现** | 39-tool setup 省 ~15K tokens/request |
+
+#### PR#3581 技术亮点
+
+**3 commit 拆分**：
+1. **`appendRecord` 异步化**（110→20）—— `chatRecordingService` 每 event 4 syscall（existsSync + mkdirSync + existsSync + appendFileSync）改为 fire-and-forget `writeChain` promise + `Config.shutdown()` await `flush()` + `jsonl.writeLine` 改用 `fs.promises`
+2. **hot-path LRU 缓存**（20→10）—— `workspaceContext.fullyResolvedPath` / `paths.validatePath`（positive only，ENOENT 不缓存）/ `ripGrep .qwenignore`；`fileUtils` 删 `existsSync` pre-check 改 `fs.promises.stat` ENOENT→`FILE_NOT_FOUND`
+3. **测试 + 回归守卫 + `_reset*ForTest`**—— ENOENT-not-cached / `flush()` 早 resolve / write 失败不阻塞 chain
+
+**工程质量**：PR body 含完整 tracer 脚本（`trace-sync-io.cjs` ~160 行）+ 可复现度量步骤 + reentrancy guard / PID-suffixed 输出 / warmup 窗口设计细节。
+
+#### PR#3589 技术亮点
+
+- **`DeclarativeTool`** 新增 `shouldDefer` / `alwaysLoad` / `searchHint` 标志
+- **默认 deferred**：MCP 工具 + `lsp` / `cron_*` / `ask_user_question` / `exit_plan_mode`
+- **`ToolSearch` 双查询模式**：`select:Name1,Name2` 精确匹配（不敏感 + 去重）+ 关键词搜索（支持 `+must-word` 必需词）
+- **评分对齐 Claude Code spec**：built-in `10/5/4/2`（name/substring/hint/desc），MCP `12/6` 偏向 MCP 以鼓励发现
+- **✨ resume 支持**：`startChat` 扫描历史 function calls 重新 reveal 之前用过的 deferred 工具
+- **✨ compaction 保留**：`/clear` 清 revealed；压缩路径（`startChat(newHistory)`）保留
+- **Subagent 兼容**：wildcard `['*']` 通过 `includeDeferred: true` 保持向后兼容
+- **21 文件 / +1051/-11 行 / 20 个新测试 case**
+
+#### 主矩阵与 sub-report 同步
+
+- p0-p1-engine **item-5**：未实现 → 🟡 PR 进行中（PR#3581）
+- p0-p1-engine **item-2**：未实现 → 🟡 部分 PR 覆盖（PR#3581 查询层，内容层仍缺）
+- 主矩阵 **工具动态发现** 行：`全部工具始终加载` → 🟡 PR 进行中（PR#3589）
+- 主矩阵 **同步 I/O 异步化** 行：`多处 readFileSync` → 🟡 PR 进行中
+- 主矩阵 **文件读取缓存** 行：`无缓存，顺序读取` → 🟡 部分覆盖
+- 架构差异总结（section 四）**工具发现** / **同步 I/O** / **文件读取缓存** 三行同步更新
 
 ### 2026-04-23（PR 合并潮 · 3 项升级为 ✓ 完整 + item-20 勘误）
 

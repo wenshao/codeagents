@@ -39,7 +39,11 @@
 
 <a id="item-2"></a>
 
-### 2. 文件读取缓存 + 批量并行 I/O（P1）
+### 2. 文件读取缓存 + 批量并行 I/O（P1）🟡 PR 进行中（PR#3581 OPEN 部分覆盖）
+
+**最新状态（2026-04-24）**：[PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) OPEN——hot-path fs 缓存部分覆盖本 item 的 "文件查询缓存"方向（但不是完整的 FileReadCache，是 `workspaceContext` / `validatePath` / `ripGrep .qwenignore` 三个模块的 bounded LRU）。合并后本 item 升级为 🟡 **部分实现**（查询缓存 ✓，文件内容缓存 + 32 并行读取仍待实现）。
+
+---
 
 **思路**：3 层优化——① FileReadCache：1000 条 LRU 缓存，mtime 自动失效，Edit 后立即命中缓存无需重新读取；② 批量并行读取：32 个文件一批 `Promise.all(batch.map(readFile))`；③ 并行 stat：`Promise.all(filePaths.map(lstat))` 同时检测多文件修改时间。
 
@@ -125,7 +129,25 @@
 
 <a id="item-5"></a>
 
-### 5. 同步 I/O 异步化 — 事件循环解阻塞（P1）
+### 5. 同步 I/O 异步化 — 事件循环解阻塞（P1）🟡 PR 进行中（PR#3581 OPEN）
+
+**最新状态（2026-04-24）**：[PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) OPEN——"perf(core): cut runtime sync I/O on tool hot path by 91%"，**直接命中本 item 与 item-2**。
+
+**度量**：单轮 prompt 主循环 sync fs 调用 **110 → 10（-91%）**。
+
+PR 拆 3 个 commit：
+
+| 阶段 | 调用数 | 改动 |
+|---|---|---|
+| 1. `appendRecord` 异步化 | 110 → 20 | `chatRecordingService` 每 event 4 syscall → fire-and-forget `writeChain` promise；`Config.shutdown()` await `flush()`；`jsonl.writeLine` 改用 `fs.promises.mkdir/appendFile` |
+| 2. 热路径 fs 查询缓存 | 20 → 10 | bounded LRU：`workspaceContext.fullyResolvedPath` / `paths.validatePath`（positive only，ENOENT 不缓存）/ `ripGrep .qwenignore` 发现；`fileUtils` 删 `existsSync` pre-check |
+| 3. 测试 + `_reset*ForTest` + 回归守卫 | — | ENOENT-not-cached / `flush()` 早 resolve / write 失败不阻塞 chain |
+
+**工程质量亮点**：PR body 含完整 tracer 脚本（`trace-sync-io.cjs` ~160 行）+ 可复现度量步骤 + reentrancy guard / PID-suffixed 输出 / warmup 窗口等细节。
+
+合并后本 item + item-2 可合并升级为 **✓ 已实现**。
+
+---
 
 **思路**：将hot path上的 `readFileSync`/`statSync`/`writeFileSync` 替换为 async 版本，防止阻塞 Node.js 事件循环。同步 I/O 在主线程执行时会冻结 UI 渲染和键盘输入处理——文件越大、磁盘越慢影响越大。
 
