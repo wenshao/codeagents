@@ -1,8 +1,8 @@
 # Qwen Code 改进建议——对标 Codex CLI
 
-> 基于 Codex CLI (openai/codex) 完整 Rust 源码（70+ crate，**651,174 行**）与 Qwen Code 源码（**281,954 行 TS**）的系统对比，识别 **25 项**可借鉴的能力（其中 **1 项已实现**——item-13 Hook 系统）。Codex CLI 是唯一采用 Rust 原生构建 + 沙箱默认启用的主流 CLI Code Agent。
+> 基于 Codex CLI (openai/codex) 完整 Rust 源码（70+ crate，**651,174 行**）与 Qwen Code 源码（**281,954 行 TS**）的系统对比，识别 **28 项**可借鉴的能力（其中 **1 项已实现**——item-13 Hook 系统）。Codex CLI 是唯一采用 Rust 原生构建 + 沙箱默认启用的主流 CLI Code Agent。
 >
-> **最后核对日期**：2026-04-16（两侧源码均已 `git pull` 刷新）
+> **最后核对日期**：2026-04-24（两侧源码均已 `git pull` 刷新，新增 item-26/27/28）
 >
 > **相关报告**：
 > - [Claude Code 改进建议报告（256 项）](./qwen-code-improvement-report.md)——行业领先者对比
@@ -38,6 +38,9 @@
 | [23](#item-23) | Code Mode 轻量沙箱 | **P3** | `code-mode/` | 2,746 行 |
 | [24](#item-24) | 请求压缩（Zstd） | **P3** | `features/` | ~100 行 |
 | [25](#item-25) | Exec Server 远程执行 | **P3** | `exec-server/` | 5,150 行 |
+| [26](#item-26) | Sticky Environment 会话级环境变量选择 🆕 | **P2** | `app-server/` v2 thread state | ~500 行（PR#18897）|
+| [27](#item-27) | Permission Profiles 统一权限档位 🆕 | **P2** | `core/` + `app-server/` + `tui/` + `mcp/` + `exec-server/` | ~1,500 行（6 PR）|
+| [28](#item-28) | `excludeTurns` 分页加载 Thread 🆕 | **P3** | `app-server/` v2 thread_fork/resume | ~420 行（PR#19014）|
 
 ---
 
@@ -410,6 +413,118 @@
 
 ---
 
+<a id="item-26"></a>
+
+### 26. Sticky Environment 会话级环境变量选择 🆕（P2）
+
+**问题**：用户有多套环境配置（`staging` / `prod` / `dev`），每次启动会话都要手动 export 一堆 env var，或者 `.env.staging` 然后 source。切换环境麻烦、易错。MCP 工具和内部工具分别读各自的 env 状态，容易不一致。
+
+**Codex 的解决方案**（[PR#18897](https://github.com/openai/codex/pull/18897)，2026-04-23 合并）——**sticky environment selections**：
+
+- `v2 thread/start` + `turn/start` 新增 sticky env 选项参数
+- env 选择"粘在"整个 thread 生命周期上，每轮 turn 自动继承，无需重复传递
+- 后续 PR 栈（#18898 config.toml 命名环境加载 + #18899 下游工具/runtime 消费者）让内部工具 + MCP + exec-server 都看到相同的 env 上下文
+- Turn 级 override：某一轮可以临时覆盖 sticky 值，不影响后续
+
+**核心设计**：
+```
+ThreadStartParams {
+  env_selections: { name: "staging", overrides: { API_KEY: "..." } }
+  //               ↑ named env from config.toml
+}
+TurnStartParams {
+  env_overrides: { ... }  // 本轮临时覆盖
+}
+```
+
+**Qwen Code 现状**：env 完全由进程继承（`process.env`），没有会话/thread 级概念。多 tab 切环境 = 每个 tab 重新 export。
+
+**Qwen Code 修改方向**：
+1. `ChatRecordingService` 增加 `stickyEnv: Record<string, string>` session state
+2. `config.yaml` / settings.json 支持 `envProfiles: { staging: {...}, prod: {...} }` 命名环境
+3. `/env` slash command 切换当前 sticky env
+4. 工具调用（bash / mcp）注入 `{...process.env, ...session.stickyEnv, ...turn.envOverrides}`
+5. turn-level `env:` 字段用于一次性覆盖（prompt 里写 `env:FOO=bar` 之类语法）
+
+**实现成本**：~2 周（2 人）——新增 session state + config schema + 工具执行路径的 env 注入。
+
+**意义**：多环境工作流（dev/staging/prod）的原生支持；避免用户手动维护 `.env` 文件。
+**改进收益**：切环境从"开新终端 + source .env" 变为 `/env staging`。
+
+---
+
+<a id="item-27"></a>
+
+### 27. Permission Profiles 统一权限档位 🆕（P2）
+
+**问题**：Qwen Code 权限规则是**全局 flat 列表**（`permissions: [...]`），无法区分"当前这次 turn 的审批档位"——比如想"这轮只读、下一轮允许 edit、再下一轮完全 YOLO"，只能手动改 config。Codex 做了**档位化 + 跨层传播**。
+
+**Codex 的解决方案**（6 PR 协同，均 2026-04-22~23 合并）：
+
+| PR | 方向 |
+|---|---|
+| [#18282](https://github.com/openai/codex/pull/18282) | `protocol: report session permission profiles` —— 协议层声明 |
+| [#18283](https://github.com/openai/codex/pull/18283) | `app-server: accept command permission profiles` —— app-server 消费 |
+| [#18284](https://github.com/openai/codex/pull/18284) | `tui: sync session permission profiles` —— TUI 同步 |
+| [#18285](https://github.com/openai/codex/pull/18285) | `tui: carry permission profiles on user turns` —— 每轮携带 |
+| [#18286](https://github.com/openai/codex/pull/18286) | `mcp: include permission profiles in sandbox state` —— MCP 感知 |
+| [#18287](https://github.com/openai/codex/pull/18287) | `shell-escalation: carry resolved permission profiles` —— 升级路径携带 |
+| [#18924](https://github.com/openai/codex/pull/18924) | `TUI: preserve permission state after side conversations` —— 侧边会话穿透 |
+| [#19050](https://github.com/openai/codex/pull/19050) | `feat(request-permissions) approve with strict review` —— Strict review 模式 |
+
+**核心设计**：
+- **Profile 是一个命名组合**：`readonly` / `exec-allowed` / `yolo` / 用户自定义
+- **跨层传播**：TUI 用户 turn → core session → app-server → MCP servers → exec-server；一次切换档位，所有层都感知
+- **Side conversation 穿透**：子对话（如 /review 子 agent）开启时权限档位被保留，子对话结束后自动恢复，不会"忘记"
+- **Strict review 模式**：PR#19050 新增——approve 时可选 "strict" 模式，要求模型提供更完整的 before/after diff 说明
+
+**Qwen Code 现状**：`permissions` 静态规则，无档位切换，无子对话穿透。`--yolo` / `--auto-edit` 是 CLI 启动参数，运行时无法切换。
+
+**Qwen Code 修改方向**：
+1. 定义 `permissionProfiles: { readonly, editAllowed, yolo }` 配置 schema
+2. Session state 记录当前 active profile
+3. `/perms <profile>` slash command 切换
+4. Subagent 启动时**继承**父 profile（可限制不能升档）
+5. Strict review 模式：审批弹窗 "approve" 按钮旁加 "approve with strict review"，触发模型补全 diff 注释后再执行
+
+**实现成本**：~3 周（1 人）——跨 config + session + permission engine + UI 多处改动。
+
+**意义**：审批体验从"二元 ask/allow/deny" → "档位化 YOLO/Edit/Readonly 三档可切"。
+**改进收益**：信任度渐进——用户可以从 readonly 开始，看到 agent 表现良好后升档到 editAllowed，高信任场景开 yolo。
+
+---
+
+<a id="item-28"></a>
+
+### 28. `excludeTurns` 分页加载 Thread 🆕（P3）
+
+**问题**：长 session（1000+ turns）恢复时一次性全量加载 JSONL 会卡 UI 几秒。UI 其实只需要最新几屏的内容，老 turn 按需翻页。
+
+**Codex 的解决方案**（[PR#19014](https://github.com/openai/codex/pull/19014)，2026-04-23 合并）：
+
+```
+thread/resume { excludeTurns: true }   ← 只建立 subscription，不加载历史
+thread/fork   { excludeTurns: true }   ← fork 时同理
+  ↓ 随后
+thread/turns/list { page: 0, size: 50 }  ← UI 按需翻页
+```
+
+**设计精妙**：**订阅建立 vs 历史加载解耦**。调用方（UI / SDK）拿到 thread handle 后可以立即显示"加载中…"占位，并发 turns/list 请求按屏幕可视区域懒加载；旧的一次性加载模式下 resume 必须阻塞到所有 turn 都读完才能开始订阅新事件。
+
+**Qwen Code 现状**：`ChatRecordingService.resume()` 一次性读完整 JSONL 到内存，大 session 慢启动。
+
+**Qwen Code 修改方向**：
+1. `session.resume()` 增加 `{ lazyLoad: true }` 选项 —— 只读 session metadata + 最近 N turn
+2. 新 API `session.loadTurns({ offset, limit })` 按需拉取
+3. UI 的 `ChatView` 改为虚拟滚动，滚到顶部触发 loadTurns 上一页
+
+**实现成本**：~1 周（1 人）。
+
+**意义**：长 session resume 从"卡 2-5 秒"降到 <200ms。
+**改进收益**：`--resume` 默认即时响应，大 session 用户体验显著改善。
+
+---
+
 ## 二、竞品对比矩阵
 
 | 能力 | Codex CLI | Claude Code | Gemini CLI | Qwen Code |
@@ -453,6 +568,32 @@
 | **多格式扩展** | Claude + Gemini + Qwen 三格式兼容 |
 
 ## 五、更新日志
+
+### 2026-04-24（Codex 上游 `git pull` · 新增 3 项）
+
+**Codex 源码扫描**：`2026-04-10 → 2026-04-24` 间 60+ commit，识别出 **3 项新可借鉴能力**。主要方向是 thread/session 控制面的精细化。
+
+#### 新增 3 项
+
+| # | 功能 | 关键 PR | 合并日期 |
+|---|---|---|---|
+| [item-26](#item-26) | Sticky Environment 会话级环境变量选择 | [#18897](https://github.com/openai/codex/pull/18897) + stack (#18898/#18899) | 2026-04-23 |
+| [item-27](#item-27) | Permission Profiles 统一权限档位（跨 TUI/MCP/exec/core 传播）| [#18282](https://github.com/openai/codex/pull/18282) ~ [#18287](https://github.com/openai/codex/pull/18287) + [#18924](https://github.com/openai/codex/pull/18924) + [#19050](https://github.com/openai/codex/pull/19050) | 2026-04-22~23 |
+| [item-28](#item-28) | `excludeTurns` 分页加载 Thread | [#19014](https://github.com/openai/codex/pull/19014) | 2026-04-23 |
+
+#### 值得提及但未单列 item 的 Codex 变更
+
+| PR | 方向 | 为什么不单列 |
+|---|---|---|
+| [#18385](https://github.com/openai/codex/pull/18385) `Support MCP tools in hooks` | hook schema 支持 MCP 工具名（非 Bash-only）| 已在 item-13 覆盖范围内，Qwen 的 Hook 系统（17K 行）已反超，理论可做等价扩展，作为 item-13 内部 refinement |
+| [#19063](https://github.com/openai/codex/pull/19063) + [#19056](https://github.com/openai/codex/pull/19056) auto-review stable + rename "reviewer" → "auto-review" | /review 子命令稳定化 | 已在 item-16 覆盖；Qwen 走不同的 /review 路线（参考 `docs/comparison/review-command.md`）|
+| [#19129](https://github.com/openai/codex/pull/19129) `Reject agents.max_threads with multi_agent_v2` | 多 Agent V2 thread 上限约束 | 已在 item-9（多 Agent 框架）覆盖 |
+| [#19071](https://github.com/openai/codex/pull/19071) `Add computer_use feature requirement key` | Computer use 特性请求 | 已被 Claude Code 改进报告 p2-core item-6 Computer Use 覆盖（⚠️ 实验性） |
+| [#18255](https://github.com/openai/codex/pull/18255) `app-server: add Unix socket transport` | IPC 传输 | 已在 item-8 App-Server JSON-RPC 覆盖（传输层 refinement）|
+| [#19008](https://github.com/openai/codex/pull/19008) + [#18908](https://github.com/openai/codex/pull/18908) Remote thread store + thread config endpoint | 远程 thread 存储 | 更多是 codex 内部服务化方向，Qwen 对标价值不高（已有本地 JSONL）|
+| `codex-rs/windows-sandbox-rs/` 系列提交 | Windows 原生沙箱（unified_exec）| 已在 item-1 默认沙箱覆盖，Windows 扩展只是路径完善 |
+
+---
 
 ### 2026-04-16
 

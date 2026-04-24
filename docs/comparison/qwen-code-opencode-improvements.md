@@ -1,8 +1,8 @@
 # Qwen Code 改进建议 — 对标 OpenCode
 
-> 基于 OpenCode (anomalyco/opencode) 源码逐项比对，识别 Qwen Code 可借鉴的 **27 项**能力（其中 **4 项已赶超**——item-13 Hook / item-14 Worktree / item-16 LSP / item-20 Skill）。OpenCode 共 **437 文件、78,174 行**——一个功能完备的多客户端 AI 平台。
+> 基于 OpenCode (anomalyco/opencode) 源码逐项比对，识别 Qwen Code 可借鉴的 **29 项**能力（其中 **4 项已赶超**——item-13 Hook / item-14 Worktree / item-16 LSP / item-20 Skill）。OpenCode 共 **437 文件、78,174 行**——一个功能完备的多客户端 AI 平台。
 >
-> **最后核对日期**：2026-04-16（两侧源码均已 `git pull` 刷新）
+> **最后核对日期**：2026-04-24（两侧源码均已 `git pull` 刷新，新增 item-28/29）
 >
 > **相关报告**：
 > - [Claude Code 改进建议报告（256 项）](./qwen-code-improvement-report.md)——行业领先者对比
@@ -43,6 +43,8 @@
 | [25](#item-25) | Format 代码格式化集成 | **P3** | 1 周 | `format/` | 616 行 2 文件 |
 | [26](#item-26) | Command 动态命令注册 | **P3** | 2 天 | `command/` | 195 行 |
 | [27](#item-27) | Effect 框架工具集 | **P3** | — | `effect/` | 851 行 6 文件 |
+| [28](#item-28) | 可配置工具输出截断限制 🆕 | **P2** | 1 天 | `tool/truncate.ts` + `config/config.ts` | 106 行（PR#23770）|
+| [29](#item-29) | TUI 编辑器上下文 builtin protocol 🆕 | **P2** | 1 周 | `cli/cmd/tui/context/editor.ts` | 448 行（PR#24034）|
 
 ---
 
@@ -1107,6 +1109,86 @@ bonjour.publish({
 
 **Qwen Code 现状**：不使用 Effect 框架。此项仅在考虑 Effect-ts 迁移时参考。
 
+> **2026-04-24 更新**：OpenCode 正在大规模迁移到 Effect Schema（PR#23244 migrate 18 built-in tools / PR#24005 session / PR#24027 provider / PR#24040 bus / PR#24029 consolidate PositiveInt/NonNegativeInt / PR#23763/23764/23757 MessageV2 DTOs）。Qwen 对标价值仍低——TypeScript 生态 zod/valibot 更轻量。
+
+---
+
+<a id="item-28"></a>
+
+### 28. 可配置工具输出截断限制 🆕（P2）
+
+**问题**：Qwen Code 的 `BASH_MAX_OUTPUT_DEFAULT = 30_000` 和 `UPPER_LIMIT = 150_000` 硬编码在 `utils/shell/outputLimits.ts`，用户遇到"大量日志被截断"时只能改源码重编译。
+
+**OpenCode 的解决方案**（[PR#23770](https://github.com/sst/opencode/pull/23770)，2026-04-23 合并）——**配置化截断限制**：
+
+- `opencode.json` 新增 `truncate:` 配置项
+- `tool/truncate.ts` 读取配置，`tool/bash.ts` 使用配置上限
+- 测试覆盖 `truncation.test.ts` 64 个 case
+
+**核心设计**：
+```jsonc
+{
+  "truncate": {
+    "bash": { "stdout": 50000, "stderr": 10000 },
+    "tool_output": 100000
+  }
+}
+```
+
+**Qwen Code 现状**：三层硬编码上限（Bash 30K / 单工具 50K / 单消息 200K），已在 p2-stability item-45 记录，但**未支持配置化**。
+
+**Qwen Code 修改方向**：
+1. `settings.json` 新增 `outputLimits: { bash: {...}, tool: {...}, message: {...} }` schema
+2. `outputLimits.ts` / `toolLimits.ts` 读取配置（fallback 到当前硬编码默认）
+3. `settings.ts` 添加 `/settings outputLimits` slash command 便捷查看
+4. 文档说明上限含义（LLM context 占用、prompt cache 成本）
+
+**实现成本**：~1 天（低风险，配置只是读路径调整）。
+
+**意义**：**高级用户可调**——长日志调试场景下临时放大 stdout 上限；成本敏感场景收紧到 10K 以省 context。
+**改进收益**：告别"改源码 → 重编译 → 用完复原"的噩梦循环。
+
+---
+
+<a id="item-29"></a>
+
+### 29. TUI 编辑器上下文 builtin protocol 🆕（P2）
+
+**问题**：用户在 VSCode 里编辑代码遇到问题，想把**当前文件 + 当前选区 + 打开的 tabs + 诊断信息**一起发给 CLI agent。手动复制粘贴太累，而且丢失语义（agent 不知道这是"主动引用"还是"背景提示"）。
+
+**OpenCode 的解决方案**（[PR#24034](https://github.com/sst/opencode/pull/24034)，2026-04-23 合并）——**builtin editor context protocol**：
+
+- 新增 318 行 `cli/cmd/tui/context/editor.ts` —— 定义 context bundle 协议
+- `autocomplete.tsx` + `prompt/index.tsx` 消费 context —— `@`  触发补全时能从编辑器读取文件/选区/诊断
+- TUI 理解 "selection" / "cursor" / "diagnostics" / "tabs" 四种语义
+
+**核心设计**：
+```
+Editor (VSCode / Neovim) 
+   ↓ builtin protocol (JSON over IPC)
+{ type: "selection", file, range, text }
+{ type: "cursor", file, line, col }
+{ type: "diagnostics", file, diags[] }
+{ type: "tabs", openFiles[] }
+   ↓
+TUI autocomplete + prompt
+```
+
+**Qwen Code 现状**：有 VSCode IDE Companion（`packages/vscode-ide-companion/`），但 context 传输是**单向注入**——IDE 推变更到 CLI，CLI 无法按语义请求"当前选区"。用户 `@` 补全只能列文件路径，不能请求"当前编辑器上下文"。
+
+**Qwen Code 修改方向**：
+1. `packages/cli/src/ui/context/editor.ts` 定义 `EditorContextBundle` schema（selection/cursor/diagnostics/tabs/activeFile）
+2. `vscode-ide-companion` 响应 `ide.getContext()` RPC
+3. Prompt `@` 补全新增 pseudo-paths：`@selection` / `@cursor` / `@diagnostics` / `@tabs` / `@active-file`
+4. 输入 `@selection` 自动注入当前选中代码 + 语义 tag `<editor-selection file="..." range="L10-L20">`
+
+**实现成本**：~1 周（1 人）—— Schema + RPC + autocomplete 多处协同。
+
+**意义**：**IDE ↔ CLI 的语义桥**——把编辑器原生概念（selection / cursor / diagnostic）暴露给 agent，让 prompt 简洁准确。
+**改进收益**：
+- **改进前**：用户复制整个文件 + 描述"第 50 行到 80 行这段"→ token 浪费 + 易搞错行号
+- **改进后**：`@selection` 自动把选中代码 + 文件路径 + 行号 + 语义标签一起发给 agent
+
 ---
 
 ## 模块级架构差异
@@ -1169,6 +1251,31 @@ bonjour.publish({
 | **后续** | 按需 | LSP / PTY / Share / Control-Plane 等 | 平台进化 |
 
 ## 更新日志
+
+### 2026-04-24（OpenCode 上游 `git pull` · 新增 2 项）
+
+**OpenCode 源码扫描**：`2026-04-10 → 2026-04-24` 间 60+ commit（含大量 Effect Schema 迁移）。识别出 **2 项新可借鉴能力**。
+
+#### 新增 2 项
+
+| # | 功能 | 关键 PR | 合并日期 |
+|---|---|---|---|
+| [item-28](#item-28) | 可配置工具输出截断限制 | [#23770](https://github.com/sst/opencode/pull/23770) | 2026-04-23 |
+| [item-29](#item-29) | TUI 编辑器上下文 builtin protocol | [#24034](https://github.com/sst/opencode/pull/24034) | 2026-04-23 |
+
+#### 值得提及但未单列 item 的 OpenCode 变更
+
+| PR | 方向 | 为什么不单列 |
+|---|---|---|
+| [#23244](https://github.com/sst/opencode/pull/23244) `migrate 18 built-in tools to Effect Schema` + 后续 PR 栈 | 大规模 Effect Schema 迁移 | item-27 已覆盖；Qwen 对标价值低（zod/valibot 更轻） |
+| [#23771](https://github.com/sst/opencode/pull/23771) `support pull diagnostics in the LSP client (C#, Kotlin, etc)` | LSP pull diagnostics 协议 | item-16 LSP 已赶超（Qwen 7,422 行），作为 item-16 内部 refinement 方向记录 |
+| [#23870](https://github.com/sst/opencode/pull/23870) `improve session compaction` | 压缩改进（198 行 + 279 行 test） | Qwen 压缩已经更分层（参考 Claude 对比 p0-p1-core item-1），对标价值低 |
+| [#23797](https://github.com/sst/opencode/pull/23797) `preserve BOM in text tool round-trips` | BOM 保留 | 细节修复，可在 Qwen 文本工具做等价 check |
+| [#19054](https://github.com/sst/opencode/pull/19054) `use git common dir for bare repo project cache` | bare repo 支持 | 小众场景，不单列 |
+| [#24062](https://github.com/sst/opencode/pull/24062) `bridge workspace read endpoints` | 工作区 HTTP API | 已在 item-8 HTTP 服务器覆盖 |
+| [#14471](https://github.com/sst/opencode/pull/14471) `beta badge for desktop app` | 桌面 app UI 改动 | Qwen 无桌面 app |
+
+---
 
 ### 2026-04-16
 

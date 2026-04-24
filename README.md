@@ -13,8 +13,8 @@
 | **[Qwen Code 改进报告（274 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 52 个社区 PR 追踪（71 已合并） |
 | **[Gemini CLI backport（53 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 + 模块级架构对比 |
 | **[/review 功能分析](./docs/comparison/qwen-code-review-improvements.md)** | 审查功能 5 方对比（含 gstack） |
-| **[Codex CLI 对标改进（25 项）](./docs/comparison/qwen-code-codex-improvements.md)** | 沙箱 + Apply Patch + Feature Flag + 网络代理 |
-| **[OpenCode 对标改进（27 项）](./docs/comparison/qwen-code-opencode-improvements.md)** | Provider 系统 + Plugin 插件 + Snapshot 快照 |
+| **[Codex CLI 对标改进（28 项）](./docs/comparison/qwen-code-codex-improvements.md)** | 沙箱 + Apply Patch + Feature Flag + 网络代理 + Sticky Env + Permission Profiles |
+| **[OpenCode 对标改进（29 项）](./docs/comparison/qwen-code-opencode-improvements.md)** | Provider 系统 + Plugin 插件 + Snapshot 快照 + 可配置截断 + 编辑器上下文协议 |
 | **[功能对比矩阵](./docs/comparison/features.md)** | 15 Agent × 多维度横向对比 |
 | **[一页总结（选型速查）](./docs/SUMMARY.md)** | 给没时间看全部文档的人 |
 
@@ -84,8 +84,8 @@
 | [Gemini CLI backport（53 项）](./docs/comparison/qwen-code-gemini-upstream-report.md) | 上游可 backport 改进 + 模块级架构对比 |
 | [/review 功能分析](./docs/comparison/qwen-code-review-improvements.md) | 审查功能 5 方对比（含 gstack） |
 | [工具输出限高](./docs/comparison/tool-output-height-limiting-deep-dive.md) | Gemini CLI SlicingMaxSizedBox vs Qwen Code |
-| [Codex CLI 对标改进（25 项）](./docs/comparison/qwen-code-codex-improvements.md) | 沙箱 + Apply Patch + Feature Flag + 网络代理 |
-| [OpenCode 对标改进（27 项）](./docs/comparison/qwen-code-opencode-improvements.md) | Provider 系统 + Plugin + Snapshot |
+| [Codex CLI 对标改进（28 项）](./docs/comparison/qwen-code-codex-improvements.md) | 沙箱 + Apply Patch + Feature Flag + 网络代理 + Sticky Env + Permission Profiles |
+| [OpenCode 对标改进（29 项）](./docs/comparison/qwen-code-opencode-improvements.md) | Provider 系统 + Plugin + Snapshot + 可配置截断 + 编辑器上下文协议 |
 | [Kairos Always-On](./docs/comparison/kairos-always-on-agent-deep-dive.md) | Claude Code 自治 Agent 模式 |
 
 ### 全局对比
