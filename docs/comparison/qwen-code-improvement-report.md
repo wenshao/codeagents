@@ -507,6 +507,7 @@
 | [PR#3469](https://github.com/QwenLM/qwen-code/pull/3469) | feat(webui): render markdown in generic and web-fetch tool outputs | 2026-04-21 07:53 UTC |
 | [PR#3489](https://github.com/QwenLM/qwen-code/pull/3489) | fix(mcp): make the OAuth authorization URL clickable when wrapped | 2026-04-21 08:44 UTC |
 | [PR#3541](https://github.com/QwenLM/qwen-code/pull/3541) + [PR#3526](https://github.com/QwenLM/qwen-code/pull/3526) | chore(release): bump versions to 0.15.0 / 0.15.1 | 2026-04-22 / 2026-04-23 |
+| [PR#3534](https://github.com/QwenLM/qwen-code/pull/3534) | fix(i18n): sync mismatched keys between en.js and zh.js | 2026-04-23 16:38 UTC |
 
 #### 值得追踪的 OPEN PR（可能成为后续 items）
 
@@ -520,6 +521,10 @@
 | [PR#3502](https://github.com/QwenLM/qwen-code/pull/3502) | remove built-in web_search, replace with MCP-based | 架构变动（web_search → MCP）|
 | [PR#3494](https://github.com/QwenLM/qwen-code/pull/3494) | Python SDK 实现（追踪 #3010）| SDK 生态扩展 |
 | [PR#3562/3561/3546](https://github.com/QwenLM/qwen-code/pull/3562) | OSC 通知（iTerm2 / Kitty / Ghostty / cmux）| 终端能力集成 |
+| [PR#3567](https://github.com/QwenLM/qwen-code/pull/3567) | `OPENAI_MODEL` 环境变量优先级修复 | 多 provider 模型配置补强（与 OpenCode 对比报告 item-12 方向相关）|
+| [PR#3557](https://github.com/QwenLM/qwen-code/pull/3557) | insight facet normalization 加固 | Qwen 自有 `/insight` 系统健壮性（非对标 Claude Code）|
+| [PR#3544](https://github.com/QwenLM/qwen-code/pull/3544) | SIGINT 时禁用 Kitty 键盘协议（防 `9;5u` 残余）| 终端兼容性修复 |
+| [PR#3550](https://github.com/QwenLM/qwen-code/pull/3550) | 无状态 OpenAI converter（跟进 #3525 方向）| 多 provider 稳定性 |
 
 ---
 
