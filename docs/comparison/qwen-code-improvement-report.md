@@ -444,6 +444,35 @@
 
 ## 六、更新日志
 
+### 2026-04-25（补漏扫描 · 2 项 VSCode companion 合并未记录）
+
+扫描方法修正：之前 3 轮扫描用 `gh pr list --state merged --limit 30`（默认按 PR number 创建顺序返回前 30），**遗漏了老 PR number 但最近才合并的条目**。改用 `--search "sort:updated-desc"` 后补齐 2 项：
+
+| PR | 标题 | 合并时间 | 规模 |
+|---|---|---|---|
+| [PR#2548](https://github.com/QwenLM/qwen-code/pull/2548) | feat(vscode): expose `/skills` as slash command with secondary picker | 2026-04-24 15:28 UTC | +1,011 / -102，26 文件 |
+| [PR#2592](https://github.com/QwenLM/qwen-code/pull/2592) | feat(vscode-companion): support `/export` session command | 2026-04-24 09:55 UTC | +1,151 / -49 |
+
+两 PR 均为 VSCode IDE companion 能力扩展：
+
+- **PR#2548** 给 VSCode 内加 `/skills` 斜杠命令 —— 输入 `/skills` 后不直接发送，而是打开二级选择器让用户挑 skill（追平 CLI 的 `/skill-name` 形式）。属 VSCode UX 补齐类。
+- **PR#2592** 给 VSCode companion 加 `/export` 命令 —— 导出当前 session 到文件，与 CLI 的 `/export` 对齐。属"VSCode 命令对齐 CLI 命令"系列的延续（前有 PR#2593 `/insight`、PR#2984 `/account`、PR#2551 Plan Mode 等）。
+
+两者都不改变现有 improvement item 状态（Qwen Code 的 VSCode 集成本就是自家能力、非对标 Claude Code 的 gap），但应纳入 MERGED 计数。
+
+**教训**：跨天/跨周 scan 需用 `sort:updated-desc` 或 `sort:merged-desc` 搜索语法，否则会漏掉"老 PR 最近合并"的场景。后续 scan 命令固定为：
+
+```bash
+gh pr list --repo QwenLM/qwen-code --state merged --limit 50 \
+  --search "sort:updated-desc" --json number,title,mergedAt
+```
+
+#### 📊 累计合并 PR 计数
+
+79 → **81**（+2 补漏）。README 同步更新。
+
+---
+
 ### 2026-04-25（~7h 增量 · PR#3494 Python SDK 合并 · platform item-5 ✓）
 
 扫描窗口：2026-04-24 15:32 UTC（上次扫描 221e3c9）→ 2026-04-24 23:05 UTC。窗口内 **1 项重要合并** + **1 项新 OPEN** + **2 项 CLOSED**。
