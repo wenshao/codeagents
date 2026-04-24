@@ -2,9 +2,9 @@
 
 > 39+ 个工具的 schema 全部注入系统提示会浪费大量 token。本文基于 Claude Code（v2.1.89 源码分析）的源码分析，介绍其 ToolSearchTool 延迟加载机制——仅加载核心工具，其余按需搜索。
 
-> **🟡 进度追踪（2026-04-24）**：[**PR#3589**](https://github.com/QwenLM/qwen-code/pull/3589) OPEN —— `feat(tools): add ToolSearch for on-demand loading of deferred tool schemas` 直接实现本文描述的方向。度量：典型 39-tool setup 节省 **~15K tokens/request**。
+> **✗ 进度追踪（2026-04-25 更新）**：[**PR#3589**](https://github.com/QwenLM/qwen-code/pull/3589) —— `feat(tools): add ToolSearch for on-demand loading of deferred tool schemas` **已 CLOSED（2026-04-24 08:51 UTC 关闭，未合并）**。本文描述的方向当前**仍无合并 PR**，回到"缺失"状态。
 >
-> **实现要点**：
+> PR#3589 原方案技术要点（保留作为未来重启尝试的参考）：
 > - `DeclarativeTool` 新增 `shouldDefer` / `alwaysLoad` / `searchHint` 三个标志
 > - 默认 deferred：MCP 工具 + `lsp` / `cron_*` / `ask_user_question` / `exit_plan_mode`
 > - `ToolSearch` 双模式：`select:Name1,Name2` 精确匹配 + 关键词搜索（支持 `+must-word` 必需词）
@@ -14,7 +14,7 @@
 > - Subagent wildcard `['*']` 通过 `includeDeferred: true` 保持向后兼容
 > - 21 文件 / +1051/-11 行 / 20 个新测试 case
 >
-> 合并后本项目可升级为 ✓ **已实现**。
+> CLOSED 状态无 PR body 说明具体关闭原因（可能 review 反馈、stack 拆分、或方案调整）。本 item 维持 P1 追踪，等待后续 PR。
 
 ---
 

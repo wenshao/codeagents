@@ -47,7 +47,7 @@
 | **P1** | [会话记忆](./memory-system-deep-dive.md) — 关键决策/文件结构自动提取，新 session 自动注入 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-4) | 仅简单笔记工具 | 大 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓ |
 | **P1** | [Auto Dream](./memory-system-deep-dive.md) — 后台 agent 自动合并去重过时记忆 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-5) | 缺失 | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓（managed auto-memory + auto-dream） |
 | **P1** | [Nudge 驱动的闭环学习](./closed-learning-loop-deep-dive.md) — 双计数器 + 后台 review 子代理 + 冻结快照 + 自修补（Hermes Agent 参考） [↓](./qwen-code-improvement-report-p0-p1-core.md#item-14) | 被动记忆（无 nudge） | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓（部分覆盖） |
-| **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | 🟡 PR 进行中 | 小 | [PR#3589](https://github.com/QwenLM/qwen-code/pull/3589) 🟡 OPEN（ToolSearch + `shouldDefer`/`alwaysLoad`/`searchHint` + MCP/lsp/cron 默认 deferred，度量 39 工具省 ~15K tokens/request）|
+| **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索，省 50%+ token [↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | 缺失（[PR#3589](https://github.com/QwenLM/qwen-code/pull/3589) ✗ CLOSED 2026-04-24）| 小 | — |
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1-core.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ / [Roadmap#2516](https://github.com/QwenLM/qwen-code/issues/2516) |
 | **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | preconnect 开发中 / early input ✓ | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) ✗（关闭，拆分）/ [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318)（preconnect，open）/ [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) ✓（early input，2026-04-18 合并）/ [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
 | **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-9) | 所有指令始终加载 | 中 | [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) ✓ / [Roadmap#125](https://github.com/QwenLM/qwen-code/issues/125) |
@@ -84,7 +84,7 @@
 | **P1** | [系统提示内容完善](./system-prompt-content-guidelines-deep-dive.md) — OWASP 安全 + prompt injection检测 + 代码风格约束 + 输出格式 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-24) | 缺少具体指导 | 中 | — |
 | **P1** | [@include 指令与嵌套记忆发现](./nested-memory-include-deep-dive.md) — @path 递归引用 + 文件操作触发目录遍历 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-20) | **✓ 已实现**（`memoryImportProcessor` @path + `maxDepth=5` + 循环防护；`memoryDiscovery` upward scan；`ConditionalRulesRegistry` 按 `paths:` glob 匹配工具调用时注入）| — | — |
 | **P1** | [附件类型协议与令牌预算](./attachment-protocol-budget-deep-dive.md) — 40+ 类型 + per-type 预算 + 3 阶段有序执行 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-21) | 字符串拼接/无预算 | 中 | — |
-| **P1** | [Thinking 块跨轮保留与空闲清理](./thinking-block-retention-deep-dive.md) — 活跃保留 + 1h 空闲清理 + latch 防缓存破坏 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-22) | 每轮独立/无清理 | 中 | [PR#2897](https://github.com/QwenLM/qwen-code/pull/2897) ✓ |
+| **P1** | [Thinking 块跨轮保留与空闲清理](./thinking-block-retention-deep-dive.md) — 活跃保留 + 1h 空闲清理 + latch 防缓存破坏 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-22) | 每轮独立/无清理 | 中 | [PR#2897](https://github.com/QwenLM/qwen-code/pull/2897) ✓ + [PR#3590](https://github.com/QwenLM/qwen-code/pull/3590) ✓（2026-04-24 合并 · resume + active session reasoning_content 保留 · GH#3579）|
 | **P1** | [输出 Token 自适应升级](./output-token-adaptive-upgrade-deep-dive.md) — 8K 默认 + max_tokens 截断时自动 64K 重试 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-23) | 固定值/不重试 | 小 | [PR#2898](https://github.com/QwenLM/qwen-code/pull/2898) ✓ |
 | **P1** | QWEN.md system-reminder 注入 — 项目指令从系统提示移到用户消息 `<system-reminder>` 标签注入，避免打破 Prompt Cache [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-26) | 直接拼入系统提示 | 小 | — |
 | **P1** | 错误恢复分类路由 — truncation→continuation、overflow→compaction、transport→backoff 三分支 + per-category 重试预算 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-27) | 统一 catch 重试 | 中 | — |
@@ -354,7 +354,7 @@
 | Shell 安全增强 | 25+ 检查 + tree-sitter | AST-only 读写分类 | 中等差距 | — |
 | MDM 企业策略 | plist + Registry + 远程 API | 无 | 缺失 | — |
 | Token 实时计数 | API 计数 + VCR 缓存 | 静态模式匹配 | 中等差距 | — |
-| 工具发现 | ToolSearchTool | 🟡 PR 进行中 | 缺失→进行中 | [PR#3589](https://github.com/QwenLM/qwen-code/pull/3589) 🟡 OPEN（2026-04-24，+1051/-11 行，20 test case）|
+| 工具发现 | ToolSearchTool | 缺失 | 缺失 | [PR#3589](https://github.com/QwenLM/qwen-code/pull/3589) ✗ CLOSED（2026-04-24，未合并）|
 | 多 Agent通信 | SendMessageTool | 无 | 缺失 | — |
 | 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | [PR#3214](https://github.com/QwenLM/qwen-code/pull/3214)（git ls-files + rg） |
 | Commit Attribution | Co-Authored-By 追踪 | 无 | 缺失 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
@@ -443,6 +443,58 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-25（增量 PR 扫描 · PR#3589 关闭勘误 + 9 项合并 + 新 OPEN PR）
+
+扫描 2026-04-24 后 ~24h 增量 —— 共 **9 项合并** + **1 项重要关闭** + 若干新 OPEN。
+
+#### 🔴 关闭勘误 · PR#3589 被关闭
+
+**[PR#3589](https://github.com/QwenLM/qwen-code/pull/3589)** —— `feat(tools): add ToolSearch for on-demand loading of deferred tool schemas` —— **2026-04-24 08:51 UTC CLOSED（未合并）**
+
+昨天（2026-04-24）的 commit `22f2a87` / `8ca638a` 把本 PR 标为 🟡 PR 进行中。**PR 在同天被关闭**，需要回滚 3 处追踪：
+
+- 主矩阵 **工具动态发现** 行：🟡 PR 进行中 → **缺失**
+- 架构差异总结（section 四） **工具发现** 行：🟡 PR 进行中 → **缺失**
+- `tool-search-deep-dive.md` 顶部追踪块：🟡 → ✗ CLOSED 说明（保留技术要点作为未来重启参考）
+
+CLOSED 未给出明确原因 —— 可能是 review 反馈、stack 拆分、或方案调整。本 item **维持 P1 追踪**，等待后续 PR。
+
+**这是一次重要教训**：PR 状态可能**小时级变动**，前一天标 🟡 OPEN 不保证后续合并。追踪 OPEN PR 时应在短期（<48h）做一次状态复核。
+
+#### 🟢 新合并（9 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| [PR#3590](https://github.com/QwenLM/qwen-code/pull/3590) | fix(core): preserve reasoning_content during session resume and active sessions (GH#3579) | 2026-04-24 09:49 UTC | 修 item-22 Thinking 块相关 resume bug |
+| [PR#3575](https://github.com/QwenLM/qwen-code/pull/3575) | feat(docs): add qwen-code skills, agents, and updated AGENTS.md | 2026-04-24 09:33 UTC | 文档 |
+| [PR#3574](https://github.com/QwenLM/qwen-code/pull/3574) | fix(acp): support SSE and HTTP MCP servers in ACP mode | 2026-04-24 06:53 UTC | ACP + MCP 改进 |
+| [PR#3573](https://github.com/QwenLM/qwen-code/pull/3573) | revert(vscode-ide-companion): undo #3450 split-stream timestamp sharing | 2026-04-24 09:13 UTC | VSCode IDE 回滚 |
+| [PR#3550](https://github.com/QwenLM/qwen-code/pull/3550) | refactor(core): make OpenAI converter stateless (follow-up to #3525) | 2026-04-24 04:28 UTC | 多 provider 稳定性 |
+| [PR#3544](https://github.com/QwenLM/qwen-code/pull/3544) | fix(cli): disable Kitty keyboard protocol on SIGINT to prevent garbled 9;5u output | 2026-04-24 07:27 UTC | 终端兼容性 |
+| [PR#3543](https://github.com/QwenLM/qwen-code/pull/3543) | fix(sdk-java): pass custom env to CLI process | 2026-04-24 02:37 UTC | Java SDK |
+| [PR#3531](https://github.com/QwenLM/qwen-code/pull/3531) | fix(cli): promote resubmitted history prompt to most recent | 2026-04-24 04:27 UTC | 历史输入 UX |
+| [PR#3523](https://github.com/QwenLM/qwen-code/pull/3523) | fix(cli): dispatch queued slash commands through the slash path | 2026-04-24 09:11 UTC | 命令队列分派 |
+
+其中 PR#3590 与 p0-p1-engine **item-22 Thinking 块跨轮保留与空闲清理**的 resume 路径直接相关 —— 主矩阵该行 PR 列补充追加。
+
+#### 🟡 新 OPEN（追踪）
+
+| PR | 方向 | 潜在影响 |
+|---|---|---|
+| [PR#3596](https://github.com/QwenLM/qwen-code/pull/3596) | chore(release): bump version to 0.15.2 | 即将发布 v0.15.2 |
+| [PR#3593](https://github.com/QwenLM/qwen-code/pull/3593) | feat(cli): Add argument-hint support for slash commands | slash 命令 UX |
+| [PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) | **fix(cli): add TUI flicker foundation fixes** | **supersedes 已关闭的 #3584/#3586/#3587/#3588**—— throttle safe content + pre-slice ANSI + 视觉高度切片 + soft-wrap 抑制 + 同步终端输出 allowlist。覆盖方向与 p2-stability item-1 / item-44 / item-45 / item-46 有重叠但做了 foundation 整合 |
+| [PR#3577](https://github.com/QwenLM/qwen-code/pull/3577) | feat(skills): add tmux-real-user-testing skill | bundled skill 扩展 |
+| [PR#3576](https://github.com/QwenLM/qwen-code/pull/3576) | Feat/openrouter auth | **OpenRouter 第三方认证** —— 延续"多 provider 认证"方向（参见 OpenCode 对比 item-12） |
+| [PR#3570](https://github.com/QwenLM/qwen-code/pull/3570) | feat(core): add simplify bundled skill | bundled skill 扩展 |
+| [PR#3569](https://github.com/QwenLM/qwen-code/pull/3569) | feat(cli): add Traditional Chinese (zh-TW) as a UI language option | i18n |
+
+#### 🔴 同期被关闭（stack 拆分）
+
+PR#3584 / PR#3586 / PR#3587 / PR#3588 —— 一系列 flicker/rendering 修复，均被 **PR#3591 合并重基**成一个 foundation PR。不需单独追踪。
+
+---
 
 ### 2026-04-24（新增 P1 item-28 · Skill 装载性能综合优化 · 9 项 Claude Code 参考）
 
