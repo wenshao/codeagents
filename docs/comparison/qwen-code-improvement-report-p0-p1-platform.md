@@ -191,7 +191,9 @@
 
 <a id="item-5"></a>
 
-### 5. Agent SDK Python（P1）
+### 5. Agent SDK Python（P1）✓ 已实现（PR#3494 ✓ 2026-04-24 合并）
+
+**最新状态（2026-04-24 23:02 UTC 合并）**：[PR#3494](https://github.com/QwenLM/qwen-code/pull/3494) ✓ 合并——`packages/sdk-python` 包落地：async `query` + sync `query_sync` + process transport + control requests + permission handling；新增 4,676 行（25 文件）；含 `npm run smoke:sdk:python` 实模型 E2E smoke；解决 #3010。**流式回调与工具审批回调的 API 完整度需进一步验证**，但主目标（原生 Python SDK）已达成。
 
 **思路**：Qwen Code 已有 TypeScript SDK（`@qwen-code/sdk`），缺 Python SDK。Claude Code 提供 Python + TS 双语言 SDK，支持流式回调和工具审批回调。
 
