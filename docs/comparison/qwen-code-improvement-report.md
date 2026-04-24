@@ -3,7 +3,7 @@
 > 基于对 Claude Code（源码分析，56 个顶层模块，~1800 文件）与 Qwen Code（开源源码，~500 文件）的系统性源码对比分析。
 >
 > **相关报告**：
-> - [Gemini CLI 上游 backport 报告（53 项）](./qwen-code-gemini-upstream-report.md)——Qwen Code 上游的可 backport 改进
+> - [Gemini CLI 上游 backport 报告（61 项）](./qwen-code-gemini-upstream-report.md)——Qwen Code 上游的可 backport 改进
 > - [Codex CLI 对标改进报告（28 项）](./qwen-code-codex-improvements.md)——沙箱、Apply Patch、Feature Flag、网络代理、Sticky Env、Permission Profiles 等
 > - [OpenCode 对标改进报告（29 项）](./qwen-code-opencode-improvements.md)——Provider 系统、Plugin 插件、Snapshot 快照、可配置截断、编辑器上下文协议等
 > - [/review 功能分析](./qwen-code-review-improvements.md)——审查功能 5 方对比（含 gstack）

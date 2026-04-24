@@ -1,6 +1,6 @@
 # Qwen Code 上游 backport 建议报告（Gemini CLI 源码对比）
 
-> Qwen Code 于 2025-10-23 从 Gemini CLI v0.8.2 fork。此后 Gemini CLI 独立演进了 **28 个大版本**（v0.9.0 → v0.36.0）、**2041 个 commit**——大量新功能和优化未被 backport。本报告系统梳理 **53 项**可 backport 的改进点，并附 Qwen Code 独有优势的反向对比。
+> Qwen Code 于 2025-10-23 从 Gemini CLI v0.8.2 fork。此后 Gemini CLI 独立演进了 **32 个大版本**（v0.9.0 → v0.41.0-nightly）、**2330+ commit**——大量新功能和优化未被 backport。本报告系统梳理 **61 项**可 backport 的改进点，并附 Qwen Code 独有优势的反向对比。
 >
 > **相关报告**：
 > - [Claude Code 改进建议报告（253 项）](./qwen-code-improvement-report.md)——行业领先者有什么
@@ -23,7 +23,7 @@
 2026-02    Gemini CLI: 后台 Shell、Vim 增强、sandbox 加固
 2026-03    Gemini CLI: SlicingMaxSizedBox 防闪烁、Edit 模糊匹配、环境变量净化
 2026-03    Gemini CLI: Model Routing 多策略路由、DevTools Inspector、Voice Formatter
-2026-04    Gemini CLI v0.36.0（当前最新）——新增 Billing/Credits、CodeAssist 企业集成、Triage 代码分析
+2026-04    Gemini CLI v0.36.0 ~ v0.41.0-nightly——新增 Billing/Credits、CodeAssist 企业集成、Triage 代码分析、4 层 prompt-driven memory 重构、安全 .env headless、core tools allowlist、boot perf 异步化、@ recommendations watcher、skill recurrence evidence、topic narration default 等
 ```
 
 ### 1.2 差距的实际影响
@@ -122,6 +122,14 @@ backport 不会丢失 Qwen Code 独立发展的优势：
 | **P2** | [Triage 代码问题检测](./qwen-code-gemini-upstream-report-details.md#item-51) — Issue 识别 + 重复代码检测 UI（1,728 行） | 无代码分析 UI | 中 | — |
 | **P2** | [CodeAssist 企业集成](./qwen-code-gemini-upstream-report-details.md#item-52) — 用户分层 + 信用额度 + 管理员策略 + MCP 管控（9,825 行） | 无企业集成 | 大 | — |
 | **P2** | [Billing/Credits 计费系统](./qwen-code-gemini-upstream-report-details.md#item-53) — Google One AI 额度管理 + 超额策略 + 计费集成（449 行） | 免费模型 | 中 | — |
+| **P0** | [安全 .env + Workspace Trust Headless 模式 🆕](./qwen-code-gemini-upstream-report-details.md#item-56) — 禁止 IDE_STDIO 等关键 key 被 .env 覆盖（**RCE 修复**），headless 模式默认 untrusted | `loadEnvironment()` 无 trust 检查 | 中 | [#25022](https://github.com/google-gemini/gemini-cli/pull/25022) + [#25814](https://github.com/google-gemini/gemini-cli/pull/25814) + [#24170](https://github.com/google-gemini/gemini-cli/pull/24170) |
+| **P1** | [Memory 系统 4 层 Prompt-Driven 重构 🆕](./qwen-code-gemini-upstream-report-details.md#item-55) — 删 MemoryManagerAgent 转主 agent prompt 编辑 4 层 (project/global/session/turn) | 单层 user memory，无 agent | 中 | [#25716](https://github.com/google-gemini/gemini-cli/pull/25716) |
+| **P1** | [Core Tools Allowlist + Shell 验证增强 🆕](./qwen-code-gemini-upstream-report-details.md#item-57) — 白名单工具模式 + shell substitution 96 个攻击向量回归测试 | 仅 deny-list 模式 | 中 | [#25720](https://github.com/google-gemini/gemini-cli/pull/25720) |
+| **P1** | [Boot 性能异步化 🆕](./qwen-code-gemini-upstream-report-details.md#item-58) — experiments/quota fire-and-forget Promise，冷启动 -300ms | 同步初始化阻塞启动 | 小 | [#25758](https://github.com/google-gemini/gemini-cli/pull/25758) |
+| **P2** | [`@` 推荐 Watcher 增量更新 🆕](./qwen-code-gemini-upstream-report-details.md#item-59) — chokidar 监听 + in-memory 缓存 | 每次重新扫描 | 小 | [#25256](https://github.com/google-gemini/gemini-cli/pull/25256) |
+| **P2** | [Skill 提取质量门 🆕](./qwen-code-gemini-upstream-report-details.md#item-60) — recurrence evidence (≥3 次) + skill-creator agent 集成 | 提取门槛低，噪音多 | 中 | [#25147](https://github.com/google-gemini/gemini-cli/pull/25147) + [#25421](https://github.com/google-gemini/gemini-cli/pull/25421) |
+| **P3** | [Topic Narration + autoMemory 配置拆分 🆕](./qwen-code-gemini-upstream-report-details.md#item-61) — 长对话主动 topic 播报 + memoryManager → autoMemory 独立开关 | 单一 memoryManager 开关 | 小-中 | [#25586](https://github.com/google-gemini/gemini-cli/pull/25586) + [#25567](https://github.com/google-gemini/gemini-cli/pull/25567) + [#25601](https://github.com/google-gemini/gemini-cli/pull/25601) |
+| **P3** | [小型 backport 集合 🆕](./qwen-code-gemini-upstream-report-details.md#item-62) — `/new` alias / Bun SIGHUP fix / seatbelt $HOME 路径 / OSC 777 等 | 单项几行变更 | 小 | 8 个 PR 列表见详情 |
 
 ## 三、优先级分布
 
@@ -222,6 +230,44 @@ fork 后 Gemini CLI 新增了大量 Qwen Code 中完全不存在的模块：
 每项的完整实现细节（问题定义、源码索引、修改方向、成本评估、前后对比）见 **[backport 建议详情](./qwen-code-gemini-upstream-report-details.md)**。
 
 ## 七、更新日志
+
+### 2026-04-24（Gemini CLI 上游 `git pull` · 新增 8 项）
+
+**Gemini CLI 源码扫描**：从 v0.36.0 → v0.41.0-nightly（296 个新 commit），识别出 **8 项新可 backport 改进点**。
+
+#### 新增 8 项
+
+| # | 优先级 | 功能 | 关键 PR |
+|---|---|---|---|
+| [item-55](./qwen-code-gemini-upstream-report-details.md#item-55) | P1 | Memory 系统 4 层 prompt-driven 重构 | [#25716](https://github.com/google-gemini/gemini-cli/pull/25716) |
+| [item-56](./qwen-code-gemini-upstream-report-details.md#item-56) | **P0** | 安全 .env + Workspace Trust Headless（**RCE 修复**）| [#25022](https://github.com/google-gemini/gemini-cli/pull/25022) + [#25814](https://github.com/google-gemini/gemini-cli/pull/25814) + [#24170](https://github.com/google-gemini/gemini-cli/pull/24170) |
+| [item-57](./qwen-code-gemini-upstream-report-details.md#item-57) | P1 | Core Tools Allowlist + Shell 验证增强 | [#25720](https://github.com/google-gemini/gemini-cli/pull/25720) |
+| [item-58](./qwen-code-gemini-upstream-report-details.md#item-58) | P1 | Boot 性能异步化（experiments/quota fire-and-forget）| [#25758](https://github.com/google-gemini/gemini-cli/pull/25758) |
+| [item-59](./qwen-code-gemini-upstream-report-details.md#item-59) | P2 | `@` 推荐 Watcher 增量更新 | [#25256](https://github.com/google-gemini/gemini-cli/pull/25256) |
+| [item-60](./qwen-code-gemini-upstream-report-details.md#item-60) | P2 | Skill 提取质量门（recurrence evidence + skill-creator）| [#25147](https://github.com/google-gemini/gemini-cli/pull/25147) + [#25421](https://github.com/google-gemini/gemini-cli/pull/25421) |
+| [item-61](./qwen-code-gemini-upstream-report-details.md#item-61) | P3 | Topic Narration default + autoMemory 拆分 | [#25586](https://github.com/google-gemini/gemini-cli/pull/25586) + [#25567](https://github.com/google-gemini/gemini-cli/pull/25567) + [#25601](https://github.com/google-gemini/gemini-cli/pull/25601) |
+| [item-62](./qwen-code-gemini-upstream-report-details.md#item-62) | P3 | 小型 backport 集合（8 个 PR）| `/new` alias / Bun SIGHUP fix / seatbelt 路径 / OSC 777 等 |
+
+**总数**：53 → 61 项。
+
+#### Qwen 已实现的 Gemini 上游变更（不需 backport）
+
+| Gemini PR | 说明 | Qwen 现状 |
+|---|---|---|
+| [#25342](https://github.com/google-gemini/gemini-cli/pull/25342) | bundle ripgrep into SEA for offline | ✓ Qwen 已 vendor `packages/core/vendor/ripgrep/`（6 平台二进制：arm64-darwin / arm64-linux / x64-darwin / x64-linux / x64-win32 + COPYING）|
+
+#### 不直接对标的 Gemini 上游变更
+
+| Gemini PR | 为什么不单列 |
+|---|---|
+| [#25090](https://github.com/google-gemini/gemini-cli/pull/25090) `.mdx support to get-internal-docs` | Qwen 无 internal-docs 工具 |
+| [#25513](https://github.com/google-gemini/gemini-cli/pull/25513) Vertex AI request routing | Qwen 主用 DashScope/OpenAI-compat |
+| [#25498](https://github.com/google-gemini/gemini-cli/pull/25498) `gemini gemma` local model setup | Qwen 走 qwen-oauth + multi-provider 路线 |
+| [#25604](https://github.com/google-gemini/gemini-cli/pull/25604) Gemma 4 models support | 模型清单变化，Qwen 走 `models.dev` 类似方向更合适 |
+| [#25343](https://github.com/google-gemini/gemini-cli/pull/25343) telemetry traces flag | 已有相似 telemetry flag |
+| [#25874](https://github.com/google-gemini/gemini-cli/pull/25874) FatalUntrustedWorkspaceError doc link | 文档级别变更 |
+
+---
 
 ### 2026-04-09
 

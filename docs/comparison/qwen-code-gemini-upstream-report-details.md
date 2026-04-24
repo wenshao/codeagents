@@ -1603,3 +1603,235 @@ const MemoizedAppHeader = memo(AppHeader);
 - **改进前**：流式输出时 footer 重测量 → 高度波动 → 行数跳动 → 闪烁
 - **改进后**：useStableHeight 吸收小幅波动 → 高度稳定 → 无跳动
 
+
+---
+
+<a id="item-55"></a>
+
+### 55. Memory 系统重构 — Prompt-Driven 4 层编辑（P1）
+
+**问题**：Qwen Code 的 `MemoryManager`（继承自上游早期版本）通过**专用 agent**（`MemoryManagerAgent`）执行记忆编辑——每次更新都要单独 spawn 一个子 agent 调用模型，开销大、链路长、与主对话上下文割裂。
+
+**来源**：[Gemini CLI PR#25716](https://github.com/google-gemini/gemini-cli/pull/25716) `refactor(memory): replace MemoryManagerAgent with prompt-driven memory editing across four tiers`，2026-04-21 合并。
+
+**解决方案**：删掉 `MemoryManagerAgent`（157 行）+ `memory-manager-agent.test.ts`（160 行），改为**主 agent 直接通过 prompt 编辑 4 层记忆**：
+
+```
+Tier 1: 项目级 (.qwen/memory.md or QWEN.md project)
+Tier 2: 全局级 (~/.qwen/memory.md)
+Tier 3: 会话级 (in-memory session state)
+Tier 4: 上下文级 (per-turn temporary)
+```
+
+主 agent 在 system prompt 中拿到 4 层当前内容 + 编辑指令模板，直接生成 `add_memory` / `delete_memory` / `update_memory` 工具调用，无需 spawn 子 agent。
+
+**核心收益**：
+- 消除一次额外的模型调用（save_memory 路径延迟 ~50%）
+- 主 agent 保持完整对话上下文，记忆编辑决策更准确
+- `evals/save_memory.eval.ts` 扩充 312 行测试覆盖 4 层场景
+
+**Qwen Code 现状**：`config.ts:703` `MemoryManager` 单层（user memory），无分层、无 agent，结构上反而比 Gemini 旧设计**更简单**——但缺 4 层语义和 prompt-driven 编辑能力。
+
+**Qwen Code 修改方向**：
+1. 扩展 `MemoryManager` 支持 4 层（project / global / session / turn）
+2. system prompt 注入"当前 4 层快照 + 编辑示例"
+3. 主 agent 通过 `add_memory` 工具按 tier 写入
+4. 测试覆盖 4 层互不干扰
+
+**实现成本**：~3 天（1 人）。已删除的 MemoryManagerAgent 代码可作为反向参考（"不要这样做"）。
+
+---
+
+<a id="item-56"></a>
+
+### 56. 安全 .env 加载 + Workspace Trust Headless 模式（P0 · 安全关键）
+
+**问题**：headless / CI 模式下，恶意 `.env` 文件可以静默注入 API key、URL、PROXY 等敏感配置，agent 启动时就把 secrets 暴露给所有子进程。Qwen Code 与 Gemini 同样的 fork 期 bug。
+
+**来源**：3 个互补的上游 PR，均 2026-04-22~23 合并：
+
+| PR | 修复 |
+|---|---|
+| [Gemini PR#25022](https://github.com/google-gemini/gemini-cli/pull/25022) | **RCE Fix**：禁止 workspace `.env` 覆盖 IDE stdio 配置——避免 `IDE_STDIO=evil-script` 注入 |
+| [Gemini PR#25814](https://github.com/google-gemini/gemini-cli/pull/25814) | **secure .env loading**：headless 模式下 enforce workspace trust，未信任的 workspace 不加载 `.env` |
+| [Gemini PR#24170](https://github.com/google-gemini/gemini-cli/pull/24170) | **Command injection shell**：shell 命令构造路径修复注入漏洞 |
+
+**核心机制**：
+1. `.env` 加载前先检查 `workspace.trust` 状态（settings.json）
+2. headless mode（`-p` / CI / SDK）默认 `untrusted` 除非显式 `--trust-workspace`
+3. 关键 env keys（`IDE_STDIO` / `MCP_*_COMMAND` / `*_HOOK` 等）即使 workspace 信任也**禁止** `.env` 覆盖（必须从 user settings 显式声明）
+4. shell 命令构造走结构化 args 而非 string concat（PR#24170）
+
+**Qwen Code 现状**：
+- `loadEnvironment()` 直接读 `.env` 无 trust 检查
+- `acpAgent.ts` 提到 `IDE_STDIO` 但无 .env override 防护
+- headless 模式（`qwen -p`）不区分 trusted vs untrusted workspace
+
+**Qwen Code 修改方向**：
+1. `config.ts` 加 `loadEnvironment()` 入口的 `requireTrustedWorkspace` 守卫
+2. 维护 `BLOCKED_ENV_OVERRIDES = ['IDE_STDIO', 'MCP_*_COMMAND', '*_HOOK', ...]` 黑名单
+3. `qwen -p` 默认行为改为：未 `~/.qwen/trust.json` 标记则不加载 workspace `.env`
+4. 添加 `--trust-workspace` 显式开关 + warning 提示
+
+**实现成本**：~2 天（1 人）。**P0 优先级**——这是已知可被利用的 RCE 路径。
+
+---
+
+<a id="item-57"></a>
+
+### 57. Core Tools Allowlist + Shell 命令验证增强（P1）
+
+**问题**：Qwen Code 的工具权限是**deny-list 模型**（"除了这些之外都允许"），新增工具时如果没显式 deny 就默认开放。安全 posture 偏宽松。
+
+**来源**：[Gemini PR#25720](https://github.com/google-gemini/gemini-cli/pull/25720) `feat(core): enhance shell command validation and add core tools allowlist`，2026-04-23 合并。
+
+**解决方案**：
+1. **Core tools allowlist**：`settingsSchema.ts` 新增 `tools.coreToolsAllowlist`——白名单模式，**只允许列出的工具**，未列出的全部 deny
+2. **`policy/core-tools-mapping.test.ts`**（76 行）：核心工具到 policy 规则的精确映射
+3. **`shell-substitution.test.ts`**（97 行）：覆盖 `$(...)` / 反引号 / `${...}` / heredoc 等 shell substitution 攻击向量
+4. **`shell-safety-regression.test.ts`**（134 行）：历史漏洞回归用例
+
+**配置示例**：
+```jsonc
+{
+  "tools": {
+    "coreToolsAllowlist": ["read_file", "write_file", "shell"]
+    // ↑ 启用后只有这 3 个 core tool 可用，其他全 deny
+  }
+}
+```
+
+**Qwen Code 现状**：`policy-engine.ts` 是 allow/ask/deny 三态，但配置层只有 `coreTools` 黑名单（deny-list），无白名单模式。
+
+**Qwen Code 修改方向**：
+1. `settings.json` schema 新增 `tools.coreToolsAllowlist: string[]`
+2. policy-engine 优先级：`allowlist (if set) > deny rules > default ask`
+3. 移植 `shell-substitution.test.ts` 96 个 case 到 Qwen 的 shell tool 测试套件
+4. 文档说明 allowlist 模式的 trade-off（更安全但需用户主动维护）
+
+**实现成本**：~3 天（含测试移植）。
+
+---
+
+<a id="item-58"></a>
+
+### 58. Boot 性能 — 异步 Experiments / Quota 拉取（P1）
+
+**问题**：启动时同步拉取 GrowthBook experiments + quota 信息（用于 feature flag 和模型选择），冷启动延迟 200-500ms。Qwen Code 同样的问题（继承自上游早期）。
+
+**来源**：[Gemini PR#25758](https://github.com/google-gemini/gemini-cli/pull/25758) `perf(core): fix slow boot by fetching experiments and quota asynchronously`，2026-04-23 合并。
+
+**解决方案**：
+1. Experiments + quota fetch 改为 fire-and-forget Promise，启动**不阻塞**
+2. 首个 turn 真正需要 feature flag 时再 await（一般已经返回）
+3. fallback：未返回时用 cached snapshot 或 hardcoded default
+
+**核心收益**：冷启动 -300ms 左右（用户感知显著）。
+
+**Qwen Code 现状**：`config.ts` 启动期同步加载 modelsConfig + auth + telemetry。无 experiments/quota 概念但有类似的同步初始化路径（如 `modelRegistry.warmAll()`、`toolRegistry.warmAll()`）可借鉴异步化思路。
+
+**Qwen Code 修改方向**：
+1. 审计 `init()` 中所有可异步化的 fetch（modelRegistry / toolRegistry / mcpServers）
+2. 改为 lazy promise + 首次访问 await
+3. 测试启动延迟前后对比
+
+**实现成本**：~2 天。
+
+---
+
+<a id="item-59"></a>
+
+### 59. `@` 文件推荐 — Watcher-based 增量更新（P2）
+
+**问题**：用户输入 `@`触发文件补全时，Qwen Code 当前每次都重新扫描 workspace。新建的文件可能因为缓存未刷新而不出现，或者扫描慢导致补全延迟。
+
+**来源**：[Gemini PR#25256](https://github.com/google-gemini/gemini-cli/pull/25256) `feat: detect new files in @ recommendations with watcher based updates`，2026-04-22 合并。
+
+**解决方案**：
+1. `chokidar` 文件系统 watcher 监听 workspace 变化
+2. 增量更新候选文件列表（add / unlink / rename）
+3. `useAtCompletion` Hook 直接读 in-memory 缓存，无需重新 glob
+4. settings 提供开关（`atRecommendations.watcher.enabled`）
+
+**Qwen Code 现状**：`useAtCompletion`（如果存在）每次扫描，无 watcher。
+
+**Qwen Code 修改方向**：直接 backport，文件层基本通用。注意 watcher 资源限制（大型 monorepo 可能有 inotify 上限问题，需要 `usePolling` fallback）。
+
+**实现成本**：~1 天。
+
+---
+
+<a id="item-60"></a>
+
+### 60. Skill 提取质量门 — Recurrence Evidence + Skill-Creator Agent（P2）
+
+**问题**：Qwen Code 的 skill 提取容易把"一次性事件"误识别为可复用 skill（如某次特殊调试经历被存成 skill）。结果 skill 库充满低价值噪音。
+
+**来源**：2 个上游 PR：
+
+| PR | 改进 |
+|---|---|
+| [Gemini PR#25147](https://github.com/google-gemini/gemini-cli/pull/25147) `improve(core): require recurrence evidence before extracting skills` | 提取前**要求至少 N 次重复发生**作为证据 |
+| [Gemini PR#25421](https://github.com/google-gemini/gemini-cli/pull/25421) `feat(core): integrate skill-creator into skill extraction agent` | 提取 agent 与 `skill-creator` agent 集成，使用 LLM 生成结构化 skill 定义 |
+
+**核心机制**：
+1. 用户行为流入 skill candidate 池前先做 fingerprint
+2. `recurrenceCount >= MIN_RECURRENCE` 才进入提取队列（默认 3）
+3. 提取 agent 调用 skill-creator 生成 SKILL.md frontmatter + body
+4. 同 fingerprint skill 后续触发只更新 `lastSeenAt` + `count`，不重复创建
+
+**Qwen Code 现状**：skills 系统已有（PR#2949），但提取门槛较低，缺 recurrence 证据机制。
+
+**Qwen Code 修改方向**：
+1. `skill-extraction-agent.ts` 引入 `RecurrenceLedger`（持久化 candidate fingerprint + count）
+2. 设置 `MIN_RECURRENCE_FOR_EXTRACTION = 3` 配置
+3. 集成 `skill-creator` agent（已存在的 Qwen 内置 skill）作为生成步骤
+4. UI 提示："Skill candidate detected (2/3 occurrences)"
+
+**实现成本**：~1 周。
+
+---
+
+<a id="item-61"></a>
+
+### 61. Topic Update Narration + autoMemory 配置拆分（P3）
+
+**问题**：Gemini CLI 在 2026-04 把"topic update narration"（agent 在长对话中主动播报"我们正在讨论 X"）从实验性提升到默认启用，并把 `memoryManager` 配置拆分出独立的 `autoMemory` 标记，避免"想关 auto memory 但同时也关掉了显式 save_memory"的两难。
+
+**来源**：3 个相关 PR：
+
+| PR | 改进 |
+|---|---|
+| [Gemini PR#25586](https://github.com/google-gemini/gemini-cli/pull/25586) | `enable topic update narration by default and promote to general` |
+| [Gemini PR#25567](https://github.com/google-gemini/gemini-cli/pull/25567) | `Disable topic updates for subagents`（subagent 不应该自我播报）|
+| [Gemini PR#25601](https://github.com/google-gemini/gemini-cli/pull/25601) | `feat(config): split memoryManager flag into autoMemory` |
+
+**Qwen Code 现状**：`memoryManager` 单一开关；无 topic narration。
+
+**Qwen Code 修改方向**：
+1. `settings.json` 拆分 `memoryManager` → `autoMemory`（自动）+ `memoryToolsEnabled`（手动 save_memory 可用性）
+2. 实现 topic narration（背景 fastModel 跑摘要 → 长对话每 ~15 turn 输出一行 "── Topic: refactoring auth module ──"）
+3. subagent 路径跳过 narration
+
+**实现成本**：~3 天。建议**先实现 autoMemory 拆分**（PR#25601 配置变更，几十行），narration 可选。
+
+---
+
+<a id="item-62"></a>
+
+### 62. 小型 backport 集合（P3）
+
+低优先级但可顺手 backport 的小项：
+
+| Gemini PR | 内容 | Qwen 现状 | 工作量 |
+|---|---|---|---|
+| [PR#17865](https://github.com/google-gemini/gemini-cli/pull/17865) | `/new` 作为 `/clear` 的 alias | `clearCommand.ts` 无 aliases | 1 行（添加 `aliases: ['new']`）|
+| [PR#25801](https://github.com/google-gemini/gemini-cli/pull/25801) | fix `/clear (new)` command bug | 待检查 | 验证后决定 |
+| [PR#22620](https://github.com/google-gemini/gemini-cli/pull/22620) | Bun 下禁用 detached mode 防 SIGHUP | 待检查 | 1 行（如果 Qwen 支持 Bun runtime）|
+| [PR#25090](https://github.com/google-gemini/gemini-cli/pull/25090) | get-internal-docs 工具支持 `.mdx` | Qwen 无 internal-docs 工具 | 跳过 |
+| [PR#25513](https://github.com/google-gemini/gemini-cli/pull/25513) | Vertex AI request routing 设置 | Qwen 用 DashScope/OpenAI-compat 为主 | 跳过 |
+| [PR#25497](https://github.com/google-gemini/gemini-cli/pull/25497) | 允许 `GEMINI_API_KEY` 含点 | `QWEN_API_KEY` 待验证 | 验证后决定 |
+| [PR#25541](https://github.com/google-gemini/gemini-cli/pull/25541) | seatbelt profile 从 `$HOME/.gemini` 优先 | 改为 `$HOME/.qwen` | 1 行 |
+| [PR#25300](https://github.com/google-gemini/gemini-cli/pull/25300) | Use OSC 777 for terminal notifications | Qwen 已经在跟 OSC 9/8 路线 (PR#3562 等) | 评估 OSC 777 vs 9 |
+| [PR#25342](https://github.com/google-gemini/gemini-cli/pull/25342) | bundle ripgrep into SEA for offline | **Qwen 已实现**（`packages/core/vendor/ripgrep/` 6 平台）| ✓ 跳过 |
+
