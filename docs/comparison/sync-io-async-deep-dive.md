@@ -1,8 +1,44 @@
 # Qwen Code 改进建议 — 同步 I/O 异步化 (Sync I/O Asynchronization)
 
-> 核心洞察：Node.js 是单线程事件驱动（Event Loop）的模型。当应用程序在主线程中调用 `readFileSync` 或 `statSync` 等同步 I/O 函数时，整个事件循环会被完全冻结。对于一个重度操作磁盘的 CLI Agent 而言，在热点路径（Hot Path）上的几毫秒同步阻塞，不仅会让流式输出动画（Spinner）卡顿，更会导致用户的盲打输入事件丢失。Claude Code 几近偏执地消灭了除初始化阶段外的所有 Sync I/O；而 Qwen Code 目前在多个高频路径中依然依赖同步阻塞操作。
+> 核心洞察：Node.js 是单线程事件驱动（Event Loop）的模型。当应用程序在主线程中调用 `readFileSync` 或 `statSync` 等同步 I/O 函数时，整个事件循环会被完全冻结。对于一个重度操作磁盘的 CLI Agent 而言，在热点路径（Hot Path）上的几毫秒同步阻塞，不仅会让流式输出动画（Spinner）卡顿，更会导致用户的盲打输入事件丢失。Claude Code 几近偏执地消灭了除初始化阶段外的所有 Sync I/O。
 >
 > 返回 [改进建议总览](./qwen-code-improvement-report.md)
+
+> **🟡 进度追踪（2026-04-24）**：[**PR#3581**](https://github.com/QwenLM/qwen-code/pull/3581) OPEN —— `perf(core): cut runtime sync I/O on tool hot path by 91%` 直接对标本文方向。**度量：hot path 110 → 10 syscall/prompt（-91%）**。
+>
+> **3 个 commit 拆分**：
+>
+> | 阶段 | 调用数 | 核心改动 |
+> |---|---|---|
+> | 1. `appendRecord` 异步化 | 110 → 20 | `chatRecordingService` 每 event 4 syscall（existsSync + mkdirSync + existsSync + appendFileSync）→ fire-and-forget `writeChain` promise；`lastRecordUuid` 保持同步更新以维护 `parentUuid` 链；`Config.shutdown()` await 新增 `flush()` 确保无数据丢失；`jsonl.writeLine` 改用 `fs.promises.mkdir/appendFile` |
+> | 2. hot-path fs 查询 LRU 缓存 | 20 → 10 | `workspaceContext.fullyResolvedPath` / `paths.validatePath`（positive only，ENOENT 不缓存）/ `ripGrep .qwenignore` 发现；`fileUtils` 删 `existsSync` pre-check 改 `fs.promises.stat` ENOENT→`FILE_NOT_FOUND` |
+> | 3. 测试 + `_reset*ForTest` + 回归守卫 | — | ENOENT-not-cached / `flush()` 早 resolve / write 失败不阻塞 chain / 写 `parentUuid` 链的 race 说明 |
+>
+> **工程质量亮点**：PR body 含完整 tracer 脚本（`trace-sync-io.cjs` ~160 行）+ 可复现度量步骤；tracer 含 reentrancy guard（防 `appendFileSync` 内部递归调 `writeFileSync`）、PID-suffixed 输出（qwen 启动时派生的 sandbox-check / git-info 短命助手进程继承 `NODE_OPTIONS`，不能共用 summary 文件）、4s warmup 窗口（剔除模块初始化阶段 syscall）。
+>
+> **PR body 度量结果**：
+>
+> ```
+> Baseline（HEAD 改动前，unique_sites=11, total_calls=110）：
+>    22 mkdirSync          chatRecordingService.ts ensureChatsDir
+>    22 existsSync         chatRecordingService.ts ensureConversationFile
+>    22 existsSync         jsonl-utils.ts writeLineSync
+>    22 appendFileSync     jsonl-utils.ts writeLineSync
+>     8 realpathSync       workspaceContext.ts fullyResolvedPath
+>     4 statSync           paths.ts validatePath
+>     ...
+>
+> After PR#3581（unique_sites=5, total_calls=10）：
+>     2 existsSync         todoWrite.ts
+>     2 realpathSync       workspaceContext.ts（每个唯一输入 1 次）
+>     2 statSync           paths.ts validatePath（每个唯一输入 1 次）
+>     2 statSync           ripGrep.ts
+>     2 existsSync         ripGrep.ts .qwenignore
+> ```
+>
+> 每个剩余位点**每个唯一输入路径仅触发一次**——这是"不重写语义"前提下的理论下限。
+>
+> 合并后本项目可升级为 ✓ **已实现**（hot path 已饱和优化；启动阶段 sync I/O 保留是合理设计）。
 
 ## 一、主线程阻塞的蝴蝶效应
 

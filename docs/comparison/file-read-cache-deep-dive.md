@@ -1,8 +1,23 @@
 # Qwen Code 改进建议 — 文件读取缓存与批量并行 I/O (File Read Cache & Parallel I/O)
 
-> 核心洞察：代码 Agent 最频繁的底层操作就是文件 I/O。当 Agent 需要综合上下文分析 10 个文件，或者在一个回合中修改某个文件后立即重读该文件以验证时，缓慢的磁盘读取会极大拖慢响应速度。Claude Code 通过内存 LRU 缓存、mtime 自动失效机制以及 `Promise.all` 批量并发，将这部分耗时压缩到了极致；而 Qwen Code 目前使用的是无缓存的顺序（串行）读取。
+> 核心洞察：代码 Agent 最频繁的底层操作就是文件 I/O。当 Agent 需要综合上下文分析 10 个文件，或者在一个回合中修改某个文件后立即重读该文件以验证时，缓慢的磁盘读取会极大拖慢响应速度。Claude Code 通过内存 LRU 缓存、mtime 自动失效机制以及 `Promise.all` 批量并发，将这部分耗时压缩到了极致。
 >
 > 返回 [改进建议总览](./qwen-code-improvement-report.md)
+
+> **🟡 进度追踪（2026-04-24）**：[**PR#3581**](https://github.com/QwenLM/qwen-code/pull/3581) OPEN —— `perf(core): cut runtime sync I/O on tool hot path by 91%` **部分覆盖**本文方向。
+>
+> **已覆盖（查询层缓存）**：
+> - `workspaceContext.fullyResolvedPath` bounded LRU
+> - `paths.validatePath` LRU（positive only，ENOENT 不缓存）
+> - `ripGrep .qwenignore` 发现缓存
+> - `fileUtils` 删 `existsSync` pre-check（改用 `fs.promises.stat` ENOENT→`FILE_NOT_FOUND`）
+>
+> **仍待实现（内容层缓存 + 32 批并行）**：
+> - `FileReadCache` 1000 条 LRU + mtime 失效的**文件内容缓存**
+> - `readManyFiles.ts` 顺序 for 循环改 `Promise.all` 32 并行读取
+> - 多文件 stat 并行（`Promise.all(paths.map(lstat))`）
+>
+> 合并后本项目升级为 🟡 **部分实现**（查询缓存 ✓，内容缓存 + 批量并行仍需单独 PR）。
 
 ## 一、实现差异与性能分析
 

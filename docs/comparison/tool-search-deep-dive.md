@@ -1,6 +1,20 @@
 # 工具动态发现与延迟加载 Deep-Dive
 
-> 39+ 个工具的 schema 全部注入系统提示会浪费大量 token。本文基于 Claude Code（v2.1.89 源码分析）的源码分析，介绍其 ToolSearchTool 延迟加载机制——仅加载核心工具，其余按需搜索。Qwen Code 目前无此功能。
+> 39+ 个工具的 schema 全部注入系统提示会浪费大量 token。本文基于 Claude Code（v2.1.89 源码分析）的源码分析，介绍其 ToolSearchTool 延迟加载机制——仅加载核心工具，其余按需搜索。
+
+> **🟡 进度追踪（2026-04-24）**：[**PR#3589**](https://github.com/QwenLM/qwen-code/pull/3589) OPEN —— `feat(tools): add ToolSearch for on-demand loading of deferred tool schemas` 直接实现本文描述的方向。度量：典型 39-tool setup 节省 **~15K tokens/request**。
+>
+> **实现要点**：
+> - `DeclarativeTool` 新增 `shouldDefer` / `alwaysLoad` / `searchHint` 三个标志
+> - 默认 deferred：MCP 工具 + `lsp` / `cron_*` / `ask_user_question` / `exit_plan_mode`
+> - `ToolSearch` 双模式：`select:Name1,Name2` 精确匹配 + 关键词搜索（支持 `+must-word` 必需词）
+> - 评分对齐 Claude Code spec：built-in **10/5/4/2**（name/substring/hint/desc），MCP **12/6**（偏向 MCP 以鼓励发现）
+> - **Resume 支持**：`startChat` 扫描历史 function calls 重新 reveal 之前用过的 deferred 工具
+> - **Compaction 保留**：`/clear` 清 revealed，压缩路径（`startChat(newHistory)`）保留
+> - Subagent wildcard `['*']` 通过 `includeDeferred: true` 保持向后兼容
+> - 21 文件 / +1051/-11 行 / 20 个新测试 case
+>
+> 合并后本项目可升级为 ✓ **已实现**。
 
 ---
 
