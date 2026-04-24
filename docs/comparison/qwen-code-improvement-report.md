@@ -88,6 +88,7 @@
 | **P1** | [输出 Token 自适应升级](./output-token-adaptive-upgrade-deep-dive.md) — 8K 默认 + max_tokens 截断时自动 64K 重试 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-23) | 固定值/不重试 | 小 | [PR#2898](https://github.com/QwenLM/qwen-code/pull/2898) ✓ |
 | **P1** | QWEN.md system-reminder 注入 — 项目指令从系统提示移到用户消息 `<system-reminder>` 标签注入，避免打破 Prompt Cache [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-26) | 直接拼入系统提示 | 小 | — |
 | **P1** | 错误恢复分类路由 — truncation→continuation、overflow→compaction、transport→backoff 三分支 + per-category 重试预算 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-27) | 统一 catch 重试 | 中 | — |
+| **P1** | [Skill 装载性能综合优化](./qwen-code-improvement-report-p0-p1-engine.md#item-28) — 9 项 Claude Code 参考：3 层 `Promise.all` 并行 + `memoize()` + `sentSkillNames` 去重 + `paths:` conditional + realpath 去重 + chokidar debounce + Bun polling workaround 等 | 3 层 for 串行 / 每轮重注 skill 列表 / 无 conditional | 中 | — |
 | **P2** | [Shell 安全增强](./shell-security-deep-dive.md) — IFS 注入/Unicode 空白/Zsh 命令等 25+ 专项检查 [↓](./qwen-code-improvement-report-p2-core.md#item-1) | AST-only 读写分类 | 中 | — |
 | **P2** | [MDM 企业策略](./mdm-enterprise-deep-dive.md) — macOS plist + Windows Registry + 远程 API 集中管控 [↓](./qwen-code-improvement-report-p2-core.md#item-2) | 无 OS 级策略 | 大 | — |
 | **P2** | [API 实时 Token 计数](./token-estimation-deep-dive.md) — 每次 API 调用前精确计数，3 层回退 [↓](./qwen-code-improvement-report-p2-core.md#item-3) | 静态 82 种模式匹配 | 中 | — |
@@ -187,7 +188,7 @@
 | **P2** | --max-budget-usd — headless 模式 USD 花费上限 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-11) | 缺失 | 小 | — |
 | **P2** | Connectors — 托管式 MCP 连接（GitHub/Slack/Linear/Google Drive OAuth）[↓](./qwen-code-improvement-report-p2-tools-commands.md#item-12) | 缺失 | 大 | — |
 | **P2** | MCP 并行连接 — pMap 动态插槽调度 + 双层并发（local:3/remote:20）[↓](./qwen-code-improvement-report-p2-perf.md#item-1) | 已并行但无并发上限 | 小 | — |
-| **P2** | 插件/Skill 并行加载 — marketplace + session 双源并行 + 目录检查并行 [↓](./qwen-code-improvement-report-p2-perf.md#item-2) | 顺序 for 循环 | 小 | — |
+| **P2** | 插件/Skill 并行加载 — marketplace + session 双源并行 + 目录检查并行 [↓](./qwen-code-improvement-report-p2-perf.md#item-2)（⚠️ 已合并到 [P1 item-28 Skill 装载综合优化](./qwen-code-improvement-report-p0-p1-engine.md#item-28) 子项 #1+#2）| 顺序 for 循环 | 小 | — |
 | **P2** | Speculation 流水线建议 — 投机完成后立即并行生成下一建议 [↓](./qwen-code-improvement-report-p2-perf.md#item-3) | 每次重新生成 | 小 | — |
 | **P2** | [write-through缓存与 TTL 后台刷新](./memoize-ttl-cache-deep-dive.md) — stale-while-revalidate + LRU 有界缓存 [↓](./qwen-code-improvement-report-p2-perf.md#item-4) | 无通用缓存模式 | 小 | — |
 | **P2** | 上下文收集并行化 — 多源附件 Promise.all 并行获取（~20 并发）[↓](./qwen-code-improvement-report-p2-perf.md#item-5) | 串行追加 | 小 | — |
@@ -326,7 +327,7 @@
 |------|------|:----:|
 | [P0/P1 核心能力](./qwen-code-improvement-report-p0-p1-core.md) | 上下文压缩、Subagent、Speculation、记忆系统、工具并行、启动优化、闭环学习等 | 14 |
 | [P0/P1 平台集成](./qwen-code-improvement-report-p0-p1-platform.md) | GitHub Actions CI、Code Review、SDK、Remote Control Bridge、GitLab 等 | 9 |
-| [P0/P1 引擎优化](./qwen-code-improvement-report-p0-p1-engine.md) | 流式执行、缓存、Token 管理、崩溃恢复、Agent 编排、上下文管理、安全等 | 27 |
+| [P0/P1 引擎优化](./qwen-code-improvement-report-p0-p1-engine.md) | 流式执行、缓存、Token 管理、崩溃恢复、Agent 编排、上下文管理、安全、Skill 装载性能等 | 28 |
 | [P2 核心功能与企业特性](./qwen-code-improvement-report-p2-core.md) | 中等优先级（Shell 安全、MDM 企业策略、Token 计数、Computer Use、AgentScope Plan/A2A/OTel 参考等） | 26 |
 | [P2 工具与命令](./qwen-code-improvement-report-p2-tools-commands.md) | 中等优先级（Conditional Hooks、/batch、MCP 重连、Ripgrep 回退、Skill 模型覆盖、PreCompact Hook、模型调用 Slash 命令、/experimental 门控等） | 26 |
 | [P2 界面与 UX](./qwen-code-improvement-report-p2-tools-ui.md) | 中等优先级（Token 警告、Spinner、/rewind、Diff 渲染、/plan、大粘贴外化等） | 21 |
@@ -442,6 +443,56 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-24（新增 P1 item-28 · Skill 装载性能综合优化 · 9 项 Claude Code 参考）
+
+**用户要求**："Claude Code 有优化 Skill 装载性能可以参考的地方么？... 要"——同意把 Claude Code 的 9 项 Skill 装载优化聚合成 1 个正式 item 写入报告。
+
+#### 新增 item-28（p0-p1-engine）
+
+**[Skill 装载性能综合优化（9 项 Claude Code 参考）](./qwen-code-improvement-report-p0-p1-engine.md#item-28)**
+
+整合 Claude Code 在 3 个源文件（`skills/loadSkillsDir.ts` + `utils/attachments.ts` + `utils/skills/skillChangeDetector.ts`）中的 9 项优化：
+
+| # | 优化 | Tier | 工作量 | 收益 |
+|---|---|:-:|---|---|
+| 1 | 外层 `Promise.all` 并行 5 路目录来源 | P0 冷启动 | 5 行 | ~5× |
+| 2 | 内层 `entries.map(async)` 并行单目录 | P0 冷启动 | 10 行 | 每 dir ~N× |
+| 3 | 顶层 `memoize()` 按 cwd 缓存 | P3 | 10 行 | 多次调用去重 |
+| 4 | `sentSkillNames` per-agent 去重 | P1 token | ~50 行 | 每轮省 600-1500 token |
+| 5 | `suppressNext` on --resume | P2 | ~20 行 | resume 省一次完整注入 |
+| 6 | Conditional skills（`paths:` frontmatter）| P1 token | ~30 行 | 大 monorepo 省 50%+ 列表 |
+| 7 | 300ms reload debounce + 1s stability | P2 正确性 | ~30 行 | git checkout 不卡顿 |
+| 8 | Bun `usePolling` 规避 PathWatcherManager 死锁 | P3 | ~5 行 | 未来 Bun 不死锁 |
+| 9 | `realpath` 并行去重 symlink | P2 正确性 | ~30 行 | 解决嵌套/symlink 重复 |
+
+**Qwen Code 现状清单**：
+- `skill-manager.ts:265-285` `refreshCache()` 4 层串行 for
+- `skill-manager.ts:695` `listSkillsAtLevel()` provider dir 串行
+- `skill-manager.ts:723` `loadSkillsFromDir()` 每 skill dir 串行
+- 每 turn 注入完整 skill 列表（无 `sentSkillNames`）
+- `/resume` 重复注入
+- 未用 `ConditionalRulesRegistry` lazy 激活 skill
+
+**重要复用机会**：Qwen 已有 `ConditionalRulesRegistry`（`utils/rulesDiscovery.ts:232-300`）给 `.qwen/rules/*.md` 用。把 skill 接到同一引擎 = **子项 #6 零新机制工作量**。
+
+#### 主矩阵 / p2-perf / README 联动
+
+- 主矩阵：新增 P1 行（item-28）
+- p2-perf item-2（插件/Skill 并行加载）顶部加整合提示 —— 已合并到 item-28 子项 #1+#2+#3
+- sub-report 计数：p0-p1-engine 27 → 28
+- 总项数：274 → 275
+- README 两处数字同步
+
+#### 为什么归为 P1 而不是 P2
+
+- 子项 #4 每轮节省 600-1500 token × N turn —— 在频繁使用 skill 的工作流中，一天对话可能累计省 50K+ token
+- 子项 #6 对大 monorepo（50+ 条件性 skill）是**不可或缺**的 UX 保护
+- 子项 #1 + #2 的冷启动优化是用户第一印象
+
+单个子项单独看是 P2，但**综合收益**对重度 skill 用户（这是 Qwen 的明确定位，因为 skills 已反超 OpenCode 6.8×）是 P1 级别的。
+
+---
 
 ### 2026-04-24（大性能/架构 PR 进入开发 · 3 项 P1 状态升级）
 

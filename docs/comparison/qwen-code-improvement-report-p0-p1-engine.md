@@ -1158,3 +1158,238 @@ classify_failure(stop_reason, error)
 **意义**：不同错误需要不同恢复动作——用错恢复动作比不恢复更糟。
 **缺失后果**：max_tokens 截断后原样重试 → 仍然截断 → 浪费 token 且无进展。
 **改进收益**：分类路由 = 每种错误走最优恢复路径 = 恢复成功率从 ~50% 提升到 ~90%。
+
+---
+
+<a id="item-28"></a>
+
+### 28. Skill 装载性能综合优化 — 9 项 Claude Code 参考（P1）
+
+**问题**：Qwen Code 的 Skill 装载路径（`packages/core/src/skills/skill-manager.ts`）有 **3 层串行 for 循环**：
+- `refreshCache():273` `for (const level of levels)` —— 4 层串行（project/user/extension/bundled）
+- `listSkillsAtLevel():695` `for (const baseDir of baseDirs)` —— provider dir 串行（.qwen/.agent/.cursor）
+- `loadSkillsFromDir():723` `for (const entry of entries)` —— 每个 skill dir 串行 `fs.stat` + `fs.access` + `parseSkillFile`
+
+此外运行时每 turn 都把**完整 skill 列表注入 system prompt**（100 个 skill ≈ 600-1500 token × N turn）。用户装的 skill 越多，启动和每轮对话都越贵。
+
+**Claude Code 的 9 项优化**（`skills/loadSkillsDir.ts:638-803` + `utils/skills/skillChangeDetector.ts` + `utils/attachments.ts:2600-2715`）：
+
+| # | 优化 | 位置 | 收益 |
+|---|---|---|---|
+| 1 | **外层 `Promise.all` 并行 5 种来源** | `loadSkillsDir.ts:679-714` | 冷启动 5× 加速 |
+| 2 | **内层 `entries.map(async)` 并行单目录** | `loadSkillsDir.ts:421-476` | 每个目录 N× 加速 |
+| 3 | **顶层 `memoize()` 缓存按 cwd 去重** | `loadSkillsDir.ts:638` | 多次调用零磁盘读取 |
+| 4 | **`sentSkillNames` per-agent 去重** | `attachments.ts:2607-2713` | 每轮省 600-1500 token |
+| 5 | **`suppressNext` on --resume** | `attachments.ts:2633` | resume 省一次完整注入 |
+| 6 | **Conditional skills（`paths:` frontmatter）** | `loadSkillsDir.ts:771-796` | 按需激活，system prompt 只含相关 skill |
+| 7 | **300ms reload debounce + 1s stability** | `skillChangeDetector.ts:27-42` | 批量 git checkout 不卡顿 |
+| 8 | **Bun `usePolling` 规避 PathWatcherManager 死锁** | `skillChangeDetector.ts:62` | 防止 Bun runtime 死锁 |
+| 9 | **`realpath` 并行去重 symlink** | `loadSkillsDir.ts:728-762` | 解决嵌套目录/symlink 重复 |
+
+---
+
+#### Tier 1 —— 冷启动延迟（高 ROI）
+
+**#1 + #2 + #3：三层并行 + memoize**
+
+Claude Code 结构化代码示例：
+```ts
+// #1 外层 5 路并行
+const [managedSkills, userSkills, projectSkillsNested,
+       additionalSkillsNested, legacyCommands] = await Promise.all([
+  loadSkillsFromSkillsDir(managedSkillsDir, 'policySettings'),
+  loadSkillsFromSkillsDir(userSkillsDir, 'userSettings'),
+  Promise.all(projectSkillsDirs.map(dir => loadSkillsFromSkillsDir(dir, 'projectSettings'))),
+  Promise.all(additionalDirs.map(dir => loadSkillsFromSkillsDir(join(dir, '.claude', 'skills'), 'projectSettings'))),
+  loadSkillsFromCommandsDir(cwd),
+])
+
+// #2 内层每个目录内并行
+async function loadSkillsFromSkillsDir(basePath, source) {
+  const entries = await fs.readdir(basePath)
+  return Promise.all(entries.map(async (entry) => {
+    const content = await fs.readFile(skillFilePath, 'utf-8')
+    const { frontmatter, content: md } = parseFrontmatter(content)
+    return { skill: createSkillCommand({...}), filePath: skillFilePath }
+  }))
+}
+
+// #3 顶层 memoize
+export const getSkillDirCommands = memoize(async (cwd) => { ... })
+```
+
+对应 Qwen 改造：
+```ts
+// 当前 skill-manager.ts:273 的串行 for
+for (const level of levels) {
+  const levelSkills = await this.listSkillsAtLevel(level);  // ← 串行 await
+  skillsCache.set(level, levelSkills);
+  totalSkills += levelSkills.length;
+}
+
+// 目标：
+const entries = await Promise.all(levels.map(async level => [level, await this.listSkillsAtLevel(level)]));
+for (const [level, levelSkills] of entries) { ... }
+```
+
+同理 `listSkillsAtLevel` 的 provider dir 循环（`.qwen` / `.agent` / `.cursor`）+ `loadSkillsFromDir` 的 entry 循环都改 `Promise.all`。
+
+---
+
+#### Tier 2 —— 运行时 token 节省（高频）
+
+**#4 `sentSkillNames` 去重 —— 每轮节省 600-1500 token**
+
+Claude `attachments.ts:2607`：
+```ts
+const sentSkillNames = new Map<string, Set<string>>()  // agentId → already-sent skill names
+
+export function resetSentSkillNames(): void {
+  sentSkillNames.clear()          // skill 文件真正变化时才清
+  suppressNext = false
+}
+
+// 在 getSkillListingAttachments 中：
+const agentKey = toolUseContext.agentId ?? ''
+let sent = sentSkillNames.get(agentKey) ?? new Set()
+// 只注入 sent 中不存在的 skill
+```
+
+**逻辑**：skill 列表只在**首次 turn**或**skill 真正变化后**注入。后续 turn 都拿到模型已知的列表，无需重复。主 agent / 每个子 agent 各自维护独立 Set。
+
+**Qwen 现状**：每次 `assemble prompt` 时把完整 skill 列表塞 system section。
+
+**改造要点**：
+- `packages/core/src/skills/skill-manager.ts` 新增 `sentSkillNamesByAgent: Map<agentId, Set<name>>`
+- prompt 组装路径（`core/prompts.ts` 或类似）调用 `getSkillListingDelta(agentId)` 只返回新 skill
+- skill 文件 watcher 变化时调 `resetSentSkillNames()`
+- subagent spawn 初始化自己的 Set（从父 agent 继承当前已 sent 列表作为起点）
+
+**#5 `suppressNext` on --resume**
+
+```ts
+let suppressNext = false
+export function suppressNextSkillListing(): void { suppressNext = true }
+// 在 conversationRecovery.ts 检测到 transcript 里已有 skill_listing attachment 时调
+```
+
+避免 `/resume` 重复注入 —— 首次 session 已注入的 skill 列表在 JSONL 里，恢复时跳过重注。
+
+**#6 Conditional skills（`paths:` frontmatter）**
+
+Claude `loadSkillsDir.ts:771`：
+```ts
+for (const skill of deduplicatedSkills) {
+  if (skill.paths?.length > 0 && !activatedConditionalSkillNames.has(skill.name)) {
+    conditionalSkills.set(skill.name, skill)  // ← 不进 unconditional，等待激活
+  } else {
+    unconditionalSkills.push(skill)
+  }
+}
+```
+
+工具调用命中 `paths:` glob 时激活 —— 把 skill 从 `conditionalSkills` 移到 `activatedConditionalSkillNames`，触发 prompt 重建。
+
+**Qwen 的优势**：已有 `ConditionalRulesRegistry`（`utils/rulesDiscovery.ts:232-300`）给 `.qwen/rules/*.md` 用。把同一引擎接到 skill 加载路径 = **零新机制工作量**，只是数据源切换。
+
+---
+
+#### Tier 3 —— 工程正确性
+
+**#7 300ms reload debounce + 1s file stability**
+
+```ts
+const FILE_STABILITY_THRESHOLD_MS = 1000  // chokidar awaitWriteFinish
+const RELOAD_DEBOUNCE_MS = 300             // 事件到达后合并 300ms
+
+chokidar.watch(paths, {
+  awaitWriteFinish: {
+    stabilityThreshold: FILE_STABILITY_THRESHOLD_MS,
+    pollInterval: FILE_STABILITY_POLL_INTERVAL_MS,
+  },
+})
+
+function scheduleReload(changedPath) {
+  pendingChangedPaths.add(changedPath)
+  if (reloadTimer) clearTimeout(reloadTimer)
+  reloadTimer = setTimeout(async () => {
+    // 批量处理所有 pending paths
+  }, RELOAD_DEBOUNCE_MS)
+}
+```
+
+`git checkout branch-with-30-new-skills` 触发 chokidar 30 事件时 —— 没 debounce = 30 次 reload cycle；有 debounce = 1 次批量 reload。
+
+**#8 Bun `usePolling` 规避 PathWatcherManager 死锁**
+
+```ts
+const USE_POLLING = typeof Bun !== 'undefined'  // oven-sh/bun#27469, #26385
+```
+
+Bun 的 `fs.watch()` 主线程 close watcher 同时 FileWatcher 线程派发事件会 `__ulock_wait2` **永久死锁**。Qwen 如果后续支持 Bun runtime 必须加，未 fix 前 2s polling 比死锁好。
+
+**#9 realpath 并行去重 symlink**
+
+```ts
+const fileIds = await Promise.all(
+  allSkillsWithPaths.map(({ filePath }) =>
+    skill.type === 'prompt' ? getFileIdentity(filePath) : null
+  )
+)
+// 然后同步 fold —— 先命中的 source wins
+```
+
+**为什么用 realpath 而非 inode**：NFS / ExFAT / 容器 fs 上 inode 不可靠（inode 0、精度丢失），realpath 是 filesystem-agnostic 的规范路径。参见 `claude-code/issues/13893`。
+
+---
+
+#### Qwen Code 现状清单
+
+| 文件:行 | 问题 |
+|---|---|
+| `skill-manager.ts:265-285` `refreshCache()` | `for (const level of levels) await` 4 层串行 |
+| `skill-manager.ts:695` `listSkillsAtLevel()` | `for (const baseDir of baseDirs) await` provider dir 串行 |
+| `skill-manager.ts:723` `loadSkillsFromDir()` | `for (const entry of entries) await` skill dir 串行 |
+| `skill-manager.ts:677` | `fsSync.existsSync` 同步 I/O（和 PR#3581 路径重叠）|
+| prompt 组装路径 | 每 turn 注入完整 skill 列表（无 `sentSkillNames`）|
+| `/resume` 路径 | 无 `suppressNext` —— 重复注入 |
+| skill frontmatter | 已支持 `paths:` ？需确认；即使支持也需接入 `ConditionalRulesRegistry` 样式的 lazy 激活 |
+| skill watcher | chokidar 存在但 debounce/stability 配置需对齐 |
+
+---
+
+#### 实施路线图（总 ~190 行改动，分阶段）
+
+| 阶段 | 子项 | 工作量 | 预期收益 |
+|---|---|---|---|
+| **P0** | #1 `refreshCache` 4 层 `Promise.all` | 5 行 | 冷启动 ~5× |
+| **P0** | #2 `loadSkillsFromDir` 内层 `Promise.all` | 10 行 | 每 dir ~N× |
+| **P1** | #4 `sentSkillNames` per-agent 去重 | ~50 行 | 每轮省 600-1500 token |
+| **P1** | #6 Conditional skills 接入 | ~30 行（复用 `ConditionalRulesRegistry`）| 大 monorepo 省 50%+ skill 列表 |
+| **P2** | #5 `suppressNext` on --resume | ~20 行 | 恢复 session 省一次注入 |
+| **P2** | #9 realpath 并行去重 | ~30 行 | 解决 symlink 重复 |
+| **P2** | #7 300ms debounce + 1s stability | ~30 行 | git checkout 不卡顿 |
+| **P3** | #8 Bun `usePolling` workaround | ~5 行（gated `typeof Bun`）| 未来 Bun 不死锁 |
+| **P3** | #3 `memoize()` 全局入口 | ~10 行 | 多次调用去重 |
+
+---
+
+#### Claude Code 源码精确索引
+
+| 参考 | 文件:行 |
+|---|---|
+| 并行加载 5 路 | `skills/loadSkillsDir.ts:638-803` |
+| 文件级并行 | `skills/loadSkillsDir.ts:421-479` |
+| realpath 去重 | `skills/loadSkillsDir.ts:728-762` |
+| sentSkillNames | `utils/attachments.ts:2607-2715` |
+| suppressNextSkillListing | `utils/attachments.ts:2617-2635` |
+| Change Detector + debounce | `utils/skills/skillChangeDetector.ts:27-131, 255-279` |
+| Bun polling workaround | `utils/skills/skillChangeDetector.ts:51-62` |
+| Conditional skills | `skills/loadSkillsDir.ts:771-796, 824-829` |
+| FILTERED_LISTING_MAX 兜底 | `utils/attachments.ts:2641-2659` |
+
+**相关 item**：与 [item-2 文件读取缓存 + 批量并行 I/O](#item-2) + [item-5 同步 I/O 异步化](#item-5) + [p2-perf item-2 插件/Skill 并行加载](./qwen-code-improvement-report-p2-perf.md#item-2) 有重叠方向；本 item 是**综合整合版**，统一 9 项优化为一个追踪单元。
+
+**意义**：Skill 系统已是 Qwen Code 的核心能力（2,673 行，已反超 OpenCode 的 393 行 —— 见 opencode item-20），但**装载链路**仍是上游 fork 期的原始实现。Claude Code 用 9 项针对性优化让 100+ skill 的用户感受不到启动延迟 + 每轮省 token。
+**缺失后果**：用户装 50+ skill 后启动 1-2s 卡顿 + 每 turn 浪费 1K+ token。
+**改进收益**：3 层并行 (#1+#2+#3) 把启动降至 <200ms；sentSkillNames (#4) 一次性 + conditional (#6) 按需激活把每轮 token 降至 O(使用中的 skill)。

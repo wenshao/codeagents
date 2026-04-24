@@ -48,6 +48,8 @@
 
 ### 2. 插件/Skill 并行加载与启动缓存（P2）
 
+> **⚠️ 整合提示**：本 item 已作为 **[p0-p1-engine item-28 Skill 装载性能综合优化](./qwen-code-improvement-report-p0-p1-engine.md#item-28)** 的子项 #1 (外层 5 路 `Promise.all`) + #2 (内层 entries.map 并行) + #3 (`memoize()`) 纳入 P1 追踪。本条目保留作为 P2 分解参考，但推荐跳转到 item-28 看完整 9 项综合方案。
+
 **问题**：开发者安装了 10+ 插件/Skill（代码生成、lint 检查、测试框架等），Agent 启动时逐个顺序加载——每个 50ms，10 个就是 500ms。更糟的是 `/reload` 时即使只改了 1 个插件也全部重新加载。开发者感受到"装的插件越多启动越慢"。
 
 **Claude Code 的解决方案**：3 层并行——① marketplace 插件 + session 插件 `Promise.all()` 并行加载；② 每个插件内部 commands/agents/hooks 目录存在检查 `Promise.all([pathExists(commandsDir), pathExists(agentsDir), pathExists(hooksDir)])`；③ 加载结果缓存，热重载时仅增量更新变更的插件。
