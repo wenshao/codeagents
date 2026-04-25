@@ -47,8 +47,8 @@
 ```
 
 特征：
-- **被动型**：进程自己跑，agent 不需主动读
-- **结果通过 `BashOutput(bashId)` 拉取**（按需）
+- **完成时单次通知**：agent 收到 `<task-notification>` `status: completed`（含 exit code），但**不在通知里携带 stdout 内容**
+- **stdout 落盘**：完整输出写到 session 临时目录下的 task 输出文件（agent 通过 `Read` 工具读取该路径）
 - **磁盘上限 5 GB**（`MAX_TASK_OUTPUT_BYTES`），超限 SIGKILL
 - **结束方式**：自然退出 / 用户 `x` 停 / agent `TaskStop(shell_id=...)`（含 `KillShell` 别名）
 
@@ -72,8 +72,8 @@
 ```
 
 特征：
-- **主动型**：每条 stdout 行 = 一条聊天消息推回 LLM（agent 不需轮询）
-- **200ms 内多行批量为一条通知**（避免噪声）
+- **每事件通知**：每条 stdout 行的**内容直接进入 `<task-notification>`**（agent 不需另读文件）
+- **200ms 内多行批量为一条通知**（"multiline output from a single event groups naturally"）
 - **生命周期**：默认 `timeout_ms: 300000`（5 分钟）/ `persistent: true`（会话生命周期）
 - **过量保护**：消息过多自动停止（避免 token 爆炸）
 - **退出条件**：脚本自身 exit / timeout / `TaskStop(task_id=...)`
@@ -83,13 +83,17 @@
 | 维度 | Shell（Bash bg） | Monitor |
 |---|---|---|
 | 触发 | `Bash` + `run_in_background: true` | `Monitor` 工具 |
-| 数据流向 | LLM 主动 `BashOutput()` 拉 | 每行 stdout 自动推送给 LLM |
+| 通知次数 | **1 次**（完成时，含 exit code） | **N 次**（每事件 1 条，200ms 批合） |
+| stdout 内容 | 落盘到 task 输出文件，agent 用 `Read` 读 | 直接在 notification 里 |
 | 生命周期默认 | 进程自然结束 | 5 分钟 timeout |
-| 推送上限 | 无（按需拉取） | 自动节流（多行 200ms 批合） |
+| 推送上限 | 仅完成 1 条 | 自动节流 + 过量自停 |
 | 状态条计数 | `N shell` | `N monitor` |
 | 终止 | `TaskStop(shell_id=...)` 或 `KillShell` 别名 | `TaskStop(task_id=...)` |
 
-**关键洞察**：Shell 是"子进程托管"，Monitor 是"事件总线"——前者**冷数据**（输出在那等你拉），后者**热数据**（事件来了主动推）。
+**关键洞察**：两者**都是 push 模式**，但 cardinality 不同——Shell 是"完成时通知一次"（适合 build / 测试），Monitor 是"每事件通知一次"（适合 watch / 日志监听）。这与 Monitor 工具描述里写的选择树一致：
+
+> - **One**（"tell me when the server is ready / the build finishes"）→ use **Bash with `run_in_background`**
+> - **One per occurrence, indefinitely** → Monitor with an unbounded command
 
 ## 三、状态条显示机制
 
@@ -102,13 +106,13 @@ Footer 的两行布局（v2.1.120）：
 
 `auto mode on` 永久存在（除非用户切换），后续 `· 1 shell, 1 monitor` **按需附加**：
 
-| 触发条件 | 显示 |
-|---|---|
-| 无后台任务 | `⏵⏵ auto mode on (shift+tab to cycle)` |
-| 仅 1 个 bg shell | `⏵⏵ auto mode on · 1 shell` |
-| 仅 1 个 monitor | `⏵⏵ auto mode on · 1 monitor` |
-| 都有 | `⏵⏵ auto mode on · 1 shell, 1 monitor` |
-| 多个 | `⏵⏵ auto mode on · 3 shells, 2 monitors` |
+| 触发条件 | 显示 | 是否实测 |
+|---|---|---|
+| 无后台任务 | `⏵⏵ auto mode on (shift+tab to cycle)` | ✅ |
+| 仅 1 个 bg shell | `⏵⏵ auto mode on · 1 shell` | ✅ |
+| 都有 | `⏵⏵ auto mode on · 1 shell, 1 monitor` | ✅ |
+| 仅 1 个 monitor | `⏵⏵ auto mode on · 1 monitor` | ⚠️ 推测（未单独测过纯 monitor） |
+| 多个 | `⏵⏵ auto mode on · 3 shells, 2 monitors` | ⚠️ 推测（plurals 形式参考"2 active shells" UI 标题） |
 
 每个 turn 完成后还有**内联状态行**：
 
@@ -172,7 +176,7 @@ Bash({
   ↑/↓ to select · Enter to view · x to stop · ←/Esc to close
 ```
 
-UI 标题 `2 active shells` 把两类**统称为 shell**（历史包袱），但 Footer 状态条**精确分类**为 `1 shell, 1 monitor`——以 Footer 为准。
+UI 标题用 `2 active shells` 把两类**统称为 shell**（命名沿用——Monitor 内部就是包装的 shell pipeline，如下面 Monitor 详情里 Script 字段所示），但 Footer 状态条**精确分类**为 `1 shell, 1 monitor`——以 Footer 为准。
 
 ### Shell 详情
 
@@ -215,23 +219,26 @@ UI 标题 `2 active shells` 把两类**统称为 shell**（历史包袱），但
 Monitor 的"每行 stdout = 一条聊天通知"是它独特的设计。从 agent 视角：
 
 ```
-Monitor 启动 → agent 继续干别的事 → Monitor 检测到 ERROR
+Monitor 启动 → agent 继续干别的事 → Monitor 检测到 ERROR 行
                                           ↓
-                 注入 system message：脚本 stdout 行作为通知
+                  注入 <system-reminder><task-notification>:
+                  脚本 stdout 行内容直接进入通知正文
                                           ↓
-                 agent 在下一轮看到通知，决策是否响应
+                  agent 在下一轮看到通知 + 内容，决策是否响应
 ```
 
-**这与 BashOutput 拉模式正相反**——Bash bg 的输出 agent 必须主动 `BashOutput(id)` 拉；Monitor 是**事件来了被动通知**。
+**与 Bash bg 的差别**：Bash bg 的完成通知**只携带 status/exit code**，stdout 全文落到 `tasks/<id>.output` 文件，agent 想看完整输出还要再调一次 `Read`。Monitor 把内容直接塞进通知——零额外读取。
 
 实现细节（来自 Monitor 工具的描述）：
 
-> 200ms 内的多行 stdout 批量为一条通知（避免泛洪）。Monitor 自动停止条件：消息过多 → 强制停（避免 token 爆炸）。
+> Stdout lines within 200ms are batched into a single notification, so multiline output from a single event groups naturally.
+>
+> Monitors that produce too many events are automatically stopped; restart with a tighter filter if this happens.
 
-工程细节：
+工程细节（同样来自工具描述）：
 - 使用 `grep --line-buffered` 强制行缓冲（否则 pipe 缓冲延迟分钟级）
-- 失败容错：`curl ... || true` 防止单次失败杀掉整个 monitor
-- 轮询间隔：本地 0.5-1s / 远端 30s+（API 速率限制）
+- 失败容错：`curl ... || true` 防止单次请求失败杀掉整个 monitor
+- 轮询间隔建议：本地 0.5-1s / 远端 30s+（API 速率限制）
 
 ## 七、与 Bash 前台/后台的关系
 
@@ -248,7 +255,8 @@ Bash 工具调用
     │       ↓
     │   进入 shell pool
     │   Footer 显示 +1 shell
-    │   通过 BashOutput(id) 拉输出
+    │   完成时收到 1 条通知（含 exit code）
+    │   stdout 落 session 临时目录，用 Read 读
     │   通过 TaskStop(shell_id=id) 终止
     │
     └─ 默认前台
@@ -274,25 +282,28 @@ Monitor 工具调用
 
 | 能力 | Claude Code v2.1.120 | Qwen Code v0.15.2 | OpenCode v1.14.24 |
 |---|---|---|---|
-| 后台 Bash 进程 | ✅ `run_in_background` + 自动后台化 + Ctrl+B | ⚠️ 部分（[PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) OPEN 中：background-agent UI） | ⚠️ Bash 工具有 `run_in_background` 参数但**无统一管理 UI** |
-| Monitor / 事件流 | ✅ 独立 `Monitor` 工具 + 200ms 节流 | ✗ 无 | ✗ 无 |
-| 状态条计数 | ✅ `N shell, M monitor` 实时分类 | ✗ 无 | ✗ 无 |
-| 统一管理 UI | ✅ `/tasks`（`/bashes` 别名）+ `↓` 键 | ✗ 无任务面板 | ✗ 无 |
-| 通知推送（事件 → LLM） | ✅ `<task-notification>` 系统消息注入 | ✗ 无（仅同步工具调用） | ✗ 无 |
+| 后台 Bash 进程 | ✅ `run_in_background` + 自动后台化 + Ctrl+B + shell pool + 输出落盘 | ⚠️ 仅 fork-and-detach（`shell` 工具的 `is_background: true`，源码: `tools/shell.ts#54`），**无 pool / 无输出收集** | ✗ `bash` 工具**无 background 参数**（源码: `tool/bash.ts#53-59`） |
+| 后台 Subagent | ✅ `Agent(..., run_in_background: true)` + 完成通知 | ✅ [PR#3076](https://github.com/QwenLM/qwen-code/pull/3076)（已合并 2026-04-17）`Agent` 工具支持后台 + lifecycle 事件 + headless/SDK 一致 | ✗ 无 |
+| Monitor / 事件流 | ✅ 独立 `Monitor` 工具 + 200ms 节流 + 过量自停 | ✗ 无 | ✗ 无 |
+| 状态条计数 | ✅ `N shell, M monitor` 实时分类 | ⚠️ [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) OPEN 中（仅 background **subagent** pill，不含 Bash bg） | ✗ 无 |
+| 统一管理 UI | ✅ `/tasks`（`/bashes` 别名）+ `↓` 键 + Shell/Monitor 各有详情视图 | ⚠️ PR#3488 OPEN：combined dialog 仅含 subagent | ✗ 无任务面板 |
+| 通知推送（事件 → LLM） | ✅ `<task-notification>` 系统消息注入（subagent + shell + monitor 全部） | ✅ subagent 完成通知（PR#3076）；Bash bg ✗ | ✗ |
 
 **Claude Code 是目前唯一把"agent 异步任务"完整产品化的 agent**。
 
-### Qwen Code 的相关 PR
+### Qwen Code 的相关 PR（精确状态）
 
-[PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) `feat(cli): background-agent UI — pill, combined dialog, detail view`（OPEN）—— 对标 Claude 的 `/tasks` 面板，但目前还在 review，且仅覆盖**Agent 后台**（Task tool 异步），不覆盖 Bash bg。
+[PR#3076](https://github.com/QwenLM/qwen-code/pull/3076) `feat: background subagents with headless and SDK support`（**已合并 2026-04-17**）—— 给 **`Agent` 工具**加了 `run_in_background: true`，子 agent 异步启动，完成时 lifecycle 事件作为通知发回父 agent。**这是 subagent 后台，不是 Bash 后台**。
 
-[PR#3076](https://github.com/QwenLM/qwen-code/pull/3076) 已经做了 `run_in_background` 参数，但用户**看不到状态指示**——参数在但无可见性。
+[PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) `feat(cli): background-agent UI — pill, combined dialog, detail view`（**OPEN**）—— 给 PR#3076 的 background subagent 加 UI：状态行 pill 计数 + 组合 dialog + 单 agent 详情。**仍仅覆盖 subagent，不含 Bash bg / Monitor**。
 
-完整对标至少需要：
-1. Bash bg pool（已有）
-2. 统一 background task 管理面板（PR#3488 在做）
-3. 状态条分类计数（无 PR）
-4. **Monitor / 事件流工具（最大缺口）**——目前没有任何 PR 涉及
+Qwen Code 的 `shell` 工具早就有 `is_background: true` 参数（源码 `tools/shell.ts#54-80`），但只是在 Linux 上简单加 `&` 让命令 fork-and-detach——**没有 shell pool、没有输出收集、没有状态指示、没有 TaskStop**。等同于"裸 shell 的 `&`"，不是 Claude 那种产品化方案。
+
+完整对标 Claude Code 至少需要：
+1. **Bash bg pool**（重写 `shell.ts`，把 `&` 改成可追踪的子进程注册）—— 无 PR
+2. **统一 background task 管理面板**（PR#3488 在做，但仅 subagent 部分）
+3. **状态条分类计数**（PR#3488 仅 subagent pill）
+4. **Monitor / 事件流工具**（最大缺口）—— **目前没有任何 PR 涉及**
 
 ## 九、为什么这套设计重要
 
@@ -316,17 +327,19 @@ Monitor 工具调用
 4. 任一时刻，monitor 推回 ERROR 通知 → agent 立刻调试
 ```
 
-这种"agent 边写代码边监控"的模式在 Qwen Code 里需要 LLM 主动**反复轮询** `BashOutput`——浪费 token，且响应延迟。Monitor 的事件推送让 agent 有了"中断"概念。
+这种"agent 边写代码边监控"的模式在 Qwen Code 里**根本无法实现**——Qwen 的 `is_background: &` 是 fork-and-detach（无 stdout 收集、无生命周期管理），更别说事件推送。Monitor 的事件推送给了 agent "中断"概念，让 agent 有了"等待外部条件"的原语，这是 Claude Code 异步能力的核心壁垒。
 
-### 实现视角：核心是 5 个组件
+### 实现视角：至少需要的核心组件
 
-1. **Shell pool**：进程注册表 + lifecycle 管理（PID / IO buffer / kill handle）
-2. **Monitor pool**：watch script 注册 + stdout 流式 grep + 通知去抖
-3. **状态条聚合器**：跨两个 pool 计数 → 渲染到 Footer
-4. **管理 UI**：列表视图 + 详情视图（Shell / Monitor 各有不同字段）
-5. **通知注入器**：把 monitor stdout 行包成 `<task-notification>` 注入 LLM context
+从外部行为反推（非源码确认），完整方案至少包含：
 
-任何 agent 想抄这套，5 个组件都要做。最小 MVP 也要 4-6k 行代码。
+1. **Shell pool**：子进程注册表 + lifecycle 管理（PID / 输出文件路径 / kill handle）
+2. **Monitor pool**：watch script 注册 + stdout 流式过滤 + 通知去抖（200ms 批合）
+3. **状态条聚合器**：跨两个 pool 计数 → 渲染到 Footer 的 `· N shell, M monitor`
+4. **管理 UI**：列表视图 + 详情视图（Shell 显示 Command/Runtime/Output；Monitor 显示完整 Script）
+5. **通知注入器**：把 shell 完成事件 + monitor stdout 行包成 `<task-notification>` 注入下一轮 LLM context
+
+任何 agent 想抄这套，5 个组件都需要。**Qwen Code 通过 PR#3076/#3488 在补 1 + 4 + 5（仅 subagent 路径）**，剩余的 Bash pool / Monitor / 完整状态条至今无 PR 推进。
 
 ## 十、实测复现命令
 
