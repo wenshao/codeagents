@@ -1,4 +1,4 @@
-# Deep-Dive 文章索引（137 篇）
+# Deep-Dive 文章索引（138 篇）
 
 > 按主题分类的深度分析文章，每篇聚焦一个具体技术机制的 Claude Code vs Qwen Code 对比。
 >
@@ -133,7 +133,7 @@
 | [Ultraplan](./ultraplan-remote-planning-deep-dive.md) | 远程规划 |
 | [Session Ingress Auth](./session-ingress-auth-deep-dive.md) | 远程认证 |
 
-## 用户体验（24 篇）
+## 用户体验（25 篇）
 
 | 文章 | 主题 |
 |------|------|
@@ -142,6 +142,7 @@
 | [显示组件对比（4 家）](./display-components-deep-dive.md) | Qwen/Claude/OpenCode/Codex 组件级对比 |
 | [显示信息密度对比](./display-density-deep-dive.md) | Claude / Qwen / OpenCode · 30%/70%/100% 密度光谱 · 4 类空间收税 |
 | [Claude Code 异步任务（shell + monitor）](./claude-code-async-tasks-deep-dive.md) | 状态条 `1 shell, 1 monitor` · 后台 Bash + Monitor 事件流 · 唯一产品化的 agent 异步 |
+| [Fullscreen TUI 深度对比](./fullscreen-tui-deep-dive.md) | alt-screen + DECSTBM + 虚拟滚动 · Claude/Codex/OpenCode/Qwen 四家对比 · Qwen 4 阶段借鉴路径 |
 | [紧凑状态栏](./compact-status-bar-deep-dive.md) | 固定高度 Footer |
 | [动态状态栏](./dynamic-status-bar-deep-dive.md) | 实时更新文本 |
 | [自定义快捷键](./custom-keybindings-deep-dive.md) | keybindings.json |
