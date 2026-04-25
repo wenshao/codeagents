@@ -167,8 +167,8 @@
 | **P2** | 压缩后身份重注入 — 上下文压缩后 messages<3 条时注入 Agent 身份块，防止 Agent "忘记自己是谁" [↓](./qwen-code-improvement-report-p2-stability.md#item-41) | 无身份重注入 | 小 | — |
 | **P2** | 子进程 PID 命名空间沙箱 + 脚本次数限制 — Linux PID namespace + env scrub + SCRIPT_CAPS（v2.1.98 新增） [↓](./qwen-code-improvement-report-p2-stability.md#item-42) | 无 PID 隔离 | 中 | — |
 | **P2** | 会话 Recap（返回时上下文摘要）— `/recap` 命令 + 自动展示（v2.1.108/v2.1.110 新增）[↓](./qwen-code-improvement-report-p2-stability.md#item-43) | **已实现**（/recap + auto-show） | 小 | [PR#3434](https://github.com/QwenLM/qwen-code/pull/3434) ✓（2026-04-19 合并） |
-| **P2** | [瞬态消息单行容器 + 离屏历史冻结](./task-display-height-deep-dive.md) — MessageResponse `height=1 overflowY=hidden` + OffscreenFreeze 引用缓存避免历史 spinner 拖累 [↓](./qwen-code-improvement-report-p2-stability.md#item-44) | 无统一容器/无离屏冻结 | 中 | — |
-| **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 无统一上限 | 小 | — |
+| **P2** | [瞬态消息单行容器 + 离屏历史冻结](./task-display-height-deep-dive.md) — MessageResponse `height=1 overflowY=hidden` + OffscreenFreeze 引用缓存避免历史 spinner 拖累 [↓](./qwen-code-improvement-report-p2-stability.md#item-44) | 🟡 部分覆盖（pre-slice + visual-height slicing 已合并；MessageResponse 严格容器仍待）| 中 | [PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) ✓ partial（2026-04-25）|
+| **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 🟡 部分覆盖（通用预切片已合并；三级数字预算仍待）| 小 | [PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) ✓ partial（2026-04-25）|
 | **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | **✓ 已完整实现**（超越 Claude 原设计 · 可配置 + 6 bypasses + 语义化 tool success ≠ exit code）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（`+N lines`，2026-04-20）+ [PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) ✓（5 行窗口 + 6 bypasses + settings，2026-04-22）|
 | **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | **✓ 已完整实现**（5/5 对齐 Claude + 1 处 Qwen 优势）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓ + [PR#3512](https://github.com/QwenLM/qwen-code/pull/3512) ✓（2026-04-23 合并，补齐组合格式 + 亚秒精度 + 条件阈值）|
 | **P2** | [语义化 hunk 模型（消除双重 diff 序列化）](./update-tool-display-deep-dive.md) — `structuredPatch` 替代 `createPatch` 字符串 + 删除 UI 层 62 行 regex re-parse [↓](./qwen-code-improvement-report-p2-stability.md#item-48) | core createPatch 字符串 → UI regex 反解析（双序列化浪费）| 中 | — |
@@ -444,6 +444,62 @@
 
 ## 六、更新日志
 
+### 2026-04-25（~5h 增量 · PR#3591 TUI flicker foundation 合并 · PR#3602 cleanup）
+
+扫描窗口：2026-04-24 23:20 UTC（上次扫描 458b861）→ 2026-04-25 04:26 UTC。窗口内 **2 项合并** + **3 项新 OPEN**。
+
+#### 🎯 重要：PR#3591 TUI flicker foundation 合并（2026-04-25 02:13 UTC）
+
+**[PR#3591](https://github.com/QwenLM/qwen-code/pull/3591)** `fix(cli): add TUI flicker foundation fixes` —— 在上次扫描后约 3 小时合并，**+1473 / -200，supersedes 已关闭的 stack #3584/#3586/#3587/#3588**。
+
+PR description（重要）：
+
+> "It does **not** claim to fully close every TUI flicker / long-output / detail-panel issue; the remaining work is called out below."
+
+**foundation 层覆盖**（按 PR body 原文）：
+
+- 主屏流式 flicker 减少：throttle safe content / thought promotion + redraw counters
+- `/clear` 路径上避免重复 `clearTerminal` 写入
+- Pre-slice 大块 plain text / ANSI tool 输出**进入 Ink layout 前裁剪**
+- Visual-height slicing 含长单行 JSON / base64 / minified（防止 unbounded visual rows）
+- Shell transcript 在窄终端 soft wrap 后仍保留语义
+- 双路径（color + non-color）抑制 soft-wrap-only live shell 视口重渲染
+- Synchronized terminal output 改 conservative allowlist（含 opt-out + counters）
+
+**对相关 item 的状态影响**：
+
+| Item | 改前 | 改后 |
+|---|---|---|
+| p2-stability **item-44**（消息响应统一容器 + 离屏冻结）| 缺失 | **🟡 部分覆盖**（PR#3591 ✓ — pre-slice + visual-height slicing 部分对齐 OffscreenFreeze 思路；MessageResponse `height=1` 严格容器仍待） |
+| p2-stability **item-45**（三级输出截断 30K/50K/200K）| 缺失 | **🟡 部分覆盖**（PR#3591 ✓ — pre-slice 在进入 Ink 前已截，但**三级数字预算**未实现） |
+| p2-stability **item-46**（Bash "5 行窗口 + +N lines"）| ✓ 已实现 | ✓ 已实现（不变） |
+
+**主矩阵 PR 列追加**：item-44 / item-45 行的 PR 列加 [PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) ✓ partial。
+
+**剩余未覆盖**（PR body 自述）：MessageResponse 严格 `height=1 overflowY=hidden` 容器、三级精确 30K/50K/200K 数字预算、OffscreenFreeze 引用缓存。
+
+#### 🟢 新合并（1 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| [PR#3602](https://github.com/QwenLM/qwen-code/pull/3602) | fix(cli): drain runExitCleanup before process.exit in error handlers | 2026-04-25 03:07 UTC | **PR#3581 follow-up 收尾** — 关掉 SIGINT / max-turn / fatal-error 路径绕过 runExitCleanup 的最后漏洞，避免最近 turn 的 JSONL 写入丢失。+218/-58，3 函数（handleError / handleCancellationError / handleMaxTurnsExceededError） |
+
+PR#3602 是 PR#3581（91% sync I/O perf）的紧密续作——同一作者继续清理 process.exit 异常路径的 cleanup 漏洞。
+
+#### 🟡 新 OPEN（3 项）
+
+| PR | 方向 | 潜在影响 |
+|---|---|---|
+| [PR#3607](https://github.com/QwenLM/qwen-code/pull/3607) | feat(cli): Improve custom auth wizard with step indicators and cleaner advanced config | auth wizard UX 增强（参考 PR#3583 PRD） |
+| [PR#3605](https://github.com/QwenLM/qwen-code/pull/3605) | feat: adds a Space-to-preview affordance to the /resume session picker | session picker 预览增强 |
+| [PR#3604](https://github.com/QwenLM/qwen-code/pull/3604) | feat(skills): parallelize loading + add path-conditional activation | **直接对应 p0-p1-engine item-28（Skill 装载性能 9 项优化）的两个核心方向**——并行加载 + 路径条件激活；如合并将关键升级 item-28 到 🟡 部分实现 |
+
+#### 📊 累计合并 PR 计数
+
+82 → **84**（+2 新合并：PR#3591 + PR#3602）。README 同步更新。
+
+---
+
 ### 2026-04-25（~5min 增量 · PR#3567 OPEN → MERGED）
 
 扫描窗口：2026-04-24 23:15 UTC（上次扫描 559b440）→ 23:20 UTC。窗口内 **1 项合并**。
@@ -632,7 +688,6 @@ CLOSED 未给出明确原因 —— 可能是 review 反馈、stack 拆分、或
 |---|---|---|
 | [PR#3596](https://github.com/QwenLM/qwen-code/pull/3596) | chore(release): bump version to 0.15.2 | 即将发布 v0.15.2 |
 | [PR#3593](https://github.com/QwenLM/qwen-code/pull/3593) | feat(cli): Add argument-hint support for slash commands | slash 命令 UX |
-| [PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) | **fix(cli): add TUI flicker foundation fixes** | **supersedes 已关闭的 #3584/#3586/#3587/#3588**—— throttle safe content + pre-slice ANSI + 视觉高度切片 + soft-wrap 抑制 + 同步终端输出 allowlist。覆盖方向与 p2-stability item-1 / item-44 / item-45 / item-46 有重叠但做了 foundation 整合 |
 | [PR#3577](https://github.com/QwenLM/qwen-code/pull/3577) | feat(skills): add tmux-real-user-testing skill | bundled skill 扩展 |
 | [PR#3576](https://github.com/QwenLM/qwen-code/pull/3576) | Feat/openrouter auth | **OpenRouter 第三方认证** —— 延续"多 provider 认证"方向（参见 OpenCode 对比 item-12） |
 | [PR#3570](https://github.com/QwenLM/qwen-code/pull/3570) | feat(core): add simplify bundled skill | bundled skill 扩展 |

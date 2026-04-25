@@ -1515,9 +1515,11 @@ Skip status reports and commit recaps.`
 
 <a id="item-44"></a>
 
-### 44. 消息响应统一容器 + 离屏历史冻结（P2）
+### 44. 消息响应统一容器 + 离屏历史冻结（P2）🟡 部分覆盖（[PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) ✓ 2026-04-25 合并）
 
 > **配套阅读**：[任务显示高度控制 Deep-Dive](./task-display-height-deep-dive.md) —— 本 item 第 1.1/1.2 节的完整分析。
+
+**最新状态（2026-04-25）**：[PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) `fix(cli): add TUI flicker foundation fixes` 合并——pre-slice 大输出 + visual-height slicing 部分对齐 OffscreenFreeze 的思路（让屏外大块内容不进入 Ink layout）。但 **MessageResponse 严格 `height=1 overflowY=hidden` 容器仍未实现**，这是 PR body 自述的 "remaining work"。
 
 ---
 
@@ -1745,9 +1747,11 @@ export function OffscreenFreeze({ children }) {
 
 <a id="item-45"></a>
 
-### 45. 三级输出截断（Bash 30K / 单工具 50K / 单消息 200K）（P2）
+### 45. 三级输出截断（Bash 30K / 单工具 50K / 单消息 200K）（P2）🟡 部分覆盖（[PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) ✓ 2026-04-25 合并）
 
 > **配套阅读**：[任务显示高度控制 Deep-Dive](./task-display-height-deep-dive.md) —— 本 item 第 1.4 节的完整分析。
+
+**最新状态（2026-04-25）**：[PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) 合并——pre-slice 大块 plain text / ANSI tool 输出**进入 Ink layout 前裁剪**，含长单行 JSON / base64 / minified（visual-height slicing）。**但三级精确数字预算 30K/50K/200K 未实现**——PR 是通用预切片，不是 Claude 那种按 tool 类型分档的硬上限。
 
 **来源**：Claude Code 的 `constants/toolLimits.ts` + `utils/shell/outputLimits.ts`。
 
