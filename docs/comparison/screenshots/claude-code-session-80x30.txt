@@ -1,0 +1,30 @@
+│       Opus 4.7 (1M context) · Claude Max ·         │                         │
+│       nigolaschao777@gmail.com's Organization      │                         │
+│                    /tmp/cc-test2                   │                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+❯ list files
+
+  Listed 1 directory (ctrl+o to expand)
+
+● Files in /tmp/cc-test2:
+  - f1.txt, f2.txt, f3.txt, f4.txt, f5.txt (10 bytes each)
+  - hello.js (20 bytes)
+
+✻ Churned for 4s
+
+❯ show f1.txt content
+
+  Read 1 file (ctrl+o to expand)
+
+● f1.txt:
+  // file 1
+
+✻ Brewed for 3s
+
+────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────
+  /tmp/cc-test2
+  ⏵⏵ auto mode on (shift+tab to cycle)
+

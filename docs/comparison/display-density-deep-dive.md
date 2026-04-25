@@ -111,52 +111,81 @@
 
 完整文件：[`screenshots/opencode-session-80x30.txt`](./screenshots/opencode-session-80x30.txt)
 
-### Claude Code（基于源码格式重建，无实测）
+### Claude Code v2.1.120 实测截图
 
-Claude Code 闭源且需 OAuth，没有现成 API 跑实测。下面是基于 [11-终端渲染](../tools/claude-code/11-terminal-rendering.md) + [SubAgent 展示](./subagent-display-deep-dive.md) 等已知组件格式重建的等价布局：
+第 2 轮对话稳定状态（首屏 welcome banner 11 行，会随对话累计向上滚动）：
 
 ```
-✻ Welcome to Claude Code — claude-opus-4-7 — /tmp/test
+│       Opus 4.7 (1M context) · Claude Max ·         │                         │
+│       nigolaschao777@gmail.com's Organization      │                         │
+│                    /tmp/cc-test2                   │                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
-> list files in this directory
+❯ list files
 
-⏺ Bash(ls)
-  ⎿ hello.js
+  Listed 1 directory (ctrl+o to expand)
 
-The directory contains a single file: `hello.js`.
+● Files in /tmp/cc-test2:
+  - f1.txt, f2.txt, f3.txt, f4.txt, f5.txt (10 bytes each)
+  - hello.js (20 bytes)
 
+✻ Churned for 4s
 
+❯ show f1.txt content
 
+  Read 1 file (ctrl+o to expand)
 
+● f1.txt:
+  // file 1
 
+✻ Brewed for 3s
 
-
-
-
-
-
-
-
-
- /tmp/test                       ⏵⏵ accept edits   ? for shortcuts
+────────────────────────────────────────────────────────────────────────────────
+❯
+────────────────────────────────────────────────────────────────────────────────
+  /tmp/cc-test2
+  ⏵⏵ auto mode on (shift+tab to cycle)
 ```
 
-**结构性开销（推算）**：1（inline banner）+ 1（composer）+ 1（footer）= **3 行**
-**留给对话区**：30 − 3 = **~27 行**
+**逐行账（30 行屏）**：
 
-> ⚠️ Claude Code 闭源 + OAuth 限制，本布局基于 [11-终端渲染](../tools/claude-code/11-terminal-rendering.md) 等公开文档的格式重建；与真实输出可能有 1-2 行偏差，**整体趋势成立**。
+| 行号 | 内容 | 类型 |
+|---|---|---|
+| 1-4 | Welcome banner 末尾 4 行（首屏占 11 行，正向上滚动消失） | 装饰（首轮才占满） |
+| 5, 7, 9, 13, 15, 17, 19, 22, 24 | 段间空行（每段间隔 1 行） | 装饰 |
+| 6 | `❯ list files` 第 1 轮提问 | 对话 |
+| 8 | `  Listed 1 directory (ctrl+o to expand)` 工具描述 **单行** | 对话 |
+| 10-12 | `● Files in ...` 答复（3 行） | 对话 |
+| 14 | `✻ Churned for 4s` 时间提示 | 对话 |
+| 16 | 第 2 轮提问 | 对话 |
+| 18 | 工具描述 单行 | 对话 |
+| 20-21 | 答复（2 行） | 对话 |
+| 23 | 时间提示 | 对话 |
+| 25-27 | Composer（上分 + ❯ + 下分） | 装饰 |
+| 28 | cwd | 装饰 |
+| 29 | `⏵⏵ auto mode on` | 装饰 |
+| 30 | 空 | — |
 
-### 一图总结（同 80×30 屏）
+**结构性开销**：banner 11 行（首轮）/ 0 行（多轮后已滚出）+ 3 composer + 2 footer = **5 行（多轮稳态）/ 16 行（首轮）**
+**留给对话区**：30 − 5 = **~25 行（多轮稳态）**
+
+完整文件：[`screenshots/claude-code-session-80x30.txt`](./screenshots/claude-code-session-80x30.txt)
+
+> **修正**：之前推算把 Claude banner 写成 1 行（`✻ Welcome to Claude Code — model — cwd`），实测**首屏是 11 行 2 列圆角面板**（左：欢迎语 + 4 行 ASCII + auth + cwd，右：Tips + Recent activity）。Claude 的"密度优势"不在于 banner 短，**而在于 banner 不 sticky——会随对话滚出**，加上工具描述用单行 `Listed 1 directory (ctrl+o to expand)` 而非框 + 段间仅 1 行间距。
+
+### 一图总结（同 80×30 屏，多轮稳态）
 
 | Agent | 实测/构造 | 结构性开销 | 留给对话 | 单工具组开销 |
 |---|---|---|---|---|
-| **Qwen Code** v0.15.2（compactMode=true） | ✅ 实测 | 11 行 | **19 行** | 4 行（圆角全 4 边） |
-| **OpenCode** v1.14.24 | ✅ 实测 | 6 行 | **24 行** | 0 行额外（共用 `┃` 前缀） |
-| **Claude Code** | ⚠️ 推算 | 3 行 | **~27 行** | 0 行额外（`⏺`/`⎿` 字符前缀） |
+| **Qwen Code** v0.15.2（compactMode=true） | ✅ 实测 | 11 行（header sticky） | **19 行** | 4 行（圆角全 4 边） |
+| **OpenCode** v1.14.24 | ✅ 实测 | 6 行（无 header） | **24 行** | 0 行额外（`┃` 共线） |
+| **Claude Code** v2.1.120 | ✅ 实测 | 5 行（多轮后 banner 滚出） | **~25 行** | **1 行**（单行描述 + ctrl+o 展开） |
 
-> **关键发现**：即使 Qwen 已开启 `compactMode: true`，对话区仍只有 OpenCode 的 **79%**、Claude Code 的 **70%**。**主要差距来自 6 行 header panel + 4 行 tool 圆角框**——两者都是 hard-coded 在组件里的视觉装饰。
->
-> 如果 Qwen 关闭 compactMode（出厂默认），头部还要再多 ~7 行 ASCII logo，对话区进一步压缩到 **~12 行**——差距扩大到 OpenCode 的 50%。
+> **关键发现（修正版）**：
+> - **Qwen 的 header panel 是 sticky 的** ——永远占据顶部 6 行不滚动，加上 Tips + 4 行 tool 框，结构性开销固定 11 行。
+> - **OpenCode 完全无 header**（活动会话路由），只有 composer/footer 占 6 行，对话区天然最大。
+> - **Claude 的 welcome banner 首轮 11 行，但是非 sticky**——随对话滚动消失，多轮稳态后对话区 ~25 行接近 OpenCode。
+> - **工具描述差距巨大**：Claude `Listed 1 directory (ctrl+o to expand)` 单行 → OpenCode `┃` 块共线（无额外行） → Qwen 圆角 4 行框（每个工具组都付）。
 
 ## 二、四个"空间收税点"——源码追溯
 
@@ -169,9 +198,14 @@ The directory contains a single file: `hello.js`.
 | Qwen Code（默认） | 7 行 ASCII logo + 6 行 bordered info panel + 1 行 Tips = **14 行** | 每次启动 | `Header.tsx#56-150`、`AsciiArt.ts#9-16` |
 | Qwen Code（compactMode=true） | 5 行 info panel + Tips + update notice = **7 行**（隐藏 ASCII logo） | 每次启动 | 同上 + `compactMode` 检测 |
 | OpenCode | 4 行 logo（仅 Home 路由）/ **0 行**（Session 路由） | 仅初始连接屏，进会话即消失 | `routes/home.tsx#62`、`cli/logo.ts#1-4` |
-| Claude Code | 1 行 inline `✻ Welcome — model — cwd` | 每次启动 | （闭源） |
+| Claude Code | 11 行圆角双列面板（welcome + 4 行 ASCII + tips + recent activity） | 每次启动，**但会随对话滚出**（非 sticky） | （闭源 v2.1.120 实测） |
 
-**关键差异**：OpenCode + Claude 把"模型/认证状态"放在永久存在的 Footer 里，banner 只是"我活着"信号；Qwen 在 banner 里重复了同样信息（model/auth/cwd），结果两边都占空间。
+**关键差异**：
+- **Qwen 的 panel sticky**——`<Static>` 渲染的顶部内容永不滚动，每次都占据 6-7 行
+- **Claude 的 panel 非 sticky**——首屏占 11 行但会随对话滚走，**净成本为 0**（仅首轮可见）
+- **OpenCode 直接路由分离**——logo 只在 home 路由，session 路由完全无 banner
+
+OpenCode 的策略最激进，Claude 的策略最巧妙（用一次性的 visual 锚点而不持续吃空间），Qwen 的 sticky 是**最贵且对后续会话最不友好**的方案。
 
 源码证据：`Header.tsx#147-149` 注释直接写 `{/* Empty line for spacing */}`——**装饰性空行被 hard-coded 在组件里**。
 
@@ -223,7 +257,100 @@ OpenCode 的 carousel 模式：未连接时每 5-10 秒在 "Get started /connect
 
 10 条 history 在 Qwen 是 +9 行空隙；OpenCode 视邻接关系而定，约 +5 行；Claude 类似。
 
-## 三、给 Qwen Code 的 5 项改进（按收益）
+## 三、其他对比维度（一字之差，密度差几倍）
+
+除了上面 4 个收税点，三家还有**几个非空间但显著影响阅读体验**的差异。
+
+### 3.1 工具描述的"字数密度"
+
+同一个 `ls` 工具，三家显示文字差距巨大：
+
+| Agent | 显示形式（去掉 border） | 字符数 | 折算行数 |
+|---|---|---|---|
+| **Claude Code** | `Listed 1 directory (ctrl+o to expand)` | 38 字符 | 1 行 |
+| **OpenCode** | `# List files in current directory\n$ ls\nhello.js` | 49 字符 | 6 行（含命令 + 输出 + 4 个空行 padding） |
+| **Qwen Code** | `✓ ListFiles  .\nPress Ctrl+O to show full tool output` | 56 字符 | 4 行（含上下圆角 border） |
+
+Claude 的核心思路：**工具结果默认折叠为单行摘要**（`Listed N directories`、`Read N files`、`Edited N files`），用 `ctrl+o` 展开看详情。OpenCode 默认展开命令 + 输出（更直观但占空间）。Qwen 用框包住"工具名 + 参数"但 hide 输出（Ctrl+O 看），结果是**最坏的两边**——既占框空间又不展示输出。
+
+### 3.2 Reasoning 块可见性
+
+```
+Qwen Code  : 不显示（assistant 消息直接出最终答复）
+Claude Code: 不显示（仅状态栏 ✻ Crunched for Xs 提示）
+OpenCode   : 显示（Reasoning 用 ┃ 共线展开，2-5 行/段）
+```
+
+OpenCode 显示 reasoning 让用户知道 LLM 在想什么，但代价是**每个 turn 多出 2-10 行空间**。第一节的 OpenCode 截图里 2 段 reasoning 就吃掉 8 行（行 5-7 + 16-19）。
+
+如果 model 启用 thinking（如 Claude 的 extended thinking 或 Qwen 的 `enable_thinking`），三家都会显示，但**只有 OpenCode 默认展开**——Qwen/Claude 默认折叠。
+
+### 3.3 状态指示文案 / Spinner
+
+| Agent | 等待中文案样式 | 完成提示 |
+|---|---|---|
+| **Claude Code** | `· Orbiting…` / `Pondering…` / `Brewing…` / `Churning…` 数十种动词随机 | `✻ Crunched for 4s` / `✻ Brewed for 3s` 同动词时态变化 |
+| **Qwen Code** | `⠹ Asking the magic conch shell... (0s · esc to cancel)` | 无独立完成提示，靠 `✦` 答复符号 |
+| **OpenCode** | `▣ Build · Kimi K2.6 · 6.3s` model 名 + 已用时长 | 状态行实时更新 |
+
+Claude 的随机动词带个性，但**信息含量低**（不知道在做什么）。Qwen 的 "magic conch" 是文化梗。OpenCode 最实用——直接显示 model 和时长，**首屏占 1 行也不浪费**。
+
+### 3.4 答复符号
+
+```
+Claude  : ●  Files in /tmp/...           ← 实心圆点
+Qwen    : ✦  - hello.js                  ← 四角星
+OpenCode: hello.js                       ← 无符号，仅 paddingLeft=3
+```
+
+Claude/Qwen 用单字符标记 assistant 角色，OpenCode 干脆**不加任何符号**——靠位置（无 `┃` 边框 + 缩进 3）区分于工具/reasoning（都有 `┃`）。
+
+### 3.5 Time/Token 显示位置
+
+| Agent | 单 turn 时长 | 总用量 |
+|---|---|---|
+| **Claude Code** | `✻ Crunched for 4s` 每 turn 后单独一行 | 无（需 `/cost`） |
+| **Qwen Code** | 无 | Footer `6.0% used`（实时） |
+| **OpenCode** | `▣ Build · Kimi K2.6 · 6.3s` 状态行 | Footer `9.7K (4%)` |
+
+**Claude 的"每 turn 一行 timing"占空间但便于对账**（用户能看到哪一步慢）；Qwen/OpenCode 把信息放 Footer，省空间但单 turn 历史不可追溯。
+
+### 3.6 首次启动 vs 多轮稳态
+
+> 这是最容易被忽视的维度——**用户看 demo 的首屏 ≠ 实际用 1 小时后的体验**。
+
+| Agent | 首屏装饰 | 是否 sticky | 第 N 轮稳态装饰 |
+|---|---|---|---|
+| **Claude Code** | 11 行 welcome（圆角双列面板 + ASCII + tips + recent activity） | ❌ 滚出 | ~5 行（composer + footer） |
+| **Qwen Code** | 6 行 panel + 1 行 Tips（compactMode=true）/ 14 行（默认） | ✅ **sticky** 永不滚出 | 11 行（panel + Tips + composer + footer） |
+| **OpenCode** | 4 行 logo（仅 home 路由）→ 0 行（session 路由） | N/A 路由切换 | 6 行（composer + footer） |
+
+**Qwen 的 sticky panel 是最贵的设计**——每次进入对话都吃 6-7 行，并且**永远不还给用户**。Claude 的 banner 虽然首轮很大（11 行），但**会滚出**，用一次性的 visual 锚点换掉后续的空间收税——这是公平的成本/收益。
+
+### 3.7 Composer 视觉重量
+
+```
+Claude  : ──────────...                    ← 上下分隔线
+          ❯
+          ──────────...
+          (3 行)
+
+Qwen    : ──────────...
+          >  Type your message
+          ──────────...
+          (3 行，与 Claude 几乎一致)
+
+OpenCode: ┃                                ← 左侧 ┃
+          ┃                                
+          ┃
+          ┃  Build · Kimi K2.6 ...        ← 紧贴一行 mode/model
+          ╹▀▀▀▀▀                          ← 单分隔线
+          (5 行)
+```
+
+OpenCode composer 占 5 行（含 mode/model 行 + ╹ 分隔），比 Claude/Qwen 多 2 行——这是 OpenCode 唯一**比对手更费空间**的地方。但相比 OpenCode 在 banner / tool 上省的空间，仍是净赢。
+
+## 四、给 Qwen Code 的 5 项改进（按收益）
 
 | # | 改动 | 源码位置 | 预计省 |
 |---|---|---|---|
@@ -237,7 +364,7 @@ OpenCode 的 carousel 模式：未连接时每 5-10 秒在 "Get started /connect
 
 如全部落地，Qwen 的对话区可从 **19 行扩到 ~25 行**，与 OpenCode/Claude 同档。
 
-## 四、为什么 Qwen Code 没改
+## 五、为什么 Qwen Code 没改
 
 社区已有 [PR#3591 fix(cli): add TUI flicker foundation fixes](https://github.com/QwenLM/qwen-code/pull/3591)，方向是 throttle + ANSI 切片——**修闪烁，不动密度**。
 
@@ -253,8 +380,8 @@ OpenCode 的 carousel 模式：未连接时每 5-10 秒在 "Get started /connect
 
 - Qwen Code: `/root/git/qwen-code/packages/cli/src/ui/`（v0.15.2 实测，compactMode=true）
 - OpenCode: `/root/git/opencode/packages/opencode/src/cli/cmd/tui/`（v1.14.24 实测）
-- Claude Code: [11. 终端渲染](../tools/claude-code/11-terminal-rendering.md)、[紧凑状态栏](./compact-status-bar-deep-dive.md)、[SubAgent 展示](./subagent-display-deep-dive.md) （基于源码格式构造，无实测）
-- 截图原始文件：[`screenshots/qwen-code-session-80x30.txt`](./screenshots/qwen-code-session-80x30.txt)、[`screenshots/opencode-home-80x30.txt`](./screenshots/opencode-home-80x30.txt)、[`screenshots/opencode-session-80x30.txt`](./screenshots/opencode-session-80x30.txt)
+- Claude Code v2.1.120 实测（在 tmux 内运行 `claude` CLI 抓取）+ [11. 终端渲染](../tools/claude-code/11-terminal-rendering.md) 等公开文档
+- 截图原始文件：[`screenshots/qwen-code-session-80x30.txt`](./screenshots/qwen-code-session-80x30.txt)、[`screenshots/opencode-home-80x30.txt`](./screenshots/opencode-home-80x30.txt)、[`screenshots/opencode-session-80x30.txt`](./screenshots/opencode-session-80x30.txt)、[`screenshots/claude-code-session-80x30.txt`](./screenshots/claude-code-session-80x30.txt)
 
 **复现命令**：
 
@@ -274,6 +401,19 @@ sleep 5
 tmux send-keys -t oc "list files in this directory" Enter
 sleep 8
 tmux capture-pane -t oc -p
+
+# Claude Code（多轮稳态）
+mkdir -p /tmp/cc-test && cd /tmp/cc-test
+for i in 1 2 3 4 5; do echo "// file $i" > "f$i.txt"; done
+tmux new-session -d -s cc -x 80 -y 30 'claude'
+sleep 6
+tmux send-keys -t cc Enter             # 信任目录
+sleep 3
+tmux send-keys -t cc "list files" Enter
+sleep 8
+tmux send-keys -t cc "show f1.txt content" Enter
+sleep 8
+tmux capture-pane -t cc -p
 ```
 
-> **免责声明**：实测基于 Qwen Code v0.15.2 + compactMode=true，OpenCode v1.14.24 默认配置。Claude Code 部分为源码格式推算。布局逻辑随版本更新可能变化，2026-04-25 快照。
+> **免责声明**：实测基于 Qwen Code v0.15.2 + compactMode=true，OpenCode v1.14.24 默认配置，Claude Code v2.1.120 默认配置。布局逻辑随版本更新可能变化，2026-04-25 快照。
