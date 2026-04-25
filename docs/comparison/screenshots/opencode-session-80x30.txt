@@ -1,0 +1,30 @@
+  ┃
+  ┃  list files in this directory
+  ┃
+
+  ┃  Thinking: The user wants to list files in the current directory. I
+  ┃  should use the bash tool to run ls command to list the files.
+
+  ┃
+  ┃  # List files in current directory
+  ┃
+  ┃  $ ls
+  ┃
+  ┃  hello.js
+  ┃
+
+  ┃  Thinking: The ls command returned "hello.js" as the only file in the
+  ┃  current directory. I should present this information concisely to the
+  ┃  user.
+
+     hello.js
+
+     ▣  Build · Kimi K2.6 · 6.3s
+
+  ┃
+  ┃
+  ┃
+  ┃  Build · Kimi K2.6 Kimi For Coding
+  ╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+                                                    9.7K (4%)  ctrl+p commands
+

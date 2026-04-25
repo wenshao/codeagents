@@ -310,7 +310,123 @@ renderBefore={function () {
 
 仍是 `border={["left"]}` 单边 + `backgroundPanel`，与 BlockTool 一致的视觉语言。**首条消息 marginTop=0** 这点比 Qwen 的"无条件 +1"更好。
 
-### 6.5 三家光谱定位
+### 6.5 实测截图（OpenCode v1.14.24，80×30 tmux，kimi-for-coding/k2p6）
+
+#### Home 路由——初始连接屏
+
+```
+                                                      ▄
+                     ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▄ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀
+                     ▀  ▀ ▀  ▀ ▀▀▀▀ ▀  ▀ ▀    ▀  ▀ ▀  ▀ ▀▀▀▀
+                     ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀
+
+
+   ┃
+   ┃  Ask anything... "Fix a TODO in the codebase"
+   ┃
+   ┃  Build · Kimi K2.6 Kimi For Coding
+   ╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+                                                   tab agents  ctrl+p commands
+
+
+
+           ● Tip Set "tools": {"bash": false} to disable specific tools
+
+
+
+
+  /tmp/opencode-density-test                                           1.14.24
+```
+
+观察点：
+
+- **Logo**：4 行 ASCII（vs Qwen Code 7 行，Claude Code 0 行）
+- **Composer**：`┃` 单边竖线 + `Ask anything...`（vs Qwen 4 边圆角框 + `> `）
+- **mode/model 行**：紧贴 composer 下方一行 `Build · Kimi K2.6 Kimi For Coding`
+- **Tip**：单行 `● Tip Set "tools": ...` 居中显示在底部空白区——**不占首屏顶部**
+- **Footer**：单行 `/path · 版本号`，左右两端对齐
+- **空间分布**：整屏 30 行，logo 占 5 行（含上下空白行），composer 占 5 行，footer 占 1 行；剩余 ~19 行是 flex-grow 留白，不被装饰元素吃掉
+
+完整文件：[`screenshots/opencode-home-80x30.txt`](./screenshots/opencode-home-80x30.txt)
+
+#### Session 路由——单 Bash 工具调用后
+
+抓取自实际跑 `list files in this directory` 后的稳定状态：
+
+```
+  ┃
+  ┃  list files in this directory
+  ┃
+
+  ┃  Thinking: The user wants to list files in the current directory. I
+  ┃  should use the bash tool to run ls command to list the files.
+
+  ┃
+  ┃  # List files in current directory
+  ┃
+  ┃  $ ls
+  ┃
+  ┃  hello.js
+  ┃
+
+  ┃  Thinking: The ls command returned "hello.js" as the only file in the
+  ┃  current directory. I should present this information concisely to the
+  ┃  user.
+
+     hello.js
+
+     ▣  Build · Kimi K2.6 · 6.3s
+
+  ┃
+  ┃
+  ┃
+  ┃  Build · Kimi K2.6 Kimi For Coding
+  ╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+                                                    9.7K (4%)  ctrl+p commands
+```
+
+观察点：
+
+- **用户消息**：`┃` 左单边 + `list files in this directory`（无完整框，只 1 行 padding 上下）
+- **Reasoning 部分**：`┃` 左单边 + 缩进文字（每段独立 box，但仍 `┃` 共线）—— 整个 reasoning 段视觉连续
+- **BlockTool（bash）**：`┃` 左单边 + 标题 `# List files in current directory` + 空行 + `$ ls` 命令 + 空行 + `hello.js` 输出 + 空行
+  - 注意：**整个工具块共用一条 `┃` 竖线**——不是每段 reasoning/tool 各画一个独立框
+  - 这是 OpenTUI `border={["left"]}` + 邻接 box 的视觉融合效果
+- **Final answer**（`hello.js`）：**完全无 border**，仅 `paddingLeft=3` 缩进——这是 TextPart（assistant 主消息）的渲染
+- **状态指示**：`▣ Build · Kimi K2.6 · 6.3s` 单行无装饰
+- **Footer**：仍单行 `9.7K (4%)  ctrl+p commands`——token 用量 + 命令面板提示，无多行堆叠
+
+**密度统计**（30 行屏内）：
+- 实际信息内容：~20 行（user msg + 2 reasoning + tool + answer + status）
+- Composer + footer：6 行
+- 空白：4 行
+- **装饰性边框总占用**：仅 `┃` 一字符宽 ×~20 行 = 20 字符的横向开销，几乎零垂直浪费
+
+对比 Qwen Code 在同样 80×30 屏上跑同样 prompt 的预期布局（基于源码推算）：
+- ToolGroupMessage 圆角框 = 2 行（顶 + 底） × 1 个工具组 = 2 行边框
+- 加上 `marginBottom=1` 和 `gap=1` = 多 2 行
+- 加上 HistoryItemDisplay 普遍 `marginTop=1` = 多 4 行（每个 history item 间）
+- Footer 多行（statusLine + hints）= 至少 2 行
+- 仅这些**结构性税** 就比 OpenCode 多吃约 8-10 行
+
+完整文件：[`screenshots/opencode-session-80x30.txt`](./screenshots/opencode-session-80x30.txt)
+
+> **复现命令**：
+>
+> ```bash
+> mkdir -p /tmp/oc-test && cd /tmp/oc-test && echo "// hello" > hello.js
+> tmux new-session -d -s oc -x 80 -y 30 \
+>   'opencode -m kimi-for-coding/k2p6'
+> sleep 4
+> tmux send-keys -t oc "list files in this directory" Enter
+> sleep 8
+> tmux capture-pane -t oc -p
+> tmux kill-session -t oc
+> ```
+>
+> 上述截图基于 OpenCode v1.14.24（自动从 1.3.3 升级）、kimi-for-coding/k2p6 模型、80×30 tmux 窗口。其他 model 输出文字会变但布局结构一致。
+
+### 6.6 三家光谱定位
 
 ```
 最稀疏 ─────────────────────────────────────────────────────── 最密集
@@ -324,7 +440,7 @@ Claude Code            OpenCode              Qwen Code
 
 **OpenCode 的策略本质**：用 OpenTUI 提供的 `border={["left"]}` + `customBorderChars` + `backgroundColor` 三件套，把传统的"圆角矩形容器"分解成**最低成本的视觉分组**——只用 1 个字符宽度换 4 边框的视觉效果。这是 OpenTUI 框架带来的能力（标准 Ink 的 `borderStyle` prop 不能选边）。
 
-### 6.6 给 Qwen Code 的额外启示（从 OpenCode 学）
+### 6.7 给 Qwen Code 的额外启示（从 OpenCode 学）
 
 | 改动 | 何处可借鉴 |
 |---|---|

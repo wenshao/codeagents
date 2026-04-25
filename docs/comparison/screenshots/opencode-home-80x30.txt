@@ -1,0 +1,30 @@
+
+
+
+
+
+
+
+
+                                                      ▄
+                     ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▄ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀
+                     ▀  ▀ ▀  ▀ ▀▀▀▀ ▀  ▀ ▀    ▀  ▀ ▀  ▀ ▀▀▀▀
+                     ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀
+
+
+   ┃
+   ┃  Ask anything... "Fix a TODO in the codebase"
+   ┃
+   ┃  Build · Kimi K2.6 Kimi For Coding
+   ╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+                                                   tab agents  ctrl+p commands
+
+
+
+           ● Tip Set "tools": {"bash": false} to disable specific tools
+
+
+
+
+  /tmp/opencode-density-test                                           1.14.24
+
