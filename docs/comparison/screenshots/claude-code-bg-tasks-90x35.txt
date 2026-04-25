@@ -1,0 +1,35 @@
+
+● Bash(touch /tmp/cc-bg-test/watched.log)
+  ⎿  Done
+
+  Read 1 file (ctrl+o to expand)
+
+● Started tail -f /tmp/cc-bg-test/watched.log in the background (ID: b64zw7iij). It will
+  keep running and capture any lines appended to the file.
+
+✻ Churned for 12s · 1 shell still running
+
+❯ Now use your Monitor tool capability to watch the same file for ERROR lines
+
+● Monitor(ERROR lines in /tmp/cc-bg-test/watched.log)
+  ⎿  Monitor started · task bd4lm9aqb · persistent
+
+● Monitor armed (ID: bd4lm9aqb) — tail -F piped through grep --line-buffered "ERROR" on
+  /tmp/cc-bg-test/watched.log. Each ERROR line that appears will arrive as a notification.
+
+✻ Sautéed for 37s · 1 shell, 1 monitor still running
+
+❯ /tasks
+
+──────────────────────────────────────────────────────────────────────────────────────────
+  Monitor details
+
+  Status:   running
+  Runtime:  1m 27s
+  Script:   tail -F /tmp/cc-bg-test/watched.log | grep --line-buffered "ERROR"
+
+  Output:
+  No output available
+
+  ← to go back · Esc/Enter/Space to close · x to stop
+

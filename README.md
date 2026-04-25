@@ -8,7 +8,7 @@
 
 | 入口 | 说明 |
 |------|------|
-| **[Deep-Dive 索引（136 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
+| **[Deep-Dive 索引（137 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
 | **[Agent Framework 对比（6 款）](./docs/frameworks/)** | AgentScope/LangGraph/CrewAI/AG2/MAF/LangChain —— 开发者侧 SDK 选型 |
 | **[Qwen Code 改进报告（275 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 52 个社区 PR 追踪（82 已合并） |
 | **[Gemini CLI backport（61 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 + 模块级架构对比 |
