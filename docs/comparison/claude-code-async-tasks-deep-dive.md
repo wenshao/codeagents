@@ -618,7 +618,235 @@ strings 2.1.119 | grep -E "^(yarn|pnpm|webpack|vite|terraform|cargo)$" | sort -u
 
 源码常量名 `ASSISTANT_BLOCKING_BUDGET_MS` / `MAX_TASK_OUTPUT_BYTES` / `PROGRESS_THRESHOLD_MS` 在二进制中**已被 esbuild 内联展开为字面量值**（15000 / 5368709120 / 2000），所以 grep 找不到名字。但 source map 可还原（如果有的话），且实测行为完全吻合源码定义的数字。
 
-## 十二、实测复现命令
+## 十二、其他 5 种 task 类型详解
+
+§10.3 给了 7 种 task type 的概览表。本节深入讲剩余 5 种（除 `local_bash` 的 shell + monitor 双形态外）的能力、触发场景、源码细节。
+
+### 12.1 `local_agent`（后台 Subagent）
+
+**触发**：Agent 工具 + `run_in_background: true`：
+
+```ts
+Agent({
+  description: "Research X in parallel",
+  prompt: "...",
+  subagent_type: "researcher",
+  run_in_background: true   // ← 不阻塞父 agent
+})
+```
+
+**特征**（[`tasks/LocalAgentTask/LocalAgentTask.tsx#33-110`](file:/root/git/claude-code-leaked/tasks/LocalAgentTask/LocalAgentTask.tsx)）：
+
+```ts
+export type AgentProgress = {
+  toolUseCount: number;       // 子 agent 调用了多少次工具
+  tokenCount: number;         // 累积 token
+  currentActivity?: string;   // 当前正在做的事
+  // ...
+}
+
+export type LocalAgentTaskState = TaskStateBase & {
+  type: 'local_agent';
+  // 含 progress tracker，实时上报到父 agent
+}
+```
+
+**实时进度回流**：子 agent 每个 tool 调用都更新父 agent 看到的进度。Footer pill 显示 `1 local agent`，详情 dialog（`AsyncAgentDetailDialog.tsx`）显示 token 消耗 + 工具活动时间轴。
+
+**完成时**：子 agent 最终回答 + token 总量 + 耗时通过 `<task-notification>` 推回父 agent，父 agent 在下一轮 context 看到。
+
+**典型场景**：并行研究多个独立子任务（每子 agent 一个 worktree）、长任务委派（让子 agent 慢慢跑而父 agent 继续 coordinate）。
+
+### 12.2 `remote_agent`（Cloud Sessions）
+
+**触发**：以下斜杠命令之一：
+- `/autofix-pr <PR>` — 修 PR 测试 / lint 错误
+- `/ultrareview <PR>` — 多 agent 云端 review
+- `/ultraplan` — 长 plan 推理
+- 其它 `RemoteTaskType`（源码 `RemoteAgentTask.tsx` 内 `REMOTE_TASK_TYPES` 数组）
+
+**特征**（[`tasks/RemoteAgentTask/RemoteAgentTask.tsx#21-50`](file:/root/git/claude-code-leaked/tasks/RemoteAgentTask/RemoteAgentTask.tsx)）：
+
+```ts
+export type RemoteAgentTaskState = TaskStateBase & {
+  type: 'remote_agent';
+  remoteTaskType: RemoteTaskType;  // autofix-pr / ultrareview / ultraplan / ...
+  sessionId: string;               // 远程 session ID
+  command: string;
+  title: string;
+  todoList: TodoList;              // 子 todo 实时回流
+  log: SDKMessage[];               // 远程 SDK 消息流（pollRemoteSessionEvents）
+  isLongRunning?: boolean;
+  pollStartedAt: number;           // 防 restore 时的时钟漂移
+  isRemoteReview?: boolean;        // /ultrareview 标记
+  reviewProgress?: {                // <remote-review-progress> 心跳解析
+    stage?: 'finding' | 'verifying' | 'synthesizing';
+    bugsFound: number;
+    bugsVerified: number;
+    bugsRefuted: number;
+  };
+}
+```
+
+**远程执行**：任务在 Anthropic Cloud 容器跑，本地 `pollRemoteSessionEvents` 每 N 秒拉事件回填 `todoList` + `log`。即使本地 Claude Code 进程退出，远程任务**仍继续**——下次启动可 resume。
+
+**ultraplan 特殊视觉**：[`tasks/pillLabel.ts#36-50`](file:/root/git/claude-code-leaked/tasks/pillLabel.ts) 用菱形符号区分阶段：
+
+```
+remote_agent + ultraplanPhase === 'plan_ready'      → ◆ ultraplan ready
+remote_agent + ultraplanPhase === 'needs_input'     → ◇ ultraplan needs your input
+remote_agent + ultraplanPhase === undefined         → ◇ ultraplan
+```
+
+`◆` 实心 = 等用户审阅 plan；`◇` 空心 = 还在跑或等输入。
+
+### 12.3 `in_process_teammate`（同进程 Team 成员）
+
+**触发**：`TeamCreate` 工具创建 team，team 成员通过 team definition 启动；或者通过 `/tasks` 中的 `f` 键 foreground 进 teammate 视图。
+
+**特征**（[`tasks/InProcessTeammateTask/types.ts#13-50`](file:/root/git/claude-code-leaked/tasks/InProcessTeammateTask/types.ts)）：
+
+```ts
+export type TeammateIdentity = {
+  agentId: string;          // "researcher@my-team"
+  agentName: string;
+  teamName: string;
+  parentSessionId: string;  // Leader's session ID
+  planModeRequired: boolean;
+}
+
+export type InProcessTeammateTaskState = TaskStateBase & {
+  type: 'in_process_teammate'
+  identity: TeammateIdentity;
+  permissionMode: PermissionMode;     // ← 独立 cycle，Shift+Tab 切换
+  awaitingPlanApproval: boolean;
+  abortController?: AbortController;        // kill WHOLE teammate
+  currentWorkAbortController?: AbortController;  // 仅 abort 当前 turn
+  result?: AgentToolResult;
+  progress?: AgentProgress;
+}
+```
+
+**与 `local_agent` 的关键差异**：
+1. **同进程 vs 子进程**：teammate 在主进程内 AsyncLocalStorage 隔离，subagent 是 fork 子进程
+2. **独立 permission cycle**：每个 teammate 有自己的 `permissionMode`，Shift+Tab 切换不影响其他人
+3. **可双向交互**：用户用 `f` 键 "foreground" 切到 teammate 视图，可直接发 prompt 给 teammate（subagent 不行）
+4. **双层 abort**：`abortController` 杀整个 teammate；`currentWorkAbortController` 仅 abort 当前 turn 让 teammate 进新 turn
+
+**典型场景**：多个并发协作的角色 agent（researcher / reviewer / writer），用户可在 leader 与各 teammate 视图间自由切换。
+
+### 12.4 `local_workflow`（Anthropic 内部 only）
+
+**门控**：`feature('WORKFLOW_SCRIPTS')` + `build_flags.yaml`，**外部 build 整个 dead-code 消除 ~1.3K 行 workflow 引擎**。源码注释：
+
+```ts
+// WORKFLOW_SCRIPTS is ant-only (build_flags.yaml). Static imports would leak
+// ~1.3K lines into external builds. Gate with feature() + require so the
+// bundler can dead-code-eliminate the branch.
+```
+
+**典型场景**（推测，未实测）：内部 release / build / deploy 自动化脚本，让 agent 触发预定义工作流。外部用户**无法触发也看不到这个 task type**。
+
+leaked source 中 `tasks/LocalWorkflowTask/` 目录为空——证明 dead code elimination 把整个实现移除。仅 `Task.ts#11` 联合类型 + `BackgroundTasksDialog.tsx#82-86` UI 分支保留（用于将来支持时不破坏类型）。
+
+### 12.5 `monitor_mcp`（MCP server 健康监控）
+
+**这与 Monitor 工具不是一回事**——核心区别：
+
+| 维度 | Monitor 工具 | `monitor_mcp` task |
+|---|---|---|
+| 内部 task type | `local_bash` + `kind='monitor'` | `monitor_mcp`（独立类型） |
+| ID 前缀 | `b`（继承 local_bash） | `m` |
+| 触发者 | LLM agent 调用 Monitor 工具 | MCP 客户端管理器自动产生 |
+| 监控对象 | 任意脚本（`tail -f` / `inotifywait` / poll loop） | MCP server 启动状态 / 健康度 |
+| Footer 文案 | `N monitor` | `N monitor`（**两者文案相同！**） |
+| 详情 dialog | 复用 `ShellDetailDialog`（"Monitor details"） | 独立处理（`BackgroundTasksDialog#392`） |
+
+**Footer 文案撞车的处理**：[`tasks/pillLabel.ts#67`](file:/root/git/claude-code-leaked/tasks/pillLabel.ts) 给 `monitor_mcp` 单独 case："1 monitor" / "N monitors"——但**当混合存在时**（local_bash:monitor + monitor_mcp 都有）pill 会显示 `N background tasks` 退化（因为 `allSameType` 判断失败）。
+
+**典型场景**：MCP server 启动慢、断连重试、初始化进度。leaked source 没有 `tasks/MonitorMcpTask/` 实现（feature gate dead-coded），但 `BackgroundTasksDialog.tsx#198, #278, #392, #537` 4 处 reference 证明它在生产环境是激活的。
+
+### 12.6 `dream`（Auto Dream 记忆整理）
+
+**触发**：**完全自动**——Auto Dream 系统按"每 N 轮 / token 阈值"自动 fork 一个子 agent 整理用户的 `CLAUDE.md` memory。无需用户或 LLM 显式触发。
+
+源码：[`tasks/DreamTask/DreamTask.ts#1-26`](file:/root/git/claude-code-leaked/tasks/DreamTask/DreamTask.ts)：
+
+```ts
+// Background task entry for auto-dream (memory consolidation subagent).
+// Makes the otherwise-invisible forked agent visible in the footer pill and
+// Shift+Down dialog. The dream agent itself is unchanged — this is pure UI
+// surfacing via the existing task registry.
+
+const MAX_TURNS = 30  // 仅显示最后 30 turn
+
+// No phase detection — the dream prompt has a 4-stage structure
+// (orient/gather/consolidate/prune) but we don't parse it. Just flip from
+// 'starting' to 'updating' when the first Edit/Write tool_use lands.
+export type DreamPhase = 'starting' | 'updating'
+
+export type DreamTurn = {
+  text: string
+  toolUseCount: number  // tool 调用折叠为计数
+}
+```
+
+**Dream agent 4 阶段** prompt（源码注释揭示，但 dream agent 本身不解析阶段，仅根据"是否出现 Edit/Write tool"切 starting → updating）：
+1. **orient** —— 读现有 memory，建立认知
+2. **gather** —— 搜集本轮新信息
+3. **consolidate** —— 整合到 memory
+4. **prune** —— 删除过时条目
+
+**Footer 显示**：单飞 `dreaming`（无计数 N）—— `pillLabel.ts#65` 单独 case `case 'dream': return 'dreaming'`。
+
+**典型场景**：长会话末尾 LLM 总结对话洞察 → 自动写入 `~/.claude/CLAUDE.md`。用户感知：突然出现 `dreaming` pill，几分钟后 `~/.claude/CLAUDE.md` 多了几条新记忆。
+
+### 12.7 `LocalMainSessionTask`（Ctrl+B 两次后台主会话）
+
+**这不是新 type，而是 `local_agent` 的特殊用法**——源码 [`tasks/LocalMainSessionTask.ts#1-10`](file:/root/git/claude-code-leaked/tasks/LocalMainSessionTask.ts)：
+
+```ts
+/**
+ * LocalMainSessionTask - Handles backgrounding the main session query.
+ *
+ * When user presses Ctrl+B twice during a query, the session is "backgrounded":
+ * - The query continues running in the background
+ * - The UI clears to a fresh prompt
+ * - A notification is sent when the query completes
+ *
+ * This reuses the LocalAgentTask state structure since the behavior is similar.
+ */
+```
+
+**触发**：用户在主会话进行中**连按 Ctrl+B 两次**——整个 main session query 甩到后台，UI 立即清空可接收新 prompt。
+
+**典型场景**：你给 agent 派了个长任务（如"重构整个模块"），跑了 30 秒还没完，但你想插一个新指令。Ctrl+B Ctrl+B 把当前 turn 后台化，开新对话——后台 turn 完成时通知回来。
+
+这相当于**用户主动给自己 fork**——和 `local_agent`（agent 主动 fork 子 agent）相对应。
+
+### 12.8 总结：异步能力光谱
+
+按"agent 知道 vs 用户知道"分组：
+
+| Task type | agent 主动产生 | 用户可触发 | 用户可独立交互 |
+|---|---|---|---|
+| `local_bash` (shell) | ✅ run_in_background=true | ✅ Ctrl+B（前台 → 后台） | ❌ 仅可 stop / 看 output |
+| `local_bash` (monitor) | ✅ Monitor 工具 | ❌ | ❌ 仅可 stop |
+| `local_agent` | ✅ Agent + run_in_background | ❌ | ❌ 仅可 stop / 看进度 |
+| `LocalMainSessionTask` | ❌ | ✅ Ctrl+B Ctrl+B | ❌ |
+| `remote_agent` | ❌ | ✅ /autofix-pr / /ultrareview / /ultraplan | ✅ Plan ready 时审阅 |
+| `in_process_teammate` | ✅ TeamCreate | ✅ team 启动 | ✅ **`f` 键 foreground 直接交互** |
+| `local_workflow` | （ant-only） | （ant-only） | ？ |
+| `monitor_mcp` | ❌（系统自动） | ❌ | ❌ 仅可 stop |
+| `dream` | ❌（系统自动） | ❌ | ❌ 仅可看进度 |
+
+**最强能力**：`in_process_teammate`——既可后台并发，又可前台交互。其他要么纯被动，要么仅 stop/查看。
+
+**最普通能力**：`local_bash` + `local_agent`——agent 主动 fork 的"小弟"，跑完报告。
+
+**最云端**：`remote_agent`——本地下线远程也跑。
+
+## 十三、实测复现命令
 
 ```bash
 mkdir -p /tmp/cc-bg-test && cd /tmp/cc-bg-test
