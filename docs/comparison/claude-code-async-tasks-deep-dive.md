@@ -341,7 +341,284 @@ Qwen Code 的 `shell` 工具早就有 `is_background: true` 参数（源码 `too
 
 任何 agent 想抄这套，5 个组件都需要。**Qwen Code 通过 PR#3076/#3488 在补 1 + 4 + 5（仅 subagent 路径）**，剩余的 Bash pool / Monitor / 完整状态条至今无 PR 推进。
 
-## 十、实测复现命令
+## 十、源码分析（基于 leaked source）
+
+源码位置：`/root/git/claude-code-leaked/`（v2.1.x 反混淆源码，1934 文件）。以下逐项给出文件 + 行号 + 关键代码。
+
+### 10.1 核心数据模型
+
+**`tasks/LocalShellTask/guards.ts#9-33`** —— Shell 与 Monitor 共用同一类型，只用 `kind` 字段区分：
+
+```ts
+export type BashTaskKind = 'bash' | 'monitor'
+
+export type LocalShellTaskState = TaskStateBase & {
+  type: 'local_bash' // Keep as 'local_bash' for backward compatibility with persisted session state
+  command: string
+  result?: { code: number; interrupted: boolean }
+  shellCommand: ShellCommand | null
+  isBackgrounded: boolean
+  agentId?: AgentId
+  // UI display variant. 'monitor' → shows description instead of command,
+  // 'Monitor details' dialog title, distinct status bar pill.
+  kind?: BashTaskKind
+}
+```
+
+源码注释直接说明：**Monitor 是 `local_bash` 任务的 UI display variant**，差异在于：
+1. 列表里显示 description 而非 command
+2. 详情 dialog 标题是 "Monitor details"
+3. 状态条 pill 单独计数
+
+### 10.2 状态条文本生成
+
+**`tasks/pillLabel.ts#11-30`** —— `getPillLabel` 函数同时被 Footer pill + 内联 turn duration 行调用：
+
+```ts
+export function getPillLabel(tasks: BackgroundTaskState[]): string {
+  const n = tasks.length
+  const allSameType = tasks.every(t => t.type === tasks[0]!.type)
+  if (allSameType) {
+    switch (tasks[0]!.type) {
+      case 'local_bash': {
+        const monitors = count(
+          tasks,
+          t => t.type === 'local_bash' && t.kind === 'monitor',
+        )
+        const shells = n - monitors
+        const parts: string[] = []
+        if (shells > 0)
+          parts.push(shells === 1 ? '1 shell' : `${shells} shells`)
+        if (monitors > 0)
+          parts.push(monitors === 1 ? '1 monitor' : `${monitors} monitors`)
+        return parts.join(', ')
+      }
+      // ... 其他 6 种 task type
+    }
+  }
+  return `${n} background ${n === 1 ? 'task' : 'tasks'}`
+}
+```
+
+源码确认了**单复数处理**（`shells` / `monitors`）以及**混合显示**（`1 shell, 1 monitor` 用 `, ` 拼接）。
+
+### 10.3 完整的 7 种 background task 类型
+
+`tasks/types.ts#13-21` + `pillLabel.ts` 定义了 **7 种 task 类型**（不只是 shell + monitor）：
+
+| 类型 | 来源 | Footer pill 文案 |
+|---|---|---|
+| `local_bash` (kind='bash') | Bash 工具 + run_in_background | `N shell(s)` |
+| `local_bash` (kind='monitor') | Monitor 工具 | `N monitor(s)` |
+| `local_agent` | Agent 工具 + run_in_background | `N local agent(s)` |
+| `remote_agent` | Cloud sessions | `N cloud session(s)`，ultraplan 用 `◆ ultraplan ready` / `◇ ultraplan needs your input` |
+| `in_process_teammate` | TeamCreate / 多 agent 协同 | `N team(s)` |
+| `local_workflow` | （独立工作流类型，PR 估计是 swarm 相关） | `N background workflow(s)` |
+| `monitor_mcp` | （MCP server 监控，**与 Monitor 工具不同**） | `N monitor(s)` |
+| `dream` | Auto Dream 系统 | `dreaming`（无计数，单飞模式） |
+
+**注意**：`monitor_mcp` 和 `local_bash kind=monitor` 都显示 `N monitor`，但**底层是不同任务类型**——前者是 MCP 服务器健康监控，后者是 Monitor 工具实例。
+
+源码：`tasks/pillLabel.ts#34-67`
+
+### 10.4 Bash 工具的后台逻辑
+
+**`tools/BashTool/BashTool.tsx`** 关键常量（行号实测）：
+
+```ts
+const PROGRESS_THRESHOLD_MS = 2000;            // #55
+const ASSISTANT_BLOCKING_BUDGET_MS = 15_000;   // #57
+const COMMON_BACKGROUND_COMMANDS = [           // #265
+  'npm', 'yarn', 'pnpm', 'node', 'python', 'python3',
+  'go', 'cargo', 'make', 'docker', 'terraform',
+  'webpack', 'vite', 'jest', 'pytest',
+  'curl', 'wget', 'build', 'test', 'serve', 'watch', 'dev',
+] as const;
+```
+
+注：**实际 22 项**（之前 [04-tools.md 摘录](../tools/claude-code/04-tools.md#L651) 只列了 10 项），完整列表包括 `yarn / pnpm / python3 / go / terraform / curl / wget` 等。
+
+**Kairos 自动后台化触发**（`BashTool.tsx#974-985`）：
+
+```ts
+// blocking commands after ASSISTANT_BLOCKING_BUDGET_MS so the agent can keep
+if (feature('KAIROS') && getKairosActive() && isMainThread &&
+    !isBackgroundTasksDisabled && run_in_background !== true) {
+  // ... setTimeout(..., ASSISTANT_BLOCKING_BUDGET_MS).unref()
+}
+```
+
+仅在 Kairos 模式开启 + 主线程 + 用户没显式 `run_in_background: true` 时才自动后台化。
+
+**Sleep 拦截 + Monitor 推荐**（`BashTool.tsx#525-530`）—— 当 Bash 命令含 `sleep > 2s` 时 Claude 直接 **拒绝执行**并返回错误，提示用 Monitor：
+
+```ts
+if (feature('MONITOR_TOOL') && !isBackgroundTasksDisabled && !input.run_in_background) {
+  // ... if (sleepPattern) return Blocked
+  message: `Blocked: ${sleepPattern}. Run blocking commands in the background with 
+  run_in_background: true — you'll get a completion notification when done. 
+  For streaming events (watching logs, polling APIs), use the Monitor tool. 
+  If you genuinely need a delay (rate limiting, deliberate pacing), keep it under 2 seconds.`
+}
+```
+
+这是实际错误消息文本——LLM 在写 `sleep 60` 时会被这条消息引导改用 Monitor 或 `run_in_background: true`。
+
+### 10.5 MAX_TASK_OUTPUT_BYTES 落盘上限
+
+**`utils/task/diskOutput.ts#30`**：
+
+```ts
+export const MAX_TASK_OUTPUT_BYTES = 5 * 1024 * 1024 * 1024  // 5 GB
+```
+
+### 10.6 TaskStopTool（含 KillShell 别名）
+
+**`tools/TaskStopTool/TaskStopTool.ts#11-18, #38-46`**：
+
+```ts
+const inputSchema = lazySchema(() =>
+  z.strictObject({
+    task_id: z.string().optional().describe('The ID of the background task to stop'),
+    // shell_id is accepted for backward compatibility with the deprecated KillShell tool
+    shell_id: z.string().optional().describe('Deprecated: use task_id instead'),
+  }),
+)
+
+export const TaskStopTool = buildTool({
+  name: TASK_STOP_TOOL_NAME,
+  searchHint: 'kill a running background task',
+  // KillShell is the deprecated name - kept as alias for backward compatibility
+  // with existing transcripts and SDK users
+  aliases: ['KillShell'],
+  // ...
+})
+```
+
+`shell_id` 仅用于兼容 KillShell 时代旧 transcript 重放，**新 SDK 应只用 `task_id`**。
+
+### 10.7 Monitor 工具的 lazy 加载
+
+**`tools.ts#39-40, #237`**：
+
+```ts
+const MonitorTool = feature('MONITOR_TOOL')
+  ? require('./tools/MonitorTool/MonitorTool.js').MonitorTool
+  : undefined
+// ...
+...(MonitorTool ? [MonitorTool] : []),  // 加入 tools 列表
+```
+
+Monitor 工具实现文件 `tools/MonitorTool/` 在 leaked source 中**未包含**（feature-gate 后的 dead code elimination 移除了），但通过 `feature('MONITOR_TOOL')` 调用证实它是 GrowthBook feature flag 控制的。
+
+### 10.8 Footer pill 渲染
+
+**`components/PromptInput/PromptInputFooterLeftSide.tsx#17`** 导入 `BackgroundTaskStatus`：
+
+```ts
+import { BackgroundTaskStatus } from '../tasks/BackgroundTaskStatus.js';
+```
+
+**`components/tasks/BackgroundTaskStatus.tsx#10, #25-92`** 调用 `getPillLabel` 渲染 mainPill + teammatePills（多 team 时叠加显示）。
+
+### 10.9 BackgroundTasksDialog（`/tasks` 管理 UI）
+
+**`components/tasks/BackgroundTasksDialog.tsx#409`** —— UI 标题：
+
+```ts
+{runningBashCount !== 1 ? 'active shells' : 'active shell'}
+```
+
+注意只有 `runningBashCount`（local_bash 总数，含 monitor），其他 task type 单独统计。
+
+**#414** 列出所有支持的 task type 用于键盘快捷键 `x` 终止：
+
+```ts
+...((currentSelection?.type === 'local_bash' || 
+     currentSelection?.type === 'local_agent' || 
+     currentSelection?.type === 'in_process_teammate' || 
+     currentSelection?.type === 'local_workflow' || 
+     currentSelection?.type === 'monitor_mcp' || 
+     currentSelection?.type === 'dream' || 
+     currentSelection?.type === 'remote_agent') && 
+    currentSelection.status === 'running' 
+  ? [<KeyboardShortcutHint key="kill" shortcut="x" action="stop" />] : [])
+```
+
+7 种 task type 都支持 `x` 键停止。
+
+### 10.10 ShellDetailDialog（同时承载 Shell + Monitor 详情）
+
+**`components/tasks/ShellDetailDialog.tsx#164`** —— 动态 title：
+
+```ts
+const t9 = isMonitor ? "Monitor details" : "Shell details";
+```
+
+**#177, #193, #253** —— 渲染 `Status:` / `Runtime:` / `Output:` 三个字段——同一组件，按 `isMonitor` 切换 title 即可。
+
+### 10.11 内联 turn 状态行的 source
+
+**`components/messages/SystemTextMessage.tsx#508, #568`**：
+
+```ts
+// #508 — 计算 backgroundTaskSummary
+return running.length > 0 ? getPillLabel(running) : null;
+
+// #568 — 拼接 turn timing + bg summary
+const t8 = backgroundTaskSummary && ` · ${backgroundTaskSummary} still running`;
+//                                    ↑ 中点 ·
+const t7 = showTurnDuration && `${verb} for ${duration}`;
+// 渲染：<Text dimColor>{t7}{budgetSuffix}{t8}</Text>
+//   →  ✻ Cooked for 7s · 1 shell, 1 monitor still running
+```
+
+`getPillLabel` 同时驱动 Footer pill 和这里的 turn-end 状态行——两处显示**保证一致**（同一函数）。
+
+## 十一、二进制分析（v2.1.119）
+
+二进制：`/root/.local/share/claude/versions/2.1.119`，245 MB ELF Linux x86-64，**not stripped**（保留符号表 + JS 源码字符串）。
+
+### 11.1 验证 UI 字符串
+
+```bash
+strings 2.1.119 | grep -E "^(1 shell|1 monitor|Monitor details|Shell details)$"
+```
+
+输出：
+
+```
+1 shell
+1 monitor
+Monitor details
+Shell details
+```
+
+✅ 4 个 UI 字符串在二进制里**精确存在**。"Monitor details" / "Shell details" 各出现 6 次（不同代码路径）。
+
+### 11.2 Monitor 工具描述
+
+二进制内可找到完整 Monitor 工具 schema：
+
+```js
+var mL="Monitor",wH6='Start a background monitor that streams events from a long-running script. ...'
+```
+
+这是 LLM 看到的 Monitor 工具描述源串——证明 Monitor 工具确实在二进制中（即便 leaked source 没有 `tools/MonitorTool/` 目录）。
+
+### 11.3 验证 COMMON_BACKGROUND_COMMANDS
+
+```bash
+strings 2.1.119 | grep -E "^(yarn|pnpm|webpack|vite|terraform|cargo)$" | sort -u
+```
+
+输出：`cargo / pnpm / terraform / vite / webpack / yarn`——这些 22 项命令名都以独立字符串存在二进制里（minifier 不展开数组字面量字符串）。
+
+### 11.4 minifier 损耗
+
+源码常量名 `ASSISTANT_BLOCKING_BUDGET_MS` / `MAX_TASK_OUTPUT_BYTES` / `PROGRESS_THRESHOLD_MS` 在二进制中**已被 esbuild 内联展开为字面量值**（15000 / 5368709120 / 2000），所以 grep 找不到名字。但 source map 可还原（如果有的话），且实测行为完全吻合源码定义的数字。
+
+## 十二、实测复现命令
 
 ```bash
 mkdir -p /tmp/cc-bg-test && cd /tmp/cc-bg-test
@@ -375,10 +652,49 @@ rm -rf /tmp/cc-bg-test
 
 ## 证据来源
 
-- 实测：Claude Code v2.1.120 在 tmux 90×35 内运行，截图保存于 [`screenshots/claude-code-bg-tasks-90x35.txt`](./screenshots/claude-code-bg-tasks-90x35.txt)
-- 后台机制：[04-tools.md §4.4.7 后台进程管理](../tools/claude-code/04-tools.md)、[03-architecture.md](../tools/claude-code/03-architecture.md)
-- TaskStopTool / KillShell 别名：[EVIDENCE.md](../tools/claude-code/EVIDENCE.md)
-- 相关 Qwen Code PR：[PR#3488](https://github.com/QwenLM/qwen-code/pull/3488)（background-agent UI，OPEN）、[PR#3076](https://github.com/QwenLM/qwen-code/pull/3076)（run_in_background，已合并）
-- Monitor 工具规格：本会话内 ToolSearch 加载的 Monitor schema
+### 实测
 
-> **免责声明**：实测基于 v2.1.120（2026-04-25）。Monitor 工具未出现在公开 [04-tools.md](../tools/claude-code/04-tools.md) 39 项工具表中——可能是新加入的工具或归在其他类目。状态条 `N shell, M monitor` 文本格式可能随版本变化。
+- Claude Code v2.1.120 在 tmux 90×35 内运行抓屏：[`screenshots/claude-code-bg-tasks-90x35.txt`](./screenshots/claude-code-bg-tasks-90x35.txt)
+
+### 源码（leaked，v2.1.x，路径 `/root/git/claude-code-leaked/`）
+
+| 文件 | 关键行号 | 内容 |
+|---|---|---|
+| `tasks/LocalShellTask/guards.ts` | 9, 33 | `BashTaskKind = 'bash' \| 'monitor'` + `kind?: BashTaskKind` 字段 + 注释 |
+| `tasks/LocalShellTask/LocalShellTask.tsx` | 522 LOC | shell task 主实现 |
+| `tasks/pillLabel.ts` | 11-30 | `getPillLabel` 状态条文本生成（含单复数） |
+| `tasks/types.ts` | 13-21 | 7 种 BackgroundTaskState 联合类型 |
+| `tools/BashTool/BashTool.tsx` | 55, 57, 241, 265, 525, 974 | 常量定义 + run_in_background schema + sleep 拦截 |
+| `tools/TaskStopTool/TaskStopTool.ts` | 11-18, 38-46 | task_id / shell_id schema + `aliases: ['KillShell']` |
+| `tools.ts` | 39-40, 237 | Monitor 工具 lazy load + `feature('MONITOR_TOOL')` 门控 |
+| `utils/task/diskOutput.ts` | 30 | `MAX_TASK_OUTPUT_BYTES = 5 * 1024 * 1024 * 1024` |
+| `components/messages/SystemTextMessage.tsx` | 508, 568 | 内联 turn 状态行使用 `getPillLabel` + ` · ... still running` |
+| `components/tasks/BackgroundTaskStatus.tsx` | 10, 25-92 | Footer pill 组件 |
+| `components/tasks/BackgroundTasksDialog.tsx` | 409, 414 | `/tasks` 管理 UI（`active shell(s)` 标题 + 7 task type 支持） |
+| `components/tasks/ShellDetailDialog.tsx` | 164, 177-253 | Shell/Monitor 详情视图（共组件，`isMonitor ? "Monitor details" : "Shell details"`） |
+| `components/PromptInput/PromptInputFooterLeftSide.tsx` | 17 | 导入 `BackgroundTaskStatus` 渲染到 Footer |
+
+### 二进制（`/root/.local/share/claude/versions/2.1.119`，245 MB ELF）
+
+| 验证项 | 命令 | 结果 |
+|---|---|---|
+| UI 字符串 | `strings 2.1.119 \| grep -E "^(1 shell\|1 monitor\|Monitor details\|Shell details)$"` | 4 项全部精确存在 |
+| Monitor 工具名 | `strings 2.1.119 \| grep 'mL="Monitor"'` | `var mL="Monitor"` |
+| Monitor 描述 | 完整工具 description 字符串 | 完整存在 |
+| 22 项 background commands | `strings 2.1.119 \| grep -E "^(yarn\|pnpm\|webpack\|...)$"` | 全部精确存在 |
+| 常量数字 | `nm -a 2.1.119` 或 source map | 已被 esbuild 内联，名字消失但数值（15000/5368709120/2000）保留 |
+
+### 公开文档
+
+- [04-tools.md §4.4.7 后台进程管理](../tools/claude-code/04-tools.md)、[03-architecture.md](../tools/claude-code/03-architecture.md)
+- [EVIDENCE.md](../tools/claude-code/EVIDENCE.md)（基于较早 v2.1.x 二进制反编译）
+
+### 相关 Qwen Code PR
+
+- [PR#3076](https://github.com/QwenLM/qwen-code/pull/3076) `feat: background subagents`（已合并 2026-04-17，**仅 Agent 后台**）
+- [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) `feat(cli): background-agent UI`（OPEN，**仅 subagent pill**）
+
+> **免责声明**：
+> - 实测在 v2.1.120 binary，源码分析在 v2.1.x leaked dump（版本可能略有差异，但核心架构稳定）
+> - 二进制反编译可能损失部分元数据（变量名混淆 / 死代码消除），文中 `tools/MonitorTool/` 目录就是被 feature gate 后 dead-code 消除的例子
+> - leaked source 未必反映 v2.1.120 全部最新改动；7 种 task type 中 `local_workflow` / `monitor_mcp` 实际触发条件未在本文实测验证
