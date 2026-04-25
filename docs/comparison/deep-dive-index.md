@@ -140,7 +140,7 @@
 | [Ghost Text 补全](./ghost-text-completion-deep-dive.md) | 输入灰字建议 |
 | [终端 UI](./terminal-ui-deep-dive.md) | 终端界面 |
 | [显示组件对比（4 家）](./display-components-deep-dive.md) | Qwen/Claude/OpenCode/Codex 组件级对比 |
-| [显示信息密度对比](./display-density-deep-dive.md) | Claude Code vs Qwen Code · 4 类空间收税 · 3.3× 差距 |
+| [显示信息密度对比](./display-density-deep-dive.md) | Claude / Qwen / OpenCode · 30%/70%/100% 密度光谱 · 4 类空间收税 |
 | [紧凑状态栏](./compact-status-bar-deep-dive.md) | 固定高度 Footer |
 | [动态状态栏](./dynamic-status-bar-deep-dive.md) | 实时更新文本 |
 | [自定义快捷键](./custom-keybindings-deep-dive.md) | keybindings.json |
