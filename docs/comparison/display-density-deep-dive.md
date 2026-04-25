@@ -1,357 +1,63 @@
-# 显示信息密度深度对比 — Claude Code / Qwen Code / OpenCode
+# 显示信息密度对比 — Claude Code / Qwen Code / OpenCode
 
-> **核心问题**：用户报告 "Claude Code 看起来信息密度比 Qwen Code 高"。这是 UI 框架差异（都用 Ink/React），还是组件层的结构性"空间收税"？逐项源码追溯。OpenCode 用了 SolidJS + OpenTUI 的全新栈，在密度光谱上落在哪？
+> **核心问题**：用户报告"Claude Code 看起来信息密度比 Qwen Code 高"。是真的吗？多大？为什么？OpenCode 的新栈又落在哪？
 >
-> **结论先行**：在标准 30×80 窄屏（很多用户的 tmux 分屏宽度）上，三者形成清晰光谱——Qwen Code 比 Claude Code **多消耗 ~40% 垂直空间**用于装饰性元素（边框/空行/banner/marginTop）；**OpenCode 落在中间**，用 single-side border + 背景着色替代了完整 box border，比 Qwen 省 ~25% 空间但仍多于 Claude。这不是字号或缩写问题，而是 4 类组件层的结构选择。
+> **方法**：80×30 tmux 实测三家执行同一 prompt 的稳定布局，用同一指标——**30 行屏内可见对话内容（user message + tool 调用 + assistant 回复）**——量化对比。
 
-## 一、30×80 同场景对比（同一 prompt，3 个工具调用）
+## 一、实测三家（80×30 tmux，prompt: `list files in this directory`）
 
-### Qwen Code（首屏布局）
+### Qwen Code v0.15.2 实测截图
 
-```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 1: ▄▄▄▄▄▄  ▄▄     ▄▄ ▄▄▄▄▄▄▄ ▄▄▄    ▄▄  ┌────────────────────────────────┐  │ ← 边框 + 空行 panel
-│ 2:██╔═══██╗██║    ██║██╔════╝████╗  ██║ │ >_ Qwen Code (v0.15.2)         │  │
-│ 3:██║   ██║██║ █╗ ██║█████╗  ██╔██╗ ██║ │                                │  │ ← 显式空行 padding
-│ 4:██║▄▄ ██║██║███╗██║██╔══╝  ██║╚██╗██║ │ Qwen OAuth | qwen3-coder-plus  │  │
-│ 5:╚██████╔╝╚███╔███╔╝███████╗██║ ╚████║ │ ~/work/proj                    │  │
-│ 6: ╚══▀▀═╝  ╚══╝╚══╝ ╚══════╝╚═╝  ╚═══╝ └────────────────────────────────┘  │
-│ 7:                                                                            │ ← logo 第 7 行（空白）
-│ 8:Tips: Type / to see all available commands.                                │
-│ 9:                                                                            │ ← marginTop=1
-│10:> read package.json                                                         │ ← User message
-│11:                                                                            │ ← marginTop=1
-│12: ╭──────────────────────────────────────────────────────────────────────╮  │ ← borderStyle="round" 上
-│13: │ ● ReadFile package.json                                                │ │
-│14: │                                                                        │ │ ← gap={1}
-│15: │ ● WriteFile main.ts (15 lines)                                         │ │
-│16: │                                                                        │ │ ← gap={1}
-│17: │ ● Bash npm install                                                     │ │
-│18: ╰──────────────────────────────────────────────────────────────────────╯  │ ← border 下
-│19:                                                                            │ ← marginBottom=1
-│20:                                                                            │ ← HistoryItem marginTop=1
-│21:│ Done. Updated package.json and ran npm install.                          │
-│22:                                                                            │ ← marginTop=1 between items
-│23:╭────────────────────────────────────────────────────────────────────────╮ │
-│24:│ > █                                                                     │ │ ← Composer (3 行框)
-│25:╰────────────────────────────────────────────────────────────────────────╯ │
-│26:Status line line 1                                                          │ ← Footer 多行
-│27:? for shortcuts        🔒 docker | 45% (89,234 / 200,000) | ✦ dreaming     │
-└──────────────────────────────────────────────────────────────────────────────┘
-   还能放下: ~3 行可见对话内容
-```
-
-### Claude Code（首屏布局，等价 prompt）
+`compactMode: true`（用户 `~/.qwen/settings.json` 的实际配置，已是省空间版）+ DashScope API：
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ 1:✻ Welcome to Claude Code — claude-opus-4-7 — ~/work/proj                   │ ← 1 行 banner
-│ 2:                                                                            │
-│ 3:> read package.json                                                         │
-│ 4:                                                                            │
-│ 5:⏺ Read(package.json)                                                        │ ← 单行工具
-│ 6:  ⎿ Read 23 lines                                                           │ ← 单行结果
-│ 7:                                                                            │
-│ 8:⏺ Write(main.ts)                                                            │
-│ 9:  ⎿ Wrote 15 lines                                                          │
-│10:                                                                            │
-│11:⏺ Bash(npm install)                                                         │
-│12:  ⎿ added 47 packages in 8s                                                 │
-│13:                                                                            │
-│14:Done. Updated package.json and ran npm install.                             │
-│15:                                                                            │
-│16:│ > █                                                                       │ ← Composer (1 行)
-│17:                                                                            │
-│18:                                                                            │
-│       (~10 行可见上下文)                                                       │
-│27:                                                                            │
-│28: ~/work/proj  …(45% · 89.2k/200k)         ⏵⏵ accept edits  ? for shortcuts │ ← Footer 1 行
-└──────────────────────────────────────────────────────────────────────────────┘
-   还能放下: ~10 行可见对话内容
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ >_ Qwen Code (v0.15.2)                                                   │
+  │                                                                          │
+  │ API Key | gpt-5.4 (/model to change)                                     │
+  │ /tmp/qwen-density-test                                                   │
+  └──────────────────────────────────────────────────────────────────────────┘
+  Tips: Try /insight to generate personalized insights from your chat history.
+
+  > list files in this directory
+
+  ╭──────────────────────────────────────────────────────────────────────────╮
+  │✓  ListFiles  .                                                           │
+  │Press Ctrl+O to show full tool output                                     │
+  ╰──────────────────────────────────────────────────────────────────────────╯
+
+  ✦  - hello.js
+
+────────────────────────────────────────────────────────────────────────────────
+>   Type your message or @path/to/file
+────────────────────────────────────────────────────────────────────────────────
+  root@iZbp156rdv13mmqs236b82Z:/tmp/qwen-density-test | gpt-5.4      6.0% used
 ```
 
-**净差异**：在同样的 30×80 屏 + 同样的对话内容下，Qwen 留给历史/对话的可见区域是 **~3 行**，Claude 是 **~10 行**——3 倍差距。
+**逐行账（30 行屏）**：
 
-## 二、4 类结构性"空间收税"
-
-### 收税点 1：启动 Banner（一次性，但首屏占比最大）
-
-| 项 | Qwen Code | Claude Code |
+| 行号 | 内容 | 类型 |
 |---|---|---|
-| ASCII Logo | 7 行 `shortAsciiLogo`（源码: `AsciiArt.ts#9-16`） | 单行 `✻ Welcome to Claude Code` |
-| Info Panel | 4 行（标题 + **显式空行** + auth/model + cwd）+ 上下 border = **6 行** | 内联在 banner 同一行 |
-| Tips | 1 行（`Tips.tsx`，仅 `marginLeft=2 marginRight=2`，无 marginTop） | 不显示（已并入命令补全） |
-| **总计** | **~8 行**（logo 与 panel 并排 max + tip） | **~1 行** |
+| 1-6 | Bordered header panel（含显式空行 line 3） | 装饰 |
+| 7 | `Tips: Try /insight ...` | 装饰 |
+| 8, 10, 15, 17 | 空行（`marginTop=1` 散布） | 装饰 |
+| 9 | `> list files in this directory` | 对话 |
+| 11-14 | 圆角 border ToolGroup（4 行：上 border + 内容 2 + 下 border） | 对话+装饰 |
+| 16 | `✦  - hello.js` 最终答复 | 对话 |
+| 18-20 | Composer（上分隔 + 输入 + 下分隔，3 行） | 装饰 |
+| 21 | Footer | 装饰 |
+| 22-30 | 屏底空白 | 滚动余量 |
 
-源码：
-- `Header.tsx#147-149`：`<Text> </Text> {/* Empty line for spacing */}` —— **代码注释直接承认是装饰性空行**
-- `Header.tsx#108-115`：bordered info panel 用 `borderStyle="single" + paddingX=1`
-- `AppHeader.tsx#67-72`：`<Header />` 后无条件 `<Tips />`（除非显式 `hideTips`）
+**结构性开销（固定占用）**：6（header panel）+ 1（Tips）+ 3（composer）+ 1（footer）= **11 行**
+**留给对话区**：30 − 11 = **19 行**（含工具组 border 占用 ≥2 行）
 
-**为什么 Claude 不需要这些**？因为模型/认证状态都已经放进了**永久存在的单行 Footer**，banner 只是"我活着"的视觉锚点，无需重复元数据。
+完整文件：[`screenshots/qwen-code-session-80x30.txt`](./screenshots/qwen-code-session-80x30.txt)
 
-### 收税点 2：工具组容器（每次 tool call 都付）
+> 注：用户已开启 `compactMode: true` —— **如果默认（compactMode=false）还会再多 7 行 ASCII Logo**（见 §三）。
 
-源码：`packages/cli/src/ui/components/messages/ToolGroupMessage.tsx#212-228`
+### OpenCode v1.14.24 实测截图
 
-```tsx
-<Box
-  flexDirection="column"
-  borderStyle="round"        // ← 上下 border = 2 行
-  width={contentWidth}
-  gap={1}                    // ← 每个 tool 之间 1 行空隙
->
-  {/* ... */}
-</Box>
-```
-
-加上同文件 `staticHeight = /* border */ 2 + /* marginBottom */ 1 = 3` 行固定开销。
-
-| N 个工具 | Qwen 占用 | Claude 占用 | Qwen 净开销 |
-|---|---|---|---|
-| 1 工具 | 1（border 上） + 1（content） + 1（border 下） + 1（marginBottom） = 4 | 1 行 `⏺` + 1 行 `⎿` = 2 | +2 |
-| 3 工具 | 1 + 3 + 2（gap 间隔 = N-1） + 1 + 1 = 8 | 6 | +2 |
-| 5 工具 | 1 + 5 + 4 + 1 + 1 = 12 | 10 | +2 |
-
-实际 N 工具 Qwen 多 N+2 行（每多一个 tool 多一个 gap），Claude 平铺线性增长。
-
-源码：`MainContent.tsx#89` 用 Ink `<Static>` 渲染 history items，每个 `HistoryItemDisplay` 还要套：
-
-```tsx
-// HistoryItemDisplay.tsx#81-95
-const marginTop = item.type === 'gemini_content' || ... ? 0 : 1;
-return (
-  <Box
-    marginTop={marginTop}     // ← 又 +1 行
-    marginLeft={2}
-    marginRight={2}
-  >
-```
-
-→ 工具组前后各 +1 行（marginTop + marginBottom + 上一个 marginBottom 间隔），实际**单个工具组 ≥ 5 行**。
-
-### 收税点 3：Footer 行高
-
-| 项 | Qwen Code | Claude Code |
-|---|---|---|
-| 容器高度 | `flexDirection={isNarrow ? 'column' : 'row'}` 窄屏直接换行 | `<Box height={1}>` 强制单行 |
-| 左列 | `<Box flexDirection="column">` —— statusLine 上 + hint/mode 下 = **总是 ≥ 2 行**当 statusLine 存在 | 单行截断 |
-| 右列 | `flexShrink={0}` 永不压缩，多个 chip 用 `gap={1}` 横向排 | 条件渲染：< 60 列只显路径，< 80 列加 model，< 120 列加 token bar |
-| `wrap` 策略 | `wrap="truncate"` 仅在 hint Text 上 | 全部 `wrap="truncate"` |
-| 自定义 status 行 | 每行单独 `<Text>`，状态行越多越占行 | 单行内做 carousel 切换 |
-
-源码：
-- Qwen: `Footer.tsx#138-172` 双列布局 + 多 status line 堆叠
-- Claude: 见 [紧凑状态栏 deep-dive](./compact-status-bar-deep-dive.md)，铁律 `<Box height={1}>` + 响应式条件渲染
-
-### 收税点 4：消息间距（marginTop=1 默认到处发）
-
-源码 `HistoryItemDisplay.tsx#81`：
-
-```tsx
-const marginTop =
-  item.type === 'gemini_content' || item.type === 'gemini_thought_content'
-    ? 0
-    : 1;
-```
-
-**只有 assistant 主消息不加间距**。所有其他类型（user / notification / user_shell / tool_group / btw / dialog 等）每条都 `marginTop=1`。
-
-10 条 history 项 = **额外 9 行空隙**。
-
-Claude Code 等价位置只在工具组与回复之间留 1 行（不是每条都加）——10 条对话约多省 5-7 行。
-
-## 三、量化对比（同样 30×80 屏，10 条对话 + 3 工具调用）
-
-| 项目 | Qwen Code | OpenCode | Claude Code |
-|---|---|---|---|
-| 启动 Banner（活动会话） | 8 行 | 0 行（仅 Home 路由 4 行） | 1 行 |
-| 1 个工具组（3 工具） | 8 行 | 7 行（左单边框 + bg 着色） | 6 行（字符前缀） |
-| Footer | 2-3 行 | 1 行 | 1 行 |
-| 10 条消息间距 | +9 行（无条件 marginTop） | +5 行（首条 0 + 智能） | +5 行（按需） |
-| Composer 框 | 3 行（边框） | 2 行（左单边框） | 1 行 |
-| **首屏剩余可见对话内容** | **~3 行** | **~7 行** | **~10 行** |
-| 相对 Claude 的密度 | 30% | 70% | 100% |
-
-> 注：Composer 框：Qwen `borderStyle="round"`（4 边）/ OpenCode `border=["left"]` + bg / Claude 单行 `>` 提示符。
-
-## 四、根因：组件库哲学差异
-
-| 维度 | Qwen Code | OpenCode | Claude Code |
-|---|---|---|---|
-| **边框策略** | 全 4 边 `borderStyle="round"`（ToolGroup / DiffRenderer / Composer / Header / Memory badge） | **左 1 边** `border=["left"]` + `customBorderChars` 仅 `┃` + `backgroundPanel` 着色 | 几乎不用 border，靠 `⏺` / `⎿` / `│` 字符前缀 |
-| **margin 默认** | `HistoryItemDisplay marginTop=1` 无条件 + 显式 `<Text> </Text>` 装饰空行 | **首条 marginTop=0** + InlineTool `renderBefore` 智能计算（与多行邻接才加） | 紧贴默认，仅语义切换处加间距 |
-| **wrap 策略** | 有限 truncate，多数 Box 自然换行 | OpenTUI 原生 `flexShrink=0` 控制 | 全 `wrap="truncate"` + 响应式隐藏 |
-| **响应式断点** | 仅 Footer 一处 `isNarrow ? column : row` | 单一窗口宽度，无明显断点 | 多档：< 60 / < 80 / < 120 列分别字段 |
-| **Banner 默认** | 每次启动 7 行 logo + 6 行 panel + Tips | **分路由**：Home 显示 4 行 logo / Session 完全不显示 | 单行 inline + 无独立 banner |
-| **状态栏显示** | 动态 statusLine 一行一条堆叠 | 单行 row + carousel（5-10s 切换） | 单行内 carousel 切换 |
-| **底层框架红利** | Ink 6 标准 `borderStyle` 全边框 prop | OpenTUI `border={["left"]}` 数组 + `customBorderChars` 自由组合 | 自建 Ink fork（含池化、damage tracking） |
-
-**三家哲学**：
-- **Claude Code**：TUI 是**工程师的代码工作台**——每一寸像素优先给对话/代码内容
-- **OpenCode**：TUI 是**轻量化设计稿**——用最低成本视觉分组（1 字符 + 背景色）替代完整边框
-- **Qwen Code**：TUI 是**功能展示界面**——用边框/空行/Tips 做视觉引导
-
-## 五、给 Qwen Code 的具体改进点
-
-按收益从高到低：
-
-| 优先级 | 改动 | 文件 + 行 | 预计省 |
-|---|---|---|---|
-| **P0** | 移除 ToolGroupMessage 的 `borderStyle="round"`，改用 `⎿` / `│` 字符前缀做视觉层级 | `messages/ToolGroupMessage.tsx#214` | 每工具组 -3 行 |
-| **P0** | Footer 强制 `<Box height={1}>` + 全 `wrap="truncate"`，statusLine 多行改成单行 carousel | `Footer.tsx#138-172` | 每屏 -1~2 行 |
-| **P1** | HistoryItemDisplay 把 `marginTop=1` 改成"按相邻项类型决定"（连续 tool 不加间距） | `HistoryItemDisplay.tsx#81-85` | 10 条对话 -4~6 行 |
-| **P1** | Header info panel 移除 `<Text> </Text>` 显式空行 + 改用单行 horizontal layout（参考 Claude `✻ Welcome to Claude Code — model — cwd`） | `Header.tsx#147-149` | 启动 -3~5 行 |
-| **P2** | Tips 默认 `hideTips: true`，改成首次安装时 `--show-tips` 一次性显示 | `AppHeader.tsx#48-49` | 启动 -1 行 |
-| **P2** | DiffRenderer 移除外层 `borderStyle="round"`，改用左侧 `│` 单字符 gutter | `messages/DiffRenderer.tsx` | 每 diff -2 行 |
-| **P3** | Composer 移除外层 border，改成 `> ` 单行（聚焦时下划线指示） | `Composer.tsx` | 每屏 -2 行 |
-
-如果全部落地，30×80 窄屏可见对话区可从 **~3 行扩到 ~12 行（4×）**——这是用户感知"信息密度"的根本来源。
-
-## 六、OpenCode 的中间路线
-
-OpenCode（v1.14.x，2026-04 完成 OpenTUI 迁移）选了一条**结构介于 Qwen 和 Claude 之间**的路径——既不像 Claude 那样纯字符前缀，也不像 Qwen 那样四面边框。源码：`/root/git/opencode/packages/opencode/src/cli/cmd/tui/`。
-
-### 6.1 Banner——分路由策略（Claude 风格）
-
-OpenCode 把 banner 拆成**两条路由**：
-
-| 路由 | 何时显示 Logo | Logo 大小 | 位置 |
-|---|---|---|---|
-| `routes/home.tsx` | 仅初始连接/会话列表 | 4 行（`logo.left/right` 各 4 字符串） | 屏幕中央，flex-grow 撑满 |
-| `routes/session/index.tsx`（活动会话） | **不显示 banner** | — | 直接进入对话 |
-
-源码：
-- `cli/logo.ts#1-4`：Logo 数据 4 行
-- `routes/session/index.tsx#1056-1077`：Session 路由 `<scrollbox>` 后直接 `<box height={1} />` + `<For each={messages()}>`，**没有 Welcome banner**
-
-这与 Claude 一致（Claude 的 `✻ Welcome` 也只是单行内联，对话开始就消失），但比 Qwen 的 "每次启动都展示 7 行 logo + 6 行 info panel" 节省 6-7 行首屏空间。
-
-### 6.2 工具组——左侧单边框 + 背景着色（创新）
-
-源码：`routes/session/index.tsx#1741-1786` 的 `BlockTool` 组件：
-
-```tsx
-<box
-  border={["left"]}                   // ← 只画左边一条线
-  customBorderChars={SplitBorder.customBorderChars}  // ← 仅 vertical: "┃"
-  paddingTop={1}
-  paddingBottom={1}
-  paddingLeft={2}
-  marginTop={1}
-  gap={1}
-  backgroundColor={hover() ? theme.backgroundMenu : theme.backgroundPanel}
-  borderColor={theme.background}
->
-```
-
-OpenTUI 的 `border` prop 接受**数组指定哪些边**，OpenCode 选 `["left"]`——只画一条 `┃` 竖线 + 用 `backgroundPanel` 微妙背景色做视觉分组。**没有上/下边框，没有右边框**。
-
-对比：
-
-| Agent | 工具组容器 | 占用 | 视觉手段 |
-|---|---|---|---|
-| Qwen Code | `borderStyle="round"` 全 4 边 + `gap=1` + `marginBottom=1` | N+5 行 | 完整边框 |
-| **OpenCode** | `border=["left"]` 单边 + `paddingTop/Bottom=1` + `marginTop=1` + `backgroundPanel` 着色 | N+4 行 | 左 1 字符 + 背景色 |
-| Claude Code | `⏺` / `⎿` / `│` 字符前缀，无 border | 2N 行 | 纯字符前缀 |
-
-OpenCode 做出了一个有意思的权衡——**比 Claude 多 1 个 paddingTop 和 1 个 paddingBottom**（共 +2 行 / 工具组），但**比 Qwen 少 1 整个底部 border + 没有 round-corner 的视觉重量**。
-
-另外 OpenCode 还有 `InlineTool`（`#1649-1737`），用于 read/glob/grep 等单行结果的工具——**完全没有 border + paddingTop=0 + 智能 marginTop**：
-
-```tsx
-renderBefore={function () {
-  const el = this as BoxRenderable
-  // ...
-  if (el.height > 1) { setMargin(1); return }       // 自己是多行 → margin=1
-  const previous = children[index - 1]
-  if (!previous) { setMargin(0); return }
-  if (previous.height > 1 || previous.id.startsWith("text-")) {
-    setMargin(1); return                              // 上一个是多行/文本 → margin=1
-  }
-  // 否则 margin=0
-}}
-```
-
-这是**条件 marginTop**——**只有在与多行内容相邻时才加间距**，连续的 InlineTool 之间贴紧。Qwen 的 `HistoryItemDisplay` 是无条件 `marginTop=1`，OpenCode 这套相当于把 Qwen 浪费的 marginTop 智能化了。
-
-### 6.3 Footer——单行（Claude 风格）
-
-源码：`routes/session/footer.tsx#52-91`
-
-```tsx
-<box flexDirection="row" justifyContent="space-between" gap={1} flexShrink={0}>
-  <text fg={theme.textMuted}>{directory()}</text>
-  <box gap={2} flexDirection="row" flexShrink={0}>
-    {/* LSP 计数 + MCP 计数 + 权限警告 + /status */}
-  </box>
-</box>
-```
-
-**严格单行**——`flexDirection="row"`、`flexShrink={0}` 阻止换行。状态信息（LSP / MCP / Permission / /status）水平排列，不像 Qwen 那样多行堆叠。
-
-未连接时还有 carousel 行为：每 5-10 秒在 "Get started /connect" 与其他提示间切换（`onMount` 里的 `tick()` 函数）——**单行内时间维度切换**而非空间维度堆叠，这与 Claude 风格相同。
-
-### 6.4 用户消息——左边框 + 背景着色
-
-源码：`#1280-1300`：
-
-```tsx
-<box
-  border={["left"]}
-  customBorderChars={SplitBorder.customBorderChars}
-  marginTop={props.index === 0 ? 0 : 1}              // ← 第一条 0，其余 1
-  paddingTop={1}
-  paddingBottom={1}
-  paddingLeft={2}
-  backgroundColor={hover() ? theme.backgroundElement : theme.backgroundPanel}
->
-```
-
-仍是 `border={["left"]}` 单边 + `backgroundPanel`，与 BlockTool 一致的视觉语言。**首条消息 marginTop=0** 这点比 Qwen 的"无条件 +1"更好。
-
-### 6.5 实测截图（OpenCode v1.14.24，80×30 tmux，kimi-for-coding/k2p6）
-
-#### Home 路由——初始连接屏
-
-```
-                                                      ▄
-                     ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▄ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀
-                     ▀  ▀ ▀  ▀ ▀▀▀▀ ▀  ▀ ▀    ▀  ▀ ▀  ▀ ▀▀▀▀
-                     ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀
-
-
-   ┃
-   ┃  Ask anything... "Fix a TODO in the codebase"
-   ┃
-   ┃  Build · Kimi K2.6 Kimi For Coding
-   ╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
-                                                   tab agents  ctrl+p commands
-
-
-
-           ● Tip Set "tools": {"bash": false} to disable specific tools
-
-
-
-
-  /tmp/opencode-density-test                                           1.14.24
-```
-
-观察点：
-
-- **Logo**：4 行 ASCII（vs Qwen Code 7 行，Claude Code 0 行）
-- **Composer**：`┃` 单边竖线 + `Ask anything...`（vs Qwen 4 边圆角框 + `> `）
-- **mode/model 行**：紧贴 composer 下方一行 `Build · Kimi K2.6 Kimi For Coding`
-- **Tip**：单行 `● Tip Set "tools": ...` 居中显示在底部空白区——**不占首屏顶部**
-- **Footer**：单行 `/path · 版本号`，左右两端对齐
-- **空间分布**：整屏 30 行，logo 占 5 行（含上下空白行），composer 占 5 行，footer 占 1 行；剩余 ~19 行是 flex-grow 留白，不被装饰元素吃掉
-
-完整文件：[`screenshots/opencode-home-80x30.txt`](./screenshots/opencode-home-80x30.txt)
-
-#### Session 路由——单 Bash 工具调用后
-
-抓取自实际跑 `list files in this directory` 后的稳定状态：
+默认配置 + Moonshot Kimi K2.6 model：
 
 ```
   ┃
@@ -385,89 +91,189 @@ renderBefore={function () {
                                                     9.7K (4%)  ctrl+p commands
 ```
 
-观察点：
+**逐行账（30 行屏）**：
 
-- **用户消息**：`┃` 左单边 + `list files in this directory`（无完整框，只 1 行 padding 上下）
-- **Reasoning 部分**：`┃` 左单边 + 缩进文字（每段独立 box，但仍 `┃` 共线）—— 整个 reasoning 段视觉连续
-- **BlockTool（bash）**：`┃` 左单边 + 标题 `# List files in current directory` + 空行 + `$ ls` 命令 + 空行 + `hello.js` 输出 + 空行
-  - 注意：**整个工具块共用一条 `┃` 竖线**——不是每段 reasoning/tool 各画一个独立框
-  - 这是 OpenTUI `border={["left"]}` + 邻接 box 的视觉融合效果
-- **Final answer**（`hello.js`）：**完全无 border**，仅 `paddingLeft=3` 缩进——这是 TextPart（assistant 主消息）的渲染
-- **状态指示**：`▣ Build · Kimi K2.6 · 6.3s` 单行无装饰
-- **Footer**：仍单行 `9.7K (4%)  ctrl+p commands`——token 用量 + 命令面板提示，无多行堆叠
+| 行号 | 内容 | 类型 |
+|---|---|---|
+| **无 header** | 直接进入对话 | — |
+| 1-3 | User message（`┃` 左单边，3 行带上下 padding） | 对话 |
+| 4-7 | 第 1 段 Thinking（`┃` 左单边，2 行内容 + 邻接空行） | 对话 |
+| 8-14 | BlockTool: 标题 + 命令 + 输出（共用 `┃`） | 对话 |
+| 15-19 | 第 2 段 Thinking（3 行内容 + 邻接空行） | 对话 |
+| 20-22 | Final answer + spinner status | 对话 |
+| 23 | 空行 | 装饰 |
+| 24-26 | Composer（`┃` 单边 3 行） | 装饰 |
+| 27 | Mode/model 行 | 装饰 |
+| 28-29 | 分隔线 + Footer | 装饰 |
 
-**密度统计**（30 行屏内）：
-- 实际信息内容：~20 行（user msg + 2 reasoning + tool + answer + status）
-- Composer + footer：6 行
-- 空白：4 行
-- **装饰性边框总占用**：仅 `┃` 一字符宽 ×~20 行 = 20 字符的横向开销，几乎零垂直浪费
-
-对比 Qwen Code 在同样 80×30 屏上跑同样 prompt 的预期布局（基于源码推算）：
-- ToolGroupMessage 圆角框 = 2 行（顶 + 底） × 1 个工具组 = 2 行边框
-- 加上 `marginBottom=1` 和 `gap=1` = 多 2 行
-- 加上 HistoryItemDisplay 普遍 `marginTop=1` = 多 4 行（每个 history item 间）
-- Footer 多行（statusLine + hints）= 至少 2 行
-- 仅这些**结构性税** 就比 OpenCode 多吃约 8-10 行
+**结构性开销（固定占用）**：0（无 header）+ 0（无 Tips）+ 6（composer 区，含 mode 行）= **6 行**
+**留给对话区**：30 − 6 = **24 行**（含 `┃` 字符前缀占 1 列宽，无垂直占用）
 
 完整文件：[`screenshots/opencode-session-80x30.txt`](./screenshots/opencode-session-80x30.txt)
 
-> **复现命令**：
->
-> ```bash
-> mkdir -p /tmp/oc-test && cd /tmp/oc-test && echo "// hello" > hello.js
-> tmux new-session -d -s oc -x 80 -y 30 \
->   'opencode -m kimi-for-coding/k2p6'
-> sleep 4
-> tmux send-keys -t oc "list files in this directory" Enter
-> sleep 8
-> tmux capture-pane -t oc -p
-> tmux kill-session -t oc
-> ```
->
-> 上述截图基于 OpenCode v1.14.24（自动从 1.3.3 升级）、kimi-for-coding/k2p6 模型、80×30 tmux 窗口。其他 model 输出文字会变但布局结构一致。
+### Claude Code（基于源码格式重建，无实测）
 
-### 6.6 三家光谱定位
+Claude Code 闭源且需 OAuth，没有现成 API 跑实测。下面是基于 [11-终端渲染](../tools/claude-code/11-terminal-rendering.md) + [SubAgent 展示](./subagent-display-deep-dive.md) 等已知组件格式重建的等价布局：
 
 ```
-最稀疏 ─────────────────────────────────────────────────────── 最密集
-Claude Code            OpenCode              Qwen Code
-（纯字符前缀）         （单边框+着色）        （全边框+空行）
-   2N 行/N 工具         N+4 行/N 工具          N+5 行/N 工具
-   Footer 1 行          Footer 1 行            Footer 2-3 行
-   无 banner            分路由 banner          全屏 banner
-   无 marginTop         智能 marginTop         无条件 marginTop
+✻ Welcome to Claude Code — claude-opus-4-7 — /tmp/test
+
+> list files in this directory
+
+⏺ Bash(ls)
+  ⎿ hello.js
+
+The directory contains a single file: `hello.js`.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ /tmp/test                       ⏵⏵ accept edits   ? for shortcuts
 ```
 
-**OpenCode 的策略本质**：用 OpenTUI 提供的 `border={["left"]}` + `customBorderChars` + `backgroundColor` 三件套，把传统的"圆角矩形容器"分解成**最低成本的视觉分组**——只用 1 个字符宽度换 4 边框的视觉效果。这是 OpenTUI 框架带来的能力（标准 Ink 的 `borderStyle` prop 不能选边）。
+**结构性开销（推算）**：1（inline banner）+ 1（composer）+ 1（footer）= **3 行**
+**留给对话区**：30 − 3 = **~27 行**
 
-### 6.7 给 Qwen Code 的额外启示（从 OpenCode 学）
+> ⚠️ Claude Code 闭源 + OAuth 限制，本布局基于 [11-终端渲染](../tools/claude-code/11-terminal-rendering.md) 等公开文档的格式重建；与真实输出可能有 1-2 行偏差，**整体趋势成立**。
 
-| 改动 | 何处可借鉴 |
-|---|---|
-| 把 `borderStyle="round"` 替换成 ink 的部分边框（如果 Ink 支持的话）或 `▏` 单字符 gutter | OpenCode `BlockTool` |
-| `marginTop={index === 0 ? 0 : 1}` 模式 —— 首项不加间距 | OpenCode UserMessage `#1282` |
-| 智能 marginTop：相邻多行才加间距 | OpenCode `InlineTool#1691-1720` 的 `renderBefore` 逻辑 |
-| Banner 分路由：仅在初始 home/连接界面显示，进入对话后消失 | OpenCode `routes/home.tsx` vs `routes/session/index.tsx` |
-| Footer 严格单行 + carousel 切换 | OpenCode `footer.tsx#52` + `tick()` |
+### 一图总结（同 80×30 屏）
 
-> **限制**：Ink 6 的 `borderStyle` 是全边框 prop，不像 OpenTUI 的 `border={["left"]}` 数组；想完整借鉴 6.2 节的"单边框 + 背景着色"需要等 Ink 升级或自己 fork。但**首条消息 marginTop=0、智能 marginTop、Footer 单行 carousel** 这三项**今天就能在 Ink 上实现**，零成本。
+| Agent | 实测/构造 | 结构性开销 | 留给对话 | 单工具组开销 |
+|---|---|---|---|---|
+| **Qwen Code** v0.15.2（compactMode=true） | ✅ 实测 | 11 行 | **19 行** | 4 行（圆角全 4 边） |
+| **OpenCode** v1.14.24 | ✅ 实测 | 6 行 | **24 行** | 0 行额外（共用 `┃` 前缀） |
+| **Claude Code** | ⚠️ 推算 | 3 行 | **~27 行** | 0 行额外（`⏺`/`⎿` 字符前缀） |
 
-## 七、为什么这事难落地（社区已有的尝试）
+> **关键发现**：即使 Qwen 已开启 `compactMode: true`，对话区仍只有 OpenCode 的 **79%**、Claude Code 的 **70%**。**主要差距来自 6 行 header panel + 4 行 tool 圆角框**——两者都是 hard-coded 在组件里的视觉装饰。
+>
+> 如果 Qwen 关闭 compactMode（出厂默认），头部还要再多 ~7 行 ASCII logo，对话区进一步压缩到 **~12 行**——差距扩大到 OpenCode 的 50%。
 
-参考 [PR#3591 fix(cli): add TUI flicker foundation fixes](https://github.com/QwenLM/qwen-code/pull/3591)（2026-04 OPEN）—— supersedes 已关闭的 #3584/#3586/#3587/#3588，方向是 throttle + ANSI 切片 + 视觉高度切片。**这些都是闪烁修复，不动密度**。
+## 二、四个"空间收税点"——源码追溯
 
-社区目前没有专门的"减少边框/空行"PR，主要因为：
+每一寸屏幕都被 4 类组件层选择决定。
+
+### 收税点 1：Banner
+
+| Agent | 默认 banner | 何时显示 | 源码 |
+|---|---|---|---|
+| Qwen Code（默认） | 7 行 ASCII logo + 6 行 bordered info panel + 1 行 Tips = **14 行** | 每次启动 | `Header.tsx#56-150`、`AsciiArt.ts#9-16` |
+| Qwen Code（compactMode=true） | 5 行 info panel + Tips + update notice = **7 行**（隐藏 ASCII logo） | 每次启动 | 同上 + `compactMode` 检测 |
+| OpenCode | 4 行 logo（仅 Home 路由）/ **0 行**（Session 路由） | 仅初始连接屏，进会话即消失 | `routes/home.tsx#62`、`cli/logo.ts#1-4` |
+| Claude Code | 1 行 inline `✻ Welcome — model — cwd` | 每次启动 | （闭源） |
+
+**关键差异**：OpenCode + Claude 把"模型/认证状态"放在永久存在的 Footer 里，banner 只是"我活着"信号；Qwen 在 banner 里重复了同样信息（model/auth/cwd），结果两边都占空间。
+
+源码证据：`Header.tsx#147-149` 注释直接写 `{/* Empty line for spacing */}`——**装饰性空行被 hard-coded 在组件里**。
+
+### 收税点 2：工具组容器
+
+| Agent | 容器策略 | 单工具组开销（不含内容） | 源码 |
+|---|---|---|---|
+| Qwen Code | `borderStyle="round"` 全 4 边 + `gap=1` between tools + `marginBottom=1` | **+3 行固定**（border 2 + marginBottom 1） + N-1 行 gap | `ToolGroupMessage.tsx#214` |
+| OpenCode `BlockTool` | `border={["left"]}` 仅竖线 + `paddingTop/Bottom=1` + `marginTop=1` | **+3 行**（pad + margin），但**邻接 box 共线视觉融合** | `routes/session/index.tsx#1741-1786` |
+| OpenCode `InlineTool` | 无 border + 智能 `marginTop`（`renderBefore` 计算） | **0 行**（与单行邻居贴紧） | 同 #1649-1737 |
+| Claude Code | `⏺` / `⎿` 字符前缀，无 border、无 padding | **0 行**（仅 `⎿` 单字符空间） | （闭源） |
+
+OpenCode 的`InlineTool` 的智能 marginTop 算法值得单独看：
+
+```tsx
+// routes/session/index.tsx#1691-1720
+renderBefore={function () {
+  const el = this as BoxRenderable
+  if (el.height > 1) { setMargin(1); return }              // 自己多行 → 1
+  const previous = children[index - 1]
+  if (!previous) { setMargin(0); return }                  // 第一个 → 0
+  if (previous.height > 1 || previous.id.startsWith("text-")) {
+    setMargin(1); return                                    // 邻居多行/文本 → 1
+  }
+  // 否则 margin = 0（连续单行 inline tool 贴紧）
+}}
+```
+
+**只在与多行内容相邻时才加间距**。Qwen 的 `HistoryItemDisplay#81` 是无条件 `marginTop=1`（除 `gemini_content` 外），10 条 history 项 = **9 行额外空隙**。
+
+### 收税点 3：Footer
+
+| Agent | 行数 | 行为 | 源码 |
+|---|---|---|---|
+| Qwen Code | 1-3 行（`isNarrow ? column : row`，statusLine 多行堆叠） | 自适应换行 | `Footer.tsx#138-172` |
+| OpenCode | **严格 1 行** + carousel 切换 | `flexDirection="row" flexShrink={0}` 不换行 | `routes/session/footer.tsx#52-91` |
+| Claude Code | **严格 1 行** + 响应式条件渲染 | `<Box height={1}>` + 60/80/120 列分档 | [紧凑状态栏](./compact-status-bar-deep-dive.md) |
+
+OpenCode 的 carousel 模式：未连接时每 5-10 秒在 "Get started /connect" 与其他 hint 间切换，**单行内时间维度切换**而非空间维度堆叠。
+
+### 收税点 4：消息间距
+
+| Agent | 默认 marginTop | 源码 |
+|---|---|---|
+| Qwen Code | `HistoryItemDisplay marginTop=1` 无条件（除 `gemini_content` 外） | `HistoryItemDisplay.tsx#81` |
+| OpenCode（user msg） | `marginTop={index === 0 ? 0 : 1}` —— 首条 0 | `routes/session/index.tsx#1282` |
+| OpenCode（InlineTool） | `renderBefore` 智能计算（仅多行邻接才加） | 见上节 |
+| Claude Code | 仅语义切换处加间距 | （闭源） |
+
+10 条 history 在 Qwen 是 +9 行空隙；OpenCode 视邻接关系而定，约 +5 行；Claude 类似。
+
+## 三、给 Qwen Code 的 5 项改进（按收益）
+
+| # | 改动 | 源码位置 | 预计省 |
+|---|---|---|---|
+| **P0** | `ToolGroupMessage` 移除 `borderStyle="round"`，用 `┃` 单字符竖线（学 OpenCode `BlockTool`） | `messages/ToolGroupMessage.tsx#214` | 每工具组 -2~3 行 |
+| **P0** | Footer 强制 `<Box height={1}>` + 全 `wrap="truncate"`，statusLine 多行改单行 carousel | `Footer.tsx#138-172` | 每屏 -1~2 行 |
+| **P1** | `HistoryItemDisplay marginTop` 改成"按相邻项类型决定"（连续 tool 不加间距） | `HistoryItemDisplay.tsx#81-85` | 10 条对话 -4~6 行 |
+| **P1** | `Header` info panel 移除 `<Text> </Text>` 显式空行 + 改成 Claude 风格单行 inline | `Header.tsx#147-149` | 启动 -3~5 行 |
+| **P2** | `compactMode=true` 默认开启 + 加 `ui.densityMode: "compact" \| "comfortable"` 选项（向后兼容） | `AppHeader.tsx` + 全局 | 用户开箱即用紧凑 |
+
+**前 3 项今天就能在 Ink 6 上实现**（OpenCode 的 P0 单边框需要 OpenTUI 的 `border={["left"]}` 数组语法，Ink 6 的 `borderStyle` 是全边框 prop）。
+
+如全部落地，Qwen 的对话区可从 **19 行扩到 ~25 行**，与 OpenCode/Claude 同档。
+
+## 四、为什么 Qwen Code 没改
+
+社区已有 [PR#3591 fix(cli): add TUI flicker foundation fixes](https://github.com/QwenLM/qwen-code/pull/3591)，方向是 throttle + ANSI 切片——**修闪烁，不动密度**。
+
+3 个落地阻力：
 
 1. **审美分歧**：部分用户喜欢边框带来的视觉清晰感
-2. **向后兼容**：很多自动化测试基于现有布局（`__snapshots__/` 含大量 ASCII 框框）
-3. **Gemini CLI 上游**：Qwen 大量布局逻辑继承自 Gemini CLI，单方面改会增加 sync 成本
+2. **测试 snapshot 锁定**：`__snapshots__/` 含大量 ASCII 框框，改布局要重新生成
+3. **Gemini CLI 上游 sync 成本**：Qwen 大量布局逻辑继承自 Gemini CLI，单方面改增加 sync 成本
 
-最现实的路径是**加配置开关**：`ui.compactMode: true` 时关掉所有装饰性元素（borders/marginTop/Tips/banner），保持默认行为不变。这与现有的 `CompactModeContext`（`compactMode` 仅影响 tool group 合并）正交，可叠加。
+最现实的路径是**加配置开关 + 让现有 `compactMode` 做更多事**：当前 `compactMode` 仅影响 tool group 合并和隐藏 ASCII Logo，不动 marginTop / borderStyle / Footer 多行。扩展它即可——零破坏性。
 
 ## 证据来源
 
-- Qwen Code: `/root/git/qwen-code/packages/cli/src/ui/` 全量源码（v0.15.2）
-- Claude Code: [11. 终端渲染](../tools/claude-code/11-terminal-rendering.md)、[紧凑状态栏](./compact-status-bar-deep-dive.md)、[动态状态栏](./dynamic-status-bar-deep-dive.md)、[SubAgent 展示](./subagent-display-deep-dive.md)、[紧凑工具组合并](./compact-tool-group-display.md)（如存在）
-- 30×80 ASCII 渲染基于源码 margin/padding/border 算术，未实际抓屏；不同主题可能略有偏差
+- Qwen Code: `/root/git/qwen-code/packages/cli/src/ui/`（v0.15.2 实测，compactMode=true）
+- OpenCode: `/root/git/opencode/packages/opencode/src/cli/cmd/tui/`（v1.14.24 实测）
+- Claude Code: [11. 终端渲染](../tools/claude-code/11-terminal-rendering.md)、[紧凑状态栏](./compact-status-bar-deep-dive.md)、[SubAgent 展示](./subagent-display-deep-dive.md) （基于源码格式构造，无实测）
+- 截图原始文件：[`screenshots/qwen-code-session-80x30.txt`](./screenshots/qwen-code-session-80x30.txt)、[`screenshots/opencode-home-80x30.txt`](./screenshots/opencode-home-80x30.txt)、[`screenshots/opencode-session-80x30.txt`](./screenshots/opencode-session-80x30.txt)
 
-> **免责声明**：本文针对 Qwen Code v0.15.2（2026-04-24 之前版本）。后续若 Qwen Code 接入 `ui.compactMode` 配置或调整默认 marginTop，本文论断需要更新。
+**复现命令**：
+
+```bash
+# Qwen Code
+mkdir -p /tmp/qw-test && cd /tmp/qw-test && echo "// hello" > hello.js
+tmux new-session -d -s qw -x 80 -y 30 'qwen'
+sleep 5
+tmux send-keys -t qw "list files in this directory" Enter
+sleep 8
+tmux capture-pane -t qw -p
+
+# OpenCode
+mkdir -p /tmp/oc-test && cd /tmp/oc-test && echo "// hello" > hello.js
+tmux new-session -d -s oc -x 80 -y 30 'opencode -m kimi-for-coding/k2p6'
+sleep 5
+tmux send-keys -t oc "list files in this directory" Enter
+sleep 8
+tmux capture-pane -t oc -p
+```
+
+> **免责声明**：实测基于 Qwen Code v0.15.2 + compactMode=true，OpenCode v1.14.24 默认配置。Claude Code 部分为源码格式推算。布局逻辑随版本更新可能变化，2026-04-25 快照。
