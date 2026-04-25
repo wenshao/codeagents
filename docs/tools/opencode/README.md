@@ -1,6 +1,6 @@
 # OpenCode 源码分析（面向 Code Agent 开发者）
 
-> 本系列文档基于 OpenCode v1.3.0 开源源码分析（MIT 许可，19 包 TypeScript monorepo），提炼出对 Qwen Code 等 Code Agent 开发者有参考价值的架构设计和实现模式。
+> 本系列文档基于 OpenCode v1.14.24 开源源码分析（MIT 许可，19 包 TypeScript monorepo + Bun runtime + OpenTUI/SolidJS TUI），提炼出对 Qwen Code 等 Code Agent 开发者有参考价值的架构设计和实现模式。
 >
 > **阅读对象**：正在开发或改进 CLI Code Agent 的工程师
 >
@@ -10,6 +10,7 @@
 
 | 文档 | 开发者关注点 | Qwen Code 对标 |
 |------|------------|----------------|
+| [00-项目演进历史](./00-history.md) | 个人项目→公司接手→双重重写时间线 | 重构 / 演进经验 |
 | [01-概述与对标](./01-overview.md) | 能力矩阵、架构差异、独特设计 | 功能差距 + 可借鉴模式 |
 | [02-命令与工具](./02-commands.md) | 18 工具 + 7 代理 + 命令面板 | 工具/代理架构 |
 | [03-技术架构](./03-architecture.md) | 多客户端、LSP 集成、认证、插件 Hook | 插件系统 + LSP + 多客户端路线 |
@@ -35,4 +36,6 @@
 
 - 仓库：[github.com/anomalyco/opencode](https://github.com/anomalyco/opencode)
 - 许可证：MIT
-- 版本：v1.3.0
+- 当前版本：**v1.14.24**（2026-04-24 "full opentui release"）
+- 开发：原作者 Kujtim Hoxha（2025-03 起）→ **Anomaly Innovations / SST 团队**接手（2025-04-30 起，Dax Raad 主导）
+- Stars：149,294 / Forks：17,128 / Commits：11,750（2026-04-25 实测）
