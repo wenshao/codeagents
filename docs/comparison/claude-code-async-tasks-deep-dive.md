@@ -283,19 +283,50 @@ Monitor 工具调用
 | 能力 | Claude Code v2.1.120 | Qwen Code v0.15.2 | OpenCode v1.14.24 |
 |---|---|---|---|
 | 后台 Bash 进程 | ✅ `run_in_background` + 自动后台化 + Ctrl+B + shell pool + 输出落盘 | ⚠️ 仅 fork-and-detach（`shell` 工具的 `is_background: true`，源码: `tools/shell.ts#54`），**无 pool / 无输出收集** | ✗ `bash` 工具**无 background 参数**（源码: `tool/bash.ts#53-59`） |
-| 后台 Subagent | ✅ `Agent(..., run_in_background: true)` + 完成通知 | ✅ [PR#3076](https://github.com/QwenLM/qwen-code/pull/3076)（已合并 2026-04-17）`Agent` 工具支持后台 + lifecycle 事件 + headless/SDK 一致 | ✗ 无 |
+| 后台 Subagent 启动 | ✅ `Agent(..., run_in_background: true)` + 完成通知 | ✅ [PR#3076](https://github.com/QwenLM/qwen-code/pull/3076)（已合并 2026-04-17）`Agent` 工具支持后台 + lifecycle 事件 + headless/SDK 一致 | ✗ 无 |
+| 父→子 mid-flight 控制（task_stop / send_message） | ✅ `TaskStopTool`（`task_id` + `shell_id` + `KillShell` 别名，源码 `tools/TaskStopTool/TaskStopTool.ts#11-46`）+ `SendMessage` 工具 | ⚠️ [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) OPEN 中（`task_stop` + `send_message` + per-agent transcript JSONL；**仅 subagent**，不含 Bash bg / Monitor） | ✗ 无 |
+| 父读取后台 transcript | ✅ Monitor 直接 push line + `<task-notification>` / Subagent transcript 可读 | ⚠️ PR#3471 OPEN：parent 可 read live transcript（ChatRecord JSONL，与 main session 共享 schema） | ✗ 无 |
 | Monitor / 事件流 | ✅ 独立 `Monitor` 工具 + 200ms 节流 + 过量自停 | ✗ 无 | ✗ 无 |
 | 状态条计数 | ✅ `N shell, M monitor` 实时分类 | ⚠️ [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) OPEN 中（仅 background **subagent** pill，不含 Bash bg） | ✗ 无 |
 | 统一管理 UI | ✅ `/tasks`（`/bashes` 别名）+ `↓` 键 + Shell/Monitor 各有详情视图 | ⚠️ PR#3488 OPEN：combined dialog 仅含 subagent | ✗ 无任务面板 |
-| 通知推送（事件 → LLM） | ✅ `<task-notification>` 系统消息注入（subagent + shell + monitor 全部） | ✅ subagent 完成通知（PR#3076）；Bash bg ✗ | ✗ |
+| 通知推送（事件 → LLM） | ✅ `<task-notification>` 系统消息注入（subagent + shell + monitor 全部） | ✅ subagent 完成通知（PR#3076）+ 🟡 mid-flight transcript（PR#3471）；Bash bg ✗ | ✗ |
 
 **Claude Code 是目前唯一把"agent 异步任务"完整产品化的 agent**。
 
 ### Qwen Code 的相关 PR（精确状态）
 
-[PR#3076](https://github.com/QwenLM/qwen-code/pull/3076) `feat: background subagents with headless and SDK support`（**已合并 2026-04-17**）—— 给 **`Agent` 工具**加了 `run_in_background: true`，子 agent 异步启动，完成时 lifecycle 事件作为通知发回父 agent。**这是 subagent 后台，不是 Bash 后台**。
+Qwen Code 通过 **3 个 PR 的 stack** 在补 Claude Code 的 subagent 控制能力：
 
-[PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) `feat(cli): background-agent UI — pill, combined dialog, detail view`（**OPEN**）—— 给 PR#3076 的 background subagent 加 UI：状态行 pill 计数 + 组合 dialog + 单 agent 详情。**仍仅覆盖 subagent，不含 Bash bg / Monitor**。
+```
+PR#3076 ✅ MERGED (2026-04-17)
+  └─ background subagent 启动：Agent + run_in_background: true
+     │
+     ├─ PR#3471 🟡 OPEN  (model-facing：父 agent ↔ 子 subagent)
+     │  ├─ task_stop tool        ← 对标 Claude TaskStopTool
+     │  ├─ send_message tool     ← 父向子下发新指令
+     │  └─ per-agent transcript  ← ChatRecord JSONL，父可 read live
+     │
+     └─ PR#3488 🟡 OPEN  (user-facing：用户 ↔ 后台 subagent)
+        ├─ status-line pill      ← 对标 Claude `1 shell, 1 monitor`
+        ├─ combined tasks dialog ← 对标 Claude /tasks
+        └─ per-agent detail view ← 对标 Claude ShellDetailDialog
+```
+
+**[PR#3076](https://github.com/QwenLM/qwen-code/pull/3076)** `feat: background subagents with headless and SDK support`（**已合并 2026-04-17**）—— 给 **`Agent` 工具**加了 `run_in_background: true`，子 agent 异步启动，完成时 lifecycle 事件作为通知发回父 agent。**这是 subagent 后台，不是 Bash 后台**。对应 Claude 的 `local_agent` task type 启动路径。
+
+**[PR#3471](https://github.com/QwenLM/qwen-code/pull/3471)** `feat(core): model-facing agent control (task_stop, send_message, per-agent transcript)`（**OPEN**）—— PR description 自述：
+
+> "Today a parent agent can launch a background subagent but then can only wait for the final notification — no way to check progress, redirect it mid-flight, or stop it. This PR adds the three missing affordances..."
+
+**对标本 doc 的核心机制**：
+- `task_stop` tool ↔ Claude `TaskStopTool`（含 `KillShell` 别名，见 §10.6）
+- `send_message` tool ↔ Claude `SendMessage` 工具（让父 agent 向运行中的 subagent 下发指令）
+- per-agent transcript JSONL ↔ Claude 的 subagent transcript 持久化（与 main session 共用 ChatRecord schema）
+- "read the live transcript" ↔ Claude Monitor 的 push notification + `<task-notification>` 注入（见 §六）
+
+**关键限制**：仅覆盖 `local_agent`（subagent）路径，**不含 Bash bg、不含 Monitor**。Claude 的 `TaskStopTool` 通过 `task_id`/`shell_id` 双参数+ KillShell 别名同时覆盖 shell + monitor + agent；PR#3471 仅 subagent 一种。
+
+**[PR#3488](https://github.com/QwenLM/qwen-code/pull/3488)** `feat(cli): background-agent UI — pill, combined dialog, detail view`（**OPEN**）—— 给 PR#3076 + PR#3471 的 model-facing 能力加 user-facing UI：状态行 pill 计数 + 组合 dialog + 单 agent 详情。直接对标本 doc §三 / §五 描述的 Claude 状态条 + `/tasks` 管理 UI。**仍仅覆盖 subagent，不含 Bash bg / Monitor**。
 
 Qwen Code 的 `shell` 工具早就有 `is_background: true` 参数（源码 `tools/shell.ts#54-80`），但只是在 Linux 上简单加 `&` 让命令 fork-and-detach——**没有 shell pool、没有输出收集、没有状态指示、没有 TaskStop**。等同于"裸 shell 的 `&`"，不是 Claude 那种产品化方案。
 
@@ -303,7 +334,8 @@ Qwen Code 的 `shell` 工具早就有 `is_background: true` 参数（源码 `too
 1. **Bash bg pool**（重写 `shell.ts`，把 `&` 改成可追踪的子进程注册）—— 无 PR
 2. **统一 background task 管理面板**（PR#3488 在做，但仅 subagent 部分）
 3. **状态条分类计数**（PR#3488 仅 subagent pill）
-4. **Monitor / 事件流工具**（最大缺口）—— **目前没有任何 PR 涉及**
+4. **父→子 mid-flight 控制**（PR#3471 在做，仅 subagent；shell + monitor 同等能力无 PR）
+5. **Monitor / 事件流工具**（最大缺口）—— **目前没有任何 PR 涉及**
 
 ## 九、为什么这套设计重要
 
@@ -339,7 +371,17 @@ Qwen Code 的 `shell` 工具早就有 `is_background: true` 参数（源码 `too
 4. **管理 UI**：列表视图 + 详情视图（Shell 显示 Command/Runtime/Output；Monitor 显示完整 Script）
 5. **通知注入器**：把 shell 完成事件 + monitor stdout 行包成 `<task-notification>` 注入下一轮 LLM context
 
-任何 agent 想抄这套，5 个组件都需要。**Qwen Code 通过 PR#3076/#3488 在补 1 + 4 + 5（仅 subagent 路径）**，剩余的 Bash pool / Monitor / 完整状态条至今无 PR 推进。
+任何 agent 想抄这套，5 个组件都需要。**Qwen Code 通过 3 PR stack（PR#3076 ✅ + PR#3471 🟡 + PR#3488 🟡）在补 subagent 路径的全套 5 个组件**：
+
+| 组件 | Qwen Code 状态 |
+|---|---|
+| 1. Shell pool | ❌ 无 PR（最大缺口） |
+| 2. Monitor pool | ❌ 无 PR（最大缺口） |
+| 3. 状态条聚合器 | 🟡 [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488)（仅 subagent pill） |
+| 4. 管理 UI | 🟡 PR#3488（仅 subagent dialog） |
+| 5. 通知注入器 | 🟡 [PR#3076](https://github.com/QwenLM/qwen-code/pull/3076) ✅（完成通知）+ [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) 🟡（mid-flight transcript + task_stop + send_message） |
+
+**关键限制**：5 个组件全部**仅覆盖 1/7 种 task type**（local_agent）。剩余 6 种（含最常用的 shell + monitor）仍无 PR 推进。
 
 ## 十、源码分析（基于 leaked source）
 
@@ -919,8 +961,9 @@ rm -rf /tmp/cc-bg-test
 
 ### 相关 Qwen Code PR
 
-- [PR#3076](https://github.com/QwenLM/qwen-code/pull/3076) `feat: background subagents`（已合并 2026-04-17，**仅 Agent 后台**）
-- [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) `feat(cli): background-agent UI`（OPEN，**仅 subagent pill**）
+- [PR#3076](https://github.com/QwenLM/qwen-code/pull/3076) `feat: background subagents`（已合并 2026-04-17，**仅 Agent 后台启动**）
+- [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) `feat(core): model-facing agent control`（OPEN，**仅 subagent**：task_stop / send_message / per-agent transcript JSONL）
+- [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) `feat(cli): background-agent UI`（OPEN，**仅 subagent**：pill + combined dialog + detail view）
 
 > **免责声明**：
 > - 实测在 v2.1.120 binary，源码分析在 v2.1.x leaked dump（版本可能略有差异，但核心架构稳定）
