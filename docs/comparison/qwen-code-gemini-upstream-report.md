@@ -1,6 +1,6 @@
 # Qwen Code 上游 backport 建议报告（Gemini CLI 源码对比）
 
-> Qwen Code 于 2025-10-23 从 Gemini CLI v0.8.2 fork。此后 Gemini CLI 独立演进了 **32 个大版本**（v0.9.0 → v0.41.0-nightly）、**2330+ commit**——大量新功能和优化未被 backport。本报告系统梳理 **61 项**可 backport 的改进点，并附 Qwen Code 独有优势的反向对比。
+> Qwen Code 于 2025-10-23 从 Gemini CLI v0.8.2 fork。此后 Gemini CLI 独立演进了 **33 个大版本**（v0.9.0 → v0.41.0-nightly.20260425）、**2350+ commit**——大量新功能和优化未被 backport。本报告系统梳理 **62 项**可 backport 的改进点，并附 Qwen Code 独有优势的反向对比。
 >
 > **相关报告**：
 > - [Claude Code 改进建议报告（275 项）](./qwen-code-improvement-report.md)——行业领先者有什么
@@ -65,7 +65,7 @@ backport 不会丢失 Qwen Code 独立发展的优势：
 | **参考实现重写** | Edit 模糊匹配 | 中——需适配 Qwen Code 的 edit 逻辑 |
 | **大型 backport** | OS 级 sandbox | 高——跨平台+安全边界 |
 
-## 二、backport 建议矩阵（61 项，按优先级排序）
+## 二、backport 建议矩阵（62 项，按优先级排序）
 
 > 注：item-13 / item-44（原 large paste）已在历史扫描中确认 Qwen Code 已实现，**主动移除**保留编号空位（不重排避免引用失效）。matrix 实际项数 = 62 个 item id 中减去 item-13、item-44 + item-44 复用为 Model Routing = 61 项。
 
@@ -133,6 +133,7 @@ backport 不会丢失 Qwen Code 独立发展的优势：
 | **P2** | [Skill 提取质量门 🆕](./qwen-code-gemini-upstream-report-details.md#item-60) — recurrence evidence (≥3 次) + skill-creator agent 集成 | 提取门槛低，噪音多 | 中 | [#25147](https://github.com/google-gemini/gemini-cli/pull/25147) + [#25421](https://github.com/google-gemini/gemini-cli/pull/25421) |
 | **P3** | [Topic Narration + autoMemory 配置拆分 🆕](./qwen-code-gemini-upstream-report-details.md#item-61) — 长对话主动 topic 播报 + memoryManager → autoMemory 独立开关 | 单一 memoryManager 开关 | 小-中 | [#25586](https://github.com/google-gemini/gemini-cli/pull/25586) + [#25567](https://github.com/google-gemini/gemini-cli/pull/25567) + [#25601](https://github.com/google-gemini/gemini-cli/pull/25601) |
 | **P3** | [小型 backport 集合 🆕](./qwen-code-gemini-upstream-report-details.md#item-62) — `/new` alias / Bun SIGHUP fix / seatbelt $HOME 路径 / OSC 777 等 | 单项几行变更 | 小 | 8 个 PR 列表见详情 |
+| **P2** | [Real-time Voice Mode（双向语音 I/O）🆕🆕](./qwen-code-gemini-upstream-report-details.md#item-63) — cloud + local backends + VoiceModelDialog + InputPrompt 集成。与 item-50（Voice Formatter）质变 | 仅 item-50 提议（Markdown→TTS 文本） | 大 | [#24174](https://github.com/google-gemini/gemini-cli/pull/24174) |
 
 ## 三、优先级分布
 
@@ -140,9 +141,9 @@ backport 不会丢失 Qwen Code 独立发展的优势：
 |--------|------|---------|
 | P0 | **7 项** | 防闪烁（3）+ 高度稳定（1）+ 安全加固（3，含 .env RCE 修复） |
 | P1 | **17 项** | 渲染性能（4）+ 工具智能化（4）+ 上下文/会话管理（3）+ Model Routing + Agent 协议 + Session Browser + Memory 4 层 + Core Tools Allowlist + Boot 异步化 |
-| P2 | **27 项** | UI 组件（5）+ 安全（3）+ 工具增强（4）+ 调度/协议（3）+ UX（3）+ A2A Server + DevTools + 资源注册 + 语音 + Triage + 企业集成 + 计费 + `@` Watcher + Skill 提取门 |
+| P2 | **28 项** | UI 组件（5）+ 安全（3）+ 工具增强（4）+ 调度/协议（3）+ UX（3）+ A2A Server + DevTools + 资源注册 + 语音格式化 + **Real-time Voice Mode** + Triage + 企业集成 + 计费 + `@` Watcher + Skill 提取门 |
 | P3 | **10 项** | 底层优化（3）+ 终端特性（3）+ 安全框架（2）+ Topic Narration + 小型 backport 集合 |
-| **合计** | **61 项** | |
+| **合计** | **62 项** | |
 
 ## 四、30 分钟快速见效——P0 实施指南
 
@@ -234,6 +235,39 @@ fork 后 Gemini CLI 新增了大量 Qwen Code 中完全不存在的模块：
 每项的完整实现细节（问题定义、源码索引、修改方向、成本评估、前后对比）见 **[backport 建议详情](./qwen-code-gemini-upstream-report-details.md)**。
 
 ## 七、更新日志
+
+### 2026-04-25（Gemini CLI 上游 `git pull` · 新增 1 项 + 3 项 enhancement）
+
+**Gemini CLI 源码扫描**：从 v0.41.0-nightly.20260423.gaa05b4583（last scan 状态）→ v0.41.0-nightly.20260425.42587de7（21 个新 commit），识别出 **1 项新可 backport 改进点 + 3 项现有 item enhancement**。
+
+#### 新增 item-63（P2）
+
+| # | 优先级 | 功能 | 关键 PR |
+|---|---|---|---|
+| [item-63](./qwen-code-gemini-upstream-report-details.md#item-63) | **P2** | **Real-time Voice Mode（双向语音 I/O）**——cloud + local backends，VoiceModelDialog UI，settingsSchema 81 行配置 schema，InputPrompt 集成。**与 item-50（Voice Formatter）质变**——后者仅 Markdown→TTS 文本，本 item 是完整的 bidirectional 实时语音交互（说话→识别→agent→TTS→播放） | [#24174](https://github.com/google-gemini/gemini-cli/pull/24174) |
+
+#### 现有 item enhancement（不增加 item 数）
+
+| 影响的 item | Gemini PR | 说明 |
+|---|---|---|
+| [item-55](./qwen-code-gemini-upstream-report-details.md#item-55) Memory 4 层重构 | [#25873](https://github.com/google-gemini/gemini-cli/pull/25873) | 持久化 auto-memory scratchpad 用于 skill extraction —— 给 4 层 memory 增加跨会话 scratchpad |
+| [item-57](./qwen-code-gemini-upstream-report-details.md#item-57) Core Tools Allowlist + Shell 验证 | [#25935](https://github.com/google-gemini/gemini-cli/pull/25935) | YOLO 模式 fail-closed when shell parsing fails for restricted rules —— 解析器不确定时**默认拒绝**而非允许，关闭潜在绕过 |
+| 通用 fix | [#25816](https://github.com/google-gemini/gemini-cli/pull/25816) | jsonl session logs in memory/summary services —— 与 item-55 内部数据流相关 |
+
+#### 不直接对标的 Gemini 上游变更
+
+| Gemini PR | 为什么不单列 |
+|---|---|
+| [#25888](https://github.com/google-gemini/gemini-cli/pull/25888) gemini-cli-bot metrics & workflows | Anthropic-内部 dogfood 指标流水线，Qwen 用不到 |
+| [#25894](https://github.com/google-gemini/gemini-cli/pull/25894) allow output redirection for cli commands | shell 解析微调，与已合并的 [QwenPR#3508](https://github.com/QwenLM/qwen-code/pull/3508) 等输出处理无明显冲突 |
+| [#25941](https://github.com/google-gemini/gemini-cli/pull/25941) revert backspace handling for Windows | Windows 兼容回退，未影响 Qwen Code 当前行为 |
+| [#25925](https://github.com/google-gemini/gemini-cli/pull/25925) docs link in README | 文档级 |
+| [#25874](https://github.com/google-gemini/gemini-cli/pull/25874) FatalUntrustedWorkspaceError doc link | 文档级（已在前次扫描标注） |
+| [#20108](https://github.com/google-gemini/gemini-cli/pull/20108) abort error fatal crash fix | bug fix，影响面有限 |
+
+**总数**：61 → **62 项**。
+
+---
 
 ### 2026-04-24（Gemini CLI 上游 `git pull` · 新增 8 项）
 

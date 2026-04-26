@@ -1835,3 +1835,59 @@ Tier 4: 上下文级 (per-turn temporary)
 | [PR#25300](https://github.com/google-gemini/gemini-cli/pull/25300) | Use OSC 777 for terminal notifications | Qwen 已经在跟 OSC 9/8 路线 (PR#3562 等) | 评估 OSC 777 vs 9 |
 | [PR#25342](https://github.com/google-gemini/gemini-cli/pull/25342) | bundle ripgrep into SEA for offline | **Qwen 已实现**（`packages/core/vendor/ripgrep/` 6 平台）| ✓ 跳过 |
 
+---
+
+<a id="item-63"></a>
+
+### 63. Real-time Voice Mode（双向语音 I/O）（P2）🆕🆕
+
+**Gemini PR**：[#24174](https://github.com/google-gemini/gemini-cli/pull/24174) `feat(voice): implement real-time voice mode with cloud and local backends`（2026-04-24 合并）
+
+**与 item-50（Voice Formatter）的关键区别**：
+
+| 维度 | item-50（已 propose） | item-63（本 item） |
+|---|---|---|
+| 方向 | 单向（Markdown → TTS 文本） | **双向**（用户语音 → 识别 → agent → TTS → 播放） |
+| 实现规模 | `core/voice/` 2 文件 473 行 | `cli/.../voice` 多文件 + dialog UI + settings schema + InputPrompt 集成 |
+| 后端 | 仅文本格式化层 | **cloud 后端 + local 后端**双路径 |
+| 用户交互 | 无（仅 LLM 输出转 TTS 文本） | 完整 voice mode 切换 + model 选择对话框 + 输入框集成 |
+| 状态 | item-50 提议 backport 时尚未实现 voice mode | **本 item 是上游 voice mode 的真正落地** |
+
+**Gemini 上游实现规模**（PR #24174 文件 stat 摘录）：
+
+```
+docs/cli/settings.md                                |  33 +-
+docs/reference/configuration.md                    |  26 ++
+docs/reference/keyboard-shortcuts.md               |   1 +
+integration-tests/voice-mode.test.ts               |  76 ++++
+packages/cli/src/config/settingsSchema.ts          |  81 ++++
+packages/cli/src/services/BuiltinCommandLoader.ts  |   2 +
+packages/cli/src/ui/AppContainer.tsx               |  24 ++
+packages/cli/src/ui/commands/voiceCommand.ts       |  30 ++
+packages/cli/src/ui/components/DialogManager.tsx   |   4 +
+packages/cli/src/ui/components/InputPrompt.test.tsx | 407 +++++++++++++++++++
+packages/cli/src/ui/components/InputPrompt.tsx     |  69 +++-
+packages/cli/src/ui/components/VoiceModelDialog.tsx | 236 ++++++++++++
+```
+
+**核心新增组件**：
+
+1. **`/voice` slash 命令**（`cli/src/ui/commands/voiceCommand.ts`，30 行）—— 启动/停止 voice mode
+2. **`VoiceModelDialog.tsx`**（236 行）—— 选择 cloud / local backend + model
+3. **`settingsSchema.ts` voice 配置**（81 行）—— 双后端配置 schema
+4. **`InputPrompt.tsx` 集成**（+69 行）—— voice 状态指示 + 模式切换
+5. **集成测试**（`integration-tests/voice-mode.test.ts`，76 行）
+
+**Qwen Code 现状**：无任何 voice 相关实现。item-50 仅提议 Markdown→TTS formatter，本 item 是完整 bidirectional voice 模式。
+
+**实施成本评估**：
+- 涉及文件：~12 文件（含 dialog / commands / settings schema / 集成）
+- 新增代码：~1,200-1,500 行（参考上游 stat）
+- 开发周期：~2-3 周（1 人）
+- 难点：cloud STT/TTS 集成（DashScope 是否有等价 API？）+ local backend（whisper.cpp / Coqui？）+ 跨平台音频（macOS/Linux/Windows）
+- 依赖：item-50（Voice Formatter）作为内部 Markdown→speech 转换层
+
+**意义**：voice mode 是 agentic CLI 的下一前沿——hands-free 编码、可访问性（视障用户）、移动场景。Gemini CLI 抢先布局，**Qwen Code 是中文生态唯一可能补齐这块的 agent**（DashScope 自家有语音 API）。
+
+**改进收益**：完整 voice mode 让 Qwen Code 在中文 voice agent 赛道占据先机，区别于 Claude Code（英文为主）和 Codex CLI（无 voice）。
+
