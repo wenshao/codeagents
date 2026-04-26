@@ -156,6 +156,112 @@ OpenCode 的 **OpenCode Zen** 和 **OpenCode Go** 付费计划上线：
 
 属于 **"open core + hosted"** 模式 —— SST 团队的传统玩法（[SST Console](https://console.sst.dev) 也是同样定价结构）。
 
+## 阶段七：中国 AI 生态深度绑定（2025-Q4 起，与商业化同步）
+
+虽然项目方完全是美国/西方公司（Anomaly Innovations / SST），**OpenCode 的商业生态 90% 绑定中国 AI**——这是它最有意思也最容易被忽视的特点。
+
+### 7.1 内置 provider：9/11 是中国 AI 实验室
+
+实测 `opencode models` 列出的所有 provider 前缀：
+
+```
+deepseek/                      ← DeepSeek（杭州，幻方旗下）
+kimi-for-coding/               ← Kimi For Coding（Moonshot 编程版）
+minimax/                       ← MiniMax（上海）国际版
+minimax-cn/                    ← MiniMax 中国大陆版
+minimax-cn-coding-plan/        ← MiniMax 中国 Coding Plan
+minimax-coding-plan/           ← MiniMax 国际 Coding Plan
+moonshotai/                    ← Moonshot AI（北京）国际版
+moonshotai-cn/                 ← Moonshot 中国大陆版
+zai-coding-plan/               ← Z.AI（智谱国际品牌）Coding Plan
+zhipuai-coding-plan/           ← Zhipu AI（北京）中国 Coding Plan
+opencode/                      ← OpenCode 自家转售
+```
+
+**11 个 provider 中，10 个是中国 AI 实验室或其衍生**（剩下 1 个是 OpenCode 自家），**没有原生 OpenAI / Anthropic / Google provider 作为默认**——这些反而要走 [models.dev](https://models.dev) 动态加载（"自带 API key"模式）。
+
+`-cn` 后缀的版本特别值得关注：表明 OpenCode **专门为中国大陆访问做了端点适配**——大陆用户可直接用 `minimax-cn-coding-plan/...` 而无需 VPN。
+
+### 7.2 OpenCode Go 订阅：纯中国 AI 转售
+
+`OpenCode Go` 付费计划（$5 首月 → $10/月）的全部包含模型都是**中国 AI**：
+
+| 模型 | 提供方 | 备注 |
+|---|---|---|
+| **GLM-5** | Zhipu AI（智谱，北京） | 智谱 GLM 系列旗舰 |
+| **Kimi K2.5** | Moonshot AI（北京） | 月之暗面 Kimi 编程版 |
+| **MiniMax M2.5** | MiniMax（上海） | 标准版 |
+| **MiniMax M2.7** | MiniMax（上海） | 旗舰版 |
+
+**没有 Claude、GPT、Gemini 出现在 Go 订阅里**——这是一个明确的商业选择。
+
+### 7.3 多语言文档：中文 first-class
+
+[`README.zh.md`](https://github.com/anomalyco/opencode/blob/main/README.zh.md) 简体中文 + [`README.zht.md`](https://github.com/anomalyco/opencode/blob/main/README.zht.md) 繁体中文 都在仓库根目录的语言切换列表里。22 种语言里，**中文（简+繁）排在第二、第三位**（仅次于英文）。
+
+### 7.4 商业逻辑：AI 套利
+
+```
+美国/欧洲市场已被 Cursor / Claude Code / Copilot 占据
+   ↓
+OpenCode 想要差异化
+   ↓
+中国 AI 实验室（Kimi / DeepSeek / Zhipu / MiniMax）coding-tier 模型
+   ↓ 价格优势：~ Claude/GPT-4 的 1/5 ~ 1/10
+   ↓ 在 SWE-bench 等编程 benchmark 表现接近顶级
+   ↓ 但西方开发者难直接接入（境外 API 限速 / 注册门槛 / 双 API 端点）
+   ↓
+OpenCode = "西方开发者访问中国 coding 模型的最佳通道"
+```
+
+OpenCode 的**商业护城河本质是 AI 套利**——把中国 AI 实验室的便宜+好用模型，包装成西方 developer 友好的 CLI + 订阅。
+
+### 7.5 与同类 Agent 的对比
+
+| Agent | 注册地 | 商业绑定 | 中国生态权重 |
+|---|---|---|---|
+| **OpenCode** | 🇺🇸 美国（Anomaly Innovations） | 🇨🇳 9/11 中国 provider + Go 订阅纯中国模型 | **极重** |
+| Qwen Code | 🇨🇳 中国（阿里 Qwen） | 🇨🇳 主推 Qwen 自家模型 | 重（自家） |
+| Claude Code | 🇺🇸 美国（Anthropic） | 🇺🇸 仅 Claude 模型 | 无 |
+| Codex CLI | 🇺🇸 美国（OpenAI） | 🇺🇸 仅 OpenAI 模型 | 无 |
+| Cursor | 🇺🇸 美国（Anysphere） | 🇺🇸 主流 Western models | 无 |
+
+**OpenCode 是唯一商业模式建立在"美国包装中国 AI"上的 CLI agent**——技术栈完全西方（Bun/TS/Solid/OpenTUI 都是西方栈），但生态/商业 90% 是中国。
+
+### 7.6 战略地位
+
+OpenCode 占据了一个其他 agent 没占的位置：
+
+```
+              西方主流市场
+            (Cursor / Claude Code)
+                    │
+                    │
+       OpenCode ────●────  中国本土市场
+       （横跨东西方）       (Qwen Code)
+                    │
+                    │
+              不绑定单一厂商
+              (provider-agnostic)
+```
+
+- 不是西方主流（不绑 Anthropic/OpenAI）
+- 不是中国本土（不绑 Qwen/Kimi 单家）
+- **是 west-meets-east 的中介层**
+
+这种定位让 OpenCode 比纯 Western agent 多拿到中国市场，又比纯 Chinese agent 多拿到西方开发者——**双向套利**。
+
+### 7.7 风险
+
+这种深度绑定也带来风险：
+
+1. **中美关系恶化** —— 如美国出口管制扩大到 AI 模型 API，OpenCode 的"中国转售"商业模式可能受冲击
+2. **中国 API 政策变动** —— 如中国境外访问被限制，国际版 provider 可能失效
+3. **中国 AI 实验室自建 CLI** —— 阿里有 Qwen Code，DeepSeek/Moonshot/Zhipu 也可能各自建立官方 agent，**绕过 OpenCode 中介层**
+4. **价格优势消失** —— 如中国 AI 跟 OpenAI/Anthropic 一样涨价，套利空间消失
+
+OpenCode 长期能否守住这个定位，取决于中国 AI 是否持续保持"性价比 + 难直接访问"的双重特性。
+
 ## 当前状态（2026-04-25）
 
 | 维度 | 数值 |
