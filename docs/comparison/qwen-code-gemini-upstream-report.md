@@ -87,7 +87,7 @@ backport 不会丢失 Qwen Code 独立发展的优势：
 | **P1** | [JIT 上下文发现](./qwen-code-gemini-upstream-report-details.md#item-23) — 读/写/编辑文件时自动附加子目录上下文 | 缺失 | 中 | — |
 | **P1** | [OS 级 sandbox](./qwen-code-gemini-upstream-report-details.md#item-24) — Linux bwrap + macOS Seatbelt + Windows 受限 token | 无进程隔离 | 大 | — |
 | **P1** | [Tool Output Masking](./qwen-code-gemini-upstream-report-details.md#item-33) — Hybrid Backward Scanned FIFO 裁剪大工具输出，保留最近 50k token | 全量加载到上下文 | 中 | — |
-| **P1** | [/rewind 检查点回退](./qwen-code-gemini-upstream-report-details.md#item-34) — 会话内任意消息回退 + 文件恢复 + 确认对话框 | 缺失 | 中 | — |
+| **P1** | [/rewind 检查点回退](./qwen-code-gemini-upstream-report-details.md#item-34) — 会话内任意消息回退 + 文件恢复 + 确认对话框 | ✓ 已实现 | 中 | [QwenPR#3441](https://github.com/QwenLM/qwen-code/pull/3441) ✓（2026-04-25 合并 · double-ESC + /rewind · +1533/-6） |
 | **P1** | [Model Availability Service](./qwen-code-gemini-upstream-report-details.md#item-35) — 模型健康追踪 + 容量/配额感知 + 自动降级 | 无模型健康追踪 | 中 | — |
 | **P2** | [虚拟化列表（VirtualizedList）](./qwen-code-gemini-upstream-report-details.md#item-8) — 仅渲染可视区域 + `StaticRender` 离屏项 | 全量渲染 | 中 | — |
 | **P2** | [批量滚动（useBatchedScroll）](./qwen-code-gemini-upstream-report-details.md#item-9) — 同一 tick 内多次滚动合并为一次渲染 | 无批量滚动 | 小 | — |

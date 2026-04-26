@@ -1007,7 +1007,19 @@ const MemoizedAppHeader = memo(AppHeader);
 
 <a id="item-34"></a>
 
-### 34. /rewind 检查点回退（P1）
+### 34. /rewind 检查点回退（P1）✓ 已实现（[QwenPR#3441](https://github.com/QwenLM/qwen-code/pull/3441) 2026-04-25 合并）
+
+**最新状态（2026-04-25）**：[QwenPR#3441](https://github.com/QwenLM/qwen-code/pull/3441) `feat(cli): add conversation rewind feature with double-ESC and /rewind command` ✓ 合并（+1,533 / -6）。
+
+实现要点：
+- **double-ESC** 触发 rewind UI（与 Claude Code 一致）
+- `/rewind` 命令显式触发
+- 对话 + 文件状态双重回退
+- 含确认对话框
+
+本 item 状态从 P1 缺失 → **P1 ✓ 已实现**。
+
+---
 
 **问题**：Agent 在第 20 轮做了一个错误决策（比如重构了不该改的文件），用户想"回到第 18 轮的状态"。当前只能手动 `git checkout` 恢复文件，且对话历史无法回退。
 

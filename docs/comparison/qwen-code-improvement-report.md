@@ -75,7 +75,7 @@
 | **P1** | [原子文件写入与事务回滚](./atomic-file-write-deep-dive.md) — temp+rename 原子写 + 大结果persist to disk [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-12) | 直接 writeFileSync | 中 | — |
 | **P1** | [自动检查点默认启用](./automatic-checkpoint-restore-deep-dive.md) — 每轮工具执行后自动创建文件快照 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-13) | 🟡 部分实现（机制已有 `restoreCommand.ts`，仅默认关闭 + 缺 picker UX）| 小 | [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) 🟡 OPEN（rewind + restore flows · picker UX）|
 | **P1** | [Coordinator/Swarm 多 Agent编排](./coordinator-swarm-orchestration-deep-dive.md) — Leader/Worker 团队 + 3 种执行后端 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-14) | 🟡 控制面 + UI 在做 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3433](https://github.com/QwenLM/qwen-code/pull/3433) ⚠️ revert（[PR#3468](https://github.com/QwenLM/qwen-code/pull/3468) 2026-04-20）/ [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) 🟡 OPEN（task_stop / send_message / per-agent transcript）/ [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) 🟡 OPEN（background-agent UI）|
-| **P1** | [Task Management 任务协同与跨进程并发调度](./task-management-deep-dive.md) — 支持 blocks/blockedBy 的任务拓扑、跨进程安全锁与 Swarm 集成 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-25) | 🟡 控制面 + UI 在做 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) 🟡 OPEN / [PR#3507](https://github.com/QwenLM/qwen-code/pull/3507) 🟡 OPEN（sticky todo panel）|
+| **P1** | [Task Management 任务协同与跨进程并发调度](./task-management-deep-dive.md) — 支持 blocks/blockedBy 的任务拓扑、跨进程安全锁与 Swarm 集成 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-25) | 🟡 控制面 + UI 在做 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) 🟡 OPEN / [PR#3507](https://github.com/QwenLM/qwen-code/pull/3507) ✓（2026-04-26 合并 · sticky todo panel）|
 | **P1** | [Agent 工具细粒度访问控制](./agent-tool-access-control-deep-dive.md) — 3 层allowlist/denylist + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-15) | 全部或指定列表 | 中 | [PR#3064](https://github.com/QwenLM/qwen-code/pull/3064) ✓ / [PR#3066](https://github.com/QwenLM/qwen-code/pull/3066) ✓ |
 | **P1** | [InProcess 同进程多 Agent隔离](./in-process-agent-isolation-deep-dive.md) — AsyncLocalStorage 上下文隔离 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-16) | 全局状态可能泄漏 | 中 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) |
 | **P1** | [Agent 记忆持久化](./agent-memory-persistence-deep-dive.md) — user/project/local 3 级跨 session 记忆 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-17) | 无跨 session 记忆 | 中 | — |
@@ -142,7 +142,7 @@
 | **P2** | 快捷键提示组件 — UI 全局统一显示当前操作的键盘快捷方式 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-2) | 缺失 | 小 | — |
 | **P2** | 终端完成通知 — 后台任务完成时 iTerm2/Kitty/Ghostty OSC 通知 + 进度百分比 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-3) | 仅 bell | 小 | — |
 | **P2** | Spinner 工具名 + 计时 — 显示"正在执行 Bash(npm test) · 15s"而非通用 spinner [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-4) | 通用 Responding | 小 | — |
-| **P2** | /rewind 检查点回退 — 会话内代码 + 对话恢复到之前的检查点 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-5) | 缺失 | 中 | [PR#3441](https://github.com/QwenLM/qwen-code/pull/3441) / [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) / [Roadmap#2342](https://github.com/QwenLM/qwen-code/issues/2342) |
+| **P2** | /rewind 检查点回退 — 会话内代码 + 对话恢复到之前的检查点 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-5) | ✓ 已实现 | 中 | [PR#3441](https://github.com/QwenLM/qwen-code/pull/3441) ✓（2026-04-25 合并 · double-ESC + /rewind · +1533/-6）|
 | **P2** | /copy OSC 52 剪贴板 — 复制代码块到剪贴板，OSC 52 + temp 文件回退 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-6) | 缺失 | 小 | — |
 | **P2** | 首次运行引导向导 — 主题/认证/API Key/安全/终端设置多步引导 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-7) | 缺失 | 中 | — |
 | **P2** | /doctor 诊断工具 — 系统环境检查（git/node/shell/权限/代理）[↓](./qwen-code-improvement-report-p2-tools-ui.md#item-8) | 缺失 | 小 | — |
@@ -443,6 +443,80 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-26（~31h 增量 · PR#3441 /rewind 合并 + PR#3507 sticky todo + PR#3567 被 revert）
+
+扫描窗口：2026-04-25 04:26 UTC（上次扫描 8dfe243）→ 2026-04-26 11:40 UTC。窗口内 **11 项合并** + **1 项 revert 勘误** + **8 项新 OPEN**。
+
+#### 🎯 重要：PR#3441 /rewind 合并（2026-04-25 14:12 UTC）
+
+**[PR#3441](https://github.com/QwenLM/qwen-code/pull/3441)** `feat(cli): add conversation rewind feature with double-ESC and /rewind command` —— +1,533 / -6，**重要 P2 item 落地**：
+
+- **double-ESC** 触发 rewind UI（同 Claude Code 设计）
+- `/rewind` 命令显式触发
+- 对话 + 文件状态双重回退到任意检查点
+- 含确认对话框
+
+**状态升级**：
+- 主矩阵 **/rewind 检查点回退** 行：缺失 → **✓ 已实现**
+- **同时直接命中 [Gemini upstream report item-34](./qwen-code-gemini-upstream-report-details.md#item-34)** —— 见下方 upstream 报告联动更新
+
+#### 🎯 PR#3507 sticky todo panel 合并（2026-04-26 04:21 UTC）
+
+**[PR#3507](https://github.com/QwenLM/qwen-code/pull/3507)** `feat(cli): add sticky todo panel to app layouts` —— 之前已在主矩阵 item-25 行追踪 OPEN。现 MERGED。
+
+主矩阵 item-25（Task Management）行 PR 列升级：🟡 OPEN → ✓（sticky todo panel 部分）。
+
+#### 🔴 重要勘误：PR#3567 被 revert
+
+**[PR#3633](https://github.com/QwenLM/qwen-code/pull/3633)** `revert(cli): undo OPENAI_MODEL precedence change in modelProviders lookup (#3567)` 合并 2026-04-26 06:29 UTC。
+
+**回退原因**（PR body 原文）：
+
+> "PR#3567 introduced a UX regression where a `/model` selection in the CLI is silently overridden whenever `OPENAI_MODEL` is set in the user's shell, with no warning surfaced."
+
+**这意味着 [上次扫描 458b861](https://github.com/wenshao/codeagents/commit/458b861) 标 PR#3567 ✓ 的状态需要勘误**——PR#3567 在合并 ~31 小时后被 revert。**OPENAI_MODEL precedence 修复回到原状**，需重新设计。
+
+教训重申：**OPEN PR 标 ✓ 后仍需 ~3 天复核**，避免 revert 漏跟。
+
+#### 🟢 其他新合并（10 项，按时间倒序）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| [PR#3633](https://github.com/QwenLM/qwen-code/pull/3633) | revert(cli): undo OPENAI_MODEL precedence change | 2026-04-26 06:29 UTC | **PR#3567 revert**（见上） |
+| [PR#3620](https://github.com/QwenLM/qwen-code/pull/3620) | fix(core): match DeepSeek provider by model name for sglang/vllm | 2026-04-26 05:17 UTC | DeepSeek 多端点匹配 |
+| [PR#3630](https://github.com/QwenLM/qwen-code/pull/3630) | fix(telemetry): use safeJsonStringify in FileExporter | 2026-04-26 04:55 UTC | telemetry 循环引用崩溃修复 |
+| [PR#3507](https://github.com/QwenLM/qwen-code/pull/3507) | feat(cli): sticky todo panel in app layouts | 2026-04-26 04:21 UTC | **见上** |
+| [PR#3498](https://github.com/QwenLM/qwen-code/pull/3498) | docs(telemetry): clarify Alibaba Cloud console entry | 2026-04-25 23:40 UTC | 文档 |
+| [PR#3495](https://github.com/QwenLM/qwen-code/pull/3495) | fix(core): preserve settings-sourced apiKey when registry model envKey is absent | 2026-04-25 23:37 UTC | provider auth bug 修复 |
+| [PR#3622](https://github.com/QwenLM/qwen-code/pull/3622) | fix(test): update rewind E2E Test 1 assertion after isRealUserTurn fix | 2026-04-25 22:49 UTC | PR#3441 follow-up |
+| [PR#3605](https://github.com/QwenLM/qwen-code/pull/3605) | feat: adds Space-to-preview to /resume session picker | 2026-04-25 14:41 UTC | 之前 OPEN 追踪 → ✓ |
+| [PR#3614](https://github.com/QwenLM/qwen-code/pull/3614) | test(arena): cover select dialog key actions | 2026-04-25 14:30 UTC | test only |
+| [PR#3611](https://github.com/QwenLM/qwen-code/pull/3611) | fix(review): respect /language output setting for local reviews | 2026-04-25 14:27 UTC | **/review 增强** —— 用户 `/language` 设置生效 |
+| [PR#3441](https://github.com/QwenLM/qwen-code/pull/3441) | feat(cli): add conversation rewind feature with double-ESC and /rewind | 2026-04-25 14:12 UTC | **见上** |
+
+#### 🟡 新 OPEN（8 项）
+
+| PR | 方向 | 潜在影响 |
+|---|---|---|
+| [PR#3642](https://github.com/QwenLM/qwen-code/pull/3642) | feat(core): managed background shell pool with `/tasks` command | **直接对标 Claude Code 的 [shell pool + /tasks](./claude-code-async-tasks-deep-dive.md)** —— 这是 [item-56 后台并发 SubAgent](./qwen-code-improvement-report-p2-stability.md#item-56) + [§9 Shell pool](./claude-code-async-tasks-deep-dive.md#九为什么这套设计重要) 缺口的关键填补，**最值得跟踪** |
+| [PR#3636](https://github.com/QwenLM/qwen-code/pull/3636) | feat(core): cap concurrent in-flight requests per provider | provider 级别并发上限（issue #3409） |
+| [PR#3635](https://github.com/QwenLM/qwen-code/pull/3635) | feat(core): `--insecure` flag and `QWEN_TLS_INSECURE` env var | 自签 TLS 兼容（issue #3535） |
+| [PR#3637](https://github.com/QwenLM/qwen-code/pull/3637) | fix(core): preserve reasoning_content when merging consecutive assistant messages | thinking 块合并修复（issue #3619） |
+| [PR#3631](https://github.com/QwenLM/qwen-code/pull/3631) | Feat/stats model cost estimation | `/stats` 增加 cost 估算 |
+| [PR#3640](https://github.com/QwenLM/qwen-code/pull/3640) | fix(cli): guard gradient rendering without colors | TUI 兼容（NO_COLOR） |
+| [PR#3629](https://github.com/QwenLM/qwen-code/pull/3629) | feat(config): support API timeout env override | 环境变量 timeout |
+| [PR#3627](https://github.com/QwenLM/qwen-code/pull/3627) | feat: add macOS desktop app installer | macOS 桌面 app 安装脚本（替代关闭的 PR#3564） |
+| [PR#3624](https://github.com/QwenLM/qwen-code/pull/3624) | fix(cli): add API Key option to `qwen auth` interactive menu | auth 菜单 UX |
+| [PR#3643](https://github.com/QwenLM/qwen-code/pull/3643) | feat: Adds Catalan language support | i18n |
+
+**重点关注 PR#3642**：这是 Claude Code shell pool 架构在 Qwen Code 的首次正式 PR。如合并将关闭多个本 doc 系列长期追踪的缺口（包括 [claude-code-async-tasks §九 component 1](./claude-code-async-tasks-deep-dive.md) Shell pool 完全无 PR 的状态）。
+
+#### 📊 累计合并 PR 计数
+
+84 → **94**（+10 净合并，1 个是 revert）。README 同步更新。
+
+---
 
 ### 2026-04-25（~5h 增量 · PR#3591 TUI flicker foundation 合并 · PR#3602 cleanup）
 
