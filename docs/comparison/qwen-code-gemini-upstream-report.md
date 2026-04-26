@@ -3,9 +3,9 @@
 > Qwen Code 于 2025-10-23 从 Gemini CLI v0.8.2 fork。此后 Gemini CLI 独立演进了 **32 个大版本**（v0.9.0 → v0.41.0-nightly）、**2330+ commit**——大量新功能和优化未被 backport。本报告系统梳理 **61 项**可 backport 的改进点，并附 Qwen Code 独有优势的反向对比。
 >
 > **相关报告**：
-> - [Claude Code 改进建议报告（253 项）](./qwen-code-improvement-report.md)——行业领先者有什么
-> - [Codex CLI 对标改进报告（25 项）](./qwen-code-codex-improvements.md)——沙箱、Apply Patch、Feature Flag、网络代理等
-> - [OpenCode 对标改进报告（27 项）](./qwen-code-opencode-improvements.md)——Provider 系统、Plugin 插件、Snapshot 快照等
+> - [Claude Code 改进建议报告（275 项）](./qwen-code-improvement-report.md)——行业领先者有什么
+> - [Codex CLI 对标改进报告（28 项）](./qwen-code-codex-improvements.md)——沙箱、Apply Patch、Feature Flag、网络代理、Sticky Env、Permission Profiles 等
+> - [OpenCode 对标改进报告（29 项）](./qwen-code-opencode-improvements.md)——Provider 系统、Plugin 插件、Snapshot 快照、可配置截断、编辑器上下文协议等
 > - [/review 功能分析](./qwen-code-review-improvements.md)——审查功能 5 方对比
 > - [工具输出限高防闪烁](./tool-output-height-limiting-deep-dive.md)——Gemini CLI SlicingMaxSizedBox vs Qwen Code
 
@@ -65,7 +65,10 @@ backport 不会丢失 Qwen Code 独立发展的优势：
 | **参考实现重写** | Edit 模糊匹配 | 中——需适配 Qwen Code 的 edit 逻辑 |
 | **大型 backport** | OS 级 sandbox | 高——跨平台+安全边界 |
 
-## 二、backport 建议矩阵（53 项，按优先级排序）
+## 二、backport 建议矩阵（61 项，按优先级排序）
+
+> 注：item-13 / item-44（原 large paste）已在历史扫描中确认 Qwen Code 已实现，**主动移除**保留编号空位（不重排避免引用失效）。matrix 实际项数 = 62 个 item id 中减去 item-13、item-44 + item-44 复用为 Model Routing = 61 项。
+
 
 | 优先级 | 改进点 | Qwen Code 现状 | 难度 | 上游 PR |
 |:------:|--------|----------------|:----:|---------|
@@ -135,10 +138,11 @@ backport 不会丢失 Qwen Code 独立发展的优势：
 
 | 优先级 | 数量 | 核心主题 |
 |--------|------|---------|
-| P0 | 6 项 | 防闪烁（3）+ 高度稳定（1）+ 安全加固（2） |
-| P1 | 14 项 | 渲染性能（4）+ 工具智能化（4）+ 上下文/会话管理（3）+ **模型路由 + Agent 协议 + 会话浏览器** |
-| P2 | 25 项 | UI 组件（5）+ 安全（3）+ 工具增强（4）+ 调度/协议（3）+ UX（3）+ **A2A Server + DevTools + 资源注册 + 语音 + Triage + 企业集成 + 计费** |
-| P3 | 8 项 | 底层优化（3）+ 终端特性（3）+ 安全框架（2） |
+| P0 | **7 项** | 防闪烁（3）+ 高度稳定（1）+ 安全加固（3，含 .env RCE 修复） |
+| P1 | **17 项** | 渲染性能（4）+ 工具智能化（4）+ 上下文/会话管理（3）+ Model Routing + Agent 协议 + Session Browser + Memory 4 层 + Core Tools Allowlist + Boot 异步化 |
+| P2 | **27 项** | UI 组件（5）+ 安全（3）+ 工具增强（4）+ 调度/协议（3）+ UX（3）+ A2A Server + DevTools + 资源注册 + 语音 + Triage + 企业集成 + 计费 + `@` Watcher + Skill 提取门 |
+| P3 | **10 项** | 底层优化（3）+ 终端特性（3）+ 安全框架（2）+ Topic Narration + 小型 backport 集合 |
+| **合计** | **61 项** | |
 
 ## 四、30 分钟快速见效——P0 实施指南
 
