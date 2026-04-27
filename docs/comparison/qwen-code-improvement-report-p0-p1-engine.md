@@ -1163,7 +1163,43 @@ classify_failure(stop_reason, error)
 
 <a id="item-28"></a>
 
-### 28. Skill 装载性能综合优化 — 9 项 Claude Code 参考（P1）
+### 28. Skill 装载性能综合优化 — 9 项 Claude Code 参考（P1）🟡 PR 进行中（PR#3604 OPEN，子项 #1+#2+#6 已实现）
+
+**最新状态（2026-04-27）**：[PR#3604](https://github.com/QwenLM/qwen-code/pull/3604) OPEN —— "feat(skills): parallelize loading + add path-conditional activation"，**PR 描述明确引用 "item-28 of the qwen-code engine improvement report"**，按下方表格的 9 子项中**实现 #1 + #2 + #6**（即 P0 冷启动两项 + P1 conditional 一项）。
+
+**PR#3604 实现的 3 个子项**：
+
+| 子项 | PR#3604 实现 | Commit | 测试覆盖 |
+|---|---|---|---|
+| **#1 外层 Promise.all** | `refreshCache` 4 层串行 → `Promise.all` | `99b9fe4de` perf | 5 个新测试 |
+| **#2 内层 Promise.all** | `listSkillsAtLevel` + `loadSkillsFromDir` 内层 for-await → `Promise.all` | 同 commit | 同 |
+| **#6 Conditional skills（`paths:`）** | 新增 `skill-activation.ts`（118 行 picomatch registry，project-root scoped）+ `coreToolScheduler.ts` 文件路径触发 hook + `<system-reminder>` 通知模型 | `5432f5ddc` feat | 18 个新测试 |
+
+**PR#3604 工程亮点**（PR body 摘录）：
+1. **保留 provider-dir precedence**：`.qwen` > `.agent` > `.cursor` —— 即使并行也维持 first-wins 优先级
+2. **gated skill 错误区分**：`SkillTool.validateToolParams` 返回**专属错误** "gated by path-based activation"，让模型能区分"未注册"vs"已注册但未激活"
+3. **`<available_commands>` 防泄漏**：dedup key 用 `allSkills` 而非 `availableSkills`（防止 path-gated skill 通过 `<available_commands>` 通道泄漏）
+4. **/ultrareview 多 agent review** 发现 2 个深 bug 并修复：
+   - **bug_001**: cross-level shadow leaks paths（同名 skill 在多 level 不同 paths，dedup 后被影子拷贝的 glob 触发激活，导致 visible 拷贝在错误时机激活）
+   - **bug_004**: `paths:` + `disable-model-invocation: true` 矛盾自检（避免"通知模型 skill 可用"后 SkillTool 拒绝调用的语义错配）
+5. **测试**：10,959 pass / 10 skipped / 0 fail 全 workspace；CI 9 jobs 全 green（mac/ubuntu/windows × Node 20/22/24）
+
+**剩余 6 个子项**（仍待实现）：
+
+| # | 优化 | Tier | 进度 |
+|---|---|---|---|
+| 3 | 顶层 `memoize()` 按 cwd 缓存 | P3 | ❌ 待实现 |
+| 4 | `sentSkillNames` per-agent 去重 | P1 | ❌ 待实现 ⚠️ **运行时 token 节省最大头** |
+| 5 | `suppressNext` on --resume | P2 | ❌ 待实现 |
+| 7 | 300ms reload debounce + 1s stability | P2 | ❌ 待验证（Qwen 现有 chokidar 配置需核对）|
+| 8 | Bun `usePolling` workaround | P3 | PR#3604 明确不涉及 Bun |
+| 9 | `realpath` 并行去重 symlink | P2 | ❌ 待实现 |
+
+**合并后状态预估**：item-28 升级为 🟡 **3/9 子项完成**，主要差距在 **#4 sentSkillNames**（每轮省 600-1500 token，是运行时收益最大头）。建议把 #4 + #5 + #6 整合成一个 follow-up PR。
+
+---
+
+
 
 **问题**：Qwen Code 的 Skill 装载路径（`packages/core/src/skills/skill-manager.ts`）有 **3 层串行 for 循环**：
 - `refreshCache():273` `for (const level of levels)` —— 4 层串行（project/user/extension/bundled）

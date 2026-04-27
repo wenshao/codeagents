@@ -10,7 +10,7 @@
 |------|------|
 | **[Deep-Dive 索引（138 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
 | **[Agent Framework 对比（6 款）](./docs/frameworks/)** | AgentScope/LangGraph/CrewAI/AG2/MAF/LangChain —— 开发者侧 SDK 选型 |
-| **[Qwen Code 改进报告（275 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 52 个社区 PR 追踪（94 已合并） |
+| **[Qwen Code 改进报告（275 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 52 个社区 PR 追踪（101 已合并） |
 | **[Gemini CLI backport（61 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 + 模块级架构对比 |
 | **[/review 功能分析](./docs/comparison/qwen-code-review-improvements.md)** | 审查功能 5 方对比（含 gstack） |
 | **[Codex CLI 对标改进（28 项）](./docs/comparison/qwen-code-codex-improvements.md)** | 沙箱 + Apply Patch + Feature Flag + 网络代理 + Sticky Env + Permission Profiles |
@@ -80,7 +80,7 @@
 
 | 报告 | 说明 |
 |------|------|
-| [Claude Code 对比（275 项）](./docs/comparison/qwen-code-improvement-report.md) | 改进建议 + 52 个社区 PR 追踪（94 已合并） |
+| [Claude Code 对比（275 项）](./docs/comparison/qwen-code-improvement-report.md) | 改进建议 + 52 个社区 PR 追踪（101 已合并） |
 | [Gemini CLI backport（61 项）](./docs/comparison/qwen-code-gemini-upstream-report.md) | 上游可 backport 改进 + 模块级架构对比 |
 | [/review 功能分析](./docs/comparison/qwen-code-review-improvements.md) | 审查功能 5 方对比（含 gstack） |
 | [工具输出限高](./docs/comparison/tool-output-height-limiting-deep-dive.md) | Gemini CLI SlicingMaxSizedBox vs Qwen Code |

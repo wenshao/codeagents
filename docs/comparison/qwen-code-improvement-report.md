@@ -444,6 +444,64 @@
 
 ## 六、更新日志
 
+### 2026-04-27（~14h 增量 · 7 项合并 · auth wizard MERGED · 4 项新 OPEN）
+
+扫描窗口：2026-04-26 11:40 UTC（上次扫描 1cf3196）→ 2026-04-27 02:30 UTC。窗口内 **7 项合并**（含 4 项从上次 OPEN→MERGED 转换）+ **3 项新 OPEN** + **3 项 stack 重做关闭**。
+
+#### 🟢 OPEN→MERGED 转换（4 项）
+
+上次扫描时为 🟡 OPEN 的 PR 在本窗口内合并：
+
+| PR | 标题 | 合并时间 |
+|---|---|---|
+| **[PR#3607](https://github.com/QwenLM/qwen-code/pull/3607)** | feat(cli): Improve custom auth wizard with step indicators and cleaner advanced config | 2026-04-27 02:05 UTC |
+| **[PR#3593](https://github.com/QwenLM/qwen-code/pull/3593)** | feat(cli): Add argument-hint support for slash commands | 2026-04-27 00:29 UTC |
+| **[PR#3640](https://github.com/QwenLM/qwen-code/pull/3640)** | fix(cli): guard gradient rendering without colors | 2026-04-26 16:52 UTC |
+| **[PR#3629](https://github.com/QwenLM/qwen-code/pull/3629)** | fix(config): support QWEN_CODE_API_TIMEOUT_MS across OAuth and non-OAuth paths | 2026-04-26 21:59 UTC |
+| **[PR#3643](https://github.com/QwenLM/qwen-code/pull/3643)** | feat: Adds Catalan language support | 2026-04-26 14:26 UTC |
+| **[PR#3609](https://github.com/QwenLM/qwen-code/pull/3609)** | fix(vscode-companion): slash command completion not triggering after message submit | 2026-04-26 14:27 UTC |
+
+**特别关注 PR#3607**：custom auth wizard step indicators + cleaner advanced config —— 是延续 PR#3583 PRD 的 auth UX 改进路线，**对应几天前讨论的"Qwen 第三方认证麻烦"方向第一个合并的实质性 PR**。
+
+#### 🟢 本窗口内新 MERGED（1 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| [PR#3653](https://github.com/QwenLM/qwen-code/pull/3653) | refactor(config): dedupe QWEN_CODE_API_TIMEOUT_MS env override logic | 2026-04-27 00:44 UTC | PR#3629 follow-up cleanup（去重 OAuth/non-OAuth 路径同名 env override 逻辑）|
+
+#### 🟡 新 OPEN（3 项）
+
+| PR | 方向 | 潜在影响 |
+|---|---|---|
+| [PR#3661](https://github.com/QwenLM/qwen-code/pull/3661) | feat(vscode): add tab dot indicator and notification system (#3106) | VSCode tab 通知红点，4 次 stack 重做（#3657/#3659/#3660 closed）|
+| [PR#3656](https://github.com/QwenLM/qwen-code/pull/3656) | fix(core): recover from `}{` glued records on session JSONL load (#3606) | **JSONL 健壮性修复** —— 处理上次会话中断导致的 `}{` 粘连记录，与 [item-7 会话崩溃恢复](./qwen-code-improvement-report-p0-p1-engine.md#item-7) 方向重叠 |
+| [PR#3647](https://github.com/QwenLM/qwen-code/pull/3647) | fix(cli): keep sticky todo panel compact | 紧跟昨天 PR#3507 sticky todo 合并的 follow-up 紧凑化修复 |
+| [PR#3645](https://github.com/QwenLM/qwen-code/pull/3645) | fix(cli): correct OPENAI_MODEL precedence without breaking /model selection | **PR#3567/PR#3633 revert 的第三次尝试** —— 这是个反复修复的难题（顺序 #3567 OPEN→MERGED→#3633 revert→#3645 重做）|
+| [PR#3649](https://github.com/QwenLM/qwen-code/pull/3649) | fix(lsp): expose status and startup diagnostics | LSP 调试改进 |
+| [PR#3648](https://github.com/QwenLM/qwen-code/pull/3648) | fix(acp): repair integration against current core API | ACP API 兼容修复 |
+
+#### 🔴 stack 重做关闭（3 项 + 1 个之前已闭）
+
+```
+#3657 → #3659 → #3660 → #3661   (vscode tab dot, 4 attempts, latest OPEN)
+#3651 → #3653                    (config dedupe, 2nd attempt MERGED)
+#3646 (closed, superseded)       (sticky todo redraws, replaced by #3647)
+#3654 (closed)                   (refactor unify tool execution, no replacement)
+```
+
+#### 📊 累计合并 PR 计数
+
+94 → **101**（+7 新合并）。README 同步更新。
+
+#### 重点观察
+
+1. **auth wizard 路线在合并**：PR#3607 是几天来"Qwen 第三方认证麻烦"讨论的第一个实质性合并；后续 OPEN 还有 PR#3624（API Key option in interactive menu）+ PR#3623（OpenAI-compat 在 `qwen auth status` 识别）。
+2. **PR#3604 仍 OPEN**：昨天发现 PR body 显式引用 item-28 的 [Skill 装载性能 9 项优化](./qwen-code-improvement-report-p0-p1-engine.md#item-28) PR 仍未合并（截至本次扫描 OPEN 64h+）。值得关注 review 进度。
+3. **PR#3656 JSONL 健壮性**：处理崩溃中断导致的 `}{` 粘连，与 item-7 会话崩溃恢复有交集。
+4. **OPENAI_MODEL precedence 是个难题**：#3567 → #3633 revert → #3645 重做，第三次尝试。
+
+---
+
 ### 2026-04-26（~31h 增量 · PR#3441 /rewind 合并 + PR#3507 sticky todo + PR#3567 被 revert）
 
 扫描窗口：2026-04-25 04:26 UTC（上次扫描 8dfe243）→ 2026-04-26 11:40 UTC。窗口内 **11 项合并** + **1 项 revert 勘误** + **8 项新 OPEN**。
