@@ -86,7 +86,7 @@
 | [工具输出限高](./docs/comparison/tool-output-height-limiting-deep-dive.md) | Gemini CLI SlicingMaxSizedBox vs Qwen Code |
 | [Codex CLI 对标改进（28 项）](./docs/comparison/qwen-code-codex-improvements.md) | 沙箱 + Apply Patch + Feature Flag + 网络代理 + Sticky Env + Permission Profiles |
 | [OpenCode 对标改进（29 项）](./docs/comparison/qwen-code-opencode-improvements.md) | Provider 系统 + Plugin + Snapshot + 可配置截断 + 编辑器上下文协议 |
-| [Qwen Code 外部贡献者分析](./docs/comparison/qwen-code-external-contributors.md) | 内/外部分类 + 高产社区贡献者画像 + i18n 国际化 + 6 种贡献模式分析 |
+| [Qwen Code 外部贡献者分析](./docs/comparison/qwen-code-external-contributors.md) | 内/外部分类（含勘误：chiga0/BZ-D 为内部）+ 社区贡献者画像 + i18n 国际化 + 5 种贡献模式 + email 识别局限性反思 |
 | [Kairos Always-On](./docs/comparison/kairos-always-on-agent-deep-dive.md) | Claude Code 自治 Agent 模式 |
 
 ### 全局对比

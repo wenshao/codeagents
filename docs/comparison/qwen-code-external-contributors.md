@@ -26,11 +26,17 @@
 - `wenshao` = `Shaojin Wen`（同 `shaojin.wensj@alibaba-inc.com`）
 - `chiga0` ≠ `ChiGao`（不同 email：`gary.gao12580@gmail.com` vs `arno.ga0@outlook.com` —— 但提交时间紧邻 + 都做 TUI 改进，可能同一人多设备/多账号）
 
+**⚠️ 方法论局限性提示**（2026-04-27 修订）：本分析早期版本曾把 `chiga0/ChiGao` 与 `Edenman/BZ-D` 误判为外部贡献者，因为他们使用个人 gmail / github noreply 邮箱。**经核实他们均为 Alibaba 内部贡献者**。这反映出：
+
+1. **email 域名识别极不可靠** —— 内部工程师常用个人邮箱做 github contribution，特别是阿里系工程师
+2. **正确判定需要直接确认** —— 仅靠 commit metadata 推测内/外部存在系统性误判风险
+3. **下文表格已更新** —— chiga0/BZ-D 移出"外部"分类；其他**未确认人员仍标注"推测"**，以避免再次误判
+
 ---
 
 ## 二、确认外部社区贡献者（2026-04 活跃）
 
-### 🥇 第一梯队 · 高产 / 高影响（5 人）
+### 🥇 第一梯队 · 高产 / 高影响（3 人）
 
 #### 1. **chinesepowered** (John London) · 21 commits
 
@@ -44,28 +50,7 @@
 | **特征** | **集中爆发期**（PR#2962-#2981 同期合并）—— 看上去是了解全栈的资深开发者一次性贡献多个深度修复，可能是用户报告 bug 后做了 ~20 个 PR 集中清理 |
 | **重要性** | 是少数能在 sandbox / SDK / channels 等**底层基础设施**上做实质修复的外部贡献者 |
 
-#### 2. **chiga0 / ChiGao** · 6 commits（合并 2 别名）
-
-| 维度 | 信息 |
-|---|---|
-| **GitHub** | `chiga0` (gary.gao12580@gmail.com) + `ChiGao` (arno.ga0@outlook.com) |
-| **focus** | TUI 性能 / 渲染 / Compact 模式 |
-| **代表 PR** | **PR#3591 TUI flicker foundation fixes**（4-PR stack 合并的 foundation） · **PR#3013 SlicingMaxSizedBox + Phase 2 useStableHeight**（renderer 防闪烁基础设施） · PR#3352 dual-output sidecar mode for TUI · PR#3100 compact mode UX optimization |
-| **特征** | **重量级 TUI 渲染贡献者**——做的是底层渲染机制，不是表面 UX 修复 |
-| **重要性** | 🌟 **社区贡献者中影响最大的之一**——PR#3013 的 SlicingMaxSizedBox 是 codeagents 报告里 p2-stability item-1 的核心实现；PR#3591 是后续 foundation fix |
-
-#### 3. **Edenman / BZ-D** · 5 commits
-
-| 维度 | 信息 |
-|---|---|
-| **GitHub** | `BZ-D` (67549719+BZ-D@users.noreply.github.com) |
-| **显示名** | `Edenman` |
-| **focus** | Terminal 协议 + MCP OAuth |
-| **代表 PR** | **PR#3460 ✓ auto-detect terminal theme**（OSC 11 / COLORFGBG —— 闭合 codeagents p2-core item-20） · **PR#3489 MCP OAuth URL 包裹时仍可点击** · PR#3442 `mcp add` OAuth 配置 flag · PR#3393 OSC 52 复制热键 · PR#3509 MCP init 完成后空行清理 |
-| **特征** | **协议级专家** —— OSC escape sequence 知识（OSC 11 / OSC 52 / OSC 8）+ MCP OAuth flow 经验 |
-| **重要性** | 解决了多个 Claude Code 早就有但 Qwen 缺失的功能（终端主题检测、MCP OAuth 友好性）|
-
-#### 4. **euxaristia** · 5 commits
+#### 2. **euxaristia** · 5 commits
 
 | 维度 | 信息 |
 |---|---|
@@ -75,7 +60,7 @@
 | **特征** | **错误恢复机制核心改进者**——loop 检测是 agentic 系统稳定性关键 |
 | **重要性** | 命中 codeagents item-27（错误恢复分类路由）的相关方向 |
 
-#### 5. **John London** · 4 commits（与上面 chinesepowered 显示名相同但**不同人**）
+#### 3. **John London** · 4 commits（与 chinesepowered 显示名相同但**不同人**）
 
 | 维度 | 信息 |
 |---|---|
@@ -83,6 +68,19 @@
 | **focus** | Config refactor |
 | **代表 PR** | **PR#3653 refactor(config): dedupe QWEN_CODE_API_TIMEOUT_MS env override**（PR#3629 follow-up cleanup）+ 几个其他 refactor |
 | **注意** | **与 `chinesepowered`（也叫 John London）邮箱不同** —— 这是另一个独立贡献者，不是同一人 |
+
+---
+
+### 📌 已纠正分类（原误判为外部）
+
+下列贡献者**经确认为 Alibaba 内部团队成员**，使用个人邮箱做 github contribution（这是阿里系工程师常见做法）。从外部分类移到内部团队：
+
+| 贡献者 | commits | 误判依据 | 实际身份 | 重要贡献 |
+|---|:-:|---|---|---|
+| **chiga0 / ChiGao** | 6 | gmail/outlook 个人邮箱 | **内部 TUI 渲染负责人** | PR#3013 SlicingMaxSizedBox + PR#3591 flicker foundation + PR#3352 dual-output sidecar + PR#3100 compact mode UX |
+| **Edenman / BZ-D** | 5 | github noreply 邮箱 | **内部终端协议 + MCP OAuth 负责人** | PR#3460 OSC 11 主题检测 + PR#3489 OAuth URL 可点击 + PR#3442 mcp add OAuth flag + PR#3393 OSC 52 复制热键 |
+
+**这是该方向 Alibaba 内部分工的关键信号**：TUI 渲染（chiga0/ChiGao）和终端协议（Edenman/BZ-D）是被分配给**特定专精工程师**而非通用维护者，反映 Phase-N 重构里这些子领域有专门 owner。
 
 ---
 
@@ -144,12 +142,13 @@
 
 ```
 chinesepowered:    21
-chiga0/ChiGao:      6
-Edenman/BZ-D:       5
 euxaristia:         5
 John London:        4
 其他单点贡献:    ~20+
-小计:           ~60+ commits（约占总量 14%）
+小计:           ~50+ commits（约占总量 11%）
+
+[勘误] 原版本误把 chiga0/ChiGao (6) + Edenman/BZ-D (5) 计入外部，
+经确认这两位是 Alibaba 内部贡献者，故从外部分类移除。
 ```
 
 ### 国际化覆盖
@@ -167,21 +166,23 @@ John London:        4
 
 ## 四、外部贡献者贡献模式分析
 
-### 模式 1：niche 协议专家（如 BZ-D, Fu Yuchen）
+### 模式 1：niche 协议专家（如 Fu Yuchen 单点 / harsh）
 
-**特征**：在某个**狭窄技术域**（OSC escape sequence / OAuth flow / TLS / sandboxing / 终端协议）做深度修复或新功能。
+**特征**：在某个**狭窄技术域**（OAuth flow / TLS / sandboxing / 错误处理）做深度修复或新功能。
 
-**为什么重要**：内部团队往往不会专注到这种 niche，但用户实际使用时这些 niche 经常爆雷（如 OAuth URL 在终端被换行截断）。
+**为什么重要**：内部团队往往不会专注到这种 niche，但用户实际使用时这些 niche 经常爆雷。
 
-**代表 PR**：PR#3460（OSC 11 主题检测）/ PR#3489（OAuth URL 可点击）/ PR#3393（OSC 52 复制）
+**代表 PR**：Fu Yuchen 的 PR#3590（reasoning_content resume 修复）/ harsh 的 PR#3481（qwenOAuth2 错误处理）
 
-### 模式 2：度量驱动重构（如 chiga0/ChiGao, euxaristia）
+> **注**：Qwen Code 内部其实有专门的 niche 协议负责人（如 chiga0/ChiGao 负责 TUI 渲染、Edenman/BZ-D 负责终端协议 + MCP OAuth）—— 这与 Claude Code 这类有专精团队的项目类似。外部 niche 协议专家相对稀少。
+
+### 模式 2：度量驱动重构（如 euxaristia）
 
 **特征**：发现**性能/正确性 bug** → 写复现 → 写修复 → 带 benchmark/度量数据 → PR
 
 **为什么重要**：这种贡献质量高，往往超出内部团队的优先级排序。
 
-**代表 PR**：PR#3013（SlicingMaxSizedBox + useStableHeight 防闪烁）/ PR#3236（loop detection stagnation 检测）
+**代表 PR**：euxaristia 的 PR#3236（loop detection stagnation 检测）+ PR#3178（validation retry 循环检测）
 
 ### 模式 3：补丁集中爆发期（如 chinesepowered）
 
@@ -219,18 +220,19 @@ John London:        4
 
 ### ✅ 健康信号
 
-1. **核心功能有真正外部贡献者**：TUI 渲染（chiga0/ChiGao）、终端协议（BZ-D）、loop 检测（euxaristia）等关键路径上有持续的社区参与，不只 typo / docs PR
-2. **多元国家/地区参与**：印度、巴西、匈牙利、加泰罗尼亚、台湾、澳大利亚、中国大陆都有贡献者
-3. **学术机构参与**：清华、UNSW 学生开始贡献 —— 项目对教育市场有吸引力
-4. **niche 修复响应快**：BZ-D 5 个 MCP/Terminal 相关 PR 集中合并，反映 maintainer 对 niche 修复有 review bandwidth
+1. **核心功能 niche 由内部专精团队覆盖**：TUI 渲染（chiga0/ChiGao）、终端协议（Edenman/BZ-D）等关键路径是内部专精工程师而非通用维护者负责，反映团队成熟度
+2. **外部 loop 检测 / 错误恢复有持续参与**：euxaristia 等外部贡献者在 agentic 系统稳定性核心路径有实质改进（PR#3236 / PR#3178）
+3. **多元国家/地区参与**：印度、巴西、匈牙利、加泰罗尼亚、台湾、澳大利亚、中国大陆都有贡献者
+4. **学术机构参与**：清华、UNSW 学生开始贡献 —— 项目对教育市场有吸引力
 
 ### ⚠️ 风险信号
 
-1. **核心架构仍是 Alibaba 内部主导**：Phase 重构（顾盼）、revert 决策（tanzhenxin）、内部团队（思晗 / 胡玮文 等）—— 真正的架构方向由内部决定
-2. **外部贡献集中在 fix/ 而非 feat/**：除 chiga0/ChiGao 和 BZ-D 外，多数外部贡献是 bug fix 或小功能，缺架构级提议
+1. **核心架构基本全由 Alibaba 内部主导**：Phase 重构（顾盼）、revert 决策（tanzhenxin）、TUI 渲染（chiga0/ChiGao）、终端协议（Edenman/BZ-D）、内部团队（思晗 / 胡玮文 等）—— 几乎所有架构方向都由内部决定
+2. **外部贡献集中在 fix/ 而非 feat/**：除 chinesepowered 集中爆发期外，多数外部贡献是 bug fix 或小功能，缺架构级提议
 3. **Top 外部贡献者匿名度高**：chinesepowered 显示名 "John London" 但 email 是印度邮件服务，真实身份不透明 —— 不利于社区信任建立
 4. **i18n 长尾断层**：日韩西葡德俄等大语种均缺贡献者，繁中也只有一个 PR
 5. **"双重身份" 贡献者罕见**：wenshao 是孤例 —— 同时熟悉 spec 与 impl 的贡献者稀缺，影响项目知识传播
+6. **email-based 内/外部识别不可靠**：本报告早期版本曾误把 chiga0/BZ-D 等内部工程师识别为外部，反映项目对外缺少**正式贡献者身份标记机制**（如 CODEOWNERS / 维护者列表 / 头衔徽章）
 
 ### 与 Claude Code / Codex / OpenCode 比较
 
@@ -252,8 +254,8 @@ John London:        4
 
 | 想做什么 | 建议参考 |
 |---|---|
-| 终端协议 / OAuth / sandboxing 等 niche | BZ-D 模式 —— 找一个 Claude Code 有但 Qwen 缺的小功能，单 PR 实现 |
-| TUI 性能 / 渲染 | chiga0/ChiGao 模式 —— 度量驱动 + 阶段拆分 |
+| 终端协议 / OAuth / sandboxing 等 niche | ⚠️ **此方向已有内部专精团队**（chiga0/ChiGao 做 TUI 渲染、Edenman/BZ-D 做终端协议 + MCP OAuth），外部贡献需找他们未覆盖的边角，否则容易被内部 PR 抢先 |
+| TUI 性能 / 渲染 | ⚠️ **同上**，建议避开此方向，转向更专精的子领域（如某个特定终端的兼容性修复）|
 | 错误恢复 / loop 检测 | euxaristia 模式 —— 发现现实问题 + 系统化方案 |
 | i18n | Jordi Mas 模式 —— 单 PR 加一个语言文件 |
 | 学习/学生项目 | YuchenLiang00 模式 —— 选一个 `/<command>` 的小子功能 |
@@ -283,6 +285,17 @@ for author in <list>; do git log --since="2026-04-01" --author="$author" --oneli
 
 ---
 
-**最后更新**：2026-04-27
+**最后更新**：2026-04-27（修订：chiga0/ChiGao + Edenman/BZ-D 从外部分类移到内部团队）
 **数据窗口**：2026-04-01 → 2026-04-27（27 天）
 **相关文档**：[Qwen Code 改进报告](./qwen-code-improvement-report.md) · [Qwen Code 维护者画像（参见近期对话记录）]
+
+## 修订历史
+
+- **2026-04-27 v2**：用户反馈纠正 —— `chiga0/ChiGao`（TUI 渲染负责人）和 `Edenman/BZ-D`（终端协议 + MCP OAuth 负责人）实际为 Alibaba 内部贡献者，非外部社区。本次修订：
+  1. 第二章移除这两位的 Tier 1 条目，新增"已纠正分类"区块说明
+  2. 第三章统计数据：外部 commit 数从 ~60+（14%）下调至 ~50+（11%）
+  3. 第四章贡献模式：移除"chiga0/ChiGao + BZ-D = niche 协议专家"误导引用
+  4. 第五章健康/风险信号：增加"email-based 识别不可靠"作为新风险信号
+  5. 第六章对外部贡献者建议：标注 TUI 渲染 + 终端协议方向**已有内部专精团队**，外部需避开
+  6. 第一章方法论增加局限性提示
+- **2026-04-27 v1**：初版基于 git log 数据创建
