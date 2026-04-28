@@ -1,6 +1,6 @@
 # AI 编程 Code Agent 对比
 
-> 基于源码分析和二进制反编译的 19 款 AI 编程 Code Agent 全面对比 + 6 款 Agent Framework 对比 | 312 文件 | 81,000+ 行 | 134 篇 Deep-Dive | 12 个 EVIDENCE.md
+> 基于源码分析和二进制反编译的 19 款 AI 编程 Code Agent 全面对比 + 6 款 Agent Framework 对比 | 329 文件 | 92,000+ 行 | 145 篇 Deep-Dive | 12 个 EVIDENCE.md
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -8,7 +8,7 @@
 
 | 入口 | 说明 |
 |------|------|
-| **[Deep-Dive 索引（138 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
+| **[Deep-Dive 索引（145 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
 | **[Agent Framework 对比（6 款）](./docs/frameworks/)** | AgentScope/LangGraph/CrewAI/AG2/MAF/LangChain —— 开发者侧 SDK 选型 |
 | **[Qwen Code 改进报告（275 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 52 个社区 PR 追踪（115 已合并） |
 | **[Gemini CLI backport（61 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 + 模块级架构对比 |
@@ -109,7 +109,7 @@
 
 **命令对比：** [/review](./docs/comparison/review-command.md) | [/compact /plan /init](./docs/comparison/key-commands-deep-dive.md) | [/loop /schedule](./docs/comparison/loop-schedule.md) | [/btw /rewind](./docs/comparison/btw-rewind.md) | [内置命令总览](./docs/comparison/slash-commands-deep-dive.md)
 
-**完整索引：** [134 篇 Deep-Dive 文章索引](./docs/comparison/deep-dive-index.md)
+**完整索引：** [145 篇 Deep-Dive 文章索引](./docs/comparison/deep-dive-index.md)
 
 ### Agent 1v1 对比
 

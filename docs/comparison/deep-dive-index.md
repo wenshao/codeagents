@@ -1,4 +1,4 @@
-# Deep-Dive 文章索引（138 篇）
+# Deep-Dive 文章索引（145 篇）
 
 > 按主题分类的深度分析文章，每篇聚焦一个具体技术机制的 Claude Code vs Qwen Code 对比。
 >
@@ -163,7 +163,7 @@
 | [上下文 Tips](./context-tips-system-deep-dive.md) | 提示系统 |
 | [权限对话框预览](./permission-dialog-file-preview-deep-dive.md) | 文件预览 |
 
-## 其他（16 篇）
+## 其他（23 篇）
 
 | 文章 | 主题 |
 |------|------|
@@ -183,3 +183,10 @@
 | [Skill 系统](./skill-system-deep-dive.md) | Skill 设计 |
 | [Advisor 模型](./advisor-model-deep-dive.md) | 副模型审查 |
 | [测试反射](./test-reflection-deep-dive.md) | 测试策略 |
+| [Bash 任务展示](./bash-task-display-deep-dive.md) | Shell UI 对比 |
+| [Fast Model 应用场景](./fast-model-usage-deep-dive.md) | Haiku 18 用例 |
+| [Qwen Code Review](./qwen-code-review-deep-dive.md) | /review 系统 |
+| [SubAgent 展示](./subagent-display-deep-dive.md) | Coordinator UI |
+| [任务显示高度控制](./task-display-height-deep-dive.md) | MessageResponse + Ratchet |
+| [终端低闪烁路线图](./terminal-low-flicker-deep-dive.md) | 防闪烁 3 阶段 |
+| [Update 工具展示](./update-tool-display-deep-dive.md) | structuredPatch |
