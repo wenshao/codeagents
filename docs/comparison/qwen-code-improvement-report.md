@@ -79,7 +79,7 @@
 | **P1** | [Task Management 任务协同与跨进程并发调度](./task-management-deep-dive.md) — 支持 blocks/blockedBy 的任务拓扑、跨进程安全锁与 Swarm 集成 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-25) | 🟡 控制面 + UI 在做 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) 🟡 OPEN / [PR#3507](https://github.com/QwenLM/qwen-code/pull/3507) ✓（2026-04-26 合并 · sticky todo panel）|
 | **P1** | [Agent 工具细粒度访问控制](./agent-tool-access-control-deep-dive.md) — 3 层allowlist/denylist + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-15) | 全部或指定列表 | 中 | [PR#3064](https://github.com/QwenLM/qwen-code/pull/3064) ✓ / [PR#3066](https://github.com/QwenLM/qwen-code/pull/3066) ✓ |
 | **P1** | [InProcess 同进程多 Agent隔离](./in-process-agent-isolation-deep-dive.md) — AsyncLocalStorage 上下文隔离 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-16) | 全局状态可能泄漏 | 中 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) |
-| **P1** | [Agent 记忆持久化](./agent-memory-persistence-deep-dive.md) — user/project/local 3 级跨 session 记忆 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-17) | 无跨 session 记忆 | 中 | — |
+| **P1** | [Agent 记忆持久化](./agent-memory-persistence-deep-dive.md) — user/project/local 3 级跨 session 记忆 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-17) | 🟡 部分实现（跨 session 记忆 ✓ via PR#3087；per-agent 私有记忆绑定 ✗）| 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓（2026-04-16 合并 · auto-memory + auto-dream，6,015 行 30+ 文件）|
 | **P1** | [Agent 恢复与续行](./agent-resume-continuation-deep-dive.md) — SendMessage 继续已完成代理 + transcript 重建 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-18) | 执行完即销毁 | 中 | — |
 | **P1** | 系统提示模块化组装 — sections 缓存 + dynamic boundary + uncached 标记 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-19) | 单一字符串 | 中 | — |
 | **P1** | [系统提示内容完善](./system-prompt-content-guidelines-deep-dive.md) — OWASP 安全 + prompt injection检测 + 代码风格约束 + 输出格式 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-24) | 缺少具体指导 | 中 | — |
@@ -444,6 +444,49 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-28（勘误 · item-17 Agent 记忆持久化 状态修正）
+
+**用户反馈**："看下"主矩阵 item-17 行的描述 `无跨 session 记忆` 是否准确。
+
+#### 🔴 错误：item-17 描述严重过时
+
+**原描述**：`Qwen Code 现状：无跨 session 记忆`（自创建以来从未更新）
+
+**审计源码后实际情况**：Qwen Code 已有**完整的 6,015 行跨 session 记忆系统**，PR#3087 在 2026-04-16 合并：
+
+| 已有能力 | 文件 |
+|---|---|
+| `~/.qwen/memory/MEMORY.md` user-level 持久化 | `memory/paths.ts` |
+| project root `.qwen/memory/` project-level | `memory/paths.ts` `findGitRoot()` |
+| 4 类记忆分类：`user` / `feedback` / `project` / `reference` | `memory/types.ts:7-12` |
+| Auto-extraction 自动从 session 提取 | `memory/extract.ts` + `extractAgent.ts` + `extractionPlanner.ts` |
+| **Auto-Dream 后台合并去重**（Claude Code **没有**这能力）| `memory/dream.ts` + `dreamAgentPlanner.ts` |
+| Relevance-based recall | `memory/recall.ts` + `relevanceSelector.ts` |
+| Forget / Governance / Lifecycle | `memory/forget.ts` + `governance.ts` + `memoryAge.ts` |
+| 统一 Manager 入口 | `memory/manager.ts`（`config.getMemoryManager()`）|
+
+**Qwen 在某些方面 actually 超出 Claude Code**：
+- ✨ Auto-extraction（自动提炼，Claude 需手动 Read/Write）
+- ✨ Auto-Dream（后台合并，Claude 无）
+- ✨ 4 类语义分类（feedback / reference 两类 Claude 无对应）
+- ✨ Relevance-based recall（按查询相关性，Claude 是全量加载）
+
+**真正剩余的 gap**：**per-agent 私有记忆绑定** —— 即 Claude `agent.frontmatter.memory: user|project|local` 字段，让特定 Agent（如 `code-reviewer`）拥有专属记忆而不与其他 Agent 共享。
+
+#### 修正
+
+- **主矩阵 item-17 行**：`无跨 session 记忆` → `🟡 部分实现（跨 session 记忆 ✓ via PR#3087；per-agent 私有记忆绑定 ✗）` + 加 PR#3087 引用
+- **p0-p1-engine item-17 内容**：从"未实现"重写为"部分实现 + 真正缺失项是 per-agent 维度"，含完整能力对比表 + 设计差异分析
+- **状态升级**：未实现 → 🟡 部分实现
+
+#### 教训
+
+PR#3087 已经在 item-4（会话记忆）/ item-5（Auto Dream）/ item-14（闭环学习）3 处被追踪为 ✓。但 item-17（同一记忆系统的另一个视角）漏更新，**保留了 fork 期的过时描述**。
+
+**审计建议**：每次有大型 PR 合并，应把它**显式映射到所有相关 item**，而不是只映射到 1-2 个。PR#3087 涉及 30+ 文件 6K 行，应该影响 4-5 个 item 而不是 3 个。
+
+---
 
 ### 2026-04-27（~14h 增量 · 7 项合并 · auth wizard MERGED · 4 项新 OPEN）
 
