@@ -87,7 +87,7 @@
 | **P1** | [系统提示内容完善](./system-prompt-content-guidelines-deep-dive.md) — OWASP 安全 + prompt injection检测 + 代码风格约束 + 输出格式 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-24) | 缺少具体指导 | 中 | — |
 | **P1** | [@include 指令与嵌套记忆发现](./nested-memory-include-deep-dive.md) — @path 递归引用 + 文件操作触发目录遍历 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-20) | **✓ 已实现**（`memoryImportProcessor` @path + `maxDepth=5` + 循环防护；`memoryDiscovery` upward scan；`ConditionalRulesRegistry` 按 `paths:` glob 匹配工具调用时注入）| — | — |
 | **P1** | [附件类型协议与令牌预算](./attachment-protocol-budget-deep-dive.md) — 40+ 类型 + per-type 预算 + 3 阶段有序执行 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-21) | 字符串拼接/无预算 | 中 | — |
-| **P1** | [Thinking 块跨轮保留与空闲清理](./thinking-block-retention-deep-dive.md) — 活跃保留 + 1h 空闲清理 + latch 防缓存破坏 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-22) | 每轮独立/无清理 | 中 | [PR#2897](https://github.com/QwenLM/qwen-code/pull/2897) ✓ + [PR#3590](https://github.com/QwenLM/qwen-code/pull/3590) ✓（2026-04-24 合并 · resume + active session reasoning_content 保留 · GH#3579）|
+| **P1** | [Thinking 块跨轮保留与空闲清理](./thinking-block-retention-deep-dive.md) — 活跃保留 + 1h 空闲清理 + latch 防缓存破坏 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-22) | 每轮独立/无清理 | 中 | [PR#2897](https://github.com/QwenLM/qwen-code/pull/2897) ✓ + [PR#3590](https://github.com/QwenLM/qwen-code/pull/3590) ✓（resume + active session 保留 · GH#3579）+ [PR#3682](https://github.com/QwenLM/qwen-code/pull/3682) ✓（2026-04-28 · model switch + history load 不剥离 reasoning）+ [PR#3691](https://github.com/QwenLM/qwen-code/pull/3691) ✓（preserve description in subject-bearing thought chunks）|
 | **P1** | [输出 Token 自适应升级](./output-token-adaptive-upgrade-deep-dive.md) — 8K 默认 + max_tokens 截断时自动 64K 重试 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-23) | 固定值/不重试 | 小 | [PR#2898](https://github.com/QwenLM/qwen-code/pull/2898) ✓ |
 | **P1** | QWEN.md system-reminder 注入 — 项目指令从系统提示移到用户消息 `<system-reminder>` 标签注入，避免打破 Prompt Cache [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-26) | 直接拼入系统提示 | 小 | — |
 | **P1** | 错误恢复分类路由 — truncation→continuation、overflow→compaction、transport→backoff 三分支 + per-category 重试预算 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-27) | 统一 catch 重试 | 中 | — |
@@ -446,6 +446,71 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-29（~14h 增量 · 11 项合并 · auth wizard 第二轮完成 · autoSkill 新方向）
+
+扫描窗口：2026-04-28 03:06 UTC（上次扫描 351c05c）→ 2026-04-29 02:00 UTC。窗口内 **11 项合并** + **9 项新 OPEN**。
+
+#### 🟢 MERGED（11 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| **[PR#3624](https://github.com/QwenLM/qwen-code/pull/3624)** | fix(cli): add API Key option to `qwen auth` interactive menu | 2026-04-27 14:01 | **auth wizard 第二轮**——延续 PR#3607 的 UX 改进 |
+| **[PR#3623](https://github.com/QwenLM/qwen-code/pull/3623)** | fix(cli): recognize OpenAI-compatible providers in `qwen auth status` | 2026-04-28 01:06 | auth status 识别 OpenAI-compat provider |
+| **[PR#3682](https://github.com/QwenLM/qwen-code/pull/3682)** | fix(core,cli): stop stripping reasoning on model switch/history load | 2026-04-28 01:22 | **关联 item-22 Thinking 块跨轮保留**——补足 PR#3590 的 GH#3579 修复，覆盖 model 切换 + history load 路径 |
+| **[PR#3699](https://github.com/QwenLM/qwen-code/pull/3699)** | fix(core): treat ask_user_question multiSelect as optional | 2026-04-28 08:40 | AskUserQuestion 工具兼容性 |
+| **[PR#3694](https://github.com/QwenLM/qwen-code/pull/3694)** | test(cli): remove 8 flaky TUI input tests surfaced by CI history mining | 2026-04-28 08:32 | CI 稳定性 |
+| **[PR#3693](https://github.com/QwenLM/qwen-code/pull/3693)** | fix(core): set DeepSeek V4 context to 1M and output to 384K | 2026-04-28 08:44 | 模型注册表更新 |
+| **[PR#3691](https://github.com/QwenLM/qwen-code/pull/3691)** | fix(cli): preserve description in subject-bearing thought chunks | 2026-04-28 08:32 | Thinking 块描述保留（UI 层）|
+| **[PR#3690](https://github.com/QwenLM/qwen-code/pull/3690)** | fix(ci): use squash merge for SDK release auto-merge | 2026-04-28 06:58 | SDK CI |
+| **[PR#3688](https://github.com/QwenLM/qwen-code/pull/3688)** | chore(release): sdk-typescript v0.1.7 | 2026-04-28 06:59 | TS SDK 发布 |
+| **[PR#3705](https://github.com/QwenLM/qwen-code/pull/3705)** | fix(ci): preserve preview version overrides | 2026-04-28 12:26 | CI 修复 |
+| **[PR#3708](https://github.com/QwenLM/qwen-code/pull/3708)** | chore(release): bump version to 0.15.3 | 2026-04-28 13:04 | **v0.15.3 发布** |
+
+#### 🎯 重点：auth wizard 路线第二轮完成
+
+PR#3607 + PR#3624 + PR#3623 三件套全部合并，**"Qwen 第三方认证麻烦"主题取得里程碑式进展**：
+
+- ✓ PR#3607（2026-04-27）custom auth wizard step indicators + cleaner advanced config
+- ✓ PR#3624（2026-04-27）API Key option in `qwen auth` interactive menu
+- ✓ PR#3623（2026-04-28）OpenAI-compatible providers 在 `qwen auth status` 中识别
+
+**剩余方向**：[OpenCode item-12 Provider 多模型提供商系统](./qwen-code-opencode-improvements.md#item-12) 中的 6 项 sub-direction 仍未完全实现（models.dev 数据源 / per-agent model binding / variants / BUNDLED_PROVIDERS lazy 注册等）。
+
+#### 🟡 新 OPEN（值得追踪 9 项）
+
+| PR | 方向 | 重点 |
+|---|---|---|
+| **[PR#3673](https://github.com/QwenLM/qwen-code/pull/3673)** | **`feat(memory): add autoSkill background project skill extraction`** | 🌟 **autoSkill 新方向** —— 工具调用 ≥20 次自动 fork 后台 review agent 把会话中的可复用流程提炼为 project-level skill 写入 `.qwen/skills/`；与 autoMemory 合并调度避免多余 fork；含 `skill_manage` 工具（write 限制在 `${projectRoot}/.qwen/skills/`）；默认关闭（`memory.enableAutoSkill: false`）|
+| **[PR#3687](https://github.com/QwenLM/qwen-code/pull/3687)** | feat(core): wire background shells into the `task_stop` tool | **延续 item-56 后台 SubAgent 三件套** —— 把 PR#3642 加的 background shell 接入 task_stop，统一 SubAgent + shell 的取消语义 |
+| **[PR#3684](https://github.com/QwenLM/qwen-code/pull/3684)** | feat(core): event monitor tool with throttled stdout streaming (Phase C) | "Phase C" —— 看上去是 PR#3471/PR#3488/PR#3642 之后的 SubAgent 第 4 件套：监控工具 |
+| [PR#3714](https://github.com/QwenLM/qwen-code/pull/3714) | feat(core): write runtime.json sidecar for active sessions | 活跃 session 的 runtime metadata sidecar |
+| [PR#3710](https://github.com/QwenLM/qwen-code/pull/3710) | feat(cli): customize banner area (logo, title, hide) | UX 定制 |
+| [PR#3707](https://github.com/QwenLM/qwen-code/pull/3707) | fix(core): per-agent ContentGenerator view via AsyncLocalStorage | per-agent ContentGenerator 隔离 |
+| [PR#3680](https://github.com/QwenLM/qwen-code/pull/3680) | feat(cli): expand TUI markdown rendering | TUI markdown 渲染扩展 |
+| [PR#3677](https://github.com/QwenLM/qwen-code/pull/3677) | fix(openai): parse MiniMax thinking tags | MiniMax provider 兼容 |
+| [PR#3663](https://github.com/QwenLM/qwen-code/pull/3663) | fix(cli): harden TUI flicker and narrow output handling | PR#3591 TUI flicker foundation 的 follow-up |
+
+#### autoSkill (PR#3673) 与 codeagents 现有 item 的关系
+
+PR#3673 的 autoSkill 与 codeagents 多个 item 有交集：
+
+- **类似 item-4 会话记忆 / item-5 Auto Dream** —— 同样是 fork 后台 review agent 自动提炼，但提炼对象是 **skill** 不是 memory
+- **不在现有 item-28 Skill 装载性能优化范围内** —— item-28 是关于"装载已有 skill 的性能"，autoSkill 是"自动创建新 skill"
+- **新方向**：可能值得新增 item 追踪 "autoSkill 自动 skill 提炼"，归入 [item-4/item-5 系列的下一阶段](./qwen-code-improvement-report-p0-p1-core.md#item-4)
+- 与 Claude Code 对比：Claude Code 的 [skill-creator agent](./skill-creation-deep-dive.md)（如有）也是类似方向
+
+#### 状态升级建议
+
+- item-22 Thinking 块跨轮保留：PR#3590 已加，本次再加 PR#3682 / PR#3691，3 个 PR 共同完成 Thinking 块的"resume + model switch + UI 描述"全路径修复
+- 主矩阵增加 PR#3624 + PR#3623 到"OpenCode item-12 Provider 系统"行（如有）
+
+#### 累计计数
+
+- 已合并 PR: 104 → **115**（+11）
+- README 待同步
+
+---
 
 ### 2026-04-28（重大里程碑 · 后台并发 SubAgent 三件套全部合并）
 
