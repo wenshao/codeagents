@@ -6,9 +6,9 @@
 
 ---
 
-## ⚠️ 多轮源码审计修正记录（v1 → v2，2026-04-28）
+## ⚠️ 多轮源码审计修正记录（v1 → v2 → v3，2026-04-28）
 
-v1 版本部分声明经源码审计后需修正。本版（v2）修正以下问题：
+v1 → v2 修正了 7 处事实错误。v2 → v3 进一步修正：第 8 处（删 warmAll 不可行），共 8 处审计修正。本版（v3）问题清单：
 
 | v1 错误 | 实际情况 | 影响 |
 |---|---|---|
@@ -19,6 +19,7 @@ v1 版本部分声明经源码审计后需修正。本版（v2）修正以下问
 | 声称 **PR#3013 已合并**（"SlicingMaxSizedBox + useStableHeight"）| 实际 **PR#3013 CLOSED**（2026-04-24 未合并）。flicker 由 **PR#3591 (MERGED 2026-04-25)** 处理。`MaxSizedBox` 基础设施来自上游 Gemini CLI（PR#1217 等）非 PR#3013 | 已完成基线表移除 PR#3013，改为标注 MaxSizedBox 来自 upstream + PR#3591 是真正的 flicker foundation |
 | 声称 **`<available_skills>` 注入到 system prompt** | 实际是注入到 **SkillTool description 字段**（`tools/skill.ts:182`），随 tool schema 在每次 API 请求中发送 | 项 ① 集成点改为 `tools/skill.ts` 而非 `prompts.ts` |
 | 没区分 PR#3636 vs ⑦ | PR#3636 是 "concurrency cap"（上限），项 ⑦ 是 "request dedupe"（合并），是不同概念 | 项 ⑦ 加注：与 PR#3636 共存，不冲突 |
+| **v2 项 ⑤ 建议"删 warmAll"过于激进** | `getFunctionDeclarations()` 只返回已加载工具，**完全删 warmAll 会导致 tool schema 缺失** | v3 项 ⑤ 改为"跨 session 缓存 warmAll + lazy 静态 import"，避免破坏 schema 契约。长期方案是 ToolSearch（PR#3589 CLOSED）|
 
 剩余声明（① sentSkillNames / ② FileReadCache / ⑥ Git execSync / ⑦ in-flight coalesce）经审计**确认正确**。
 
@@ -308,40 +309,51 @@ grep -n "for.*await\|Promise.all" packages/core/src/lsp/*.ts | grep -v test
 
 ---
 
-### ⑤ 避免 `toolRegistry.warmAll()` 全量预热 + 延迟初始化（80 行 · 冷启动 -300ms）
+### ⑤ 跨 session warmAll 缓存 + lazy 静态 import（80 行 · 冷启动 -200ms）
 
-**审计修正**：Qwen Code 工具**已经 lazy-loaded**（`config/config.ts:2580-2628` 全部 `await import('../tools/...')`）。**真正的 gap 是 `warmAll()` 反而 eager 触发了所有 lazy import**：
+**审计修正（v2 → v3）**：Qwen Code 工具**已经 lazy-loaded**（`config/config.ts:2580-2628` 全部 `await import('../tools/...')`），但 **`toolRegistry.warmAll()` 在每次 `setTools()` 时都把所有 ~30 个工具 import 一遍**：
 
 ```typescript
 // 当前问题：3 处都在 init 路径调 warmAll()
-// packages/core/src/core/client.ts:231              await toolRegistry.warmAll()
+// packages/core/src/core/client.ts:231              await toolRegistry.warmAll()  ← 每次 setTools
 // packages/core/src/core/geminiChat.ts:948          await toolRegistry.warmAll()
 // packages/core/src/agents/runtime/agent-core.ts:307 await toolRegistry.warmAll()
 ```
 
-**`warmAll()` 同步触发所有 ~30 个工具的 `await import(...)`**，本来 lazy 的设计被破坏。
+> **⚠️ 注意**：完全删除 `warmAll()` **不可行** —— `getFunctionDeclarations()` (line 550-555) 只读 `this.tools` Map（已加载的工具），如果不 warmAll，发送给模型的 tool schema 列表会**残缺**，导致模型无法用未加载的工具。
+>
+> 这正是 [PR#3589 ToolSearch 已 CLOSED](https://github.com/QwenLM/qwen-code/pull/3589) 想解决的根本问题：把 schema 发送改为按需。但 PR#3589 被关闭，本路径阻塞中。
 
-**解决方案**：
+**可行的两个解决方案**：
 
-#### 5a. 把 `warmAll()` 改为 lazy first-use
+#### 5a. 跨 session 缓存 warmed tool registry
+
+`warmAll()` 第一次进程内调用后，所有 import 已完成。后续 session 的 `setTools()` 不需要重新 import（只是 Promise.all over `this.factories` Map，但 factories 已经空了所以是 no-op）。**实测看 warmAll 后续调用是否真的零成本**：
+
+```bash
+# 在 client.ts:231 加 timing
+console.time('warmAll')
+await toolRegistry.warmAll()
+console.timeEnd('warmAll')
+```
+
+如果第二次以后还是慢，可能是 Promise.allSettled 本身的 overhead，加快速 short-circuit：
 
 ```typescript
-// tool-registry.ts
+// tool-registry.ts:warmAll 增强
 async warmAll(options?: { strict?: boolean }): Promise<void> {
-  // 改为：仅 strict mode（如启动期 schema validation）才真正 warm，
-  // 普通 init 路径返回立即（让 ensureTool() 在第一次调用时 lazy import）
-  if (!options?.strict) return
-  // 原来的 warmAll 逻辑保留供 strict 场景
+  if (this.factories.size === 0) return  // ← 已全部 warmed，直接返回
+  // 原有逻辑保留
 }
 ```
 
-调用者（client.ts / geminiChat.ts / agent-core.ts）**默认不再调 warmAll**，只在确实需要全量 schema 时才调。
+如果 factories 在每次 setTools 之间被重置，需要审计 `setTools` 调用栈找出重置点。
 
-#### 5b. 静态 import 改 lazy
+#### 5b. 静态 import 改 lazy（`config.ts:14`）
 
 ```typescript
-// config.ts:14 当前
-import { ArenaAgentClient } from '../agents/arena/ArenaAgentClient.js'
+// 当前
+import { ArenaAgentClient } from '../agents/arena/ArenaAgentClient.js'  // 必加载
 
 // 改为：
 let _ArenaAgentClient: typeof import('../agents/arena/ArenaAgentClient.js').ArenaAgentClient | undefined
@@ -353,17 +365,29 @@ async function getArenaAgentClient() {
 }
 ```
 
+只在用户用 Arena 模式（`--arena`）时加载这个相对重的模块。
+
 #### 5c. fire-and-forget experiments / quota fetch（如有）
 
 对标 [Gemini PR#25758 backport item-58](./qwen-code-gemini-upstream-report-details.md#item-58)，把启动期的远程 fetch 改为不阻塞 bootstrap。
 
+#### 5d. 或重启 ToolSearch 方向（推荐长期方案）
+
+虽然 PR#3589 被 CLOSED，**根本性的解决方案仍是按需加载 schema**。可以做一个更小、风险更低的变体：
+
+- 默认所有工具 schema 都注入（保持向后兼容）
+- 加 `tools.deferredSchemas: ['mcp__*', 'cron_*']` 配置项，让用户可选**手动** defer 某些工具
+- 配合 ToolSearch 工具让模型按需获取 deferred schema
+
 **度量**：
 ```bash
 NODE_OPTIONS='--require trace-startup.cjs' qwen --version
-# 看 main.ts → first interactive 的 ms
+NODE_OPTIONS='--require trace-startup.cjs' qwen -p "..." | grep "warmAll"
 ```
 
-**预期收益**：冷启动 -300ms（删 warmAll 单项就能拿大头）。
+**预期收益**：5a 短路返回省 ~50ms × N session；5b 省 ~150ms cold start；5d 是长期 -1K+ tokens/request。
+
+**风险提示**：直接删除 warmAll 会让某些工具的 schema 缺失，**不推荐**这种激进改动。
 
 ---
 
