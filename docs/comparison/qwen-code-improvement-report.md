@@ -8,6 +8,7 @@
 > - [OpenCode 对标改进报告（29 项）](./qwen-code-opencode-improvements.md)——Provider 系统、Plugin 插件、Snapshot 快照、可配置截断、编辑器上下文协议等
 > - [/review 功能分析](./qwen-code-review-improvements.md)——审查功能 5 方对比（含 gstack）
 > - [Qwen Code 性能优化 Roadmap](./qwen-code-perf-roadmap.md)——按 ROI 排序的可执行优化清单（P0/P1/P2/P3 + 度量驱动方法）
+> - [ReadFile 工具 Deep-Dive](./read-file-tool-deep-dive.md)——12 项 Claude Code 可借鉴能力（file_unchanged 去重 / 图像压缩 / token 上限 / PDF 多策略等）
 > - [Qwen Code 贡献者页面](./qwen-code-contributors.md)——项目治理总览 · Alibaba 内部团队 + 外部社区 + 治理结构图
 > - [Qwen Code 外部贡献者分析](./qwen-code-external-contributors.md)——外部社区深度分析 + 5 种贡献模式
 

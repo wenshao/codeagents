@@ -1,4 +1,4 @@
-# Deep-Dive 文章索引（145 篇）
+# Deep-Dive 文章索引（146 篇）
 
 > 按主题分类的深度分析文章，每篇聚焦一个具体技术机制的 Claude Code vs Qwen Code 对比。
 >
@@ -190,3 +190,4 @@
 | [任务显示高度控制](./task-display-height-deep-dive.md) | MessageResponse + Ratchet |
 | [终端低闪烁路线图](./terminal-low-flicker-deep-dive.md) | 防闪烁 3 阶段 |
 | [Update 工具展示](./update-tool-display-deep-dive.md) | structuredPatch |
+| [ReadFile 工具](./read-file-tool-deep-dive.md) | 12 项 Claude vs Qwen ReadFile 对比 |

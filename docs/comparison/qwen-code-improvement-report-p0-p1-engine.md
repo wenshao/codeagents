@@ -41,6 +41,8 @@
 
 ### 2. 文件读取缓存 + 批量并行 I/O（P1）🟡 部分实现（PR#3581 ✓ 合并 · 查询层已做）
 
+> **配套阅读**：[ReadFile 工具 Deep-Dive](./read-file-tool-deep-dive.md) —— 12 项 Claude Code 可借鉴能力，含 `file_unchanged` 去重（协议层比内容缓存更轻）+ token-based 上限 + 图像 resize/压缩 + ENOENT 智能建议等。
+
 **最新状态（2026-04-24 13:17 UTC 合并）**：[PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓ 合并——hot-path fs 缓存部分覆盖本 item 的 "文件查询缓存"方向（不是完整的 FileReadCache，是 `workspaceContext` / `validatePath` / `ripGrep .qwenignore` 三个模块的 bounded LRU）。本 item 状态从"未实现"升级为 🟡 **部分实现**：查询缓存 ✓，文件内容缓存（1000 条 LRU + mtime 失效） + 32 并行读取仍待实现。
 
 ---
