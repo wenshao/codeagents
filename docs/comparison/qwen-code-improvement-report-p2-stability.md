@@ -2738,18 +2738,29 @@ context.toolUseContext.setAppState(prev => ({
 
 <a id="item-56"></a>
 
-### 56. 真正后台并发 SubAgent + TTL 驱逐（P2）🟡 基础设施建设中（PR#3471 + PR#3488 OPEN）
+### 56. 真正后台并发 SubAgent + TTL 驱逐（P2）✓ 已实现（PR#3471 + PR#3488 + PR#3642 全部合并）
 
 > **配套阅读**：[SubAgent 展示 Deep-Dive](./subagent-display-deep-dive.md) 第 6 节"优先级 1"。
 
-**最新状态（2026-04-23）**：Qwen Code 正在并行推进**本 item 所需的两层基础设施**：
+**最新状态（2026-04-28）**：✓ **全部基础设施已合并** —— Qwen Code 在 ~24h 内合并了实现本 item 的 3 个核心 PR，本 item 升级为 ✓ 已实现：
 
-| PR | 方向 | 对应本 item 的哪部分 |
+| PR | 状态 | 实现内容 |
 |---|---|---|
-| [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) OPEN | **模型侧控制面**：`task_stop` / `send_message` / per-agent transcript 工具 | 对标 Claude `TaskStop` / `SendMessage` tool —— 允许主 agent 动态终止/发消息给后台 subagent（后台并发的前提）|
-| [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) OPEN | **UI 层**：background-agent pill + combined dialog + detail view | 对标 `CoordinatorAgentStatus.tsx` 的面板渲染（详见 item-58）|
+| [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) | ✓ MERGED 2026-04-27 12:36 UTC | **模型侧控制面**：`task_stop` / `send_message` / per-agent transcript 工具，对标 Claude `TaskStop` / `SendMessage` |
+| [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) | ✓ MERGED 2026-04-28 02:57 UTC | **UI 层**：background-agent pill（状态行运行计数）+ combined dialog（Down 键打开）+ detail view（Enter 进详情）+ cancel flow（`x` 键取消）+ 状态分类（Running / Completed / Failed / Cancelled）|
+| [PR#3642](https://github.com/QwenLM/qwen-code/pull/3642) | ✓ MERGED 2026-04-28 03:06 UTC | **`/tasks` 命令 + 后台 shell pool**：补齐 background task 管理的 CLI 入口 |
 
-两 PR 合并后本 item 的 P2 位置可能下调——核心"后台并发 + 状态面板 + 控制通道"基本就位，剩下的仅是 `evictAfter` TTL 驱逐语义微调。
+**与 Claude 设计的差异**：
+- ⚠️ **`evictAfter` TTL 数值**：PR#3488 实现了 Running/Completed/Failed/Cancelled 4 状态分类，但**对话框在所有 agent 终止后保持可打开**（用户回顾用），与 Claude 的 30s TTL 自动驱逐**不完全相同**——Qwen 选择"用户主动管理"，Claude 是"自动 TTL 清理"
+- ⚠️ **UI 形态**：Qwen 是"pill + 对话框"（按需打开），Claude 是"footer 上方常驻面板"
+- ✓ **核心控制语义对齐**：task_stop / send_message / per-agent transcript 全实现
+- ✓ **状态分类对齐**：Running/Completed/Failed/Cancelled 与 Claude 一致
+
+**剩余可改进项**：自动 TTL 驱逐（30s 后自动从 dialog 移除完成的 task）—— 但这是 UX 偏好差异，不一定算"缺失"。
+
+---
+
+**原 item 内容（保留作为对比参考）**：
 
 **问题**：Qwen Code 的 SubAgent 必须在 tool 调用周期内完成——`AgentExecutionDisplay` 嵌入在工具消息里，tool 返回 = subagent 结束。用户**无法**启动"长时研究任务"然后继续其他工作，长任务完全阻塞主交互流。
 
@@ -2880,11 +2891,32 @@ React.useEffect(() => {
 
 <a id="item-58"></a>
 
-### 58. Coordinator 协调器面板（Footer 上方多 Agent 概览）（P2）🟡 UI 层建设中（PR#3488 OPEN）
+### 58. Coordinator 协调器面板（Footer 上方多 Agent 概览）（P2）✓ 已实现（PR#3488 MERGED 2026-04-28）
 
 > **配套阅读**：[SubAgent 展示 Deep-Dive](./subagent-display-deep-dive.md) 第 6 节"优先级 3"。
 
-**最新状态（2026-04-23）**：[PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) OPEN——"feat(cli): background-agent UI — pill, combined dialog, detail view"，**直接对标** `CoordinatorAgentStatus.tsx` 的三层视图（pill 紧凑形态 + 合并对话框 + 详情视图）。合并后本 item 可升级为 ✓ 完整实现。搭配 [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) OPEN（控制面 `task_stop` / `send_message`）形成完整 Coordinator 体验。
+**最新状态（2026-04-28 02:57 UTC 合并）**：[PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) ✓ **MERGED** —— "feat(cli): background-agent UI — pill, combined dialog, detail view"，**实现 `CoordinatorAgentStatus.tsx` 的三层视图等价物**。搭配同期合并的 [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) ✓（控制面 `task_stop` / `send_message`）形成完整 Coordinator 体验。本 item 升级为 ✓ 已实现。
+
+**Qwen Code 的实现**（与 Claude 的 UX 选择略有差异）：
+
+| 维度 | Claude Code 设计 | Qwen Code (PR#3488) |
+|---|---|---|
+| 入口 | footer 上方**常驻面板**（有 task 就显示） | 状态行 **pill**（计数提示）+ Down 键打开**对话框** |
+| 列表形态 | 永久可见多行列表 | 按需打开的 dialog list |
+| 详情查看 | Enter 进入 teammate view | Enter 进入 detail view（compact 形态）|
+| 取消 | `x` 立即驱逐 | `x` 取消 + 状态变为 Cancelled |
+| 自动驱逐 | 30s TTL（`evictAfter` 时间戳）| **保持可见**，对话框关闭后用户主动管理 |
+| 状态分类 | running / completed | **Running / Completed / Failed / Cancelled** 4 类（明确区分非 GOAL 终止）|
+| 辅助提示 | 内联工具组 hint | inline 工具部件 hint + status 行 pill 双重提示 |
+
+**Qwen 超出 Claude 的设计**：
+- ✨ **4 类状态分类**（Claude 只有 running/completed，Qwen 把 timeout / max-turn / errors 显式归类为 Failed 而非 Completed —— 让用户和父 agent 不会误以为是成功）
+- ✨ **rolling tool activity buffer per agent**（feeds Progress section）
+- ✨ **原始 prompt 保存**（detail view 的 Prompt section 显示用户最初指令）
+
+---
+
+**原 item 内容**（保留作为对比参考）：
 
 **问题**：并发多 subagent 场景下，Qwen Code 把它们塞进同一工具组内 `.map()` 渲染——**纵向堆叠**，屏幕占用大。用户难以一眼看到"3 个 subagent 各自进度"。Claude Code 的 Coordinator 面板**渲染在 footer 上方**，每行一个后台 agent，紧凑且不侵占主消息流。
 

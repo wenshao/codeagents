@@ -181,9 +181,9 @@
 | **P2** | [WebFetch 内容 LLM 清洗 Fast Model](./fast-model-usage-deep-dive.md) — Haiku 抽取核心内容 + 去 nav/ads/tracker [↓](./qwen-code-improvement-report-p2-stability.md#item-53) | 🟡 PR 进行中 | 小 | [PR#3537](https://github.com/QwenLM/qwen-code/pull/3537) 🟡 OPEN（web-fetch processing 路由到 fastModel）|
 | **P2** | [Shell 命令前缀 LLM 提取（权限）Fast Model](./fast-model-usage-deep-dive.md) — Haiku + policySpec 精确分类复合命令/alias/subshell [↓](./qwen-code-improvement-report-p2-stability.md#item-54) | Regex 分类（边界有漏洞）| 中 | — |
 | **P2** | [Skill 改进建议 Post-Sampling Hook Fast Model](./fast-model-usage-deep-dive.md) — Haiku 分析刚完成 turn，建议 skill 修订（opt-in）[↓](./qwen-code-improvement-report-p2-stability.md#item-55) | 无自动改进机制 | 中 | — |
-| **P2** | [真正后台并发 SubAgent + TTL 驱逐](./subagent-display-deep-dive.md) — `evictAfter` 时间戳 + 1s tick + 30s TTL，长时任务不阻塞主 loop [↓](./qwen-code-improvement-report-p2-stability.md#item-56) | 🟡 基础设施建设中 | 大 | [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) 🟡 OPEN（`task_stop` / `send_message` / per-agent transcript）+ [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) 🟡 OPEN（background-agent UI）|
+| **P2** | [真正后台并发 SubAgent + TTL 驱逐](./subagent-display-deep-dive.md) — `evictAfter` 时间戳 + 1s tick + 30s TTL，长时任务不阻塞主 loop [↓](./qwen-code-improvement-report-p2-stability.md#item-56) | **✓ 已实现**（控制面 + UI 层 + 注册表均已合并；`evictAfter` TTL 数值或与 Claude 略有差异）| 大 | [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) ✓（2026-04-27 合并 · `task_stop` / `send_message` / per-agent transcript）+ [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) ✓（2026-04-28 合并 · pill + combined dialog + detail view + cancel flow + 状态分类 Running/Completed/Failed/Cancelled）|
 | **P2** | [`/agents` 独立管理视图](./subagent-display-deep-dive.md) — subagent 历史归档 + 过滤 + 对比 [↓](./qwen-code-improvement-report-p2-stability.md#item-57) | 仅消息流线性回滚 | 中 | — |
-| **P2** | [Coordinator 协调器面板](./subagent-display-deep-dive.md) — footer 上方紧凑多 agent 列表 + `↑↓` 导航 + `Enter` 详情 + `x` 驱逐 [↓](./qwen-code-improvement-report-p2-stability.md#item-58) | 🟡 UI 层建设中 | 中 | [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) 🟡 OPEN（pill + combined dialog + detail view）|
+| **P2** | [Coordinator 协调器面板](./subagent-display-deep-dive.md) — footer 上方紧凑多 agent 列表 + `↑↓` 导航 + `Enter` 详情 + `x` 驱逐 [↓](./qwen-code-improvement-report-p2-stability.md#item-58) | **✓ 已实现**（pill + combined dialog + detail view，与 Claude 设计略有差异：状态行 pill + 全屏对话 vs Claude footer 上方常驻面板）| 中 | [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) ✓（2026-04-28 合并 · pill 显示运行计数 + Down 键打开 dialog + Enter 进详情 + x 取消 + ↑↓ 导航 + Left/Esc 关闭）|
 | **P2** | [终端渲染优化（紧凑 + 低闪烁）](./terminal-low-flicker-deep-dive.md) — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 + PR#3381 游标移动优化 | 大 | [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（局部） |
 | **P2** | Image [Image #N] Chips — 粘贴图片后生成位置引用标记 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-9) | 缺失 | 小 | — |
 | **P2** | --max-turns — headless 模式最大 turn 数限制 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-10) | 缺失 | 小 | — |
@@ -445,6 +445,63 @@
 ---
 
 ## 六、更新日志
+
+### 2026-04-28（重大里程碑 · 后台并发 SubAgent 三件套全部合并）
+
+用户 ping："看下 P2 真正后台并发 SubAgent + TTL 驱逐 这行"。审计后发现 **3 个 PR 已经全部合并** —— 这是 codeagents 报告史上最大的单次升级。
+
+#### 🎯 ~24h 内 3 个 PR 合并（实现 item-56 + item-58 完整体）
+
+| PR | 合并时间 | 内容 |
+|---|---|---|
+| **[PR#3471](https://github.com/QwenLM/qwen-code/pull/3471)** | 2026-04-27 12:36 UTC | `feat(core): model-facing agent control` —— `task_stop` / `send_message` / per-agent transcript 工具，对标 Claude `TaskStop` + `SendMessage` |
+| **[PR#3488](https://github.com/QwenLM/qwen-code/pull/3488)** | 2026-04-28 02:57 UTC | `feat(cli): background-agent UI` —— pill + combined dialog + detail view + cancel flow + 4 状态分类（Running/Completed/Failed/Cancelled）|
+| **[PR#3642](https://github.com/QwenLM/qwen-code/pull/3642)** | 2026-04-28 03:06 UTC | `feat(core): managed background shell pool with /tasks command` —— 后台 shell pool + `/tasks` CLI 命令 |
+
+#### 🟢 状态升级
+
+| Item | 旧状态 | 新状态 |
+|---|---|---|
+| **item-56** 真正后台并发 SubAgent + TTL 驱逐 | 🟡 基础设施建设中 | **✓ 已实现** |
+| **item-58** Coordinator 协调器面板 | 🟡 UI 层建设中 | **✓ 已实现** |
+| **`/tasks` 命令 + 后台 shell pool**（无独立 item） | 缺失 | ✓ 已实现 |
+
+#### Qwen 实现 vs Claude 设计的差异
+
+PR#3488 体现了 Qwen 团队的**独立 UX 决策**，不是 Claude 的纯复刻：
+
+| 维度 | Claude Code | Qwen Code (PR#3488) |
+|---|---|---|
+| **入口** | footer 上方常驻面板 | 状态行 **pill** + Down 键打开**对话框** |
+| **自动驱逐** | 30s TTL（`evictAfter`）| 保持可见，用户主动管理 |
+| **状态分类** | running / completed（2 类）| **Running / Completed / Failed / Cancelled**（4 类，明确区分非 GOAL 终止）|
+| **取消** | `x` 立即驱逐 | `x` 取消 + 状态变为 Cancelled |
+
+#### Qwen 超出 Claude 的 3 项设计
+
+1. ✨ **4 类状态分类**：明确区分 timeout / max-turn / errors 为 Failed，让用户和父 agent 不会误以为非 GOAL 终止是成功
+2. ✨ **per-agent rolling tool activity buffer**（feeds detail view Progress section）
+3. ✨ **原始 prompt 保存到 detail view**（用户能看自己最初指令）
+
+#### 主矩阵 / sub-report 联动
+
+- 主矩阵 item-56 行 + item-58 行：状态从 🟡 → ✓ + PR 标记从 OPEN → MERGED
+- p2-stability item-56 + item-58 标题升级 + 加完整状态表 + UX 差异对比表
+- 累计合并 PR 计数：~101 → **104**
+
+#### 累计影响
+
+这次升级让 [SubAgent 展示 Deep-Dive](./subagent-display-deep-dive.md) 的 "优先级 1 / 优先级 3" 两个核心 gap **同时关闭**。Qwen Code 现在拥有：
+
+- ✓ 真正后台并发 SubAgent（不阻塞主 loop）
+- ✓ 显式 `task_stop` / `send_message` 控制面
+- ✓ pill + dialog + detail view UI
+- ✓ 4 类状态分类（含非 GOAL 终止细分）
+- ✓ `/tasks` 命令入口
+
+**与 Claude Code 在 SubAgent 方向上基本对齐**，部分维度甚至略有超越（4 类状态 vs 2 类 / 显式 prompt 保存）。
+
+---
 
 ### 2026-04-28（勘误 · item-17 Agent 记忆持久化 状态修正）
 
