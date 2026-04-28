@@ -87,6 +87,9 @@
 | [Codex CLI 对标改进（28 项）](./docs/comparison/qwen-code-codex-improvements.md) | 沙箱 + Apply Patch + Feature Flag + 网络代理 + Sticky Env + Permission Profiles |
 | [OpenCode 对标改进（29 项）](./docs/comparison/qwen-code-opencode-improvements.md) | Provider 系统 + Plugin + Snapshot + 可配置截断 + 编辑器上下文协议 |
 | [Qwen Code 贡献者页面](./docs/comparison/qwen-code-contributors.md) | 项目治理总览 · Alibaba 内部团队 + 活跃贡献者 + 外部社区 + 上游遗产 + 治理结构图 |
+| [Codex 贡献者页面](./docs/comparison/codex-contributors.md) | OpenAI 主导 + 5,890 commits / 444 贡献者 · ~92% 内部占比（最封闭的开源 Agent）|
+| [OpenCode 贡献者页面](./docs/comparison/opencode-contributors.md) | sst Dax 创始人驱动 + 11,875 commits / 924 贡献者 · ~75-80% 内部 + 大量自动化 bot |
+| [Kimi-CLI 贡献者页面](./docs/comparison/kimi-cli-contributors.md) | Moonshot AI · 155 commits / 23 贡献者 · Kai 一人 62% commits（最集中）|
 | [Qwen Code 外部贡献者分析](./docs/comparison/qwen-code-external-contributors.md) | 外部社区深度分析（含勘误：chiga0/BZ-D 为内部）+ 5 种贡献模式 + email 识别局限性 |
 | [Kairos Always-On](./docs/comparison/kairos-always-on-agent-deep-dive.md) | Claude Code 自治 Agent 模式 |
 
