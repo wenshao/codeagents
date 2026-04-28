@@ -6,9 +6,9 @@
 
 ---
 
-## ⚠️ 多轮源码审计修正记录（v1 → v2 → v3 → v4，2026-04-28）
+## ⚠️ 多轮源码审计修正记录（v1 → v5，2026-04-28）
 
-v1 → v2 修正 7 处事实错误。v2 → v3 修正 1 处（删 warmAll 不可行）。v3 → v4 修正 1 处（项 ① 实现复杂度被低估），共 9 处审计修正。本版（v4）问题清单：
+v1 → v2 修正 7 处。v2 → v3 修正 1 处。v3 → v4 修正 1 处。v4 → v5 修正 1 处（**PR#3604 实际是 OPEN 不是 MERGED**），共 **10 处审计修正**。本版（v5）问题清单：
 
 | v1 错误 | 实际情况 | 影响 |
 |---|---|---|
@@ -21,6 +21,7 @@ v1 → v2 修正 7 处事实错误。v2 → v3 修正 1 处（删 warmAll 不可
 | 没区分 PR#3636 vs ⑦ | PR#3636 是 "concurrency cap"（上限），项 ⑦ 是 "request dedupe"（合并），是不同概念 | 项 ⑦ 加注：与 PR#3636 共存，不冲突 |
 | **v2 项 ⑤ 建议"删 warmAll"过于激进** | `getFunctionDeclarations()` 只返回已加载工具，**完全删 warmAll 会导致 tool schema 缺失** | v3 项 ⑤ 改为"跨 session 缓存 warmAll + lazy 静态 import"，避免破坏 schema 契约。长期方案是 ToolSearch（PR#3589 CLOSED）|
 | **v3 项 ① 实现复杂度被低估** | SkillTool description 在 `updateDescriptionAndSchema()` 重建（仅 skill 集合变化时），**不是 per-turn 触发**。如果改 per-turn 重建 + setTools，会引入额外 setTools 开销，可能负优化 | v4 项 ① 改为：保留 SkillTool description baseline，在 attachments/system-reminder 层做去重；新增风险提示（模型可能漏调 skill）|
+| **v4 把 PR#3604 当成 MERGED 列入基线** | 实际 **PR#3604 仍 OPEN**（截至 2026-04-28），item-28 子项 #1/#2/#6 还在 review 中未合并 | v5 移出"已完成基线"区块，加入新建的"🟡 OPEN / 进行中"区块；item-28 部分覆盖表标注"PR#3604 仍 OPEN"|
 
 剩余声明（① sentSkillNames / ② FileReadCache / ⑥ Git execSync / ⑦ in-flight coalesce）经审计**确认正确**。
 
@@ -35,21 +36,28 @@ v1 → v2 修正 7 处事实错误。v2 → v3 修正 1 处（删 warmAll 不可
    PR#3581 · sync I/O hot path 110→10 (-91%)
    PR#3591 · TUI flicker foundation
    MaxSizedBox · 渲染前裁剪基础设施（来自 upstream，非 PR#3013）
-   PR#3013 · CLOSED（2026-04-24，未合并；flicker 由 PR#3591 解决）
-   PR#3604 · Skill 并行加载 + conditional 激活（item-28 子项 1+2+6）
+
+❌ CLOSED / 🟡 OPEN（不算基线）
+   PR#3013 · CLOSED（2026-04-24 未合并；flicker 由 PR#3591 解决）
+   PR#3604 · 🟡 OPEN（item-28 子项 1+2+6 仍待 review，截至 2026-04-28）
+   PR#3589 · CLOSED（ToolSearch 方向被关闭）
 
 🥇 P0 本周（建议）
-   ① sentSkillNames 去重                    50 行   每轮省 1K token
-   ② FileReadCache 内容层（Map LRU 无 dep）  150 行  Read-Edit 循环零 I/O
-   ③ readManyFiles 32 批并行 + 同步 I/O 异步  80 行   多文件 I/O 1/32 + 消除 PR#3581 漏改的 sync I/O
+   ① sentSkillNames 去重 (system-reminder 层)  80-150 行  每轮省 1K token *
+   ② FileReadCache 内容层（Map LRU 无 dep）     150 行   Read-Edit 循环零 I/O
+   ③ readManyFiles 32 批并行 + 同步 I/O 异步   80 行    多文件 I/O 1/32 + 消除 PR#3581 漏改的 sync I/O
 
 🥈 P1 下周
-   ④ Extension 默认目录加载并行 + LSP 并行  50 行  启动 -1-3s
+   ④ Extension 默认目录加载并行 + LSP 并行    50 行    启动 -1-3s
      （注：MCP discovery 已 Promise.all 并行，无需改）
-   ⑤ 避免 warmAll() + lazy import      80 行  冷启动 -300ms
-     （注：工具已 lazy，warmAll 反而 eager 触发所有 import）
-   ⑥ Git 直读避免 spawn (execSync)    100 行  状态栏 -30ms
-   ⑦ in-flight 请求合并 (request dedup) 80 行  并行 subagent 节省 API
+   ⑤ warmAll 短路 + lazy 静态 import          80 行    冷启动 -200ms *
+     （注：工具已 lazy，但 setTools 每次 warmAll；不能完全删 warmAll
+      会破坏 schema 契约；保守做法是 factories.size === 0 short-circuit）
+   ⑥ Git 直读避免 spawn (execSync)            100 行   状态栏 -30ms
+   ⑦ in-flight 请求合并 (request dedup)       80 行    并行 subagent 节省 API
+     （注：与 PR#3636 OPEN "concurrency cap" 不同，可共存）
+
+* 标注的数字为基于源码结构的合理估算，需 PR 阶段 tracer 实测验证
 
 🥉 P2-P3 按需
    ⑧ React.memo 高频组件 / ⑨ WeakRef 长 session 内存 / ⑩ 正则编译缓存 /
@@ -71,14 +79,27 @@ v1 → v2 修正 7 处事实错误。v2 → v3 修正 1 处（删 warmAll 不可
 | **[PR#3581](https://github.com/QwenLM/qwen-code/pull/3581)** | sync I/O hot path | 110→10 syscall/prompt（**-91%**）|
 | **[PR#3591](https://github.com/QwenLM/qwen-code/pull/3591)** | TUI flicker foundation | throttle + pre-slice + soft-wrap 抑制 + 同步终端 allowlist |
 | **MaxSizedBox 基础**（自 Gemini upstream PR#1217 等多 PR）| 渲染前裁剪到 maxLines（基础设施层）| 已有 fork 期前的能力 |
-| **[PR#3604](https://github.com/QwenLM/qwen-code/pull/3604)** | Skill 并行加载 + path-conditional 激活 | item-28 子项 #1+#2+#6 |
+
+### 🟡 OPEN / 进行中（不算基线，正在等 review）
+
+| PR | 内容 | 当前状态 |
+|---|---|---|
+| **[PR#3604](https://github.com/QwenLM/qwen-code/pull/3604)** 🟡 OPEN | Skill 并行加载 + path-conditional 激活 | 截至 2026-04-28 仍 OPEN，对应 item-28 子项 #1+#2+#6 |
+| **[PR#3636](https://github.com/QwenLM/qwen-code/pull/3636)** 🟡 OPEN | cap concurrent in-flight requests per provider | 与项 ⑦ 共存方向 |
+
+### ❌ CLOSED（设计被否定）
+
+| PR | 关闭时间 | 原因推测 |
+|---|---|---|
+| **[PR#3589](https://github.com/QwenLM/qwen-code/pull/3589)** | 2026-04-24 08:51 UTC | ToolSearch 设计被否定，schema 按需加载方向卡住 |
+| **[PR#3013](https://github.com/QwenLM/qwen-code/pull/3013)** | 2026-04-24 09:27 UTC | SlicingMaxSizedBox 第二尝试被否定，flicker 由 PR#3591 解决 |
 
 ### 🟡 部分完成 / 持续推进
 
 | Item | 已完成 | 仍缺 |
 |---|---|---|
 | [item-2 文件读取缓存](./qwen-code-improvement-report-p0-p1-engine.md#item-2) | 查询层 LRU（PR#3581）| 内容层 FileReadCache + 32 批并行 |
-| [item-28 Skill 装载性能](./qwen-code-improvement-report-p0-p1-engine.md#item-28) | 子项 #1/#2/#6（PR#3604）| 子项 #3/#4/#5/#7/#8/#9 |
+| [item-28 Skill 装载性能](./qwen-code-improvement-report-p0-p1-engine.md#item-28) | **PR#3604 仍 OPEN**（子项 #1/#2/#6 待合并）| 子项 #3/#4/#5/#7/#8/#9 仍未做 |
 
 ---
 
