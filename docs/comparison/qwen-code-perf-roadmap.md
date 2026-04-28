@@ -6,9 +6,9 @@
 
 ---
 
-## ⚠️ 多轮源码审计修正记录（v1 → v2 → v3，2026-04-28）
+## ⚠️ 多轮源码审计修正记录（v1 → v2 → v3 → v4，2026-04-28）
 
-v1 → v2 修正了 7 处事实错误。v2 → v3 进一步修正：第 8 处（删 warmAll 不可行），共 8 处审计修正。本版（v3）问题清单：
+v1 → v2 修正 7 处事实错误。v2 → v3 修正 1 处（删 warmAll 不可行）。v3 → v4 修正 1 处（项 ① 实现复杂度被低估），共 9 处审计修正。本版（v4）问题清单：
 
 | v1 错误 | 实际情况 | 影响 |
 |---|---|---|
@@ -20,6 +20,7 @@ v1 → v2 修正了 7 处事实错误。v2 → v3 进一步修正：第 8 处（
 | 声称 **`<available_skills>` 注入到 system prompt** | 实际是注入到 **SkillTool description 字段**（`tools/skill.ts:182`），随 tool schema 在每次 API 请求中发送 | 项 ① 集成点改为 `tools/skill.ts` 而非 `prompts.ts` |
 | 没区分 PR#3636 vs ⑦ | PR#3636 是 "concurrency cap"（上限），项 ⑦ 是 "request dedupe"（合并），是不同概念 | 项 ⑦ 加注：与 PR#3636 共存，不冲突 |
 | **v2 项 ⑤ 建议"删 warmAll"过于激进** | `getFunctionDeclarations()` 只返回已加载工具，**完全删 warmAll 会导致 tool schema 缺失** | v3 项 ⑤ 改为"跨 session 缓存 warmAll + lazy 静态 import"，避免破坏 schema 契约。长期方案是 ToolSearch（PR#3589 CLOSED）|
+| **v3 项 ① 实现复杂度被低估** | SkillTool description 在 `updateDescriptionAndSchema()` 重建（仅 skill 集合变化时），**不是 per-turn 触发**。如果改 per-turn 重建 + setTools，会引入额外 setTools 开销，可能负优化 | v4 项 ① 改为：保留 SkillTool description baseline，在 attachments/system-reminder 层做去重；新增风险提示（模型可能漏调 skill）|
 
 剩余声明（① sentSkillNames / ② FileReadCache / ⑥ Git execSync / ⑦ in-flight coalesce）经审计**确认正确**。
 
@@ -83,11 +84,15 @@ v1 → v2 修正了 7 处事实错误。v2 → v3 进一步修正：第 8 处（
 
 ## 二、🥇 Tier 1 · P0 高 ROI 必做（本周）
 
-### ① sentSkillNames per-agent 去重（50 行 · 每轮省 1K+ tokens）
+### ① sentSkillNames per-agent 去重（80-150 行 · 每轮省 1K+ tokens）
 
 **问题**：每个 API 调用把全部 skill 列表通过 **SkillTool description** 注入（`tools/skill.ts:182-184` `<available_skills>${skillDescriptions}</available_skills>`）。100 skill = 600-1500 tokens × N API call。
 
-> **审计修正**：原 v1 描述说"注入 system prompt"，实际是注入到 **SkillTool 的 description 字段**，会随 tool schema 在每次 API 请求中发送。优化机制相同，但实现位置是 **`tools/skill.ts` 而不是 `prompts.ts`**。
+> **审计修正（v3）**：实现比 v1/v2 描述的复杂。SkillTool description 在 `updateDescriptionAndSchema()` 重建后通过 `geminiClient.setTools()` 推送给模型，**默认只在 skill 集合变化时调用**，不是 per-turn。因此：
+>
+> - ❌ **不能简单 per-turn 重建 description** —— 会引入额外 setTools 开销
+> - ✓ **应该走 attachments / system-reminder 层** —— 不动 SkillTool description（保留 1 次 baseline 注入），但通过 `<system-reminder>` 在转 turn 时注入"新 skill 通知"
+> - ✓ **维持兼容性**：模型仍可通过 SkillTool 调用所有 skill，只是描述层省 token
 
 **解决方案**（对标 Claude `utils/attachments.ts:2607`）：
 
@@ -110,12 +115,18 @@ export function getSkillListingDelta(
 export function resetSentSkillNames(): void { sentSkillNames.clear() }
 ```
 
-**集成点**：
-- `packages/core/src/tools/skill.ts:182` `<available_skills>${skillDescriptions}</available_skills>` 改为按 agentId 过滤，只列入未发送过的 skill
-- 同时通过 `<system-reminder>` 注入新 skill 通知（保留模型可见性）
+**正确集成点**（v3 修订后）：
+- **不改 SkillTool description**（保持 baseline）
+- 在 prompt assembly 路径（attachments / system-reminder injection）按 agentId 过滤，只在新 skill 出现时注入 `<system-reminder>system: 3 个新 skill 已可用：xlsx, pdf, debug</system-reminder>`
 - skill watcher 触发 reload 时调用 `resetSentSkillNames()`
-- subagent spawn 时为新 agentId 创建独立 Set
+- subagent spawn 时为新 agentId 创建独立 Set（继承父 agent 的 sent Set 作为 baseline）
 - `/clear` 路径 reset
+- `--resume` 路径检测 transcript 已含 skill listing，调 `suppressNext`
+
+**实施风险提示**：
+
+- ⚠️ 模型对"什么时候有什么 skill 可用"的认知如果有断层（skill 注入了但模型没记住），可能漏调；保留 SkillTool description 的 baseline 是为了兜底
+- ⚠️ 单做"省 token"是局部优化；如果模型用 ToolSearch 类机制访问 skill schema，整体效果更好（参考项 ⑤ 的 5d）
 
 **度量**：
 ```bash
