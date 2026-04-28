@@ -6,32 +6,55 @@
 
 ---
 
+## ⚠️ 多轮源码审计修正记录（v1 → v2，2026-04-28）
+
+v1 版本部分声明经源码审计后需修正。本版（v2）修正以下问题：
+
+| v1 错误 | 实际情况 | 影响 |
+|---|---|---|
+| 声称 **MCP 服务器串行启动** | `tools/mcp-client-manager.ts:137,459,514` 已用 `Promise.all(discoveryPromises)` 并行 | 项 ④ 改为：MCP 已并行，**仅"扩展加载默认路径"和 LSP 还有串行问题** |
+| 代码示例用 `lru-cache` / `p-map` | 这两个包**都不在 `packages/core/dependencies` 里**；`p-limit@7.3.0` 在 `packages/cli` 里 | 改用 Map 实现 LRU 或加 dep；并行用 `p-limit` |
+| 声称工具是"同步加载" | 工具**已经 lazy-loaded**（`config.ts:2580-2628` 全部 `await import('../tools/...')`）| 项 ⑤ 改为：**`toolRegistry.warmAll()` 反而 eager 加载所有 lazy 工具**——真正的 gap 是避免 warmAll，让 first-use 触发 import |
+| 漏看 readManyFiles **同步 I/O** | `readManyFiles.ts:107` 仍有 `existsSync + statSync`（PR#3581 没改到这处）| 项 ③ 增加：把 sync I/O 改 async + 同时 32 批并行 |
+| 声称 **PR#3013 已合并**（"SlicingMaxSizedBox + useStableHeight"）| 实际 **PR#3013 CLOSED**（2026-04-24 未合并）。flicker 由 **PR#3591 (MERGED 2026-04-25)** 处理。`MaxSizedBox` 基础设施来自上游 Gemini CLI（PR#1217 等）非 PR#3013 | 已完成基线表移除 PR#3013，改为标注 MaxSizedBox 来自 upstream + PR#3591 是真正的 flicker foundation |
+| 声称 **`<available_skills>` 注入到 system prompt** | 实际是注入到 **SkillTool description 字段**（`tools/skill.ts:182`），随 tool schema 在每次 API 请求中发送 | 项 ① 集成点改为 `tools/skill.ts` 而非 `prompts.ts` |
+| 没区分 PR#3636 vs ⑦ | PR#3636 是 "concurrency cap"（上限），项 ⑦ 是 "request dedupe"（合并），是不同概念 | 项 ⑦ 加注：与 PR#3636 共存，不冲突 |
+
+剩余声明（① sentSkillNames / ② FileReadCache / ⑥ Git execSync / ⑦ in-flight coalesce）经审计**确认正确**。
+
+---
+
+---
+
 ## 速查表 · 一页读懂
 
 ```
 ✅ 已完成（基线）
    PR#3581 · sync I/O hot path 110→10 (-91%)
    PR#3591 · TUI flicker foundation
-   PR#3013 · SlicingMaxSizedBox
+   MaxSizedBox · 渲染前裁剪基础设施（来自 upstream，非 PR#3013）
+   PR#3013 · CLOSED（2026-04-24，未合并；flicker 由 PR#3591 解决）
    PR#3604 · Skill 并行加载 + conditional 激活（item-28 子项 1+2+6）
 
 🥇 P0 本周（建议）
-   ① sentSkillNames 去重         50 行   每轮省 1K token
-   ② FileReadCache 内容层        150 行  Read-Edit 循环零 I/O
-   ③ readManyFiles 32 批并行      30 行   多文件 I/O 1/32
+   ① sentSkillNames 去重                    50 行   每轮省 1K token
+   ② FileReadCache 内容层（Map LRU 无 dep）  150 行  Read-Edit 循环零 I/O
+   ③ readManyFiles 32 批并行 + 同步 I/O 异步  80 行   多文件 I/O 1/32 + 消除 PR#3581 漏改的 sync I/O
 
 🥈 P1 下周
-   ④ MCP/LSP 并行启动             50 行   启动 -2-5s
-   ⑤ 延迟初始化 lazyImport       80 行   冷启动 -300ms
-   ⑥ Git 直读避免 spawn          100 行  状态栏 -30ms
-   ⑦ in-flight 请求合并 (dedupe)  80 行   并行 subagent 节省
+   ④ Extension 默认目录加载并行 + LSP 并行  50 行  启动 -1-3s
+     （注：MCP discovery 已 Promise.all 并行，无需改）
+   ⑤ 避免 warmAll() + lazy import      80 行  冷启动 -300ms
+     （注：工具已 lazy，warmAll 反而 eager 触发所有 import）
+   ⑥ Git 直读避免 spawn (execSync)    100 行  状态栏 -30ms
+   ⑦ in-flight 请求合并 (request dedup) 80 行  并行 subagent 节省 API
 
 🥉 P2-P3 按需
    ⑧ React.memo 高频组件 / ⑨ WeakRef 长 session 内存 / ⑩ 正则编译缓存 /
    ⑪ Shell AST 解析缓存 / ⑫ 终端行宽缓存 / ⑬ Bun 原生 API 等
 ```
 
-**总投入**：P0+P1 约 **8 天 × 1 人 / 540 行代码**，预期收益：每轮节省 1K+ tokens、冷启动 -300ms、文件 I/O 1/32、启动 -2-5s。
+**总投入**：P0+P1 约 **8-10 天 × 1 人 / ~590 行代码**，预期收益：每轮节省 1K+ tokens、冷启动 -300ms、文件 I/O 1/32 + 消除 sync I/O、Extension 启动 -1.6s、状态栏 -30ms、并行 subagent 节省 API 成本。
 
 ---
 
@@ -45,7 +68,7 @@
 |---|---|---|
 | **[PR#3581](https://github.com/QwenLM/qwen-code/pull/3581)** | sync I/O hot path | 110→10 syscall/prompt（**-91%**）|
 | **[PR#3591](https://github.com/QwenLM/qwen-code/pull/3591)** | TUI flicker foundation | throttle + pre-slice + soft-wrap 抑制 + 同步终端 allowlist |
-| **[PR#3013](https://github.com/QwenLM/qwen-code/pull/3013)** | SlicingMaxSizedBox + useStableHeight | 渲染前裁剪到 maxLines |
+| **MaxSizedBox 基础**（自 Gemini upstream PR#1217 等多 PR）| 渲染前裁剪到 maxLines（基础设施层）| 已有 fork 期前的能力 |
 | **[PR#3604](https://github.com/QwenLM/qwen-code/pull/3604)** | Skill 并行加载 + path-conditional 激活 | item-28 子项 #1+#2+#6 |
 
 ### 🟡 部分完成 / 持续推进
@@ -61,7 +84,9 @@
 
 ### ① sentSkillNames per-agent 去重（50 行 · 每轮省 1K+ tokens）
 
-**问题**：每个 turn 把全部 skill 列表注入 system prompt。100 skill = 600-1500 tokens × N turn。
+**问题**：每个 API 调用把全部 skill 列表通过 **SkillTool description** 注入（`tools/skill.ts:182-184` `<available_skills>${skillDescriptions}</available_skills>`）。100 skill = 600-1500 tokens × N API call。
+
+> **审计修正**：原 v1 描述说"注入 system prompt"，实际是注入到 **SkillTool 的 description 字段**，会随 tool schema 在每次 API 请求中发送。优化机制相同，但实现位置是 **`tools/skill.ts` 而不是 `prompts.ts`**。
 
 **解决方案**（对标 Claude `utils/attachments.ts:2607`）：
 
@@ -85,7 +110,8 @@ export function resetSentSkillNames(): void { sentSkillNames.clear() }
 ```
 
 **集成点**：
-- `packages/core/src/core/prompts.ts` 组装系统提示时调用 `getSkillListingDelta(agentId, ...)` 而不是注入全集
+- `packages/core/src/tools/skill.ts:182` `<available_skills>${skillDescriptions}</available_skills>` 改为按 agentId 过滤，只列入未发送过的 skill
+- 同时通过 `<system-reminder>` 注入新 skill 通知（保留模型可见性）
 - skill watcher 触发 reload 时调用 `resetSentSkillNames()`
 - subagent spawn 时为新 agentId 创建独立 Set
 - `/clear` 路径 reset
@@ -106,9 +132,11 @@ QWEN_DEBUG_PROMPT_SIZE=1 qwen ...
 
 **解决方案**（对标 Claude `utils/fileReadCache.ts`）：
 
+> **依赖说明**：`packages/core` 当前**没有 `lru-cache` 依赖**，需要选一个：①加 dep；②自己实现简易 LRU（Map + insertion order）。下面给出无依赖版本：
+
 ```typescript
 // packages/core/src/utils/fileReadCache.ts (新建)
-import { LRUCache } from 'lru-cache'
+import * as fs from 'node:fs/promises'
 
 interface CachedRead {
   content: string
@@ -116,17 +144,26 @@ interface CachedRead {
   size: number
 }
 
-const cache = new LRUCache<string, CachedRead>({ max: 1000 })
+const MAX = 1000
+const cache = new Map<string, CachedRead>()  // Map 保留 insertion order
 
 export async function readWithCache(filePath: string): Promise<string> {
-  const stat = await fs.promises.stat(filePath)
+  const stat = await fs.stat(filePath)
   const cached = cache.get(filePath)
 
   if (cached && cached.mtime === stat.mtimeMs && cached.size === stat.size) {
-    return cached.content  // 命中
+    // LRU: 命中后移到末尾
+    cache.delete(filePath)
+    cache.set(filePath, cached)
+    return cached.content
   }
 
-  const content = await fs.promises.readFile(filePath, 'utf-8')
+  const content = await fs.readFile(filePath, 'utf-8')
+  if (cache.size >= MAX) {
+    // 删除最早的 entry（Map iteration order = insertion order）
+    const oldestKey = cache.keys().next().value
+    if (oldestKey) cache.delete(oldestKey)
+  }
   cache.set(filePath, { content, mtime: stat.mtimeMs, size: stat.size })
   return content
 }
@@ -151,27 +188,67 @@ NODE_OPTIONS='--require trace-readfile.cjs' qwen -p "..."
 
 ---
 
-### ③ readManyFiles 32 批并行（30 行 · 多文件场景 1/32 延迟）
+### ③ readManyFiles 32 批并行 + 同步 I/O 异步化（80 行 · 多文件场景 1/32 延迟）
 
-**问题**：`utils/readManyFiles.ts` 用 `for...of` 串行读文件 —— 50 个文件 = 50× 累加延迟。
+**问题**：`packages/core/src/utils/readManyFiles.ts:104-127` 有**两个问题**：
+
+1. `for (const rawPattern of inputPatterns)` 串行 —— 50 文件 = 50× 累加延迟
+2. **`readManyFiles.ts:107` 仍有 sync I/O**：`fs.existsSync(fullPath) ? fs.statSync(fullPath) : null` —— PR#3581 没覆盖这处（PR#3581 改的是 `chatRecordingService` + `fileUtils` + `paths` + `workspaceContext` + `ripGrep`）
 
 **解决方案**：
 
 ```typescript
-// 当前（packages/core/src/utils/readManyFiles.ts）
-for (const path of paths) {
-  const content = await fs.promises.readFile(path)
-  // ...
+// packages/core/src/utils/readManyFiles.ts:104（改造前）
+for (const rawPattern of inputPatterns) {
+  const fullPath = path.resolve(projectRoot, normalizedPattern)
+  const stats = fs.existsSync(fullPath) ? fs.statSync(fullPath) : null  // ← sync I/O
+  if (stats?.isDirectory()) { ... }
+  if (stats?.isFile() && !seenFiles.has(fullPath)) {
+    seenFiles.add(fullPath)
+    const readResult = await readFileContent(config, fullPath)  // ← 串行
+    // ...
+  }
 }
 
-// 改为：
+// 改造后：
 const BATCH_SIZE = 32
-for (let i = 0; i < paths.length; i += BATCH_SIZE) {
-  const batch = paths.slice(i, i + BATCH_SIZE)
+const resolvedPatterns = inputPatterns.map(p => ({
+  raw: p,
+  full: path.resolve(projectRoot, p.replace(/\\/g, '/')),
+}))
+
+// 第一阶段：并行 stat（替代 sync existsSync + statSync）
+const statResults = await Promise.all(
+  resolvedPatterns.map(async ({ full }) => {
+    try {
+      return { full, stats: await fs.promises.stat(full) }
+    } catch (err: any) {
+      if (err.code === 'ENOENT') return { full, stats: null }
+      throw err
+    }
+  })
+)
+
+// 第二阶段：分类 + 32 批并行读取
+const fileItems = statResults.filter(r => r.stats?.isFile() && !seenFiles.has(r.full))
+const dirItems = statResults.filter(r => r.stats?.isDirectory())
+
+for (let i = 0; i < fileItems.length; i += BATCH_SIZE) {
+  const batch = fileItems.slice(i, i + BATCH_SIZE)
   const results = await Promise.all(
-    batch.map(path => readWithCache(path))  // 配合 ① 用 cache
+    batch.map(({ full }) => {
+      seenFiles.add(full)
+      return readFileContent(config, full)  // 配合 ② 用 readWithCache
+    })
   )
-  // ...
+  // 合并 contentParts / files
+}
+
+// 目录递归保持顺序（避免内存爆炸）
+for (const { full } of dirItems) {
+  const { contentParts: dp, info } = await readDirectory(config, full)
+  contentParts.push(...dp)
+  files.push(info)
 }
 ```
 
@@ -180,53 +257,105 @@ for (let i = 0; i < paths.length; i += BATCH_SIZE) {
 time qwen -p "Read all .ts files in src/ and summarize"
 ```
 
-**预期收益**：50 文件场景从 ~250ms → ~25ms（**10× 加速**），配合 FileReadCache 后续访问 0ms。
+**预期收益**：50 文件场景从 ~250ms → ~25ms（**10× 加速**）+ sync I/O 消除。配合 FileReadCache 后续访问 0ms。
 
 ---
 
 ## 三、🥈 Tier 2 · P1 下周建议
 
-### ④ MCP / LSP 并行启动（50 行 · 启动 -2-5s）
+### ④ Extension 默认目录加载 + LSP 并行启动（50 行 · 启动 -1-3s）
 
-**问题**：`extensionManager.ts` 串行启动 N 个 MCP server。每个 ~500ms = 累计阻塞主线程。
+**审计修正**：
 
-**解决方案**（对标 [p2-perf item-1](./qwen-code-improvement-report-p2-perf.md#item-1)）：
+- **MCP discovery 已经并行**（`tools/mcp-client-manager.ts:137,459,514` 用 `Promise.all(discoveryPromises)`）。**不需要改 MCP**
+- **真正的 gap 在两处**：
+
+#### 4a. Extension 默认目录加载仍串行
+
+`extension/extensionManager.ts:559` 默认路径加载是串行：
 
 ```typescript
-import pMap from 'p-map'
+// 改造前（串行）
+extensions = []
+for (const subdir of subdirs) {
+  const extension = await this.loadExtension({ extensionDir, ... })  // ← 串行
+  if (extension) extensions.push(extension)
+}
 
-// 当前：for (const server of mcpServers) await connectMCP(server)
-// 改为：
-await pMap(mcpServers, connectMCP, {
-  concurrency: 5,
-  stopOnError: false,  // 单个失败不阻塞其他
-})
+// 改造后（并行，10 extensions × 200ms 串行 → 200ms 并行）
+import pLimit from 'p-limit'  // packages/cli 已有 p-limit@7.3.0，但 core 需加 dep
+const limit = pLimit(5)
+extensions = (await Promise.all(
+  subdirs.map(subdir => limit(() => this.loadExtension({
+    extensionDir: path.join(userExtensionsDir, subdir),
+    workspaceDir: this.workspaceDir,
+  })))
+)).filter((e): e is Extension => e !== null)
 ```
 
-LSP 服务器同理。
+> 命名查找路径（`extensionManager.ts:545`）已经是 `Promise.all`，仅默认全量加载是串行。
 
-**预期收益**：5 MCP × 500ms 串行 → 1× 500ms 并行（**-2s 启动延迟**）。
+#### 4b. LSP 服务器启动顺序待审计
+
+```bash
+# 验证命令
+grep -n "for.*await\|Promise.all" packages/core/src/lsp/*.ts | grep -v test
+```
+
+如果 LSP 启动是串行（待审计），加 `pLimit(3)` 并行启动 TypeScript / Python / Go。
+
+**预期收益**：10 个用户级 extension 串行 2s → 并行 ~400ms（**-1.6s 启动**）。
 
 ---
 
-### ⑤ 延迟初始化 / lazyImport（80 行 · 冷启动 -300ms）
+### ⑤ 避免 `toolRegistry.warmAll()` 全量预热 + 延迟初始化（80 行 · 冷启动 -300ms）
 
-**问题**：`bootstrap` 阶段同步加载所有大模块（mcp / lsp / channels / arena），实际首轮 80% 用不到。
-
-**解决方案**（对标 [p2-perf item-9](./qwen-code-improvement-report-p2-perf.md#item-9) + [Gemini PR#25758 backport item-58](./qwen-code-gemini-upstream-report-details.md#item-58)）：
+**审计修正**：Qwen Code 工具**已经 lazy-loaded**（`config/config.ts:2580-2628` 全部 `await import('../tools/...')`）。**真正的 gap 是 `warmAll()` 反而 eager 触发了所有 lazy import**：
 
 ```typescript
-// 改造目标：
-// 1. dynamic import: const mcp = await import('./mcp/...')
-// 2. fire-and-forget Promise: experiments + quota fetch 不阻塞 bootstrap
-// 3. lazy schema: zod schema 第一次校验时才构建
+// 当前问题：3 处都在 init 路径调 warmAll()
+// packages/core/src/core/client.ts:231              await toolRegistry.warmAll()
+// packages/core/src/core/geminiChat.ts:948          await toolRegistry.warmAll()
+// packages/core/src/agents/runtime/agent-core.ts:307 await toolRegistry.warmAll()
+```
 
-// 例：
-const mcpManagerLazy = lazy(() => import('./mcp/manager'))
-async function getMcpManager() {
-  return (await mcpManagerLazy()).MCPManager
+**`warmAll()` 同步触发所有 ~30 个工具的 `await import(...)`**，本来 lazy 的设计被破坏。
+
+**解决方案**：
+
+#### 5a. 把 `warmAll()` 改为 lazy first-use
+
+```typescript
+// tool-registry.ts
+async warmAll(options?: { strict?: boolean }): Promise<void> {
+  // 改为：仅 strict mode（如启动期 schema validation）才真正 warm，
+  // 普通 init 路径返回立即（让 ensureTool() 在第一次调用时 lazy import）
+  if (!options?.strict) return
+  // 原来的 warmAll 逻辑保留供 strict 场景
 }
 ```
+
+调用者（client.ts / geminiChat.ts / agent-core.ts）**默认不再调 warmAll**，只在确实需要全量 schema 时才调。
+
+#### 5b. 静态 import 改 lazy
+
+```typescript
+// config.ts:14 当前
+import { ArenaAgentClient } from '../agents/arena/ArenaAgentClient.js'
+
+// 改为：
+let _ArenaAgentClient: typeof import('../agents/arena/ArenaAgentClient.js').ArenaAgentClient | undefined
+async function getArenaAgentClient() {
+  if (!_ArenaAgentClient) {
+    _ArenaAgentClient = (await import('../agents/arena/ArenaAgentClient.js')).ArenaAgentClient
+  }
+  return _ArenaAgentClient
+}
+```
+
+#### 5c. fire-and-forget experiments / quota fetch（如有）
+
+对标 [Gemini PR#25758 backport item-58](./qwen-code-gemini-upstream-report-details.md#item-58)，把启动期的远程 fetch 改为不阻塞 bootstrap。
 
 **度量**：
 ```bash
@@ -234,7 +363,7 @@ NODE_OPTIONS='--require trace-startup.cjs' qwen --version
 # 看 main.ts → first interactive 的 ms
 ```
 
-**预期收益**：冷启动 -300ms（用户感知明显，从"卡顿 1s+"→"瞬启"）。
+**预期收益**：冷启动 -300ms（删 warmAll 单项就能拿大头）。
 
 ---
 
@@ -274,7 +403,10 @@ const branchCache = new LRUCache({ max: 100, ttl: 5000 })  // 5s TTL
 
 ---
 
-### ⑦ In-flight 请求合并（80 行 · 并行 subagent 场景去重）
+### ⑦ In-flight 请求合并 / dedupe（80 行 · 并行 subagent 场景去重）
+
+> **审计提示**：[PR#3636](https://github.com/QwenLM/qwen-code/pull/3636) OPEN 是 `cap concurrent in-flight requests per provider`，**与本项不同** —— PR#3636 做"并发上限"（rate limiting），本项做"相同请求合并"（dedupe）。两者可共存。
+
 
 **问题**：并行 subagent 场景下，多个 agent 可能同时请求同一 model + 相同 prompt（如多个并行的 explore agent 都要列项目结构）。
 
