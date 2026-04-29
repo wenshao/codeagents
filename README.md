@@ -1,6 +1,6 @@
 # AI 编程 Code Agent 对比
 
-> 基于源码分析和二进制反编译的 19 款 AI 编程 Code Agent 全面对比 + 6 款 Agent Framework 对比 | 329 文件 | 92,000+ 行 | 146 篇 Deep-Dive | 12 个 EVIDENCE.md
+> 基于源码分析和二进制反编译的 19 款 AI 编程 Code Agent 全面对比 + 6 款 Agent Framework 对比 | 329 文件 | 92,000+ 行 | 147 篇 Deep-Dive | 12 个 EVIDENCE.md
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -8,7 +8,7 @@
 
 | 入口 | 说明 |
 |------|------|
-| **[Deep-Dive 索引（146 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
+| **[Deep-Dive 索引（147 篇）](./docs/comparison/deep-dive-index.md)** | 按主题分类的全部深度分析文章 |
 | **[Agent Framework 对比（6 款）](./docs/frameworks/)** | AgentScope/LangGraph/CrewAI/AG2/MAF/LangChain —— 开发者侧 SDK 选型 |
 | **[Qwen Code 改进报告（275 项）](./docs/comparison/qwen-code-improvement-report.md)** | Claude Code 对比 + 52 个社区 PR 追踪（115 已合并） |
 | **[Gemini CLI backport（61 项）](./docs/comparison/qwen-code-gemini-upstream-report.md)** | 上游可 backport 改进 + 模块级架构对比 |
@@ -88,6 +88,7 @@
 | [OpenCode 对标改进（29 项）](./docs/comparison/qwen-code-opencode-improvements.md) | Provider 系统 + Plugin + Snapshot + 可配置截断 + 编辑器上下文协议 |
 | [Qwen Code 性能优化 Roadmap](./docs/comparison/qwen-code-perf-roadmap.md) | 按 ROI 排序的可执行优化清单 · P0 本周 3 项 + P1 下周 4 项 + P2/P3 备选 + 度量驱动方法 |
 | [ReadFile 工具 Deep-Dive](./docs/comparison/read-file-tool-deep-dive.md) | 12 项 Claude Code FileReadTool 可借鉴能力 · file_unchanged 去重 + token 上限 + 图像 resize + PDF 多策略 + ENOENT 建议等 |
+| [Reasoning Effort Deep-Dive](./docs/comparison/reasoning-effort-deep-dive.md) | Claude Code (`/effort` 4 档) vs Codex CLI (`reasoning_effort` 6 档 + plan-mode 专用) · cache 影响分析 · Qwen Code 设计启发 |
 | [Qwen Code 贡献者页面](./docs/comparison/qwen-code-contributors.md) | 项目治理总览 · Alibaba 内部团队 + 活跃贡献者 + 外部社区 + 上游遗产 + 治理结构图 |
 | [Codex 贡献者页面](./docs/comparison/codex-contributors.md) | OpenAI 主导 + 5,890 commits / 444 贡献者 · ~92% 内部占比（最封闭的开源 Agent）|
 | [OpenCode 贡献者页面](./docs/comparison/opencode-contributors.md) | sst Dax 创始人驱动 + 11,875 commits / 924 贡献者 · ~75-80% 内部 + 大量自动化 bot |
@@ -110,7 +111,7 @@
 
 **命令对比：** [/review](./docs/comparison/review-command.md) | [/compact /plan /init](./docs/comparison/key-commands-deep-dive.md) | [/loop /schedule](./docs/comparison/loop-schedule.md) | [/btw /rewind](./docs/comparison/btw-rewind.md) | [内置命令总览](./docs/comparison/slash-commands-deep-dive.md)
 
-**完整索引：** [146 篇 Deep-Dive 文章索引](./docs/comparison/deep-dive-index.md)
+**完整索引：** [147 篇 Deep-Dive 文章索引](./docs/comparison/deep-dive-index.md)
 
 ### Agent 1v1 对比
 

@@ -8,6 +8,7 @@
 > - [Claude Code 改进建议报告（256 项）](./qwen-code-improvement-report.md)——行业领先者对比
 > - [Gemini CLI 上游 backport 报告（53 项）](./qwen-code-gemini-upstream-report.md)——上游可 backport 改进
 > - [OpenCode 对标改进报告（27 项）](./qwen-code-opencode-improvements.md)——多 Provider、Plugin 系统等
+> - [Reasoning Effort Deep-Dive](./reasoning-effort-deep-dive.md)——Codex `reasoning_effort` (6 档 + plan-mode 专用) vs Claude `/effort` (4 档) 设计对比
 
 ## 一、改进项索引
 

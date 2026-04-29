@@ -1,4 +1,4 @@
-# Deep-Dive 文章索引（146 篇）
+# Deep-Dive 文章索引（147 篇）
 
 > 按主题分类的深度分析文章，每篇聚焦一个具体技术机制的 Claude Code vs Qwen Code 对比。
 >
@@ -191,3 +191,4 @@
 | [终端低闪烁路线图](./terminal-low-flicker-deep-dive.md) | 防闪烁 3 阶段 |
 | [Update 工具展示](./update-tool-display-deep-dive.md) | structuredPatch |
 | [ReadFile 工具](./read-file-tool-deep-dive.md) | 12 项 Claude vs Qwen ReadFile 对比 |
+| [Reasoning Effort](./reasoning-effort-deep-dive.md) | Claude /effort 4 档 vs Codex 6 档设计对比 + cache 影响 |
