@@ -15,8 +15,8 @@
 
 | 维度 | Claude Code | Codex CLI | OpenCode |
 |---|---|---|---|
-| **levels** | 4：`low / medium / high / max` | 6：`none / minimal / low / medium / high / xhigh` | **per-provider 自适应**（见 §2.5） |
-| **default** | `undefined`；Opus 4.6 + Pro 默认 `medium` | `Medium`（静态） | provider 默认 |
+| **levels** | **5**：`low / medium / high / xhigh / max`（v2.1.123 二进制确认）| 6：`none / minimal / low / medium / high / xhigh` | **per-provider 自适应**（见 §2.5） |
+| **default** | **Opus 4.7 launch pin = `xhigh`**；Opus 4.6 + Pro = `medium`；其他 = `undefined`(→API high) | `Medium`（静态） | provider 默认 |
 | **CLI flag** | `--effort <level>` | ✗（用 `-c`）| ✗（走 model variants）|
 | **Slash 命令** | ✓ `/effort` | ✗（合并在 `/model`）| ✗ |
 | **环境变量** | ✓ `CLAUDE_CODE_EFFORT_LEVEL` | ✗ | ✗ |
@@ -35,16 +35,74 @@
 
 ### 2.1 Levels 与默认值
 
-**Claude（4 档）**：
+**Claude（v2.1.123 实测 5 档）**：
 
 ```typescript
-// utils/effort.ts:13-18
-EFFORT_LEVELS = ['low', 'medium', 'high', 'max']
+// 二进制 v2.1.123 反编译 (LB 常量)
+EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max']
 ```
 
-- `'max'` **仅 Opus 4.6 支持**（其他模型从 `max` 自动降级到 `high`，line 162-164）
-- `'max'` 不持久化到 `settings.json`（除 `USER_TYPE === 'ant'`）—— 避免 session-only 选择泄漏到下次启动
-- 默认值由 **subscription tier** 决定：Opus 4.6 + Pro/Max/Team + `tengu_grey_step2` flag → `medium`；其他 → `undefined`（API 解析为 high）
+> ⚠️ **泄露源码（`utils/effort.ts:13-18`）只有 4 档**（`low / medium / high / max`），但 v2.1.123 的二进制已添加 **`xhigh`**。差异说明泄露源码早于 Opus 4.7 发布（`undercover.ts:49` 把 `opus-4-7` 列为 "Unreleased model version numbers"）。
+
+**支持矩阵（v2.1.123 确认）**：
+
+| Level | Opus 4.7 | Opus 4.6 | Sonnet 4.6 | 其他 |
+|---|:-:|:-:|:-:|:-:|
+| `low / medium / high` | ✓ | ✓ | ✓ | （3P override 决定）|
+| **`xhigh`** | ✓ **独占** | snap → `high` | snap → `high` | snap → `high` |
+| `max` | ✓ | ✓ | ✓ | snap → `high` |
+
+**默认值（关键）**：
+
+- **Opus 4.7 launch pin**：`Y86()` 函数返回 `xhigh`（专门为 4.7 launch 启用）
+- **Opus 4.6 + Pro/Max/Team subscriber + `tengu_grey_step2`**：`medium`
+- **其他**：`undefined`（API 解析为 `high`）
+
+**Opus 4.7 的 launch pin 机制**：
+
+```js
+// 二进制 v2.1.123 反编译核心逻辑（vxH = resolveAppliedEffort）
+function vxH(model, appStateEffort) {
+  let isLaunchPinActive = model.includes("opus-4-7") &&
+                          !globalConfig.unpinOpus47LaunchEffort
+  let launchDefault = Y86(model)              // opus-4-7 → "xhigh", 其他 → "high"
+  let envOverride   = mPH()                    // CLAUDE_CODE_EFFORT_LEVEL
+
+  if (envOverride === null) return isLaunchPinActive ? launchDefault : undefined
+  let resolved = envOverride ?? (isLaunchPinActive ? launchDefault : undefined)
+                              ?? appStateEffort
+                              ?? launchDefault
+  if (resolved === "max"   && !V9$(model)) return "high"  // max 不支持 → snap
+  if (resolved === "xhigh" && !k9$(model)) return "high"  // xhigh 不支持 → snap
+  return resolved
+}
+
+// 用户首次显式选 effort → 永久解除 launch pin（globalConfig 写盘）
+function setOpusLaunchEffort(value) {
+  if (parsed !== undefined) {
+    setGlobalConfig(c => c.unpinOpus47LaunchEffort
+                          ? c
+                          : { ...c, unpinOpus47LaunchEffort: true })
+  }
+  return parsed ?? bN1()
+}
+```
+
+**Anthropic 在二进制内嵌的官方说明**（`shared/models.md` 等内置文档字符串）：
+
+> "Opus 4.7 adds `"xhigh"` (between `high` and `max`) — the best setting for most coding and agentic use cases on 4.7, and **the default in Claude Code**; use a minimum of `high` for most intelligence-sensitive work."
+
+**持久化（`N9$` = `toPersistableEffort`）**：
+
+```js
+function N9$(value) {
+  if (value === "low" || value === "medium" || value === "high" || value === "xhigh") return value
+  // max 仍然不持久化（避免 session-only 选择泄漏）
+  return undefined
+}
+```
+
+`xhigh` 已加入持久化白名单；`max` 维持非持久化。
 
 **Codex（6 档）**：
 
@@ -59,6 +117,8 @@ pub enum ReasoningEffort {
 - 默认 `Medium`（静态 enum default）
 - `nearest_effort()` (line 525) 把不支持的 effort snap 到最近档（用户配 `xhigh` 但模型只支持 `[low, medium, high]` → `high`）
 
+**xhigh 趋同**：Claude v2.1.123 + Codex 都引入 `xhigh`（位于 `high` 与 `max` 之间），但 Codex 的 `xhigh` 是**全局枚举的一档**，Claude 的 `xhigh` 是 **opus-4-7 独占**且**默认值**。
+
 ---
 
 ### 2.2 用户入口（Claude 4 层 vs Codex 主走配置）
@@ -67,7 +127,7 @@ pub enum ReasoningEffort {
 
 | 层 | 机制 | 持久 | 源码 |
 |---|---|:-:|---|
-| CLI | `--effort low\|medium\|high\|max` | ✗ | `main.tsx:993` |
+| CLI | `--effort low\|medium\|high\|xhigh\|max` | ✗ | `main.tsx:993`（`xhigh` 仅 Opus 4.7）|
 | Slash | `/effort low` | ✓ 写 settings.json | `commands/effort/effort.tsx` |
 | Env | `CLAUDE_CODE_EFFORT_LEVEL` | env-controlled | `utils/effort.ts:136-142` |
 | Config | `settings.json` `effortLevel` | ✓ | `utils/effort.ts:107-111` |
@@ -420,7 +480,9 @@ export class DeepSeekOpenAICompatibleProvider extends DefaultOpenAICompatiblePro
 
 ## 四、附录 A：源码引用索引
 
-### Claude Code
+### Claude Code（泄露源码）
+
+> ⚠️ 泄露源码先于 Opus 4.7 发布。下表反映泄露源码的 4 档设计；v2.1.123 二进制已升级为 5 档（见下方"v2.1.123 二进制反编译"）。
 
 | 文件 | 行 | 功能 |
 |---|---|---|
@@ -437,6 +499,29 @@ export class DeepSeekOpenAICompatibleProvider extends DefaultOpenAICompatiblePro
 | `main.tsx` | 993 | `--effort` CLI flag |
 | `query.ts` | 694 | 主 loop 用 `appState.effortValue` |
 | `skills/loadSkillsDir.ts` | 205, 230 | skill frontmatter `effort` |
+| `utils/undercover.ts` | 49 | 把 `opus-4-7` 列为 unreleased（说明泄露时点）|
+
+### Claude Code（v2.1.123 二进制反编译）
+
+> 反编译 ID 为 mangled 标识符（`Y86`/`vxH`/`V9$`/`k9$` 等）；功能映射到原源码语义。
+
+| Mangled 名 | 源码对应 | 功能 |
+|---|---|---|
+| `LB` | `EFFORT_LEVELS` | 5 档：`["low","medium","high","xhigh","max"]` |
+| `Y86` | 新增（无源码对应） | 返回模型的 launch 默认 effort：`opus-4-7 → "xhigh"`，其他 → `"high"` |
+| `vxH` | `resolveAppliedEffort` | 含 `unpinOpus47LaunchEffort` 状态分支 |
+| `z86` | 新增（unpin trigger）| 用户首次设置 effort 时把 `unpinOpus47LaunchEffort = true` 写盘 |
+| `V9$` | `modelSupportsMaxEffort` | 允许：`opus-4-7` + `opus-4-6` + `sonnet-4-6` |
+| `k9$` | 新增（xhigh 支持检测）| 允许：**仅 `opus-4-7`** |
+| `kfH` / `x5$` | `modelSupportsEffort` | 允许：`opus-4-7` / `opus-4-6` / `sonnet-4-6` |
+| `N9$` | `toPersistableEffort` | 持久化：`low/medium/high/xhigh`；`max` 仍排除 |
+| 全局配置字段 | — | `unpinOpus47LaunchEffort: boolean`（写到 `~/.claude.json`）|
+
+**对应的 Anthropic 内嵌文档（二进制内 `shared/models.md` 字符串）**：
+
+- "Opus 4.7 adds `"xhigh"` (between `high` and `max`) — the best setting for most coding and agentic use cases on 4.7, and **the default in Claude Code**"
+- "On Opus 4.7, effort matters more than on any prior Opus — re-tune it when migrating"
+- Opus 4.7 同时移除 `temperature` / `top_p` / `top_k` / `budget_tokens`（强制 adaptive thinking）
 
 ### Codex CLI
 
