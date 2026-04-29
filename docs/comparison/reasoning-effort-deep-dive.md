@@ -252,7 +252,9 @@ switch (sdkName) {
 - Claude / Codex：effort 是**独立 API 参数**
 - OpenCode：effort 通过 **model variant 名字**间接表达 → variant name 进入 model id → 完全融入 model 选择路径
 
-**OpenCode 对 DeepSeek 的特别处理**（`transform.ts:200-`）：
+**OpenCode 对 DeepSeek 的特别处理（双层）**：
+
+**Layer 1**：assistant 消息强制含 `reasoning` part（`transform.ts:200-215`）：
 
 ```typescript
 // Deepseek requires all assistant messages to have reasoning on them
@@ -268,7 +270,47 @@ if (model.api.id.includes("deepseek")) {
 }
 ```
 
-DeepSeek API 要求 assistant message 必须含 `reasoning` part —— OpenCode 自动补空 reasoning 占位符。**Qwen Code 当前未处理此约束**（DeepSeek 的 buildRequest override 仅做 content array → string 扁平化）。
+**Layer 2**：`interleaved.field = "reasoning_content"` 触发的 `providerOptions` 注入（`transform.ts:217-249`）：
+
+```typescript
+if (typeof model.capabilities.interleaved === "object" &&
+    model.capabilities.interleaved.field &&
+    model.api.npm !== "@openrouter/ai-sdk-provider") {
+  const field = model.capabilities.interleaved.field   // "reasoning_content"
+  return msgs.map((msg) => {
+    if (msg.role === "assistant" && Array.isArray(msg.content)) {
+      const reasoningParts = msg.content.filter(p => p.type === "reasoning")
+      const reasoningText  = reasoningParts.map(p => p.text).join("")
+      return {
+        ...msg,
+        content: msg.content.filter(p => p.type !== "reasoning"),  // 提出 reasoning
+        providerOptions: {
+          openaiCompatible: { [field]: reasoningText }              // 转 reasoning_content
+        }
+      }
+    }
+    return msg
+  })
+}
+```
+
+**自动检测（commit 738b3065d, 2026-04-27 合并 PR#24630）**：当 DeepSeek 模型走 `@ai-sdk/openai-compatible` 且无 `existingModel` 定义时，OpenCode 自动设置 `interleaved = { field: "reasoning_content" }`：
+
+```typescript
+// provider.ts:1182-1187
+interleaved:
+  model.interleaved ??
+  existingModel?.capabilities.interleaved ??
+  (!existingModel && apiNpm === "@ai-sdk/openai-compatible" && apiID.includes("deepseek")
+    ? { field: "reasoning_content" }
+    : false),
+```
+
+DeepSeek 多轮对话需要 reasoning 字段在 message 间持续传递，OpenCode 通过两层处理保证：
+- **Layer 1** 保证 message 结构合法（即使空 reasoning 也补占位符）
+- **Layer 2** 把 reasoning 文本提到 `providerOptions.openaiCompatible.reasoning_content`，符合 DeepSeek API 格式
+
+**Qwen Code 当前未处理任一层约束**（`provider/deepseek.ts` 仅做 content array → string 扁平化）。
 
 ---
 
@@ -334,7 +376,8 @@ private buildReasoningConfig(request: GenerateContentParameters) {
 **当前缺失**：
 - ✗ **无 user-facing 入口**让用户传 `reasoning.effort = "high"`（settings.json / CLI / slash 都没）
 - ✗ **DeepSeek V4 的 `max` 档**未识别（OpenCode V4 加 max 是关键 differentiator）
-- ✗ **DeepSeek assistant-message-must-have-reasoning 约束**未处理（OpenCode `transform.ts:200`）
+- ✗ **DeepSeek assistant-message-must-have-reasoning 约束**未处理（OpenCode Layer 1，`transform.ts:200-215`）
+- ✗ **DeepSeek `reasoning_content` 字段往返**未处理（OpenCode Layer 2 + 自动检测，`transform.ts:217-249` + `provider.ts:1182-1187`，PR#24630 / commit `738b3065d` 2026-04-27 合并）
 - ✗ **no per-provider effort 列表表**（Claude 用白/黑名单，Codex 用 nearest_effort，OpenCode 用 per-provider switch）
 
 ### 3.2 DeepSeek 系列的实际 effort 行为
@@ -396,7 +439,7 @@ export class DeepSeekOpenAICompatibleProvider extends DefaultOpenAICompatiblePro
       }
     }
 
-    // Step C: assistant message 必须含 reasoning（OpenCode transform.ts:200-）
+    // Step C: assistant message 必须含 reasoning（OpenCode Layer 1，transform.ts:200-215）
     baseRequest.messages = baseRequest.messages.map(msg => {
       if (msg.role !== 'assistant') return msg
       // 给 array content 加空 reasoning 占位
@@ -404,6 +447,19 @@ export class DeepSeekOpenAICompatibleProvider extends DefaultOpenAICompatiblePro
         return { ...msg, content: [...msg.content, { type: 'reasoning', text: '' }] }
       }
       return msg
+    })
+
+    // Step D: reasoning 文本提到顶层 reasoning_content（OpenCode Layer 2，transform.ts:217-249）
+    //         多轮对话时 DeepSeek 期望 reasoning_content 跟随 assistant 消息一起回传
+    baseRequest.messages = baseRequest.messages.map((msg: any) => {
+      if (msg.role !== 'assistant' || !Array.isArray(msg.content)) return msg
+      const reasoningParts = msg.content.filter((p: any) => p.type === 'reasoning')
+      const reasoningText  = reasoningParts.map((p: any) => p.text).join('')
+      return {
+        ...msg,
+        content: msg.content.filter((p: any) => p.type !== 'reasoning'),
+        reasoning_content: reasoningText,  // 即使空字符串也保留（OpenCode 注释说明）
+      }
     })
 
     return baseRequest
@@ -523,7 +579,7 @@ export class DeepSeekOpenAICompatibleProvider extends DefaultOpenAICompatiblePro
 - "On Opus 4.7, effort matters more than on any prior Opus — re-tune it when migrating"
 - Opus 4.7 同时移除 `temperature` / `top_p` / `top_k` / `budget_tokens`（强制 adaptive thinking）
 
-### Codex CLI
+### Codex CLI（main 分支 @ 2026-04-28 21:41 commit `3d10ba9f36`）
 
 | 文件 | 行 | 功能 |
 |---|---|---|
@@ -536,15 +592,18 @@ export class DeepSeekOpenAICompatibleProvider extends DefaultOpenAICompatiblePro
 | `codex-rs/core/src/agent/builtins/awaiter.toml` | 2 | 内置 agent `model_reasoning_effort = "low"` |
 | `codex-rs/tools/src/agent_tool.rs` | 539, 572 | `spawn_agent` 工具 `reasoning_effort` 参数 |
 | `codex-rs/tui/src/slash_command.rs` | 102 | `/model` 描述含 reasoning effort |
+| `codex-rs/core/src/session/turn_context.rs` | — | `Add reasoning effort to turn tracing spans` (commit `99b39b6350` 在 `dev/charley/turn-reasoning-effort-tracing` 分支，**未合并 main**) |
 
-### OpenCode
+### OpenCode（dev 分支 @ 2026-04-29 13:23 commit `d71b827d8`）
 
 | 文件 | 行 | 功能 |
 |---|---|---|
-| `packages/opencode/src/provider/transform.ts` | ~200 | DeepSeek assistant message 补 `reasoning` 占位符 |
+| `packages/opencode/src/provider/transform.ts` | 200-215 | **Layer 1**：DeepSeek assistant message 补 `reasoning` 占位符 |
+| 同 | 217-249 | **Layer 2**：`interleaved.field = "reasoning_content"` → `providerOptions.openaiCompatible.reasoning_content` 注入 |
 | 同 | ~446-449 | `WIDELY_SUPPORTED_EFFORTS = [low,medium,high]` / `OPENAI_EFFORTS` |
 | 同 | 大 switch | per-provider effort 列表（openai / anthropic / openai-compatible / azure / github-copilot 等）|
 | 同 | ~576-579 | DeepSeek-V4 在 `openai-compatible` 分支加 `max` |
+| `packages/opencode/src/provider/provider.ts` | 1182-1187 | 自动检测 DeepSeek + openai-compatible → 默认 `interleaved = { field: "reasoning_content" }`（PR#24630 / commit `738b3065d` 2026-04-27 合并）|
 
 每个 effort 注册为 model 的 **variant**（参见 `Provider.ts` `model.variants`），用户通过 `provider/<id>:variant` 间接选 effort。
 
