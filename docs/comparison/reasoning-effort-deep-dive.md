@@ -1,28 +1,33 @@
-# Reasoning Effort 设计对比：Claude Code vs Codex CLI
+# Reasoning Effort 设计对比：Claude Code / Codex CLI / OpenCode
 
-> 处理 [Issue #130](https://github.com/wenshao/codeagents/issues/130)。逐源码对比 `reasoning_effort` / `effort` 在两家的设计差异、cache 影响、对 Qwen Code 的启发。
+> 处理 [Issue #130](https://github.com/wenshao/codeagents/issues/130)。逐源码对比 `reasoning_effort` / `effort` 在三家的设计差异、cache 影响、对 Qwen Code 支持 **DeepSeek `reasoning_effort`** 的启发。
 >
-> **数据**：Claude `utils/effort.ts` 329 行 + `commands/effort/` ~80 行 · Codex `protocol/src/openai_models.rs` + `core/src/config/mod.rs` + `tools/src/agent_tool.rs`
+> **数据**：
+> - Claude `utils/effort.ts` 329 行 + `commands/effort/` ~80 行
+> - Codex `protocol/src/openai_models.rs` + `core/src/config/mod.rs` + `tools/src/agent_tool.rs`
+> - OpenCode `provider/transform.ts` ~1100 行（per-provider effort 适配器）
+>
+> **DeepSeek 支持参考**：[DeepSeek API 文档](https://api-docs.deepseek.com/zh-cn) · DeepSeek-Chat / DeepSeek-Reasoner / DeepSeek-V3 / DeepSeek-V4 系列均通过 OpenAI-compatible API 接收 `reasoning_effort`。
 
 ---
 
 ## 一、TL;DR
 
-| 维度 | Claude Code | Codex CLI |
-|---|---|---|
-| **levels** | 4：`low / medium / high / max` | 6：`none / minimal / low / medium / high / xhigh` |
-| **default** | `undefined`（→API 解析为 high）；Opus 4.6 + Pro 默认 `medium` | `Medium`（静态）|
-| **CLI flag** | `--effort <level>` | ✗（用 `-c model_reasoning_effort=...`）|
-| **Slash 命令** | ✓ `/effort` | ✗（合并在 `/model`）|
-| **环境变量** | ✓ `CLAUDE_CODE_EFFORT_LEVEL`（含 `unset`/`auto`）| ✗ |
-| **持久化配置** | ✓ settings.json `effortLevel` | ✓ TOML `model_reasoning_effort` |
-| **Plan 模式专用** | ✗ | ✓ `plan_mode_reasoning_effort` |
-| **Profile 切换** | ✗ | ✓ `config_profile.model_reasoning_effort` |
-| **Agent 级** | ✓ skill / subagent **frontmatter** `effort` | ✓ agent **TOML** 文件 `model_reasoning_effort` |
-| **per-call override** | ⚠️ 不鼓励（cache 影响）| ✓ `spawn_agent` 工具暴露 `reasoning_effort` 参数 |
-| **数值 effort** | ✓ ANT-only | ✗ |
-| **模型适配** | 白/黑名单（`modelSupportsEffort`）| `nearest_effort()` snap 到最近档 |
-| **设计哲学** | **session-level 持久 + cache-friendly 优先** | **配置文件驱动 + 模式分支 + spawn 时灵活覆盖** |
+| 维度 | Claude Code | Codex CLI | OpenCode |
+|---|---|---|---|
+| **levels** | 4：`low / medium / high / max` | 6：`none / minimal / low / medium / high / xhigh` | **per-provider 自适应**（见 §2.5） |
+| **default** | `undefined`；Opus 4.6 + Pro 默认 `medium` | `Medium`（静态） | provider 默认 |
+| **CLI flag** | `--effort <level>` | ✗（用 `-c`）| ✗（走 model variants）|
+| **Slash 命令** | ✓ `/effort` | ✗（合并在 `/model`）| ✗ |
+| **环境变量** | ✓ `CLAUDE_CODE_EFFORT_LEVEL` | ✗ | ✗ |
+| **持久化配置** | ✓ settings.json | ✓ TOML | ✓ JSON `provider.<id>.options` |
+| **Plan 模式专用** | ✗ | ✓ `plan_mode_reasoning_effort` | ✗ |
+| **Profile 切换** | ✗ | ✓ `config_profile` | 通过 model variant |
+| **Agent 级** | ✓ skill **frontmatter** | ✓ agent **TOML** | ✓ `agent.<name>.model` 含 variant |
+| **per-call override** | ⚠️ 不鼓励 | ✓ `spawn_agent` 参数 | 通过 variant 机制 |
+| **per-provider 适配** | 白/黑名单 | `nearest_effort()` snap | **per-provider 表驱动**（最丰富）|
+| **DeepSeek 支持** | ⚠️ 仅 1P 模型默认开 effort | ✓ 通过 `-c` 通用机制 | ✓ **明确支持 V3/Chat/Reasoner/V4**（V4 含 `max`）|
+| **设计哲学** | session-level + cache-friendly | 配置驱动 + 模式分支 + 灵活 | **per-provider 适配 + variant 机制** |
 
 ---
 
@@ -130,7 +135,84 @@ developer_instructions = """..."""
 
 ---
 
-### 2.5 ⚠️ Cache 影响（Issue 核心点）
+### 2.5 OpenCode 的 per-provider 适配器模式
+
+OpenCode `provider/transform.ts` 用**单一函数 + provider 大 switch** 给每个 provider/model 组合返回一份 effort 列表，作为 model 的 **variants**。
+
+**核心常量**（line ~447）：
+
+```typescript
+const WIDELY_SUPPORTED_EFFORTS = ["low", "medium", "high"]
+const OPENAI_EFFORTS = ["none", "minimal", ...WIDELY_SUPPORTED_EFFORTS, "xhigh"]
+```
+
+**Provider 适配示例**：
+
+```typescript
+// transform.ts 简化版
+switch (sdkName) {
+  case "@ai-sdk/openai":
+    return OPENAI_EFFORTS  // 6 档全开
+
+  case "@ai-sdk/anthropic":
+    if (apiId.includes("opus-4-7")) return ["low","medium","high","xhigh","max"]
+    if (apiId.includes("opus-4-6") || apiId.includes("sonnet-4-6")) return ["low","medium","high","max"]
+    return []
+
+  case "@ai-sdk/openai-compatible":  // ← DeepSeek 走这里
+    const efforts = [...WIDELY_SUPPORTED_EFFORTS]  // [low, medium, high]
+    if (model.api.id.includes("deepseek-v4")) efforts.push("max")  // V4 加 max
+    return efforts
+
+  case "@ai-sdk/azure":
+    if (id === "o1-mini") return []
+    return ["low","medium","high"]
+
+  case "@ai-sdk/github-copilot":
+    if (id.includes("gemini")) return []  // gemini 不支持
+    if (id.includes("claude")) return ["low","medium","high"]
+    if (id.includes("5.1-codex-max")||id.includes("5.2")||id.includes("5.3"))
+      return [...WIDELY_SUPPORTED_EFFORTS, "xhigh"]
+    return OPENAI_EFFORTS
+}
+```
+
+**核心机制**：每个 effort 注册为 model 的 **variant**（`provider.<id>.models.<id>.variants.high = { reasoningEffort: "high" }`），用户通过 model variant 切换：
+
+```jsonc
+{
+  "agent": {
+    "build": { "model": "anthropic/claude-sonnet-4-6", "variant": "high" },
+    "plan":  { "model": "anthropic/claude-sonnet-4-6", "variant": "max" }
+  }
+}
+```
+
+**与 Claude/Codex 区别**：
+- Claude / Codex：effort 是**独立 API 参数**
+- OpenCode：effort 通过 **model variant 名字**间接表达 → variant name 进入 model id → 完全融入 model 选择路径
+
+**OpenCode 对 DeepSeek 的特别处理**（`transform.ts:200-`）：
+
+```typescript
+// Deepseek requires all assistant messages to have reasoning on them
+if (model.api.id.includes("deepseek")) {
+  msgs = msgs.map((msg) => {
+    if (msg.role !== "assistant") return msg
+    if (Array.isArray(msg.content)) {
+      if (msg.content.some((part) => part.type === "reasoning")) return msg
+      return { ...msg, content: [...msg.content, { type: "reasoning", text: "" }] }
+    }
+    // ...
+  })
+}
+```
+
+DeepSeek API 要求 assistant message 必须含 `reasoning` part —— OpenCode 自动补空 reasoning 占位符。**Qwen Code 当前未处理此约束**（DeepSeek 的 buildRequest override 仅做 content array → string 扁平化）。
+
+---
+
+### 2.6 ⚠️ Cache 影响（Issue 核心点）
 
 **Claude 的设计权衡**：
 
@@ -166,40 +248,173 @@ developer_instructions = """..."""
 
 ---
 
-## 三、对 Qwen Code 的设计启发
+## 三、对 Qwen Code 支持 DeepSeek `reasoning_effort` 的具体方案
 
-> ⚠️ 以下是**设计建议**，非已实现能力。Qwen Code 当前**无** `reasoning_effort` 控制（`grep -rn "reasoning_effort\|EFFORT" packages/` 无源码引用）。
+> 用户主要诉求："**主要是要支持 deepseek 的 reasoning_effort**"。本节聚焦 DeepSeek（通用 effort 框架是基础）。
 
-### 3.1 推荐路线图（3 阶段）
+### 3.1 Qwen Code 当前状态
 
-| Phase | 风格 | 范围 | 工作量 | 验收 |
-|:-:|---|---|:-:|---|
-| **P0** | Codex 风格 | 全局配置 + Plan 模式专用 | ~150 行 / 1.5 天 | settings 可读 + Qwen3 API 带 thinking_budget |
-| **P1** | Claude 风格 | CLI flag + slash + env + `/status` 显示 | ~80 行 / 1 天 | 4 个用户入口齐全 |
-| **P2** | Agent 级 | subagent / skill frontmatter | ~120 行 / 1.5 天 | spawn 时继承 + override 工作 |
-| **P3** | Cache 监控 | hit rate dashboard | ~100 行 / 1 天 | 切换前后 baseline 对比 |
-
-**总 ~450 行 / 5 天**。建议先 P0 + P3（先建立度量再加复杂度）。
-
-### 3.2 与 Qwen3 thinking 的映射
-
-Qwen3 系列已有 `enable_thinking` 二元 + `thinking_budget` 数值。建议 4 档映射（**实际阈值待源码核对**）：
+源码 `packages/core/src/core/openaiContentGenerator/pipeline.ts:437-464` `buildReasoningConfig`：
 
 ```typescript
-'low'    → enable_thinking: true,  thinking_budget: 1024
-'medium' → enable_thinking: true,  thinking_budget: 8192
-'high'   → enable_thinking: true,  thinking_budget: 32768
-'none'   → enable_thinking: false
+// 已经支持透传 reasoning 字段到 OpenAI-compatible 请求
+private buildReasoningConfig(request: GenerateContentParameters) {
+  if (request.config?.thinkingConfig?.includeThoughts === false) return {}
+  const reasoning = this.contentGeneratorConfig.reasoning
+  if (reasoning === false || reasoning === undefined) return {}
+  return { reasoning }
+}
 ```
 
-### 3.3 ⚠️ Cache 影响警告
+**已具备的基础**：
+- ✓ `pipeline.ts:431` 在请求中拼入 reasoning 配置
+- ✓ `pipeline.ts:443-447` 注释列出多 provider 的 thinking 行为差异（含 deepseek-reasoner）
+- ✓ `provider/deepseek.ts:13` `DeepSeekOpenAICompatibleProvider` 类已存在（处理 content array → string flatten）
 
-实施前**必读 §2.5**。基本原则：
+**当前缺失**：
+- ✗ **无 user-facing 入口**让用户传 `reasoning.effort = "high"`（settings.json / CLI / slash 都没）
+- ✗ **DeepSeek V4 的 `max` 档**未识别（OpenCode V4 加 max 是关键 differentiator）
+- ✗ **DeepSeek assistant-message-must-have-reasoning 约束**未处理（OpenCode `transform.ts:200`）
+- ✗ **no per-provider effort 列表表**（Claude 用白/黑名单，Codex 用 nearest_effort，OpenCode 用 per-provider switch）
 
-1. session-level 持久（用户显式改才变）
-2. 不在主 loop 中改 effort
-3. subagent spawn 时 override **可以**（独立 conversation context）
-4. 实施前测量 prompt cache hit rate 作为 baseline
+### 3.2 DeepSeek 系列的实际 effort 行为
+
+参考 [DeepSeek API 文档](https://api-docs.deepseek.com/zh-cn) + OpenCode 源码确认：
+
+| 模型 | `reasoning_effort` 支持档 | 默认行为 |
+|---|---|---|
+| `deepseek-chat` | `low / medium / high`（推测，参考 OpenCode `WIDELY_SUPPORTED_EFFORTS`）| 不开 thinking |
+| `deepseek-reasoner` (R1) | thinking 默认开，无法 disable（pipeline.ts:443 注释）| 始终 reasoning |
+| `deepseek-v3` | `low / medium / high` | 见模型卡 |
+| **`deepseek-v4`** | `low / medium / high / **max**` ← V4 独有 max 档 | OpenCode `transform.ts:576-579` 确认 |
+
+> ⚠️ **未现场验证**：上表 effort 档列表来自 OpenCode 源码推断 + 行业惯例，建议实施时对照 [DeepSeek 官方 API 文档](https://api-docs.deepseek.com/zh-cn) 最新值确认。
+
+### 3.3 推荐实施方案（4 步）
+
+#### Step 1：扩展 `ContentGeneratorConfig.reasoning` schema 支持 effort（~30 行 / 0.5 天）
+
+```typescript
+// packages/core/src/core/contentGenerator.ts
+export type ReasoningEffort = 'low' | 'medium' | 'high' | 'max' | 'none'
+
+export interface ReasoningConfig {
+  effort?: ReasoningEffort
+  // ... 其他保留字段
+}
+```
+
+#### Step 2：DeepSeek provider 实现 effort 映射（~80 行 / 1 天）
+
+```typescript
+// packages/core/src/core/openaiContentGenerator/provider/deepseek.ts
+export class DeepSeekOpenAICompatibleProvider extends DefaultOpenAICompatibleProvider {
+
+  private supportedEfforts(): string[] {
+    const model = this.contentGeneratorConfig.model ?? ''
+    if (model.toLowerCase().includes('deepseek-v4')) {
+      return ['low', 'medium', 'high', 'max']  // V4 加 max
+    }
+    if (model.toLowerCase().includes('deepseek-reasoner')) {
+      return []  // R1 always thinking, no effort override
+    }
+    return ['low', 'medium', 'high']  // V3 / chat
+  }
+
+  override buildRequest(request, userPromptId): OpenAI.Chat.ChatCompletionCreateParams {
+    const baseRequest = super.buildRequest(request, userPromptId)
+
+    // Step A: 现有 content flatten 逻辑保留
+
+    // Step B: 验证 effort 在该模型支持档内（snap 不支持的到最近档）
+    if (baseRequest.reasoning_effort) {
+      const supported = this.supportedEfforts()
+      if (supported.length === 0) {
+        delete baseRequest.reasoning_effort  // R1 模型移除
+      } else if (!supported.includes(baseRequest.reasoning_effort)) {
+        baseRequest.reasoning_effort = nearestEffort(baseRequest.reasoning_effort, supported)
+      }
+    }
+
+    // Step C: assistant message 必须含 reasoning（OpenCode transform.ts:200-）
+    baseRequest.messages = baseRequest.messages.map(msg => {
+      if (msg.role !== 'assistant') return msg
+      // 给 array content 加空 reasoning 占位
+      if (Array.isArray(msg.content) && !msg.content.some(p => p.type === 'reasoning')) {
+        return { ...msg, content: [...msg.content, { type: 'reasoning', text: '' }] }
+      }
+      return msg
+    })
+
+    return baseRequest
+  }
+}
+```
+
+#### Step 3：用户入口（settings.json 优先，~50 行 / 0.5 天）
+
+```jsonc
+// .qwen/settings.json
+{
+  "reasoning": {
+    "effort": "high"     // 全局
+  }
+}
+```
+
+`pipeline.ts:457` 的 `this.contentGeneratorConfig.reasoning` 已经从 settings 读取 —— 只需保证 schema 支持 effort 字段。
+
+可选扩展（参考 Codex）：
+```jsonc
+{
+  "reasoning": {
+    "effort": "medium",
+    "planModeEffort": "high"   // 如 Qwen 实现 Plan 模式
+  }
+}
+```
+
+#### Step 4：可选 - CLI flag + `/effort` slash（~80 行 / 1 天）
+
+参考 Claude `--effort` + `/effort` 的实现模式。**警告**：实施 `/effort` 之前先做 cache 度量（见 §2.6）。
+
+### 3.4 实施 checklist
+
+| 任务 | 文件 | 工作量 |
+|---|---|:-:|
+| 扩展 `ReasoningConfig.effort` 类型 | `core/contentGenerator.ts` | 0.5 天 |
+| DeepSeek provider 模型映射 | `core/openaiContentGenerator/provider/deepseek.ts` | 1 天 |
+| DeepSeek V4 `max` 档支持 | 同上 | 含 |
+| DeepSeek assistant message reasoning placeholder | 同上 | 含 |
+| settings.json schema 支持 `reasoning.effort` | `cli/src/config/settingsSchema.ts` | 0.5 天 |
+| 单测：3 模型 × 4 effort 档行为 | `provider/deepseek.test.ts` | 0.5 天 |
+| 文档更新：Qwen Code DeepSeek 配置示例 | `docs/users/...` | 0.3 天 |
+| **`--effort` CLI flag**（可选）| `cli/src/cli.ts` | 0.5 天 |
+| **`/effort` slash**（可选）| `cli/src/commands/effortCommand.ts` | 0.5 天 |
+
+**核心实施 ~3 天**（不含 CLI/slash）。
+
+### 3.5 通用 effort 框架（更长期）
+
+如果除了 DeepSeek 还想做通用支持：
+
+| Phase | 内容 | 工作量 |
+|:-:|---|:-:|
+| **P0** | DeepSeek `reasoning_effort` 完整支持（§3.3 全 4 步）| ~3 天 |
+| **P1** | OpenAI / GPT-5.x / Anthropic Opus 4.6+ 的 effort 适配 | ~2 天 |
+| **P2** | per-provider effort 表（OpenCode 风格 transform.ts）| ~3 天 |
+| **P3** | CLI / slash / env / `/status` 显示（Claude 风格）| ~2 天 |
+| **P4** | Cache 监控 dashboard | ~1 天 |
+
+**总 ~11 天**。建议**先 P0 + P4**（DeepSeek 落地 + cache 度量基线）。
+
+### 3.6 ⚠️ Cache 影响（实施前必读）
+
+参考 §2.6 Claude 经验。**对 DeepSeek 特别注意**：
+
+- DeepSeek 走 OpenAI-compatible API，cache 行为可能跟 OpenAI 一致（待官方文档确认）
+- `reasoning_effort` 切换可能破坏 prompt cache hit rate
+- 建议：**session-level 持久**（用户改才变），不在 turn 中切换
 
 ---
 
@@ -237,6 +452,24 @@ Qwen3 系列已有 `enable_thinking` 二元 + `thinking_budget` 数值。建议 
 | `codex-rs/tools/src/agent_tool.rs` | 539, 572 | `spawn_agent` 工具 `reasoning_effort` 参数 |
 | `codex-rs/tui/src/slash_command.rs` | 102 | `/model` 描述含 reasoning effort |
 
+### OpenCode
+
+| 文件 | 行 | 功能 |
+|---|---|---|
+| `packages/opencode/src/provider/transform.ts` | ~200 | DeepSeek assistant message 补 `reasoning` 占位符 |
+| 同 | ~446-449 | `WIDELY_SUPPORTED_EFFORTS = [low,medium,high]` / `OPENAI_EFFORTS` |
+| 同 | 大 switch | per-provider effort 列表（openai / anthropic / openai-compatible / azure / github-copilot 等）|
+| 同 | ~576-579 | DeepSeek-V4 在 `openai-compatible` 分支加 `max` |
+
+每个 effort 注册为 model 的 **variant**（参见 `Provider.ts` `model.variants`），用户通过 `provider/<id>:variant` 间接选 effort。
+
+### Qwen Code（当前状态参考）
+
+| 文件 | 行 | 功能 |
+|---|---|---|
+| `packages/core/src/core/openaiContentGenerator/pipeline.ts` | 437-464 | `buildReasoningConfig` 已支持 reasoning passthrough |
+| `packages/core/src/core/openaiContentGenerator/provider/deepseek.ts` | — | `DeepSeekOpenAICompatibleProvider`（仅 content 扁平化，无 effort 适配）|
+
 ---
 
 ## 五、附录 B：相关文档
@@ -246,6 +479,8 @@ Qwen3 系列已有 `enable_thinking` 二元 + `thinking_budget` 数值。建议 
 - [Token 估算策略](./token-estimation-deep-dive.md)
 - [Claude Code 命令清单](../tools/claude-code/02-commands.md) · [多 Agent](../tools/claude-code/09-multi-agent.md) · [Prompt Suggestions](../tools/claude-code/10-prompt-suggestions.md)
 - [Codex CLI 命令清单](../tools/codex-cli/02-commands.md) · [Evidence](../tools/codex-cli/EVIDENCE.md)
+- [OpenCode 多模型架构](./model-routing.md)
+- [DeepSeek 官方 API 文档（reasoning_effort）](https://api-docs.deepseek.com/zh-cn/guides/reasoning_model)
 
 ---
 
