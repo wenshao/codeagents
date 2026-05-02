@@ -1,4 +1,4 @@
-# Deep-Dive 文章索引（147 篇）
+# Deep-Dive 文章索引（148 篇）
 
 > 按主题分类的深度分析文章，每篇聚焦一个具体技术机制的 Claude Code vs Qwen Code 对比。
 >
@@ -114,13 +114,14 @@
 | [Team Memory](./team-memory-deep-dive.md) | 组织级记忆 |
 | [SDK 双向控制](./sdk-bidirectional-control-deep-dive.md) | 控制协议 |
 
-## 平台集成（14 篇）
+## 平台集成（15 篇）
 
 | 文章 | 主题 |
 |------|------|
 | [GitHub Actions CI](./github-actions-ci-deep-dive.md) | CI 自动化 |
 | [GitHub Code Review](./github-code-review-deep-dive.md) | 多 Agent 审查 |
 | [GitLab CI/CD](./gitlab-ci-cd-deep-dive.md) | GitLab 集成 |
+| [SDK / ACP / Daemon 架构](./sdk-acp-daemon-architecture-deep-dive.md) | 4 大 Agent 程序化接口对比（subprocess vs daemon vs ACP）|
 | [Agent SDK Python](./agent-sdk-python-deep-dive.md) | Python SDK |
 | [CI 脚本](./ci-scripting-deep-dive.md) | headless 模式 |
 | [CI 环境检测](./ci-environment-detection-deep-dive.md) | 平台检测 |
