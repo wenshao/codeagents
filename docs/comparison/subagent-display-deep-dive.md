@@ -27,9 +27,10 @@
 
 | PR | 方向 |
 |---|---|
+| **[PR#3791](https://github.com/QwenLM/qwen-code/pull/3791)** 🟡 OPEN（2026-05-02 14:32 UTC，+357/-40 / 8 文件） | **`feat(cli): wire Monitor entries into combined Background tasks dialog`** —— 直接对应 PR#3684 自述的"未做"清单第 1 项。结构上是 PR#3720 的 Monitor 镜像版（kind framework 的第三个消费者：agent / shell / **monitor**）。**Before**：pill 只显示 `1 shell, 1 local agent`，monitor 不可见；**After**：`1 shell, 1 local agent, 2 monitors`，全部终止后塌陷为 `N tasks done`。Overlay 单 Background tasks 区域含三类，monitor 行前缀 `[monitor] <description>`；detail view 按 kind 派发新增 `MonitorDetailBody`（command / status / pid / event count / dropped lines）；`x` 键路由到 `monitorRegistry.cancel(monitorId)`（同步 settle，与 `task_stop` 的 monitor 路径一致）。**Core 改动**：`MonitorRegistry.setStatusChangeCallback` 镜像 `BackgroundShellRegistry` / `BackgroundTaskRegistry`。**意义**：验证 PR#3488 / PR#3720 引入的 kind framework 是真正 cross-kind 的 |
 | [PR#3768](https://github.com/QwenLM/qwen-code/pull/3768) | route foreground subagents through pill+dialog while running —— 把前台 subagent 也接入 pill+dialog，与已合并的后台路径形成对偶 |
 | [PR#3735](https://github.com/QwenLM/qwen-code/pull/3735) | auto-compact subagent context to prevent overflow —— subagent 上下文溢出前自动压缩 |
-| **monitor → pill/dialog 集成 + task_stop/send_message 集成** | PR#3684 自述"未做"清单——Phase C 的 monitor 与 pill/dialog 还未对接（gated on PR#3471/3488，两者已合并，集成 PR 应该很快） |
+| ❌ monitor → `send_message` 集成 | PR#3684 自述"未做"清单第 2 项 —— `task_stop` 集成已经在 PR#3791 中完成（`x` 键路由 + `task_stop` 同步），但 `send_message` 暂未对接 |
 
 ---
 
@@ -412,11 +413,15 @@ t=30: [行消失，被驱逐]
 | `<task-notification>` 信封 | ✓（`<kind>subagent</kind>`）| ✓（`<kind>monitor</kind>`）|
 | Idle/timeout 自动停 | partial | ✓ |
 
-**未做项**（PR#3684 自述）：
-- ❌ Footer pill / dialog 集成（需要后续 PR 把 monitor 接入 PR#3488 已落地的 BackgroundTasksDialog）
-- ❌ `task_stop` / `send_message` 集成（gated on PR#3471，已合并，等待集成 PR）
+**未做项追踪**（PR#3684 自述清单的当前状态）：
 
-这两项预计后续 PR 补——届时 monitor 将与 subagent / background shell 共享同一个 pill+dialog 调度面。
+| 未做项 | 状态 | 备注 |
+|---|---|---|
+| Footer pill / dialog 集成 | 🟡 **PR#3791 OPEN（2026-05-02 14:32 UTC）正在做** | +357/-40 · 8 文件 · 直接镜像 PR#3720（agent/shell→monitor 是 kind framework 第三个消费者）|
+| `task_stop` 集成 | 🟡 **PR#3791 顺便覆盖** | `x` 键路由到 `monitorRegistry.cancel()`，同步 settle 与 `task_stop` 的 monitor 路径一致 |
+| `send_message` 集成 | ❌ 仍缺 | 当前未在 PR#3791 范围内 |
+
+PR#3791 合并后，monitor 将与 subagent / background shell 共享同一个 pill+dialog 调度面 —— 这将**完成 Phase C 与 PR#3471/3488 调度面的全部对接**，验证 kind framework 真正 cross-kind。
 
 ---
 
