@@ -4,20 +4,24 @@
 >
 > 返回 [Qwen Code 改进建议总览](./qwen-code-improvement-report.md)
 >
-> **2026-05-02 重大更新**：本文写作于 2026-04 中旬时 Qwen Code SubAgent 还**仅有嵌入式展示**；2026-04-27 → 2026-05-01 在 ~5 天内合并了 **6 个 PR**（PR#3471/3488/3642/3687/3720/3739），Qwen Code 现已**完整实现真正后台并发 + pill+dialog UI + background agent resume**——把原"Qwen 借鉴 Claude 的 3 个机会"清单基本兑现，部分设计还**反超 Claude**。文末"八、相关追踪 item"的状态全部更新为 ✓ 已实现。
+> **2026-05-02 重大更新**：本文写作于 2026-04 中旬时 Qwen Code SubAgent 还**仅有嵌入式展示**；2026-04-27 → 2026-05-02 在 ~6 天内合并了 **9 个 PR**（PR#3471/3488/3642/3684/3687/3720/3721/3771/3739），Qwen Code 现已**完整实现真正后台并发 + pill+dialog UI + background agent resume + Phase C event monitor**——把原"Qwen 借鉴 Claude 的 3 个机会"清单基本兑现，部分设计还**反超 Claude**。文末"八、相关追踪 item"的状态全部更新为 ✓ 已实现。
 
-## 零、最新动态（2026-04-27 → 2026-05-01）
+## 零、最新动态（2026-04-27 → 2026-05-02 · Background tasks roadmap #3634 三阶段全部落地）
+
+> **Background tasks roadmap (#3634) 三阶段**：Phase A = 后台 subagents（PR#3076 早期合并）；Phase B = managed background shell pool（PR#3642 ✓）；**Phase C = event monitor tool**（PR#3684 ✓ 2026-05-02）。三阶段加上 PR#3471/3488 控制面 + UI、PR#3687/3720 整合、PR#3739 resume 后形成**完整的多模态后台任务调度系统**。
 
 | PR | 合并时间 | 内容 | 影响章节 |
 |---|---|---|---|
 | [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) | 2026-04-27 | 模型侧控制面：`task_stop` / `send_message` / per-agent transcript 工具 | §六.1 |
 | [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) | 2026-04-28 | UI 层：background-agent **pill**（状态行运行计数）+ **combined dialog**（Down 键打开）+ **detail view**（Enter 进详情）+ **cancel flow**（`x` 键）+ 4 状态分类（Running/Completed/Failed/Cancelled） | §六.1 / §六.3 |
-| [PR#3642](https://github.com/QwenLM/qwen-code/pull/3642) | 2026-04-28 | `/tasks` 命令 + managed background shell pool（+1025/-411），把后台 shell 也纳入统一调度 | §六.1 |
+| [PR#3642](https://github.com/QwenLM/qwen-code/pull/3642) | 2026-04-28 | **Phase B**：`/tasks` 命令 + managed background shell pool（+1025/-411），把后台 shell 也纳入统一调度 | §六.1 |
 | [PR#3687](https://github.com/QwenLM/qwen-code/pull/3687) | 2026-04-29 | 后台 shell 接入 `task_stop` 工具，控制语义统一 | §六.1 |
 | [PR#3720](https://github.com/QwenLM/qwen-code/pull/3720) | 2026-04-29 | **后台 shell 与 SubAgent 合并到统一 Background tasks dialog** —— 跨 Claude 设计 | §六.1 / 反超点 |
 | [PR#3721](https://github.com/QwenLM/qwen-code/pull/3721) | 2026-04-29 | `fix(cli): bound SubAgent display by visual height to prevent flicker` (+1336/-57) | §五.2 显示稳定 |
 | [PR#3771](https://github.com/QwenLM/qwen-code/pull/3771) | 2026-04-30 | `fix(cli): restore SubAgent shortcut focus` —— 焦点锁微调 | §五.3 |
-| [PR#3739](https://github.com/QwenLM/qwen-code/pull/3739) | 2026-05-01 | **`Add background agent resume and continuation`**（**+4087/-165** 单 PR 体量爆表）—— `BackgroundAgentResumeService` + paused 生命周期 + transcript-first fork resume + `SubagentStart` hook 重放 | §六 反超点（Claude 没有）|
+| [PR#3739](https://github.com/QwenLM/qwen-code/pull/3739) | 2026-05-01 | **`Add background agent resume and continuation`**（**+4087/-165**）—— `BackgroundAgentResumeService` + paused 生命周期 + transcript-first fork resume + `SubagentStart` hook 重放 | §六 反超点（Claude 没有）|
+| [PR#3684](https://github.com/QwenLM/qwen-code/pull/3684) | 2026-05-02 | **Phase C event monitor tool**（**+6297/-147 系列追踪以来最大单 PR**）—— 新增 `Monitor` 工具 spawn 长跑 shell 命令 + token-bucket 节流（burst=5/sustain=1/sec）把 stdout lines 作为事件返回 agent；`MonitorRegistry`（4 状态 + idle timeout + max events 自动停 + 独立 AbortController）；shell 层 sleep 拦截（前台 `sleep N`(N≥2) 阻塞并提示模型用 Monitor 或 `is_background`）。**设计上与 background subagents（Phase A）同构**：独立 AbortController（Ctrl+C 不杀 monitor）+ stdout/stderr 分离 + `<task-notification><kind>monitor</kind>` XML 信封 | §六.5 新增 |
+| [PR#3784](https://github.com/QwenLM/qwen-code/pull/3784) | 2026-05-02 | Phase C 配套 Windows taskkill 兼容修复（+15/-18） | 配套 |
 
 **关键 OPEN（追踪中）**：
 
@@ -25,6 +29,7 @@
 |---|---|
 | [PR#3768](https://github.com/QwenLM/qwen-code/pull/3768) | route foreground subagents through pill+dialog while running —— 把前台 subagent 也接入 pill+dialog，与已合并的后台路径形成对偶 |
 | [PR#3735](https://github.com/QwenLM/qwen-code/pull/3735) | auto-compact subagent context to prevent overflow —— subagent 上下文溢出前自动压缩 |
+| **monitor → pill/dialog 集成 + task_stop/send_message 集成** | PR#3684 自述"未做"清单——Phase C 的 monitor 与 pill/dialog 还未对接（gated on PR#3471/3488，两者已合并，集成 PR 应该很快） |
 
 ---
 
@@ -311,9 +316,9 @@ t=30: [行消失，被驱逐]
 
 ---
 
-## 六、Qwen Code 已落地的 4 项 Claude 借鉴 + 1 项反超
+## 六、Qwen Code 已落地的 5 项 + 2 项反超 Claude
 
-> **本节状态变化（2026-04 → 2026-05）**：原本列出 3 个"待借鉴机会"，到 2026-05-01 全部已通过 6 个 PR 落地，外加 Qwen 自己**新增了 2 个 Claude 没有的设计**。
+> **本节状态变化（2026-04 → 2026-05）**：原本列出 3 个"待借鉴机会"，到 2026-05-02 全部已通过 9 个 PR 落地，外加 Qwen 自己**新增了 2 个 Claude 没有的设计**（统一调度面 + transcript-first fork resume）+ Phase C event monitor tool。
 
 ### 🥇 已落地 1：真正后台并发 + UI 调度面（PR#3471/3488/3642）✓
 
@@ -380,6 +385,38 @@ t=30: [行消失，被驱逐]
 ### 已落地 4：显示稳定性（PR#3721）✓
 
 [PR#3721](https://github.com/QwenLM/qwen-code/pull/3721) ✓ 2026-04-29（+1336/-57）—— `bound SubAgent display by visual height to prevent flicker`。补足并发 subagent 长输出场景下的渲染稳定性。
+
+---
+
+### 已落地 5：Phase C event monitor tool（PR#3684）✓ 系列追踪以来最大单 PR
+
+[PR#3684](https://github.com/QwenLM/qwen-code/pull/3684) ✓ 2026-05-02 12:57 UTC（**+6297/-147**）—— `feat(core): event monitor tool with throttled stdout streaming (Phase C)`。这是 Background tasks roadmap (#3634) 的第三阶段，与已合并的 Phase A（后台 subagents）+ Phase B（PR#3642 background shell pool）形成完整三件套。
+
+**新增能力**：
+
+| 组件 | 实现 |
+|---|---|
+| **`Monitor` 工具** | spawn 长跑 shell 命令 + **token-bucket 节流**（burst=5, sustain=1/sec）把 stdout lines 作为**事件**返回给 agent |
+| **`MonitorRegistry`** | 4 状态生命周期（running/completed/failed/cancelled）+ idle timeout 自动停 + max events 自动停 + 独立 `AbortController`（Ctrl+C 不杀 monitor）|
+| **shell 层 sleep 拦截** | 前台 `sleep N`(N≥2) 被阻塞 + 提示模型用 Monitor 或 `is_background` |
+| **事件传输** | 复用 `<task-notification><kind>monitor</kind>` XML 信封 |
+| **CLI wiring** | 同时覆盖 interactive (`useGeminiStream.ts`) + headless (`nonInteractiveCli.ts`) 路径 |
+
+**与 Background subagent (Phase A) 的同构性**：
+
+| 维度 | Phase A subagent | Phase C monitor |
+|---|---|---|
+| 独立 AbortController | ✓ | ✓ |
+| stdout/stderr 分离 buffer | ✓ | ✓ |
+| 4 状态生命周期 | ✓ | ✓ |
+| `<task-notification>` 信封 | ✓（`<kind>subagent</kind>`）| ✓（`<kind>monitor</kind>`）|
+| Idle/timeout 自动停 | partial | ✓ |
+
+**未做项**（PR#3684 自述）：
+- ❌ Footer pill / dialog 集成（需要后续 PR 把 monitor 接入 PR#3488 已落地的 BackgroundTasksDialog）
+- ❌ `task_stop` / `send_message` 集成（gated on PR#3471，已合并，等待集成 PR）
+
+这两项预计后续 PR 补——届时 monitor 将与 subagent / background shell 共享同一个 pill+dialog 调度面。
 
 ---
 
