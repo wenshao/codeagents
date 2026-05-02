@@ -319,7 +319,95 @@ opencode serve daemon 进程（承载 N 个 session 的主进程）
 | Shell / Bash 工具调用 | ✅ 每次工具调用 | PTY 子进程，工具结束就回收 |
 | `opencode tui` 客户端 | ✅ 是 daemon 的 client | 不是 daemon 内部进程 |
 
-### 6.4 设计取舍
+### 6.4 工作目录隔离：AsyncLocalStorage 上下文传播
+
+多 session 共享 daemon 时一个核心问题：**两个 session 在不同 workspace 工作，daemon 的 `process.cwd()` 应该是哪个？**
+
+OpenCode 的答案：**daemon 的 `process.cwd()` 永远不变**（启动时定的），用 Node.js `AsyncLocalStorage` 给每个请求绑定一个"虚拟 cwd"`Instance.directory`。
+
+#### 客户端如何声明 cwd
+
+每个 HTTP 请求 3 种方式选其一（源码 `server/routes/instance/middleware.ts:11-12`）：
+
+```ts
+const raw = c.req.query("directory")              // 1. URL query: ?directory=/path
+         || c.req.header("x-opencode-directory")  // 2. HTTP header
+         || process.cwd()                         // 3. 兜底用 daemon 启动 cwd
+```
+
+每个 API 调用都可以独立选不同的 directory，**无需重启 daemon 或切换 session**。
+
+#### Middleware → Instance.provide → AsyncLocalStorage
+
+```ts
+// InstanceMiddleware（每请求）
+const directory = AppFileSystem.resolve(...raw)
+return Instance.provide({
+  directory,
+  async fn() { return next() }   // ← next() 内整条 async 链都"看见"这个 directory
+})
+
+// util/local-context.ts —— LocalContext 实现
+import { AsyncLocalStorage } from "async_hooks"
+export function create<T>(name: string) {
+  const storage = new AsyncLocalStorage<T>()
+  return {
+    use() { return storage.getStore() },
+    provide<R>(value: T, fn: () => R) {
+      return storage.run(value, fn)   // ← Node 标准 API，跨 await 自动传播
+    },
+  }
+}
+```
+
+`AsyncLocalStorage.run(ctx, fn)` 是 Node.js 18+ 的官方"按异步上下文传播变量"API——同进程内并发的多个请求各自携带各自的 `InstanceContext`，跨 `await` 不会污染。
+
+#### 所有代码读 `Instance.directory`，不读 `process.cwd()`
+
+| 用途 | 实际写法 | 源码位置 |
+|---|---|---|
+| File watcher 监听目录 | `Instance.directory` | `file/watcher.ts:79,125` |
+| Bash 工具默认 cwd | `Instance.directory` | `tool/bash.ts:592-593` |
+| Bash 工具 `workdir` 参数覆盖 | `resolvePath(params.workdir, Instance.directory, shell)` | `tool/bash.ts:592` |
+| 权限边界检查 | `Instance.containsPath(path)`（基于 `Instance.directory` + `worktree`）| `project/instance.ts:90-99` |
+
+`Instance.directory` 的 getter 实质是 `context.use().directory` —— 读的就是 `AsyncLocalStorage` 中**当前请求的** value。
+
+#### daemon 自己从不 chdir
+
+`grep -rE "process\\.chdir" packages/opencode/src` 全仓只 **3 处命中**，**全在非 daemon 的 CLI 模式**（`run.ts` / `tui/attach.ts` / `tui/thread.ts`）。`opencode serve` daemon 路径下 **0 处 `chdir`**——这是设计上必须保证的：daemon 改 `cwd` 会让所有并发请求互相污染。
+
+#### 子进程 spawn 时显式传 cwd
+
+LSP server / Shell 命令 spawn 时，daemon **显式把目录作为参数传**给子进程，**不让它继承自 daemon 的 `process.cwd()`**：
+
+```ts
+// tool/bash.ts
+const cwd = params.workdir
+  ? yield* resolvePath(params.workdir, Instance.directory, shell)
+  : Instance.directory
+spawn(cmd, args, { cwd })   // ← OS 级 spawn 显式传 cwd
+```
+
+#### 4 个典型场景
+
+| 场景 | 行为 |
+|---|---|
+| 两个 session 在**不同** workspace | `cache` 各 1 entry，AsyncLocalStorage 各持自己的 `Instance.directory` |
+| 两个 session 在**同一** workspace | `cache.get(directory)` 命中，**复用同一个 InstanceContext + LSP/MCP**——更高效 |
+| 同 session 在请求间切目录 | 每个请求独立走 `Instance.provide`，支持"探索性"跨 workspace |
+| Bash 工具内带 `workdir` 参数 | 在 `Instance.directory` 基础上 resolve 相对路径，spawn 时显式传 OS 级 cwd |
+
+#### 与 SDK subprocess 模型对比
+
+| 维度 | OpenCode daemon | Qwen/Claude/Codex SDK |
+|---|---|---|
+| 客户端怎么指定 cwd | HTTP `?directory=` / header | `query({ cwd })` 参数 |
+| 进程的 `process.cwd()` | **永不改变**（共享 daemon）| 子进程 spawn 时设定一次 |
+| 多 cwd 并发隔离 | AsyncLocalStorage 应用层隔离 | OS 进程隔离 |
+| cwd 切换成本 | ~0（Map 查表）| 重新 spawn 子进程 |
+
+### 6.5 设计取舍
 
 | 维度 | OpenCode daemon | Qwen/Claude/Codex SDK subprocess |
 |---|---|---|
@@ -331,8 +419,9 @@ opencode serve daemon 进程（承载 N 个 session 的主进程）
 | 用户感受冷启动 | 仅第一次 | 每个新 Client/query |
 | OOM/内存隔离 | 弱（应用层 Effect Context）| 强（OS 进程隔离）|
 | 资源效率 | 高（共享 model registry / db）| 低（每个新进程重新加载）|
+| 工作目录隔离 | AsyncLocalStorage 应用层 | OS 进程级 |
 
-OpenCode 用 **Effect-TS 的 `LocalContext` / `Context.Service`** 强制依赖注入，避免 module-level 全局可变状态——这是它敢做共进程多 session 的工程基础。`Instance.dispose()` 提供显式资源回收的逃生口。所有关键状态持久化到 SQLite（`session.sql.ts:SessionTable` / `SessionEntryTable`），进程崩溃后重启可恢复。
+OpenCode 用 **Effect-TS 的 `LocalContext` / `Context.Service`**（基于 Node.js `AsyncLocalStorage`）强制依赖注入，避免 module-level 全局可变状态——这是它敢做共进程多 session 的工程基础。`Instance.dispose()` 提供显式资源回收的逃生口。所有关键状态持久化到 SQLite（`session.sql.ts:SessionTable` / `SessionEntryTable`），进程崩溃后重启可恢复。
 
 ## 七、Qwen Code 引入 daemon 的工作量评估
 
@@ -450,9 +539,11 @@ Stage 3（~1-2 月）：对标 OpenCode 完整设计
 
 6. **OpenCode 多 session 共享 1 个 daemon 进程**，`Map<directory, InstanceContext>` 缓存 + Effect-TS Context 做应用层隔离 + SQLite 做持久化。子进程仅限 LSP / MCP / PTY 等"外部进程依赖"。
 
-7. **Qwen Code 加 daemon 的工作量约 2-3 周（MVP）/ 1.5-2 月（对标 OpenCode）**——因为 ACP agent + Channels + WebUI + SDK Transport 抽象都已就绪。
+7. **不同 session 工作目录隔离靠 `AsyncLocalStorage`，daemon 进程的 `process.cwd()` 永不改变**——客户端 HTTP 请求带 `?directory=` 参数，middleware 把目录绑入 async-context，所有代码读 `Instance.directory` 而非 `process.cwd()`，子进程 spawn 时显式传 cwd。这是 Node.js 写多租户长跑服务的标准范式。
 
-8. **真正的难点是几个架构决策**——session 共享语义、状态进程模型、MCP server 生命周期、并发语义——而不是代码量。
+8. **Qwen Code 加 daemon 的工作量约 2-3 周（MVP）/ 1.5-2 月（对标 OpenCode）**——因为 ACP agent + Channels + WebUI + SDK Transport 抽象都已就绪。
+
+9. **真正的难点是几个架构决策**——session 共享语义、状态进程模型、MCP server 生命周期、并发语义——而不是代码量。
 
 ## 十一、源码证据索引
 
@@ -463,6 +554,9 @@ Stage 3（~1-2 月）：对标 OpenCode 完整设计
 | OpenCode Bun adapter | `packages/opencode/src/server/adapter.bun.ts` |
 | OpenCode mDNS | `packages/opencode/src/server/mdns.ts` |
 | OpenCode Instance Map（多 session 共进程证据） | `packages/opencode/src/project/instance.ts` |
+| OpenCode InstanceMiddleware（cwd 路由） | `packages/opencode/src/server/routes/instance/middleware.ts:11-12` |
+| OpenCode AsyncLocalStorage 封装 | `packages/opencode/src/util/local-context.ts` |
+| OpenCode Bash 工具 cwd 处理 | `packages/opencode/src/tool/bash.ts:592-593` |
 | OpenCode Instance routes | `packages/opencode/src/server/routes/instance/index.ts` |
 | OpenCode SDK server 启动器 | `packages/sdk/js/src/server.ts` |
 | OpenCode ACP agent | `packages/opencode/src/acp/agent.ts` |
