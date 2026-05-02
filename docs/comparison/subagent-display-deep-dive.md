@@ -3,15 +3,42 @@
 > **核心问题**：Claude Code 和 Qwen Code 在运行 SubAgent 时的 UI 展示有何差异？各自的设计哲学与借鉴机会是什么？
 >
 > 返回 [Qwen Code 改进建议总览](./qwen-code-improvement-report.md)
+>
+> **2026-05-02 重大更新**：本文写作于 2026-04 中旬时 Qwen Code SubAgent 还**仅有嵌入式展示**；2026-04-27 → 2026-05-01 在 ~5 天内合并了 **6 个 PR**（PR#3471/3488/3642/3687/3720/3739），Qwen Code 现已**完整实现真正后台并发 + pill+dialog UI + background agent resume**——把原"Qwen 借鉴 Claude 的 3 个机会"清单基本兑现，部分设计还**反超 Claude**。文末"八、相关追踪 item"的状态全部更新为 ✓ 已实现。
+
+## 零、最新动态（2026-04-27 → 2026-05-01）
+
+| PR | 合并时间 | 内容 | 影响章节 |
+|---|---|---|---|
+| [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) | 2026-04-27 | 模型侧控制面：`task_stop` / `send_message` / per-agent transcript 工具 | §六.1 |
+| [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) | 2026-04-28 | UI 层：background-agent **pill**（状态行运行计数）+ **combined dialog**（Down 键打开）+ **detail view**（Enter 进详情）+ **cancel flow**（`x` 键）+ 4 状态分类（Running/Completed/Failed/Cancelled） | §六.1 / §六.3 |
+| [PR#3642](https://github.com/QwenLM/qwen-code/pull/3642) | 2026-04-28 | `/tasks` 命令 + managed background shell pool（+1025/-411），把后台 shell 也纳入统一调度 | §六.1 |
+| [PR#3687](https://github.com/QwenLM/qwen-code/pull/3687) | 2026-04-29 | 后台 shell 接入 `task_stop` 工具，控制语义统一 | §六.1 |
+| [PR#3720](https://github.com/QwenLM/qwen-code/pull/3720) | 2026-04-29 | **后台 shell 与 SubAgent 合并到统一 Background tasks dialog** —— 跨 Claude 设计 | §六.1 / 反超点 |
+| [PR#3721](https://github.com/QwenLM/qwen-code/pull/3721) | 2026-04-29 | `fix(cli): bound SubAgent display by visual height to prevent flicker` (+1336/-57) | §五.2 显示稳定 |
+| [PR#3771](https://github.com/QwenLM/qwen-code/pull/3771) | 2026-04-30 | `fix(cli): restore SubAgent shortcut focus` —— 焦点锁微调 | §五.3 |
+| [PR#3739](https://github.com/QwenLM/qwen-code/pull/3739) | 2026-05-01 | **`Add background agent resume and continuation`**（**+4087/-165** 单 PR 体量爆表）—— `BackgroundAgentResumeService` + paused 生命周期 + transcript-first fork resume + `SubagentStart` hook 重放 | §六 反超点（Claude 没有）|
+
+**关键 OPEN（追踪中）**：
+
+| PR | 方向 |
+|---|---|
+| [PR#3768](https://github.com/QwenLM/qwen-code/pull/3768) | route foreground subagents through pill+dialog while running —— 把前台 subagent 也接入 pill+dialog，与已合并的后台路径形成对偶 |
+| [PR#3735](https://github.com/QwenLM/qwen-code/pull/3735) | auto-compact subagent context to prevent overflow —— subagent 上下文溢出前自动压缩 |
+
+---
 
 ## 一、两条不同的 UI 哲学
 
 ### Claude Code = 双模式
 1. **Task 工具内联模式**（`AgentTool.tsx`）——主消息流内展示，完成即收
-2. **Coordinator 后台面板**（`CoordinatorAgentStatus.tsx`）——独立面板，多 agent 并发，30s TTL 自动驱逐
+2. **Coordinator 后台面板**（`CoordinatorAgentStatus.tsx`）——独立 footer 上方常驻面板，多 agent 并发，30s TTL 自动驱逐
 
-### Qwen Code = 单一嵌入式
-**`AgentExecutionDisplay.tsx`** 作为工具结果嵌入消息流，三档可折叠展示（compact / default / verbose），Ctrl+E / Ctrl+F 切换。
+### Qwen Code = 双模式（2026-04-28 起）
+1. **嵌入式 `AgentExecutionDisplay.tsx`**（原有）—— 作为工具结果嵌入消息流，三档可折叠展示（compact / default / verbose），Ctrl+E / Ctrl+F 切换
+2. **Background tasks 调度面**（PR#3471/3488/3642 新增）—— 状态行 `BackgroundTasksPill` + 按 Down 键打开 `BackgroundTasksDialog` + Enter 进详情 + `x` 取消；**SubAgent 与后台 shell 共用同一调度面**
+
+> **设计差异**：Claude footer 上方**常驻面板**（任何时候都能看见），Qwen 状态行**pill 提示 + 按需打开对话框**（默认折叠节省屏幕空间）。两种 UX 偏好不同：Claude 偏"持续可见"，Qwen 偏"需要时才占空间"。
 
 ---
 
@@ -19,16 +46,19 @@
 
 | 维度 | Claude Code | Qwen Code |
 |---|---|---|
-| **发起展示** | Task：内联 `⏺ Task(...)` ⎿ 摘要<br>Coordinator：独立面板 `◯ name · ▶ 0s` | 嵌入工具组 `├─ agent_name ● Running` |
+| **发起展示** | Task：内联 `⏺ Task(...)` ⎿ 摘要<br>Coordinator：footer 上方常驻面板 `◯ name · ▶ 0s` | 嵌入：工具组 `├─ agent_name ● Running`<br>**Background：状态行 pill + Down 键打开 dialog**（PR#3488）|
 | **SubAgent 身份** | `AgentProgressLine.tsx:75` 彩色背景标签 | `AgentExecutionDisplay.tsx:148` 彩色 `agentColor` + StatusDot |
-| **执行中实时性** | Task：spinner + 最终结果<br>Coordinator：仅最后一个工具 + 计数（1s tick）| **完整工具列表**（默认最后 5 个，verbose 全部）|
-| **展示模式切换** | Task 固定；Coordinator `↑↓`+Enter 导航 | **Ctrl+E / Ctrl+F 三档切**（compact ↔ default ↔ verbose）|
-| **并发布局** | Coordinator 垂直列表 `◯ A / ◯ B / ◯ C` | 同工具组内 `.map()` 渲染 |
+| **执行中实时性** | Task：spinner + 最终结果<br>Coordinator：仅最后一个工具 + 计数（1s tick）| 嵌入：**完整工具列表**（默认最后 5 个，verbose 全部）<br>**Dialog：Running/Completed/Failed/Cancelled 4 类状态**（PR#3488）|
+| **展示模式切换** | Task 固定；Coordinator `↑↓`+Enter 导航 | 嵌入：**Ctrl+E / Ctrl+F 三档切**（compact ↔ default ↔ verbose）<br>Dialog：`↑↓` 导航 + Enter 进详情 + Left/Esc 关闭 |
+| **并发布局** | Coordinator 垂直列表 `◯ A / ◯ B / ◯ C` | 嵌入：同工具组内 `.map()` 渲染<br>**Dialog：列表视图 + per-agent rolling tool activity buffer**（PR#3488）|
 | **权限审批路由** | Task 内部黑盒；Coordinator 独立流 | **焦点锁**（`focusedSubagentRef` + `isWaitingForOtherApproval`）|
-| **完成后摘要** | `RECENT_COMPLETED_TTL_MS = 30_000` 自动驱逐 | 4 行执行摘要（tokens / rounds / duration / success rate）长期保留 |
-| **失败处理** | Coordinator `✕ Failed (Ns ago)` → 30s 后驱逐 | 红色 `├─ ✕ Failed` 永久保留可追溯 |
-| **独立管理视图** | `/agents` + `AgentsMenu` / `AgentsList`（agent 定义）| 无 |
-| **后台并发能力** | ✅ 真后台（`evictAfter` 驱动，独立 loop） | ❌ 无（subagent 必须在 tool 调用周期内完成）|
+| **完成后摘要** | `RECENT_COMPLETED_TTL_MS = 30_000` 自动驱逐 | 嵌入：4 行执行摘要长期保留<br>**Dialog：完成后保持可见，用户主动管理**（与 Claude 不同选择，PR#3488）|
+| **失败处理** | Coordinator `✕ Failed (Ns ago)` → 30s 后驱逐 | 嵌入：红色 `├─ ✕ Failed` 永久保留<br>**Dialog：4 状态分类 Running/Completed/Failed/Cancelled，明确区分非 GOAL 终止**（PR#3488）|
+| **独立管理视图** | `/agents` + `AgentsMenu` / `AgentsList`（agent 定义）| `/tasks` 命令 + dialog（PR#3642，运行时管理）|
+| **后台并发能力** | ✅ 真后台（`evictAfter` 驱动，独立 loop） | **✅ 真后台**（PR#3471 `task_stop` / `send_message` / per-agent transcript 控制面 + PR#3488 UI）|
+| **后台 shell 与 SubAgent 调度面** | **分离**（BashOutput / Background shells 与 Coordinator panel 独立）| **统一**（PR#3720 把后台 shell + SubAgent 合并到同一 dialog · pill / 导航 / 详情视图共用）—— **超越 Claude** |
+| **agent resume / continuation** | ✅ `tools/AgentTool/resumeAgent.ts:resumeAgentBackground()` | **✅ + transcript-first fork resume**（PR#3739 +4087/-165 · `BackgroundAgentResumeService` + paused 生命周期 + `SubagentStart` hook 重放）—— **比 Claude 更稳健** |
+| **取消语义** | `x` 立即驱逐 | `x` 取消 + 状态变为 Cancelled（PR#3488 区分"取消"与"驱逐"）|
 
 ---
 
@@ -137,6 +167,8 @@ if (!stillPending) {
 ---
 
 ## 四、典型场景逐帧对比
+
+> **范围说明**：以下场景描述 Qwen Code **嵌入式** SubAgent 模式（`AgentExecutionDisplay`），不涉及 2026-04-28 后新增的 **Background tasks dialog**（`BackgroundTasksPill` + `BackgroundTasksDialog`）。两种模式当前并存——短任务走嵌入式（看到完整工具时间轴），长跑/后台任务走 dialog（pill 显示运行计数 + 按 Down 键打开 dialog）。
 
 ### 场景 A：单 SubAgent 10 秒任务
 
@@ -248,12 +280,16 @@ t=30: [行消失，被驱逐]
 
 ### 1. 后台 vs 嵌入
 
-| | Claude Code | Qwen Code |
-|---|---|---|
-| **模型** | Coordinator = **真后台并发**（`AppState.tasks` 独立于主 loop，1s tick 驱动）| **嵌入式**（subagent 作为 tool result 在消息流内）|
-| **生命周期** | `evictAfter` 时间戳控制可见性，可**永久保留** | 随消息树追加，tool 调用结束 = subagent 结束 |
-| **能力** | 支持"最小化继续运行" | 必须在 tool 周期内完成 |
-| **代价** | AppState 内存占用 | 消息流可能变长 |
+> **2026-05-02 更新**：Qwen 在 2026-04-27 → 2026-05-01 的 5 天内通过 6 个 PR 实现了真后台并发，本表的"Qwen Code"列已分成"嵌入式（原有）"和"Background tasks 调度面（新增）"两栏。
+
+| | Claude Code | Qwen Code 嵌入式（原有）| Qwen Code Background tasks（PR#3471/3488/3642）|
+|---|---|---|---|
+| **模型** | Coordinator = footer 上方常驻面板（`AppState.tasks` 独立于主 loop，1s tick）| subagent 作为 tool result 在消息流内 | 状态行 pill + 按需打开 dialog（`task_stop` / `send_message` 控制面）|
+| **生命周期** | `evictAfter` 时间戳控制可见性，30s TTL 自动驱逐 | 随消息树追加，tool 调用结束 = subagent 结束 | **保持可见，用户主动 `x` 取消**（4 状态：Running/Completed/Failed/Cancelled）|
+| **能力** | 支持"最小化继续运行" | 必须在 tool 周期内完成（适合短任务）| **支持"最小化继续运行" + transcript-first fork resume**（PR#3739）|
+| **代价** | AppState 内存占用 | 消息流可能变长 | dialog 状态需用户主动管理 |
+
+**结论**：Qwen 现在**两种模式并存**——短任务嵌入消息流（用户能看到完整工具列表），长任务进入 background dialog（不阻塞主交互流）。这比 Claude 的"Task 内联 / Coordinator 独立"二分更灵活。
 
 ### 2. 多模态展示
 
@@ -275,64 +311,85 @@ t=30: [行消失，被驱逐]
 
 ---
 
-## 六、Qwen Code 借鉴 Claude 的 3 个机会
+## 六、Qwen Code 已落地的 4 项 Claude 借鉴 + 1 项反超
 
-### 🥇 优先级 1：真正后台并发 + TTL 驱逐
+> **本节状态变化（2026-04 → 2026-05）**：原本列出 3 个"待借鉴机会"，到 2026-05-01 全部已通过 6 个 PR 落地，外加 Qwen 自己**新增了 2 个 Claude 没有的设计**。
+
+### 🥇 已落地 1：真正后台并发 + UI 调度面（PR#3471/3488/3642）✓
 
 **Claude 源码**：
 - `CoordinatorAgentStatus.tsx:45-63` —— 1s tick 驱动 elapsed + 驱逐
 - `TaskListV2.tsx:21` —— `RECENT_COMPLETED_TTL_MS = 30_000`
 - `tasks/LocalAgentTask/LocalAgentTask.js` —— 任务状态机
 
-**Qwen 现状**：SubAgent 嵌入 tool 调用周期内，tool 返回 = subagent 结束。用户无法启动"长研究"后继续其他工作。
+**Qwen 落地状态**：
 
-**借鉴路径**：
-1. 新增 `LocalAgentTask` 数据结构（与 tool 解耦），持久到 `AppState.tasks`
-2. 新增 `ui.backgroundAgentPanel: true` settings，启用时 footer 上方显示面板
-3. `/agents --spawn "task" --background` 命令启动后台 subagent
-4. 1s tick + `evictAfter`（默认 30s）驱逐已完成
-5. `x` 键立即驱逐（`evictAfter = 0`）；`Enter` 进入详情视图
+| 层 | PR | 实现 |
+|---|---|---|
+| 模型侧控制面 | [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) ✓ 2026-04-27 | `task_stop` / `send_message` / per-agent transcript 工具，对标 Claude `TaskStop` / `SendMessage` |
+| UI 层 | [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) ✓ 2026-04-28 | `BackgroundTasksPill`（状态行运行计数）+ `BackgroundTasksDialog`（Down 键打开）+ detail view（Enter 进详情）+ cancel flow（`x` 键）+ Running/Completed/Failed/Cancelled 4 状态 |
+| `/tasks` 命令 + shell pool | [PR#3642](https://github.com/QwenLM/qwen-code/pull/3642) ✓ 2026-04-28 | managed background shell pool + `/tasks` 命令（CLI 入口）|
 
-**成本**：~2-3 周。**难点**：主 loop 与后台 agent 的 AbortController 分离、消息流与后台 task 的同步、生命周期管理。
+**与 Claude 的设计差异**：
+- Claude **footer 上方常驻面板**；Qwen **状态行 pill + 按需打开 dialog**（默认折叠节省屏幕空间）
+- Claude **30s TTL 自动驱逐已完成**；Qwen **保持可见，用户主动管理 + `x` 显式取消变为 Cancelled**
+- Claude 4 状态：running / completed（隐式 success / failure）；Qwen **明确 4 类**：Running / Completed / Failed / Cancelled（区分非 GOAL 终止）—— **比 Claude 更显式**
 
-**价值**：长时任务"最小化 → 继续跑"体验，对 research / data analysis 场景极有价值。
-
----
-
-### 🥈 优先级 2：`/agents` 独立管理视图（subagent 历史/归档）
-
-**Claude 源码**：
-- `components/agents/AgentsMenu.tsx` / `AgentsList.tsx` —— Agent 定义管理
-- `components/agents/AgentDetail.tsx` / `AgentEditor.tsx` —— 查看/编辑
-- `components/agents/new-agent-creation/CreateAgentWizard.tsx` + 10 个 wizard step —— 创建向导
-
-**Qwen 现状**：subagent 历史只能在消息流中找，无专用归档/对比视图。
-
-**借鉴路径**：
-1. `/agents` 命令打开独立菜单（agent 定义管理已有基础？需要确认）
-2. `/agents --history` 列出最近 N 个 subagent 运行（按时间 / 按 agent name 过滤）
-3. 详情视图支持对比（两次运行的 tool 列表 diff）
-
-**成本**：~1-1.5 周。**前置**：是否已有 agent 定义管理（Qwen 的 `subagents/` 目录）。
-
-**价值**：中等——补齐 subagent "历史追溯"能力。
+**3 项超出 Claude 的设计**（PR#3488）：
+1. ✨ **4 类状态分类**：明确区分 timeout / max-turn / errors 为 Failed
+2. ✨ **per-agent rolling tool activity buffer**（feeds detail view Progress section）
+3. ✨ **原始 prompt 保存到 detail view**（用户能看自己最初指令）
 
 ---
 
-### 🥉 优先级 3：Coordinator 协调器面板（footer 上方）
+### 🥈 已落地 2：后台 shell 与 SubAgent 统一调度面（PR#3687/3720）✓ **超越 Claude**
 
-**Claude 源码**：`CoordinatorAgentStatus.tsx` 整体 + `coordinator/coordinatorMode.ts`
+**Claude 设计**：BashOutput / Background shells 与 Coordinator panel 是**两套相对独立的 UI** —— 用户视角下"后台 shell"和"后台 agent"是不同 mental model。
 
-**Qwen 现状**：Arena 偏"比赛"（多个 agent 独立跑同一 prompt 比结果），无"团队管理"视图。
+**Qwen 选择把它们合并**：
 
-**借鉴路径**：
-1. Footer 上方渲染 `CoordinatorTaskPanel`（依赖优先级 1 的 LocalAgentTask）
-2. `↑↓` 导航多个后台 subagent，`Enter` 进入详情，`x` 驱逐
-3. 每行展示 `agent_name · status · elapsed · tokens`
+| PR | 层 | 内容 |
+|---|---|---|
+| [PR#3687](https://github.com/QwenLM/qwen-code/pull/3687) ✓ 2026-04-29 | 控制层 | 后台 shell 也接入 `task_stop` 工具，模型用单一动作能停 SubAgent + shell |
+| [PR#3720](https://github.com/QwenLM/qwen-code/pull/3720) ✓ 2026-04-29 | UI 层 | 后台 shell 与 SubAgent 在 dialog 中合并（统一 pill / 统一导航 / 统一详情视图） |
 
-**成本**：~3-5 天（前置优先级 1 完成后）。
+**意义**：用户视角下"后台任务"是**单一 mental model**——不需要区分"是 shell 还是 agent"。这是 Qwen Code 团队**对 Claude 设计的一次有意识改进**。
 
-**价值**：中等——并发 subagent 场景的"协同视角"，与优先级 1 互补。
+---
+
+### 🥉 已落地 3：background-agent resume + continuation（PR#3739）✓ **比 Claude 设计更稳健**
+
+**Claude 源码**：`tools/AgentTool/resumeAgent.ts:resumeAgentBackground()`
+
+**Qwen 落地**（[PR#3739](https://github.com/QwenLM/qwen-code/pull/3739) ✓ 2026-05-01 · **+4087/-165 单 PR 体量爆表**）：
+
+| 能力 | 实现 |
+|---|---|
+| 持久化发现 | `BackgroundAgentResumeService` 扫描 `subagents/<sessionId>/` |
+| 生命周期 | sidecar metadata 记录 `paused` 状态 + registry/UI 表现 |
+| **Transcript-first fork resume** | fork bootstrap 写入 `system/agent_bootstrap` + 原始 launch prompt 写入 `system/agent_launch_prompt`，resume 时**从 transcript 历史重建 worker context** 而非从当前父 prompt/tool 状态重建 |
+| Hook 重放 | resume 时**重新跑 `SubagentStart` hooks** + 并发 resume 自动 coalesce |
+| 控制面 | `send_message` + `task_stop` 处理 paused background agent |
+| UI | `/resume` 流程加载 paused tasks + 瞬态恢复提示 |
+| 兼容兜底 | 无 bootstrap 记录的 legacy fork transcript 仍可见为 paused 并 abandonable，但**禁止 unsafe resume** |
+
+**比 Claude 更稳健的点**：transcript-first fork resume 避免了父 prompt 漂移导致 fork worker context 重建错误——在多步 agent 链场景下显著降低恢复时的状态污染风险。
+
+---
+
+### 已落地 4：显示稳定性（PR#3721）✓
+
+[PR#3721](https://github.com/QwenLM/qwen-code/pull/3721) ✓ 2026-04-29（+1336/-57）—— `bound SubAgent display by visual height to prevent flicker`。补足并发 subagent 长输出场景下的渲染稳定性。
+
+---
+
+### 还有什么可以做？（剩余 gap）
+
+虽然主体已落地，仍有 2 个值得追踪的方向：
+
+1. **前台 subagent 也接入 pill+dialog**：[PR#3768](https://github.com/QwenLM/qwen-code/pull/3768) 🟡 OPEN —— 让前台 subagent 也用统一 UI，与已合并的后台路径形成对偶
+2. **subagent 上下文自动压缩**：[PR#3735](https://github.com/QwenLM/qwen-code/pull/3735) 🟡 OPEN —— 防止长跑 subagent 上下文溢出
+3. **`/agents --history` 归档对比视图**：当前 `BackgroundTasksDialog` 偏运行时管理；历史归档 + 对比 diff 仍未实现
 
 ---
 
@@ -360,26 +417,30 @@ t=30: [行消失，被驱逐]
 
 ## 八、相关追踪 item
 
-| item | 方向 | 状态 |
+| item | 方向 | 状态（2026-05-02 更新）|
 |---|---|---|
-| [item-56](./qwen-code-improvement-report-p2-stability.md#item-56)（本次新增）| 真正后台并发 + TTL 驱逐 | 新增 |
-| [item-57](./qwen-code-improvement-report-p2-stability.md#item-57)（本次新增）| `/agents` 独立管理视图 | 新增 |
-| [item-58](./qwen-code-improvement-report-p2-stability.md#item-58)（本次新增）| Coordinator 协调器面板 | 新增 |
-| [p0-p1-engine item-14](./qwen-code-improvement-report-p0-p1-engine.md#item-14) | Coordinator/Swarm 多 Agent 编排 | PR#3433 ⚠️ 已 revert |
+| [item-56](./qwen-code-improvement-report-p2-stability.md#item-56) | 真正后台并发 + TTL 驱逐 | **✓ 已实现**（PR#3471 + PR#3488 + PR#3642 + PR#3687 + PR#3720 共 5 件套，且超出 Claude 设计）|
+| [item-57](./qwen-code-improvement-report-p2-stability.md#item-57) | `/agents` 独立管理视图 | 🟡 部分（`/tasks` 命令 + dialog 已有运行时管理；历史归档/对比 diff 仍缺）|
+| [item-58](./qwen-code-improvement-report-p2-stability.md#item-58) | Coordinator 协调器面板 | **✓ 已实现**（PR#3488 pill + combined dialog + detail view，与 Claude footer 常驻面板设计取舍不同）|
+| [item-18](./qwen-code-improvement-report-p0-p1-engine.md#item-18) | Agent 恢复与续行 | **✓ 已实现**（PR#3739 +4087/-165，transcript-first fork resume 比 Claude 更稳健）|
+| [p0-p1-engine item-14](./qwen-code-improvement-report-p0-p1-engine.md#item-14) | Coordinator/Swarm 多 Agent 编排 | 🟡 持续推进（PR#3433 ⚠️ revert，但 PR#3471/3488 已落地控制面 + UI）|
 
 ---
 
-## 九、关键文件速查表
+## 九、关键文件速查表（2026-05-02 更新）
 
 | 技术 | Claude Code | Qwen Code |
 |---|---|---|
-| Coordinator 面板 | `components/CoordinatorAgentStatus.tsx:34-76` | 无 |
-| Agent 任务状态 | `tasks/LocalAgentTask/LocalAgentTask.js` | `AppState` 内嵌 |
-| TTL 驱逐 | `TaskListV2.tsx:21` `RECENT_COMPLETED_TTL_MS = 30_000` | 无 |
-| 驱逐执行 | `utils/task/framework.js:evictTerminalTask` | 无 |
-| Agent 进度行 | `components/AgentProgressLine.tsx` | 无对应 |
-| `/agents` 菜单 | `components/agents/AgentsMenu.tsx` + 10 文件子目录 | 部分（`subagents/`）|
+| Coordinator/后台面板 | `components/CoordinatorAgentStatus.tsx:34-76`（footer 上方常驻）| **`packages/cli/src/ui/components/background-view/BackgroundTasksPill.tsx`**（状态行 pill）+ **`BackgroundTasksDialog.tsx`**（按需打开 dialog）|
+| Agent 任务状态 | `tasks/LocalAgentTask/LocalAgentTask.js` | **`packages/cli/src/ui/contexts/BackgroundTaskViewContext.tsx`** + **`hooks/useBackgroundTaskView.ts`** |
+| 模型侧控制工具 | `tools/TaskStop/TaskStopTool.ts` + `tools/SendMessage/SendMessageTool.ts` | **`packages/core/src/tools/agent/agent.ts`** 暴露 `task_stop` / `send_message` / per-agent transcript（PR#3471）|
+| TTL 驱逐 | `TaskListV2.tsx:21` `RECENT_COMPLETED_TTL_MS = 30_000`（自动驱逐）| **保持可见，用户主动 `x` 取消**（PR#3488 设计差异）|
+| 驱逐执行 | `utils/task/framework.js:evictTerminalTask` | dialog 内 `x` 键路由到 `task_stop` 工具 |
+| Agent 进度行 | `components/AgentProgressLine.tsx` | dialog 内 list item + per-agent rolling tool activity buffer（PR#3488）|
+| `/agents` 菜单 | `components/agents/AgentsMenu.tsx` + 10 文件子目录（agent 定义管理）| **`/tasks` 命令**（运行时管理，PR#3642）+ subagent 定义在 `subagents/` 目录 |
 | 工具内联 | `tools/AgentTool/AgentTool.tsx` | `components/messages/ToolGroupMessage.tsx` |
 | SubAgent 嵌入展示 | 无（Task 工具简洁展示）| `components/subagents/runtime/AgentExecutionDisplay.tsx` |
 | 三档切换 | 无 | `AgentExecutionDisplay.tsx:124-140` |
-| 焦点锁 | 无 | `ToolGroupMessage.tsx:99-123` |
+| 焦点锁 | 无 | `ToolGroupMessage.tsx:99-123` + PR#3771 修复 |
+| `/tasks` 命令 | 无（Claude 没有这个 CLI 入口）| **`packages/cli/src/ui/commands/tasksCommand.ts`**（PR#3642 · 显示 BackgroundShellEntry 状态）|
+| Background agent resume | `tools/AgentTool/resumeAgent.ts:resumeAgentBackground()` | **`BackgroundAgentResumeService`**（PR#3739 +4087/-165）+ transcript-first fork resume + `system/agent_bootstrap` + `system/agent_launch_prompt` |
