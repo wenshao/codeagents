@@ -1515,11 +1515,18 @@ Skip status reports and commit recaps.`
 
 <a id="item-44"></a>
 
-### 44. 消息响应统一容器 + 离屏历史冻结（P2）🟡 部分覆盖（[PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) ✓ 2026-04-25 合并）
+### 44. 消息响应统一容器 + 离屏历史冻结（P2）🟡 部分覆盖（[PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) ✓ 2026-04-25 + [PR#3721](https://github.com/QwenLM/qwen-code/pull/3721) ✓ 2026-04-29 合并）
 
 > **配套阅读**：[任务显示高度控制 Deep-Dive](./task-display-height-deep-dive.md) —— 本 item 第 1.1/1.2 节的完整分析。
 
-**最新状态（2026-04-25）**：[PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) `fix(cli): add TUI flicker foundation fixes` 合并——pre-slice 大输出 + visual-height slicing 部分对齐 OffscreenFreeze 的思路（让屏外大块内容不进入 Ink layout）。但 **MessageResponse 严格 `height=1 overflowY=hidden` 容器仍未实现**，这是 PR body 自述的 "remaining work"。
+**最新状态**：
+
+| PR | 合并日 | 内容 |
+|---|---|---|
+| [PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) | 2026-04-25 | `fix(cli): add TUI flicker foundation fixes` —— pre-slice 大输出 + visual-height slicing 部分对齐 OffscreenFreeze 的思路（让屏外大块内容不进入 Ink layout）|
+| [PR#3721](https://github.com/QwenLM/qwen-code/pull/3721) | 2026-04-29 | `fix(cli): bound SubAgent display by visual height to prevent flicker`（+1336/-57）—— **SubAgent 实时输出按视觉高度 bound**，本质是把 item-44 的"屏内 spinner 不波及屏外历史"原则推广到 SubAgent 显示层（多 agent 长输出场景下尤其关键）|
+
+但 **MessageResponse 严格 `height=1 overflowY=hidden` 统一容器** 仍未实现，这是 PR#3591 body 自述的 "remaining work"——PR#3721 是补针对 SubAgent 的 ad-hoc 高度 bounding，**还没有抽象到所有 15+ 工具响应共用的 `MessageResponse` 容器**。
 
 ---
 
@@ -2738,23 +2745,26 @@ context.toolUseContext.setAppState(prev => ({
 
 <a id="item-56"></a>
 
-### 56. 真正后台并发 SubAgent + TTL 驱逐（P2）✓ 已实现（PR#3471 + PR#3488 + PR#3642 全部合并）
+### 56. 真正后台并发 SubAgent + TTL 驱逐（P2）✓ 已实现（5 个 PR 合并 · 后台 shell + SubAgent 已合并到统一调度面）
 
 > **配套阅读**：[SubAgent 展示 Deep-Dive](./subagent-display-deep-dive.md) 第 6 节"优先级 1"。
 
-**最新状态（2026-04-28）**：✓ **全部基础设施已合并** —— Qwen Code 在 ~24h 内合并了实现本 item 的 3 个核心 PR，本 item 升级为 ✓ 已实现：
+**最新状态（2026-04-30）**：✓ **全部基础设施已合并** —— Qwen Code 在 ~3 天内通过 5 个 PR 把 SubAgent 与 background shell 两条线合并到**统一的"Background tasks"调度面**，本 item 升级为 ✓ 已实现：
 
 | PR | 状态 | 实现内容 |
 |---|---|---|
 | [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) | ✓ MERGED 2026-04-27 12:36 UTC | **模型侧控制面**：`task_stop` / `send_message` / per-agent transcript 工具，对标 Claude `TaskStop` / `SendMessage` |
 | [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) | ✓ MERGED 2026-04-28 02:57 UTC | **UI 层**：background-agent pill（状态行运行计数）+ combined dialog（Down 键打开）+ detail view（Enter 进详情）+ cancel flow（`x` 键取消）+ 状态分类（Running / Completed / Failed / Cancelled）|
-| [PR#3642](https://github.com/QwenLM/qwen-code/pull/3642) | ✓ MERGED 2026-04-28 03:06 UTC | **`/tasks` 命令 + 后台 shell pool**：补齐 background task 管理的 CLI 入口 |
+| [PR#3642](https://github.com/QwenLM/qwen-code/pull/3642) | ✓ MERGED 2026-04-28 03:06 UTC | **`/tasks` 命令 + managed background shell pool**（+1025/-411）：补齐 background task 管理的 CLI 入口 + 把 shell 后台执行也纳入统一池 |
+| [PR#3687](https://github.com/QwenLM/qwen-code/pull/3687) | ✓ MERGED 2026-04-29 02:10 UTC | **`task_stop` 接入后台 shell**（+209/-25）：模型可以通过同一个 `task_stop` 工具同时停 SubAgent 和后台 shell，**控制语义统一** |
+| [PR#3720](https://github.com/QwenLM/qwen-code/pull/3720) | ✓ MERGED 2026-04-29 08:06 UTC | **后台 shell 与 SubAgent 合并到 combined Background tasks dialog**（+500/-100）：UI 层把两类后台任务塞进同一个 dialog（统一 pill / 统一导航 / 统一详情视图）—— **用户视角下"后台任务"是单一 mental model** |
 
 **与 Claude 设计的差异**：
 - ⚠️ **`evictAfter` TTL 数值**：PR#3488 实现了 Running/Completed/Failed/Cancelled 4 状态分类，但**对话框在所有 agent 终止后保持可打开**（用户回顾用），与 Claude 的 30s TTL 自动驱逐**不完全相同**——Qwen 选择"用户主动管理"，Claude 是"自动 TTL 清理"
 - ⚠️ **UI 形态**：Qwen 是"pill + 对话框"（按需打开），Claude 是"footer 上方常驻面板"
 - ✓ **核心控制语义对齐**：task_stop / send_message / per-agent transcript 全实现
 - ✓ **状态分类对齐**：Running/Completed/Failed/Cancelled 与 Claude 一致
+- ✓ **超越 Claude 的设计**：把后台 shell（exec 类）和 SubAgent（LLM 类）合并到**同一个调度面**——Claude 的 BashOutput / Background shells 与 Coordinator panel 是两套相对独立的 UI
 
 **剩余可改进项**：自动 TTL 驱逐（30s 后自动从 dialog 移除完成的 task）—— 但这是 UX 偏好差异，不一定算"缺失"。
 

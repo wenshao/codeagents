@@ -47,7 +47,7 @@
 | **P0** | [[Mid-Turn Queue Drain](./command-queue-orchestration-deep-dive.md)](./input-queue-deep-dive.md) — Agent 执行中途注入用户输入，无需等整轮结束 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-6) | 推理循环内无队列检查 | 中 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) ✓ |
 | **P0** | [多层上下文压缩](./context-compression-deep-dive.md) — 自动裁剪旧工具结果 + 摘要，用户无需手动 /compress [↓](./qwen-code-improvement-report-p0-p1-core.md#item-1) | 仅单一 70% 手动压缩 | 中 | [PR#3006](https://github.com/QwenLM/qwen-code/pull/3006) ✓（L2 microcompaction） |
 | **P0** | [Fork Subagent](./fork-subagent-deep-dive.md) — Subagent 继承完整对话上下文，共享 prompt cache 省 80%+ 费用 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-2) | Subagent 必须从零开始 | 中 | [PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) ✓ / [Roadmap#2409](https://github.com/QwenLM/qwen-code/issues/2409) |
-| **P0** | [会话崩溃恢复与中断检测](./crash-recovery-deep-dive.md) — 3 种中断状态检测 + 合成续行 + 全量恢复 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-7) | 无崩溃恢复 | 大 | — |
+| **P0** | [会话崩溃恢复与中断检测](./crash-recovery-deep-dive.md) — 3 种中断状态检测 + 合成续行 + 全量恢复 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-7) | 🟡 读端容错已加，3 状态中断检测 + 合成续行仍待 | 大 | [PR#3656](https://github.com/QwenLM/qwen-code/pull/3656) ✓（2026-04-27 合并 · JSONL `}{` 粘连记录 brace-depth 扫描恢复 + per-line 容错 · 修复 #3606）|
 | **P1** | [Speculation](../tools/claude-code/10-prompt-suggestions.md) — 预测用户下一步并提前执行，Tab 接受零延迟 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-3) | 已实现但默认关闭 | 小 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | **P1** | [会话记忆](./memory-system-deep-dive.md) — 关键决策/文件结构自动提取，新 session 自动注入 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-4) | 仅简单笔记工具 | 大 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓ |
 | **P1** | [Auto Dream](./memory-system-deep-dive.md) — 后台 agent 自动合并去重过时记忆 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-5) | 缺失 | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓（managed auto-memory + auto-dream） |
@@ -68,7 +68,7 @@
 | **P1** | [/teleport 跨端双向迁移](./teleport-session-migration-deep-dive.md) — Web session → 终端 session 双向迁移 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-8) | 缺失 | 大 | — |
 | **P1** | [GitLab CI/CD](./gitlab-ci-cd-deep-dive.md) — 官方 GitLab pipeline 集成 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-9) | 缺失 | 中 | — |
 | **P1** | [流式工具执行流水线](./streaming-tool-execution-deep-dive.md) — API 流式返回 tool_use 时立即开始执行，不等完整响应 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-1) | 等完整响应后执行 | 中 | — |
-| **P1** | [文件读取缓存 + 批量并行 I/O](./file-read-cache-deep-dive.md) — 1000 条 LRU + mtime 失效 + 32 批并行 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-2) | 🟡 部分实现（查询缓存 ✓，内容缓存 + 32 并行待实现）| 小 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓（2026-04-24 合并 · `workspaceContext` / `validatePath` / `.qwenignore` 查询缓存）|
+| **P1** | [文件读取缓存 + 批量并行 I/O](./file-read-cache-deep-dive.md) — 1000 条 LRU + mtime 失效 + 32 批并行 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-2) | 🟡 主体已实现（查询缓存 ✓ + FileReadCache ✓，仅 32 批并行 readManyFiles 仍待 · prior-read 守卫 PR 进行中）| 小 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓（2026-04-24 合并 · `workspaceContext` / `validatePath` / `.qwenignore` 查询缓存）/ [PR#3717](https://github.com/QwenLM/qwen-code/pull/3717) ✓（2026-04-30 合并 · session-scoped `FileReadCache` + 未变更 Read 短路占位符 · `(dev,ino)` key + 三态 check API + `READ_FILE_CACHE_*` env 度量开关）/ [PR#3774](https://github.com/QwenLM/qwen-code/pull/3774) 🟡 OPEN（follow-up · 用 FileReadCache 强制 Edit/WriteFile 必须先 read · 新增 `EDIT_REQUIRES_PRIOR_READ` / `FILE_CHANGED_SINCE_READ` 错误码 · +611/-2）|
 | **P1** | [记忆/附件异步prefetch](./memory-prefetch-deep-dive.md) — 工具执行期间并行搜索相关记忆 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-3) | 无prefetch | 中 | — |
 | **P1** | [Token Budget 续行与自动交接](./token-budget-continuation-deep-dive.md) — 90% 续行 + 递减检测 + 分层压缩回退 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-4) | 70% 一次性压缩 | 中 | — |
 | **P1** | 同步 I/O 异步化 — readFileSync/statSync 替换为 async，解阻塞事件循环 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-5) | ✓ 已实现 | 中 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓（2026-04-24 合并 · hot path 110→10 syscall/prompt，-91%）|
@@ -80,16 +80,16 @@
 | **P1** | [原子文件写入与事务回滚](./atomic-file-write-deep-dive.md) — temp+rename 原子写 + 大结果persist to disk [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-12) | 直接 writeFileSync | 中 | — |
 | **P1** | [自动检查点默认启用](./automatic-checkpoint-restore-deep-dive.md) — 每轮工具执行后自动创建文件快照 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-13) | 🟡 部分实现（机制已有 `restoreCommand.ts`，仅默认关闭 + 缺 picker UX）| 小 | [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) 🟡 OPEN（rewind + restore flows · picker UX）|
 | **P1** | [Coordinator/Swarm 多 Agent编排](./coordinator-swarm-orchestration-deep-dive.md) — Leader/Worker 团队 + 3 种执行后端 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-14) | 🟡 控制面 + UI 在做 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3433](https://github.com/QwenLM/qwen-code/pull/3433) ⚠️ revert（[PR#3468](https://github.com/QwenLM/qwen-code/pull/3468) 2026-04-20）/ [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) 🟡 OPEN（task_stop / send_message / per-agent transcript）/ [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) 🟡 OPEN（background-agent UI）|
-| **P1** | [Task Management 任务协同与跨进程并发调度](./task-management-deep-dive.md) — 支持 blocks/blockedBy 的任务拓扑、跨进程安全锁与 Swarm 集成 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-25) | 🟡 控制面 + UI 在做 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) 🟡 OPEN / [PR#3507](https://github.com/QwenLM/qwen-code/pull/3507) ✓（2026-04-26 合并 · sticky todo panel）|
+| **P1** | [Task Management 任务协同与跨进程并发调度](./task-management-deep-dive.md) — 支持 blocks/blockedBy 的任务拓扑、跨进程安全锁与 Swarm 集成 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-25) | 🟡 控制面 + UI 已合并，依赖拓扑/跨进程锁仍待 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) ✓（2026-04-27 合并 · `task_stop` / `send_message` / per-agent transcript）/ [PR#3507](https://github.com/QwenLM/qwen-code/pull/3507) ✓（2026-04-26 合并 · sticky todo panel）/ [PR#3647](https://github.com/QwenLM/qwen-code/pull/3647) ✓（2026-04-29 合并 · sticky todo 紧凑化 +560/-37）|
 | **P1** | [Agent 工具细粒度访问控制](./agent-tool-access-control-deep-dive.md) — 3 层allowlist/denylist + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-15) | 全部或指定列表 | 中 | [PR#3064](https://github.com/QwenLM/qwen-code/pull/3064) ✓ / [PR#3066](https://github.com/QwenLM/qwen-code/pull/3066) ✓ |
 | **P1** | [InProcess 同进程多 Agent隔离](./in-process-agent-isolation-deep-dive.md) — AsyncLocalStorage 上下文隔离 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-16) | 全局状态可能泄漏 | 中 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) |
 | **P1** | [Agent 记忆持久化](./agent-memory-persistence-deep-dive.md) — user/project/local 3 级跨 session 记忆 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-17) | 🟡 部分实现（跨 session 记忆 ✓ via PR#3087；per-agent 私有记忆绑定 ✗）| 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓（2026-04-16 合并 · auto-memory + auto-dream，6,015 行 30+ 文件）|
-| **P1** | [Agent 恢复与续行](./agent-resume-continuation-deep-dive.md) — SendMessage 继续已完成代理 + transcript 重建 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-18) | 执行完即销毁 | 中 | — |
+| **P1** | [Agent 恢复与续行](./agent-resume-continuation-deep-dive.md) — SendMessage 继续已完成代理 + transcript 重建 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-18) | **✓ 已实现** | 中 | [PR#3739](https://github.com/QwenLM/qwen-code/pull/3739) ✓（2026-05-01 合并 · `BackgroundAgentResumeService` + paused 生命周期 + transcript-first fork resume + `SubagentStart` hook 重放 · **+4087/-165**）|
 | **P1** | 系统提示模块化组装 — sections 缓存 + dynamic boundary + uncached 标记 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-19) | 单一字符串 | 中 | — |
 | **P1** | [系统提示内容完善](./system-prompt-content-guidelines-deep-dive.md) — OWASP 安全 + prompt injection检测 + 代码风格约束 + 输出格式 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-24) | 缺少具体指导 | 中 | — |
 | **P1** | [@include 指令与嵌套记忆发现](./nested-memory-include-deep-dive.md) — @path 递归引用 + 文件操作触发目录遍历 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-20) | **✓ 已实现**（`memoryImportProcessor` @path + `maxDepth=5` + 循环防护；`memoryDiscovery` upward scan；`ConditionalRulesRegistry` 按 `paths:` glob 匹配工具调用时注入）| — | — |
 | **P1** | [附件类型协议与令牌预算](./attachment-protocol-budget-deep-dive.md) — 40+ 类型 + per-type 预算 + 3 阶段有序执行 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-21) | 字符串拼接/无预算 | 中 | — |
-| **P1** | [Thinking 块跨轮保留与空闲清理](./thinking-block-retention-deep-dive.md) — 活跃保留 + 1h 空闲清理 + latch 防缓存破坏 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-22) | 每轮独立/无清理 | 中 | [PR#2897](https://github.com/QwenLM/qwen-code/pull/2897) ✓ + [PR#3590](https://github.com/QwenLM/qwen-code/pull/3590) ✓（resume + active session 保留 · GH#3579）+ [PR#3682](https://github.com/QwenLM/qwen-code/pull/3682) ✓（2026-04-28 · model switch + history load 不剥离 reasoning）+ [PR#3691](https://github.com/QwenLM/qwen-code/pull/3691) ✓（preserve description in subject-bearing thought chunks）|
+| **P1** | [Thinking 块跨轮保留与空闲清理](./thinking-block-retention-deep-dive.md) — 活跃保留 + 1h 空闲清理 + latch 防缓存破坏 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-22) | 每轮独立/无清理 | 中 | [PR#2897](https://github.com/QwenLM/qwen-code/pull/2897) ✓ + [PR#3590](https://github.com/QwenLM/qwen-code/pull/3590) ✓（resume + active session 保留 · GH#3579）+ [PR#3682](https://github.com/QwenLM/qwen-code/pull/3682) ✓（2026-04-28 · model switch + history load 不剥离 reasoning）+ [PR#3691](https://github.com/QwenLM/qwen-code/pull/3691) ✓（preserve description in subject-bearing thought chunks）+ [PR#3729](https://github.com/QwenLM/qwen-code/pull/3729) ✓（2026-04-29 · DeepSeek tool-call replay 注入 reasoning_content）+ [PR#3747](https://github.com/QwenLM/qwen-code/pull/3747) ✓（2026-04-29 · DeepSeek 全 assistant turn replay reasoning_content）+ [PR#3737](https://github.com/QwenLM/qwen-code/pull/3737) ✓（2026-04-30 · rewind / compression / merge 路径全保留 reasoning_content · −361 行清理）|
 | **P1** | [输出 Token 自适应升级](./output-token-adaptive-upgrade-deep-dive.md) — 8K 默认 + max_tokens 截断时自动 64K 重试 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-23) | 固定值/不重试 | 小 | [PR#2898](https://github.com/QwenLM/qwen-code/pull/2898) ✓ |
 | **P1** | QWEN.md system-reminder 注入 — 项目指令从系统提示移到用户消息 `<system-reminder>` 标签注入，避免打破 Prompt Cache [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-26) | 直接拼入系统提示 | 小 | — |
 | **P1** | 错误恢复分类路由 — truncation→continuation、overflow→compaction、transport→backoff 三分支 + per-category 重试预算 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-27) | 统一 catch 重试 | 中 | — |
@@ -172,7 +172,7 @@
 | **P2** | 压缩后身份重注入 — 上下文压缩后 messages<3 条时注入 Agent 身份块，防止 Agent "忘记自己是谁" [↓](./qwen-code-improvement-report-p2-stability.md#item-41) | 无身份重注入 | 小 | — |
 | **P2** | 子进程 PID 命名空间沙箱 + 脚本次数限制 — Linux PID namespace + env scrub + SCRIPT_CAPS（v2.1.98 新增） [↓](./qwen-code-improvement-report-p2-stability.md#item-42) | 无 PID 隔离 | 中 | — |
 | **P2** | 会话 Recap（返回时上下文摘要）— `/recap` 命令 + 自动展示（v2.1.108/v2.1.110 新增）[↓](./qwen-code-improvement-report-p2-stability.md#item-43) | **已实现**（/recap + auto-show） | 小 | [PR#3434](https://github.com/QwenLM/qwen-code/pull/3434) ✓（2026-04-19 合并） |
-| **P2** | [瞬态消息单行容器 + 离屏历史冻结](./task-display-height-deep-dive.md) — MessageResponse `height=1 overflowY=hidden` + OffscreenFreeze 引用缓存避免历史 spinner 拖累 [↓](./qwen-code-improvement-report-p2-stability.md#item-44) | 🟡 部分覆盖（pre-slice + visual-height slicing 已合并；MessageResponse 严格容器仍待）| 中 | [PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) ✓ partial（2026-04-25）|
+| **P2** | [瞬态消息单行容器 + 离屏历史冻结](./task-display-height-deep-dive.md) — MessageResponse `height=1 overflowY=hidden` + OffscreenFreeze 引用缓存避免历史 spinner 拖累 [↓](./qwen-code-improvement-report-p2-stability.md#item-44) | 🟡 部分覆盖（pre-slice + visual-height slicing + SubAgent 视觉高度 bounding 已合并；MessageResponse 严格容器仍待）| 中 | [PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) ✓ partial（2026-04-25）+ [PR#3721](https://github.com/QwenLM/qwen-code/pull/3721) ✓（2026-04-29 合并 · SubAgent 显示按视觉高度 bound 防 flicker · +1336/-57）|
 | **P2** | [三级输出截断](./task-display-height-deep-dive.md) — Bash 30K/150K + 单工具 50K + 单消息 200K 批量预算 + env var `BASH_MAX_OUTPUT_LENGTH` [↓](./qwen-code-improvement-report-p2-stability.md#item-45) | 🟡 部分覆盖（通用预切片已合并；三级数字预算仍待）| 小 | [PR#3591](https://github.com/QwenLM/qwen-code/pull/3591) ✓ partial（2026-04-25）|
 | **P2** | [Bash 执行中 "5 行窗口 + +N lines 计数"](./bash-task-display-deep-dive.md) — ShellProgressMessage `lines.slice(-5)` + `+${extraLines} lines` 计数 [↓](./qwen-code-improvement-report-p2-stability.md#item-46) | **✓ 已完整实现**（超越 Claude 原设计 · 可配置 + 6 bypasses + 语义化 tool success ≠ exit code）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓（`+N lines`，2026-04-20）+ [PR#3508](https://github.com/QwenLM/qwen-code/pull/3508) ✓（5 行窗口 + 6 bypasses + settings，2026-04-22）|
 | **P2** | [ShellTimeDisplay 时间 + timeout 倒计时](./bash-task-display-deep-dive.md) — `(10.5s · timeout 30s)` 三种格式 + dim color [↓](./qwen-code-improvement-report-p2-stability.md#item-47) | **✓ 已完整实现**（5/5 对齐 Claude + 1 处 Qwen 优势）| 小 | [PR#3155](https://github.com/QwenLM/qwen-code/pull/3155) ✓ + [PR#3512](https://github.com/QwenLM/qwen-code/pull/3512) ✓（2026-04-23 合并，补齐组合格式 + 亚秒精度 + 条件阈值）|
@@ -184,7 +184,7 @@
 | **P2** | [WebFetch 内容 LLM 清洗 Fast Model](./fast-model-usage-deep-dive.md) — Haiku 抽取核心内容 + 去 nav/ads/tracker [↓](./qwen-code-improvement-report-p2-stability.md#item-53) | 🟡 PR 进行中 | 小 | [PR#3537](https://github.com/QwenLM/qwen-code/pull/3537) 🟡 OPEN（web-fetch processing 路由到 fastModel）|
 | **P2** | [Shell 命令前缀 LLM 提取（权限）Fast Model](./fast-model-usage-deep-dive.md) — Haiku + policySpec 精确分类复合命令/alias/subshell [↓](./qwen-code-improvement-report-p2-stability.md#item-54) | Regex 分类（边界有漏洞）| 中 | — |
 | **P2** | [Skill 改进建议 Post-Sampling Hook Fast Model](./fast-model-usage-deep-dive.md) — Haiku 分析刚完成 turn，建议 skill 修订（opt-in）[↓](./qwen-code-improvement-report-p2-stability.md#item-55) | 无自动改进机制 | 中 | — |
-| **P2** | [真正后台并发 SubAgent + TTL 驱逐](./subagent-display-deep-dive.md) — `evictAfter` 时间戳 + 1s tick + 30s TTL，长时任务不阻塞主 loop [↓](./qwen-code-improvement-report-p2-stability.md#item-56) | **✓ 已实现**（控制面 + UI 层 + 注册表均已合并；`evictAfter` TTL 数值或与 Claude 略有差异）| 大 | [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) ✓（2026-04-27 合并 · `task_stop` / `send_message` / per-agent transcript）+ [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) ✓（2026-04-28 合并 · pill + combined dialog + detail view + cancel flow + 状态分类 Running/Completed/Failed/Cancelled）|
+| **P2** | [真正后台并发 SubAgent + TTL 驱逐](./subagent-display-deep-dive.md) — `evictAfter` 时间戳 + 1s tick + 30s TTL，长时任务不阻塞主 loop [↓](./qwen-code-improvement-report-p2-stability.md#item-56) | **✓ 已实现**（控制面 + UI 层 + 注册表 + 后台 shell 池整合均已合并；`evictAfter` TTL 数值或与 Claude 略有差异）| 大 | [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) ✓（2026-04-27 合并 · `task_stop` / `send_message` / per-agent transcript）+ [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) ✓（2026-04-28 合并 · pill + combined dialog + detail view + cancel flow + 状态分类 Running/Completed/Failed/Cancelled）+ [PR#3642](https://github.com/QwenLM/qwen-code/pull/3642) ✓（2026-04-28 合并 · managed background shell pool + `/tasks` 命令 +1025/-411）+ [PR#3687](https://github.com/QwenLM/qwen-code/pull/3687) ✓（2026-04-29 合并 · 后台 shell 接入 `task_stop` 工具）+ [PR#3720](https://github.com/QwenLM/qwen-code/pull/3720) ✓（2026-04-29 合并 · 后台 shell 与 SubAgent 合并到统一 Background tasks dialog）|
 | **P2** | [`/agents` 独立管理视图](./subagent-display-deep-dive.md) — subagent 历史归档 + 过滤 + 对比 [↓](./qwen-code-improvement-report-p2-stability.md#item-57) | 仅消息流线性回滚 | 中 | — |
 | **P2** | [Coordinator 协调器面板](./subagent-display-deep-dive.md) — footer 上方紧凑多 agent 列表 + `↑↓` 导航 + `Enter` 详情 + `x` 驱逐 [↓](./qwen-code-improvement-report-p2-stability.md#item-58) | **✓ 已实现**（pill + combined dialog + detail view，与 Claude 设计略有差异：状态行 pill + 全屏对话 vs Claude footer 上方常驻面板）| 中 | [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) ✓（2026-04-28 合并 · pill 显示运行计数 + Down 键打开 dialog + Enter 进详情 + x 取消 + ↑↓ 导航 + Left/Esc 关闭）|
 | **P2** | [终端渲染优化（紧凑 + 低闪烁）](./terminal-low-flicker-deep-dive.md) — DEC 2026 同步输出 + 差分渲染 + 双缓冲 + DECSTBM 硬件滚动 + 缓存池化 + alt-screen [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-8) | 仅消息拆分防闪烁 + PR#3381 游标移动优化 | 大 | [PR#3381](https://github.com/QwenLM/qwen-code/pull/3381) ✓（局部） |
@@ -448,6 +448,183 @@
 ---
 
 ## 六、更新日志
+
+### 2026-05-01（~18h 增量 · 5 项合并 + 1 项关键 OPEN · item-18 Agent 恢复与续行 ✓ 闭环 · 共享权限流上线）
+
+扫描窗口：2026-04-30 09:55 UTC → 2026-05-01 04:14 UTC。窗口内 **5 项合并 + 1 项关键 OPEN**。本次主线：① **item-18 Agent 恢复与续行从"未实现"直接 ✓ 完整闭环**（PR#3739 +4087/-165 单 PR 体量爆表）；② **PR#3717 FileReadCache 的 follow-up PR#3774 已出**（prior-read 守卫，把缓存从性能优化升级为模型可信度约束）；③ **共享权限流统一**（PR#3723 把 Interactive / Non-Interactive / ACP 三模式的 L3→L4 决策路径打通）。
+
+#### 🟢 MERGED（5 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| **[PR#3739](https://github.com/QwenLM/qwen-code/pull/3739)** | Add background agent resume and continuation | 2026-05-01 04:14 UTC | 🌟 **关闭 item-18 Agent 恢复与续行**（**+4087/-165** · 单 PR 体量爆表） —— `BackgroundAgentResumeService` 从 `subagents/<sessionId>/` 发现 paused agent + sidecar 持久化 + transcript-first fork resume + `SubagentStart` hook 重放 + `send_message` / `task_stop` 处理 paused agent + `/resume` 流程加载 paused tasks。状态从"—"→ ✓ 已实现 |
+| **[PR#3771](https://github.com/QwenLM/qwen-code/pull/3771)** | fix(cli): restore SubAgent shortcut focus | 2026-04-30 15:02 UTC | item-56 SubAgent UX 微调（+247/-5）|
+| **[PR#3723](https://github.com/QwenLM/qwen-code/pull/3723)** | feat(core): add shared permission flow for tool execution unification | 2026-04-30 14:10 UTC | 🌟 **架构统一** —— 新增 `permissionFlow.ts`（`evaluatePermissionFlow()` / `needsConfirmation()` / `isPlanModeBlocked()` / `isAutoEditApproved()`），把 Interactive / Non-Interactive / ACP 三模式的 L3→L4→L5 决策路径打通（追踪 #3247 · +461/-95）|
+| **[PR#3725](https://github.com/QwenLM/qwen-code/pull/3725)** | chore: remove legacy Gemini workflows | 2026-04-30 14:03 UTC | 仓库历史清理（与改进系列无关）|
+| **[PR#3753](https://github.com/QwenLM/qwen-code/pull/3753)** | fix(cli): honor proxy setting | 2026-04-30 10:24 UTC | proxy 设置真正生效（+290/-12）—— 触及 P2 [企业代理](./qwen-code-improvement-report-p2-core.md#item-19) 方向的小段，但完整 CONNECT relay + CA 注入 + NO_PROXY 仍待 |
+
+#### 🟡 关键 OPEN（值得追踪）
+
+| PR | 方向 | 与已有 item 关系 |
+|---|---|---|
+| **[PR#3774](https://github.com/QwenLM/qwen-code/pull/3774)** | feat(core): enforce prior read before Edit / WriteFile mutates a file（+611/-2）| **PR#3717 FileReadCache 的关键 follow-up** —— PR#3717 body 已预告该方向。新增 `EDIT_REQUIRES_PRIOR_READ` / `FILE_CHANGED_SINCE_READ` 两个错误码：模型若想 Edit/WriteFile 一个**已存在文件**，必须在本会话先 read 过当前字节。**填补"plausible-but-stale 匹配"漏洞** —— 模型不能再凭想象 Edit 一个 `old_string`、恰巧文件中存在该字符串（即使模型从未读过文件的当前版本）。新文件创建豁免；`Config.fileReadCacheDisabled` 是逃生口。**合并后 item-2 将升级为完整闭环** |
+| [PR#3768](https://github.com/QwenLM/qwen-code/pull/3768) | feat(cli): route foreground subagents through pill+dialog while running（+674/-36）| **延伸 item-56** —— 把 foreground subagent 也接入 pill+dialog 调度面，与已合并的 PR#3488 / PR#3720 background 路径形成对偶 |
+| [PR#3735](https://github.com/QwenLM/qwen-code/pull/3735) | fix(core): auto-compact subagent context to prevent overflow（+1283/-1020）| **关联 item-1 多层上下文压缩 + item-23 Token 自适应升级** —— subagent 上下文溢出前自动压缩 |
+| [PR#3779](https://github.com/QwenLM/qwen-code/pull/3779) | feat(telemetry): define HTTP OTLP endpoint behavior and signal routing | telemetry 路由（与 [item-26 OTel 原生 Tracing](./qwen-code-improvement-report-p2-core.md#item-26) 方向接近）|
+| [PR#3778](https://github.com/QwenLM/qwen-code/pull/3778) | feat(desktop): Add desktop app package with Qwen ACP SDK integration | Qwen-original 桌面应用方向 |
+
+#### 🎯 重点 1：item-18 Agent 恢复与续行（PR#3739）从"—"直接闭环
+
+PR#3739 是本系列追踪以来**单 PR 行数最多的项之一**（+4087/-165）。能力清单：
+
+| 能力 | 实现方式 |
+|---|---|
+| 持久化发现 | 新增 `BackgroundAgentResumeService` 扫 `subagents/<sessionId>/` |
+| 生命周期 | sidecar metadata 记录 paused 状态 + registry/UI 表现 |
+| Transcript-first fork resume | fork bootstrap 写入 `system/agent_bootstrap` + 原始 launch prompt 写入 `system/agent_launch_prompt`，resume 时**从 transcript 历史重建 worker context**而非从当前父 prompt/tool 状态重建 |
+| Hook 重放 | resume 时**重新跑 `SubagentStart` hooks** + 并发 resume 自动 coalesce |
+| 控制面 | `send_message` + `task_stop` 处理 paused background agent |
+| UI | `/resume` 流程加载 paused tasks + 瞬态恢复提示 |
+| 兼容 | 无 bootstrap 记录的 legacy fork transcript 仍可见为 paused 并 abandonable，但**禁止 unsafe resume** |
+
+**与 Claude Code 设计对齐 + 微超出**：与 `tools/AgentTool/resumeAgent.ts:resumeAgentBackground()` 思路对齐。**Qwen 的 transcript-first fork resume 比 Claude Code 的方案更稳健** —— 避免父 prompt 漂移导致 fork worker context 重建错误，是工程上更扎实的选择。
+
+#### 🎯 重点 2：PR#3774 把 FileReadCache 从性能优化升级为可信度约束
+
+PR#3717 (item-2) 落地的 FileReadCache 本身是个性能层（短路重复 Read）。PR#3774 用同一个数据结构做了**完全不同的事**：在 Edit/WriteFile 之前**强制要求模型见过当前字节**。
+
+| 错误码 | 触发 | 含义 |
+|---|---|---|
+| `EDIT_REQUIRES_PRIOR_READ` | 文件不在 cache 中（从未 read）| 模型在凭想象写代码 |
+| `FILE_CHANGED_SINCE_READ` | 文件已读但 mtime/size drift | 模型对文件的认知已过期 |
+
+为什么重要：原 `0 occurrences` 检查只能挡"想象的串不存在"；挡不住"想象到一个真实存在的串、但文件已变"——这种 plausible-but-stale 匹配是 LLM 编辑的真实失败模式。PR#3774 是 Anthropic / OpenAI 主流方案的常见组合，Qwen 跟进意味着 Edit/Write 的可信度跨越了一个台阶。
+
+#### 🎯 重点 3：PR#3723 共享权限流统一
+
+PR#3723 把 Interactive / Non-Interactive / ACP 三模式的权限决策路径合并到 `evaluatePermissionFlow()` 单一入口：
+
+```
+L3: Tool 内置默认权限
+ ↓
+L4: PermissionManager 规则覆盖
+ ↓
+finalPermission: allow | deny | ask
+ ↓
+L5: 调用方覆盖（YOLO / AUTO_EDIT / PLAN）
+```
+
+**为什么重要**：之前三模式各自实现 L3/L4 评估，bug 修一个要改三处；PR#3723 之后**单一权威路径** —— 配套 17 个 unit test + E2E 修复。这是 [Qwen Code 平台稳定性](./qwen-code-improvement-report-p2-stability.md) 的基础设施级清理。
+
+#### 🟢 状态升级
+
+| Item | 旧状态 | 新状态 |
+|---|---|---|
+| **item-18** Agent 恢复与续行 | — | **✓ 已实现**（PR#3739）|
+| **item-2** 文件读取缓存 | 🟡 主体已实现 | 🟡 主体已实现 + prior-read 守卫 PR 进行中（PR#3774 OPEN）|
+
+#### 累计计数
+
+- 已合并 PR: 130 → **135**（+5）
+- 关键 OPEN PR 增加 1 项（PR#3774 prior-read 守卫）
+- README 待同步
+
+#### 补漏说明
+
+上一篇 changelog（2026-04-30）的"扫描窗口"是 2026-04-29 02:00 UTC → 2026-04-30 09:55 UTC，但漏列了同窗口内的：
+- PR#3615 ✓ 2026-04-30 07:24 UTC `fix(lsp): 修复 LSP 文档、isPathSafe 限制、提升 LSP 工具调用率`（+154/-45）—— LSP 健壮性
+- PR#3618 ✓ 2026-04-30 07:24 UTC `fix(vscode-companion): fill slash commands into input on Enter instead of auto-submitting` —— VSCode UX
+- PR#3617 ✓ 2026-04-27 15:01 UTC `fix(core): split tool-result media into follow-up user message for strict OpenAI compat`（+526/-11）—— OpenAI 严格兼容
+
+3 项均为各自方向的健壮性补丁，与改进系列 item 关联弱，故只在此处补登。
+
+---
+
+### 2026-04-30（~32h 增量 · 15 项合并 · v0.15.6 · FileReadCache 落地 · DeepSeek reasoning_content 三连击 · Background tasks 统一调度面）
+
+扫描窗口：2026-04-29 02:00 UTC（上次扫描）→ 2026-04-30 09:55 UTC。窗口内 **15 项合并**。本次的两条主线：① **FileReadCache 终于合并** —— item-2 缺口的内容缓存层补齐；② **DeepSeek reasoning_content 跨路径补齐** —— rewind / compression / merge / replay 4 路径在 ~50h 内 3 个 PR 落地。
+
+#### 🟢 MERGED（15 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| **[PR#3717](https://github.com/QwenLM/qwen-code/pull/3717)** | feat(core): add FileReadCache and short-circuit unchanged Reads | 2026-04-30 09:47 UTC | 🌟 **关闭 item-2 主体**——session-scoped FileReadCache 用 `(dev,ino)` key + 三态 check API + `READ_FILE_CACHE_*` env 度量；未变更文本 Read 改用短占位符；range / 非文本 / 截断读 / Write 后 Read 都走完整管道；item-2 状态 🟡 部分实现 → 🟡 主体已实现（仅 32 批并行 readManyFiles 仍待）|
+| **[PR#3737](https://github.com/QwenLM/qwen-code/pull/3737)** | fix(core): preserve reasoning_content in rewind, compression, and merge paths (#3579) | 2026-04-30 02:25 UTC | **关联 item-22**——3 路径全保留 reasoning_content +3/-361 行（同时清掉旧 strip 逻辑）|
+| **[PR#3766](https://github.com/QwenLM/qwen-code/pull/3766)** | chore(release): v0.15.6 | 2026-04-30 07:59 UTC | **v0.15.6 发布** |
+| **[PR#3727](https://github.com/QwenLM/qwen-code/pull/3727)** | chore(core): drop tool token usage tracking | 2026-04-30 07:35 UTC | 内部清理 |
+| **[PR#3764](https://github.com/QwenLM/qwen-code/pull/3764)** | fix(ci): add merge-back PR for stable releases in release workflow | 2026-04-30 07:25 UTC | release workflow |
+| **[PR#3752](https://github.com/QwenLM/qwen-code/pull/3752)** | fix(cli): persist directory add entries | 2026-04-30 03:22 UTC | `/add-dir` 持久化修复 |
+| **[PR#3645](https://github.com/QwenLM/qwen-code/pull/3645)** | fix(cli): correct model precedence — argv > settings > auth env vars | 2026-04-30 01:17 UTC | model 选择优先级硬化 |
+| **[PR#3747](https://github.com/QwenLM/qwen-code/pull/3747)** | fix(core): replay DeepSeek reasoning_content on all assistant turns | 2026-04-29 23:43 UTC | **关联 item-22**——DeepSeek 全 assistant turn replay reasoning_content +9/-12 |
+| **[PR#3647](https://github.com/QwenLM/qwen-code/pull/3647)** | fix(cli): keep sticky todo panel compact | 2026-04-29 16:03 UTC | **关联 item-25 Task Management**——sticky todo 紧凑化 +560/-37（PR#3507 之上的布局优化）|
+| **[PR#3721](https://github.com/QwenLM/qwen-code/pull/3721)** | fix(cli): bound SubAgent display by visual height to prevent flicker | 2026-04-29 14:34 UTC | **关联 item-44 transient 容器**——SubAgent 显示按视觉高度 bound 防 flicker +1336/-57（item-44 的 SubAgent 子方向落地，但 MessageResponse 严格容器仍待）|
+| **[PR#3722](https://github.com/QwenLM/qwen-code/pull/3722)** | fix(memory): use project transcript path for dream | 2026-04-29 09:56 UTC | auto-memory dream 路径 bug 修复 |
+| **[PR#3726](https://github.com/QwenLM/qwen-code/pull/3726)** | feat(core): add Monitor(...) permission namespace | 2026-04-29 09:38 UTC | Qwen-original：为 PR#3684 Phase C event monitor tool 加独立 permission namespace（避免误用 `Bash(...)` 规则触发"Always Allow"扩散）|
+| **[PR#3729](https://github.com/QwenLM/qwen-code/pull/3729)** | fix(core): inject reasoning_content on DeepSeek tool-call replays | 2026-04-29 08:28 UTC | **关联 item-22**——DeepSeek tool-call replay 注入 reasoning_content +153/-35 |
+| **[PR#3720](https://github.com/QwenLM/qwen-code/pull/3720)** | feat(cli): wire background shells into combined Background tasks dialog | 2026-04-29 08:06 UTC | **关联 item-56**——后台 shell 与 SubAgent 合并到统一 Background tasks dialog（pill / 导航 / 详情视图共用） +500/-100 |
+| **[PR#3687](https://github.com/QwenLM/qwen-code/pull/3687)** | feat(core): wire background shells into the task_stop tool | 2026-04-29 02:10 UTC | **关联 item-56**——后台 shell 接入 `task_stop` 工具，控制语义统一 +209/-25 |
+
+#### 🎯 重点 1：FileReadCache（PR#3717）—— item-2 主体落地
+
+PR#3717 是本窗口最重要的一项。设计哲学比直接 port Claude Code 的 `fileReadCache.ts` 更克制：
+
+| 维度 | Claude Code 原设计 | Qwen PR#3717 |
+|---|---|---|
+| 缓存对象 | 完整文件内容（1000 条 LRU + mtime 失效）| **占位符短路标记**（不缓存内容，只记"模型已看过整文件"）|
+| Key | path | `(dev, ino)` —— 防符号链接/重命名假命中 |
+| API 形态 | `get()` / `set()` | **三态 `check()`**：`hit-fresh` / `hit-stale` / `miss` |
+| 节省 | 内容回写省 token | 短占位符替代全文回写 |
+| 度量 | — | `READ_FILE_CACHE_*` env 变量驱动可观测度量（不承诺数字，按 session 形态评估）|
+| 拓展 | — | 三态 API 设计上**预留给后续 Edit/WriteFile 强制"必须先读"守卫** |
+
+剩余缺口：① 32 批并行 `readManyFiles`（PR#3717 不含 I/O 并行）；② 完整的 Edit/WriteFile prior-read enforcement（PR#3717 是基础设施层，调用方还没接入）。
+
+#### 🎯 重点 2：DeepSeek reasoning_content 跨路径补齐（item-22）
+
+DeepSeek 没有 Anthropic 那种 `thinking` content block，而是把推理嵌在 `reasoning_content` 字段里——意味着 transcript 重建（rewind / compression / merge / replay）每条路径都需要单独保 reasoning_content。3 个 PR 在 ~50h 内补齐：
+
+| PR | 路径 | 大小 |
+|---|---|---|
+| PR#3729 | DeepSeek tool-call replay | +153/-35 |
+| PR#3747 | DeepSeek 全 assistant turn replay | +9/-12 |
+| PR#3737 | rewind / compression / merge 三路径 | +3/-361（含旧 strip 逻辑清理）|
+
+加上之前的 PR#2897 / PR#3590 / PR#3682 / PR#3691，**Anthropic + DeepSeek 两路径在 thinking 块跨轮保留方向已基本对齐 Claude Code 等价水平**。
+
+#### 🎯 重点 3：Background tasks 统一调度面（item-56）
+
+PR#3687 + PR#3720 是 PR#3471/3488/3642 三件套之后的"统一收尾"——把后台 shell（exec 类）和 SubAgent（LLM 类）合并到**同一个调度面**：
+
+| PR | 层 | 内容 |
+|---|---|---|
+| PR#3687 | 控制层 | 后台 shell 也接入 `task_stop` 工具，模型用单一动作能停 SubAgent + shell |
+| PR#3720 | UI 层 | 后台 shell 与 SubAgent 在 dialog 中合并（统一 pill / 统一导航 / 统一详情视图）|
+
+**Qwen Code 在此点上超过了 Claude Code 的设计**——Claude 的 BashOutput / Background shells 与 Coordinator panel 是两套相对独立的 UI；Qwen 选择把两者塞进同一个 mental model。
+
+#### 🟢 状态升级
+
+| Item | 旧状态 | 新状态 |
+|---|---|---|
+| **item-2** 文件读取缓存 + 批量并行 I/O | 🟡 部分实现（仅查询缓存）| **🟡 主体已实现**（查询缓存 + FileReadCache，仅 32 并行待）|
+| **item-22** Thinking 块跨轮保留 | DeepSeek 路径未覆盖 | **Anthropic + DeepSeek 双路径已对齐** |
+| **item-44** 瞬态消息容器 | pre-slice + visual-height slicing | + SubAgent 视觉高度 bounding（仍未达统一 MessageResponse 容器）|
+| **item-56** 后台并发 SubAgent | ✓ 已实现（3 件套）| **✓ 已实现 + 后台 shell 也并入**（5 件套）|
+| **item-7** 会话崩溃恢复 | 无 | 🟡 读端容错（PR#3656 JSONL `}{` 粘连恢复） |
+| **item-25** Task Management | 控制面 + UI 在做 | 控制面 + UI 已合并，依赖拓扑/跨进程锁仍待 |
+
+#### 累计计数
+
+- 已合并 PR: 115 → **130**（+15）
+- v0.15.3 → **v0.15.6**（PR#3766）
+- README 待同步
+
+#### 不在本系列范围的 PR（仅记录）
+
+- PR#3726 Monitor 权限 namespace + PR#3684 Phase C event monitor tool —— Qwen Code-original 方向，不是从 Claude Code 借鉴
+- PR#3645 / PR#3727 / PR#3764 / PR#3752 —— config 硬化 / 内部清理 / CI / 小功能修复，与改进系列 item 无直接关联
+
+---
 
 ### 2026-04-29（~14h 增量 · 11 项合并 · auth wizard 第二轮完成 · autoSkill 新方向）
 
