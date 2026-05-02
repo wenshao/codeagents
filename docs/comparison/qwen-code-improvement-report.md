@@ -59,7 +59,7 @@
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-12) | 缺失 | 小 | [PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | 🟡 PR 进行中 | 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) ✗（已关闭）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) / [PR#3539](https://github.com/QwenLM/qwen-code/pull/3539) 🟡 OPEN（`/branch` 分叉当前会话，2026-04-23）|
 | **P1** | GitHub Actions CI — 自动 PR 审查/issue 分类 action [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-1) | 缺失 | 中 | — |
-| **P1** | GitHub Code Review — 多 Agent自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-2) | **已实现**（内置 `/review` skill，5 agent 并行 + Create Review API） | — | [PR#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [PR#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [PR#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ / [PR#3276](https://github.com/QwenLM/qwen-code/pull/3276)（弱模型并行强化） / [Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742) |
+| **P1** | GitHub Code Review — 多 Agent自动 PR review + inline 评论 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-2) | **已实现 + 持续扩展**（内置 `/review` skill，9 agent 并行 + 3 personas + 迭代反向审计 + 6 个 `qwen review` CLI 子命令） | — | [PR#2348](https://github.com/QwenLM/qwen-code/pull/2348) ✓ / [PR#2687](https://github.com/QwenLM/qwen-code/pull/2687) ✓ / [PR#2932](https://github.com/QwenLM/qwen-code/pull/2932) ✓ / [PR#3276](https://github.com/QwenLM/qwen-code/pull/3276)（弱模型并行强化） / [PR#3754](https://github.com/QwenLM/qwen-code/pull/3754) ✓（**2026-05-01 合并 · +2423/-138** · 5→9 agent + 3 undirected personas + iterative reverse audit + self-PR/CI 检测 + `qwen review fetch-pr/pr-context/load-rules/deterministic/presubmit/cleanup` 子命令） / [Roadmap#742](https://github.com/QwenLM/qwen-code/issues/742) |
 | **P1** | [HTTP Hooks](./http-hooks-deep-dive.md) — Hook 可 POST JSON 到 URL 并接收响应（不仅 shell 命令）[↓](./qwen-code-improvement-report-p0-p1-platform.md#item-3) | 仅 shell 命令 | 小 | [PR#2827](https://github.com/QwenLM/qwen-code/pull/2827) ✓ |
 | **P1** | [Structured Output](./structured-output-deep-dive.md) — `--json-schema` 强制 JSON Schema 验证输出 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-4) | 缺失 | 小 | — |
 | **P1** | [Agent SDK 增强](./agent-sdk-python-deep-dive.md) — Python SDK + 流式回调 + 工具审批回调（Qwen 仅 TS SDK）[↓](./qwen-code-improvement-report-p0-p1-platform.md#item-5) | ✓ Python SDK 已合并（流式/审批回调仍待验证） | 中 | [PR#3494](https://github.com/QwenLM/qwen-code/pull/3494) ✓（2026-04-24 23:02 UTC 合并 · `packages/sdk-python` · async `query` + sync `query_sync` + process transport + control/permission · 4676 行新增 · 追踪 #3010） |
@@ -122,7 +122,7 @@
 | **P2** | [会话标签与搜索](./session-tags-search-deep-dive.md) — /tag 命令打标签 + 按标签/仓库/标题搜索历史会话 [↓](./qwen-code-improvement-report-p2-core.md#item-23) | 仅按时间排序 | 小 | — |
 | **P2** | Plan 状态机化 + Hint 注入 — 4 状态 subtask + 每轮 hint 注入（AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-24) | `/plan` 是一次性文档 | 中 | — |
 | **P2** | A2A 协议集成 — 跨 agent 通信 + AgentCard + 服务发现（AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-25) | 仅 MCP Client | 大 | — |
-| **P2** | OTel 原生 Tracing — 5 类 span extractor（Agent/LLM/Tool/Formatter/Embedding，AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-26) | 仅阿里云 RUM | 中 | — |
+| **P2** | OTel 原生 Tracing — 5 类 span extractor（Agent/LLM/Tool/Formatter/Embedding，AgentScope 参考） [↓](./qwen-code-improvement-report-p2-core.md#item-26) | 🟡 OTel SDK 已集成（@opentelemetry/sdk-node + 6 exporters traces/logs/metrics × http/grpc）+ HTTP OTLP routing 已落地（PR#3779），AgentScope 风格 5 类 span extractor 自动埋点仍缺 | 中 | [PR#3779](https://github.com/QwenLM/qwen-code/pull/3779) ✓（**2026-05-01 合并 · +1387/-102** · `resolveHttpOtlpUrl()` `/v1/traces` `/v1/logs` `/v1/metrics` 自动追加 + per-signal endpoint overrides + `LogToSpanProcessor` 桥接 logs→spans 给 traces-only 后端如阿里云）|
 | **P2** | Conditional Hooks — Hook `if` 字段用权限规则语法按工具/路径过滤 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-1) | 缺失 | 小 | — |
 | **P2** | [Transcript Search 会话记录搜索](./transcript-search-navigation-deep-dive.md) — 按 `/` 搜索会话记录，`n`/`N` 导航匹配项 [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-2) | 缺失 | 小 | — |
 | **P2** | [Bash File Watcher](./file-watcher-stale-edit-deep-dive.md) — 检测 formatter/linter 修改已读文件，防止 stale-edit [↓](./qwen-code-improvement-report-p2-tools-commands.md#item-3) | 缺失 | 小 | — |
@@ -150,7 +150,7 @@
 | **P2** | /rewind 检查点回退 — 会话内代码 + 对话恢复到之前的检查点 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-5) | ✓ 已实现 | 中 | [PR#3441](https://github.com/QwenLM/qwen-code/pull/3441) ✓（2026-04-25 合并 · double-ESC + /rewind · +1533/-6）|
 | **P2** | /copy OSC 52 剪贴板 — 复制代码块到剪贴板，OSC 52 + temp 文件回退 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-6) | 缺失 | 小 | — |
 | **P2** | 首次运行引导向导 — 主题/认证/API Key/安全/终端设置多步引导 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-7) | 缺失 | 中 | — |
-| **P2** | /doctor 诊断工具 — 系统环境检查（git/node/shell/权限/代理）[↓](./qwen-code-improvement-report-p2-tools-ui.md#item-8) | 缺失 | 小 | — |
+| **P2** | /doctor 诊断工具 — 系统环境检查（git/node/shell/权限/代理）[↓](./qwen-code-improvement-report-p2-tools-ui.md#item-8) | **✓ 已实现 + 持续扩展**（`/doctor` 基础诊断 + `/doctor memory` 内存子命令进行中）| 小 | [PR#3404](https://github.com/QwenLM/qwen-code/pull/3404) ✓（2026-04-19 合并 · 基础 `/doctor` 命令）/ [PR#3785](https://github.com/QwenLM/qwen-code/pull/3785) 🟡 OPEN（`/doctor memory` + `--json` + `collectMemoryDiagnostics()` · #3000 系列首层）|
 | **P2** | 结构化 Diff 渲染 — Rust NAPI 快速着色 + 行号 gutter + 语法高亮 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-9) | 基础 inline diff | 中 | — |
 | **P2** | Slash Command 命名空间治理 — source namespace + reserved names + 来源透明 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-10) | 后者覆盖前者 | 中 | — |
 | **P2** | /plan 计划模式 — Agent 只分析不动手 + 用户确认后执行 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-11) | 无计划模式 | 小 | [PR#2921](https://github.com/QwenLM/qwen-code/pull/2921) ✓ / [PR#3008](https://github.com/QwenLM/qwen-code/pull/3008) ✓ |
@@ -448,6 +448,94 @@
 ---
 
 ## 六、更新日志
+
+### 2026-05-02（~33h 增量 · 5 项合并 · `/review` 第二轮架构升级 + OTel HTTP routing 落地 + item-26 状态勘误）
+
+扫描窗口：2026-05-01 04:14 UTC → 2026-05-02 13:39 UTC。窗口内 **5 项合并**。本次主线：① **`/review` skill 第二轮架构升级**（PR#3754 +2423/-138 单 PR 体量爆表 · 5→9 agent + 3 personas + 6 个 CLI 子命令）；② **OTel HTTP OTLP routing 上线**（PR#3779 +1387/-102 · 直接触发 item-26 状态勘误）；③ **item-26 状态严重勘误** —— 原描述"无 OpenTelemetry 支持"已大幅过时，经源码核查 Qwen Code 早已集成 `@opentelemetry/sdk-node` + 6 个 exporter。
+
+#### 🟢 MERGED（5 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| **[PR#3754](https://github.com/QwenLM/qwen-code/pull/3754)** | feat(review): expand review pipeline + qwen review CLI subcommands | 2026-05-01 10:30 UTC | 🌟 **`/review` 第二轮架构升级**（**+2423/-138** · 单 PR 体量爆表）—— Step 4 5→**9 个并行 agent**（Correctness/Security 拆分 + 新增 Test Coverage + **3 undirected personas**：attacker / 3am-oncall / maintainer）；Step 6 改**迭代反向审计**（cap 3 rounds）；Step 9 增加 **self-PR detection**（自审 PR 自动降级 APPROVE/REQUEST_CHANGES → COMMENT）+ **CI status check** + 现有评论 4 类优先级；新增 6 个 **`qwen review` CLI 子命令**（`fetch-pr` / `pr-context` / `load-rules` / `deterministic` / `presubmit` / `cleanup`）替换 SKILL.md 内 inline bash 命令，LLM 改为读结构化 JSON |
+| **[PR#3779](https://github.com/QwenLM/qwen-code/pull/3779)** | feat(telemetry): define HTTP OTLP endpoint behavior and signal routing | 2026-05-01 14:47 UTC | 🌟 **关联 item-26 OTel 部分实现**（**+1387/-102**）—— `resolveHttpOtlpUrl()` 按 OTel 规范追加 `/v1/traces` `/v1/logs` `/v1/metrics`；per-signal endpoint overrides（支持阿里云 `/api/otlp/traces` 等非标路径）；`LogToSpanProcessor` 桥接 OTel logs→spans 给 traces-only 后端 + session-based traceId（SHA-256(sessionId) 截 128 bit） |
+| [PR#3784](https://github.com/QwenLM/qwen-code/pull/3784) | fix(monitor): correct Windows taskkill spawn assertion | 2026-05-02 03:24 UTC | Windows monitor 兼容性修复（+15/-18） |
+| [PR#3782](https://github.com/QwenLM/qwen-code/pull/3782) | fix(vscode-companion): align package eslint config | 2026-05-02 04:35 UTC | VSCode companion eslint 对齐（+25/-9） |
+| [PR#3777](https://github.com/QwenLM/qwen-code/pull/3777) | fix(test): restore abort-and-lifecycle stdin-close test | 2026-05-02 13:39 UTC | PR#3723 后续测试修复（+78/-32） |
+
+#### 🔍 状态勘误：item-26 OTel 原生 Tracing
+
+原描述（line 125 + p2-core item-26 主体）："仅阿里云 RUM，没有 OpenTelemetry 支持" —— **此判断严重过时**：
+
+```bash
+$ grep "@opentelemetry" packages/core/package.json
+"@opentelemetry/api": "^1.9.0",
+"@opentelemetry/exporter-logs-otlp-grpc": "^0.203.0",
+"@opentelemetry/exporter-logs-otlp-http": "^0.203.0",
+"@opentelemetry/exporter-metrics-otlp-grpc": "^0.203.0",
+"@opentelemetry/exporter-metrics-otlp-http": "^0.203.0",
+"@opentelemetry/exporter-trace-otlp-grpc": "^0.203.0",
+"@opentelemetry/exporter-trace-otlp-http": "^0.203.0",
+"@opentelemetry/sdk-node": "^0.203.0",
+```
+
+实际状态：
+- ✅ **OTel SDK 完整集成**（`@opentelemetry/sdk-node` + 6 个 exporter：traces/logs/metrics × http/grpc）
+- ✅ **HTTP OTLP signal routing 已落地**（PR#3779）
+- 🟡 **AgentScope 风格 5 类 span extractor 自动埋点仍缺**（Agent / LLM / Tool / Formatter / Embedding）—— 这是本 item 真正的剩余 gap
+
+主矩阵 line 125 + p2-core item-26 已同步更新为 🟡 **部分实现**。
+
+#### 🟡 关键 OPEN（值得追踪）
+
+| PR | 方向 | 与已有 item 关系 |
+|---|---|---|
+| **[PR#3788](https://github.com/QwenLM/qwen-code/pull/3788)** | fix(core): inject thinking blocks for DeepSeek anthropic-compatible provider | **延续 item-22 thinking 块跨轮保留** —— DeepSeek 的 `api.deepseek.com/anthropic` 端点在 thinking 模式下要求 assistant turn 必须带 `thinking` block，否则 HTTP 400。本 PR 为该端点注入空 thinking block（`{type: 'thinking', thinking: '', signature: ''}`），与已合并的 PR#3729/3747 形成 OpenAI/Anthropic-compat 双轨完整覆盖 |
+| [PR#3785](https://github.com/QwenLM/qwen-code/pull/3785) | feat(cli): add memory diagnostics doctor command | **延伸 /doctor**（已合并的 PR#3404 之上）—— `/doctor memory` 子命令 + `--json` 输出 + `collectMemoryDiagnostics()`（Node/V8 内存数据 + 风险提示），为 #3000 系列首层 |
+| [PR#3790](https://github.com/QwenLM/qwen-code/pull/3790) | fix(core): improve stream rate-limit retry diagnostics | 关联 [item-8 API 指数退避](./qwen-code-improvement-report-p0-p1-engine.md#item-8) —— 流式 SSE rate-limit 重试诊断 |
+| [PR#3783](https://github.com/QwenLM/qwen-code/pull/3783) | feat(cli): switch models non-interactively from the cli | 模型切换 CLI 入口（headless 友好） |
+| [PR#3780](https://github.com/QwenLM/qwen-code/pull/3780) | Feat/stats model cost estimation rebase | session 成本估算 |
+| [PR#3781](https://github.com/QwenLM/qwen-code/pull/3781) | feat(weixin): add image sending support via CDN upload | Channels weixin 适配增强 |
+| [PR#3776](https://github.com/QwenLM/qwen-code/pull/3776) | feat(installer): add standalone archive installation | 独立归档安装方式 |
+| [PR#3775](https://github.com/QwenLM/qwen-code/pull/3775) | refactor(core): route side-query LLM calls through runSideQuery chokepoint | side-query 调用统一抽象 |
+
+#### 🎯 重点 1：`/review` 升级幅度（PR#3754）
+
+PR#3754 是 `/review` skill 自 2026-03-14 上线以来**第二次重大架构升级**（第一次是 PR#2932 的 autofix + 安全加固）。设计变化：
+
+| Step | 升级前 | 升级后 |
+|---|---|---|
+| 4 并行 agent | 5 个 | **9 个**（Correctness / Security 拆分 + 新增 Test Coverage + 3 undirected personas） |
+| 5 不确定→拒绝 | uncertain → reject | uncertain → **low-confidence**（终端"Needs Human Review"，不发 PR comment） |
+| 6 反向审计 | 单次 | **迭代**（cap 3 rounds，no-new-findings 终止） |
+| 9 GitHub API 调用 | inline gh api 命令 | **self-PR 检测 + CI status check + 现有评论 4 类优先级**，全部走 `qwen review presubmit` 单 call |
+
+新增的 6 个 `qwen review` CLI 子命令是**架构上的重大转变**——把 SKILL.md 中"让 LLM 跑 bash 命令"改为"让 LLM 调结构化 CLI 子命令读 JSON"，**降低 LLM 对 shell 语法的理解依赖、提高确定性**。
+
+#### 🎯 重点 2：OTel item-26 状态勘误 + PR#3779
+
+老版本的 codeagents 报告把 item-26 写成"完全缺失"，今天源码核查发现 **OTel SDK 早就集成完成**，PR#3779 是在已有 OTel 基础上的"HTTP signal routing 完善"。这暴露了 codeagents 报告中可能存在的**其他类似过时判断**——后续审计需要更系统地核对包依赖现状。
+
+PR#3779 的 `LogToSpanProcessor` 是亮点：很多 traces-only 的后端（如阿里云观测）不收 logs；通过把 logs 转成 spans，让 logs 也能在 traces UI 上展示。这是工程务实的桥接设计。
+
+#### 🟢 状态升级
+
+| Item | 旧状态 | 新状态 |
+|---|---|---|
+| **item-26** OTel 原生 Tracing | "缺失（仅阿里云 RUM）" | **🟡 部分实现**（OTel SDK + HTTP OTLP routing ✓，5 类 span extractor 仍缺）|
+| **GitHub Code Review item** | 已实现（5 agent） | **已实现 + 第二轮升级**（9 agent + 3 personas + iterative reverse audit + 6 CLI 子命令）|
+| **/doctor 诊断工具** | "缺失" | **✓ 已实现 + 持续扩展**（PR#3404 基础 + PR#3785 memory 子命令 OPEN）|
+
+#### 累计计数
+
+- 已合并 PR: 135 → **140**（+5）
+- README 待同步
+
+#### 备忘：审计建议
+
+下一轮审计应系统核对所有 P2 item 的"缺失"判断是否仍成立——本轮发现 item-26 / `/doctor` 两处过时。建议挑选 5-10 个标记"缺失"的 P2 item，对照源码 + package.json 重新核查。
+
+---
 
 ### 2026-05-01（~18h 增量 · 5 项合并 + 1 项关键 OPEN · item-18 Agent 恢复与续行 ✓ 闭环 · 共享权限流上线）
 

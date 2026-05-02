@@ -1087,7 +1087,17 @@ async def get_agent_card(self, *args: Any, **kwargs: Any) -> AgentCard:
 
 <a id="item-26"></a>
 
-### 26. OTel 原生 Tracing + 5 类 Span Extractor（P2，AgentScope 参考）
+### 26. OTel 原生 Tracing + 5 类 Span Extractor（P2，AgentScope 参考）🟡 部分实现（OTel SDK 已集成 + HTTP OTLP routing 已落地）
+
+**最新状态（2026-05-01）**：原描述"无 OpenTelemetry 支持"已严重过时——经源码核查（`packages/core/package.json`），Qwen Code **已完整集成 @opentelemetry/sdk-node + 6 个 exporter**（traces/logs/metrics × http/grpc）。本 item 状态升级为 🟡 **部分实现**：
+
+- ✅ OTel SDK 集成（`packages/core/src/telemetry/sdk.ts` 等 9+ 个文件）
+- ✅ [PR#3779](https://github.com/QwenLM/qwen-code/pull/3779) ✓（**2026-05-01 合并 · +1387/-102**）—— `resolveHttpOtlpUrl()` 按 OTel 规范自动追加 `/v1/traces` `/v1/logs` `/v1/metrics` 路径（保留 query string）；per-signal endpoint overrides（`otlpTracesEndpoint` / `otlpLogsEndpoint` / `otlpMetricsEndpoint`）支持非标路径后端（如阿里云 `/api/otlp/traces`）；新增 `LogToSpanProcessor` 把 OTel log records 桥接到 spans（给 traces-only 后端用）+ session-based traceId correlation（SHA-256(sessionId) 截 128 bit）+ error status 传播
+- 🟡 **AgentScope 风格 5 类 span extractor**（Agent / LLM / Tool / Formatter / Embedding 自动埋点）**仍缺**——这是本 item 的剩余 gap
+
+---
+
+**原 item 内容（保留作为目标参考）**：
 
 **思路**：当前 qwen-code 的可观测性仅有阿里云 RUM（`gb4w8c3ygj-default-sea.rum.aliyuncs.com`），**没有 OpenTelemetry 支持**。这意味着：
 

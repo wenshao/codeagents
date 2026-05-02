@@ -93,6 +93,7 @@
 | [#2380](https://github.com/QwenLM/qwen-code/pull/2380) | `extends: bundled` 允许扩展 bundled skill | ✗ **已关闭**（未合并）|
 | [#2687](https://github.com/QwenLM/qwen-code/pull/2687) | 验证机制 + 误报控制 + PR 评论 | 2026-04-01 |
 | [#2932](https://github.com/QwenLM/qwen-code/pull/2932) | **确定性分析 + autofix + 安全加固** | 2026-04-09 |
+| [#3754](https://github.com/QwenLM/qwen-code/pull/3754) | **`/review` 第二轮架构升级**（+2423/-138）—— Step 4 5→**9 个并行 agent**（Correctness/Security 拆分 + 新增 Test Coverage + **3 undirected personas**：attacker / 3am-oncall / maintainer）；Step 5 改"低置信度→Needs Human Review"（不发 PR comment）；Step 6 改**迭代反向审计**（cap 3 rounds）；Step 9 增加 **self-PR detection**（自审 PR 自动降级 APPROVE/REQUEST_CHANGES → COMMENT 避免 GitHub 422）+ **CI status check** + 现有评论 4 类优先级（Stale > Resolved > Overlap > NoConflict）；新增 6 个 **`qwen review` CLI 子命令**（`fetch-pr` / `pr-context` / `load-rules` / `deterministic` / `presubmit` / `cleanup`）替换 SKILL.md 内 inline bash 命令——LLM 改为读结构化 JSON | 2026-05-01 |
 
 **进行中的增强**：
 
