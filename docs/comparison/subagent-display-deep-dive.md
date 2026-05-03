@@ -27,10 +27,10 @@
 
 | PR | 方向 |
 |---|---|
-| **[PR#3791](https://github.com/QwenLM/qwen-code/pull/3791)** 🟡 OPEN（2026-05-02 14:32 UTC，+357/-40 / 8 文件） | **`feat(cli): wire Monitor entries into combined Background tasks dialog`** —— 直接对应 PR#3684 自述的"未做"清单第 1 项。结构上是 PR#3720 的 Monitor 镜像版（kind framework 的第三个消费者：agent / shell / **monitor**）。**Before**：pill 只显示 `1 shell, 1 local agent`，monitor 不可见；**After**：`1 shell, 1 local agent, 2 monitors`，全部终止后塌陷为 `N tasks done`。Overlay 单 Background tasks 区域含三类，monitor 行前缀 `[monitor] <description>`；detail view 按 kind 派发新增 `MonitorDetailBody`（command / status / pid / event count / dropped lines）；`x` 键路由到 `monitorRegistry.cancel(monitorId)`（同步 settle，与 `task_stop` 的 monitor 路径一致）。**Core 改动**：`MonitorRegistry.setStatusChangeCallback` 镜像 `BackgroundShellRegistry` / `BackgroundTaskRegistry`。**意义**：验证 PR#3488 / PR#3720 引入的 kind framework 是真正 cross-kind 的 |
+| ✅ ~~[PR#3791](https://github.com/QwenLM/qwen-code/pull/3791)~~ | **已于 2026-05-03 02:05 UTC 合并 +791/-49**（体量从 OPEN 时的 +357/-40 翻倍 · 8 文件 / 2 commits）—— Monitor 接入 BackgroundTasksDialog 完成；kind framework 现有 agent / shell / monitor 三个真实消费者，把"generic framework"从声称变为证据。Commit 7999b85 lint fix 添加 `default: { const _exhaustive: never = entry; throw ... }` 同时保运行时 guard + 编译期 exhaustiveness 检查 |
 | [PR#3768](https://github.com/QwenLM/qwen-code/pull/3768) | route foreground subagents through pill+dialog while running —— 把前台 subagent 也接入 pill+dialog，与已合并的后台路径形成对偶 |
 | [PR#3735](https://github.com/QwenLM/qwen-code/pull/3735) | auto-compact subagent context to prevent overflow —— subagent 上下文溢出前自动压缩 |
-| ❌ monitor → `send_message` 集成 | PR#3684 自述"未做"清单第 2 项 —— `task_stop` 集成已经在 PR#3791 中完成（`x` 键路由 + `task_stop` 同步），但 `send_message` 暂未对接 |
+| ❌ monitor → `send_message` 集成 | PR#3684 自述"未做"清单第 2 项 —— `task_stop` 集成已经在 PR#3791（已合并）中通过 `x` 键路由 `monitorRegistry.cancel()` 顺带覆盖，但 `send_message` 集成暂未对接 |
 
 ---
 
@@ -417,11 +417,13 @@ t=30: [行消失，被驱逐]
 
 | 未做项 | 状态 | 备注 |
 |---|---|---|
-| Footer pill / dialog 集成 | 🟡 **PR#3791 OPEN（2026-05-02 14:32 UTC）正在做** | +357/-40 · 8 文件 · 直接镜像 PR#3720（agent/shell→monitor 是 kind framework 第三个消费者）|
-| `task_stop` 集成 | 🟡 **PR#3791 顺便覆盖** | `x` 键路由到 `monitorRegistry.cancel()`，同步 settle 与 `task_stop` 的 monitor 路径一致 |
+| Footer pill / dialog 集成 | ✅ **PR#3791 已合并 2026-05-03 02:05 UTC** | **+791/-49**（体量从 OPEN 时 +357/-40 翻倍）· 8 文件 / 2 commits · core `MonitorRegistry.setStatusChangeCallback` 镜像 `BackgroundShellRegistry` / `BackgroundTaskRegistry` 的 sync-fire-on-register 模式 |
+| `task_stop` 集成 | ✅ **PR#3791 顺带覆盖** | `x` 键路由到 `monitorRegistry.cancel()`，同步 settle 与 `task_stop` 的 monitor 路径一致 |
 | `send_message` 集成 | ❌ 仍缺 | 当前未在 PR#3791 范围内 |
 
-PR#3791 合并后，monitor 将与 subagent / background shell 共享同一个 pill+dialog 调度面 —— 这将**完成 Phase C 与 PR#3471/3488 调度面的全部对接**，验证 kind framework 真正 cross-kind。
+**PR#3791 合并后已完成**：monitor 与 subagent / background shell 共享同一个 pill+dialog 调度面 —— **Phase C 与 PR#3471/3488 调度面的主要对接已完成**，kind framework 现有 **agent / shell / monitor 三个真实消费者**，把"generic framework"从声称变为证据。
+
+**Lint fix 工程实践**：commit `7999b85` 给 5 个新 switch 加 `default: { const _exhaustive: never = entry; throw ... }`，同时保运行时 guard 和编译期 exhaustiveness 检查——4th kind 出现时 TypeScript 立即指出 5 个 site 需新加 arm。
 
 ---
 

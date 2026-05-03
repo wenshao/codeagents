@@ -449,6 +449,52 @@
 
 ## 六、更新日志
 
+### 2026-05-03 第二轮（~98 分钟增量 · 2 项合并 + 1 项关键 OPEN · Phase C dialog 集成正式合并 + 非交互错误打印修复 + DeepSeek `max` reasoning effort）
+
+扫描窗口：2026-05-03 00:36 UTC → 2026-05-03 02:14 UTC。窗口内 **2 项合并 + 1 项关键 OPEN**。本次主线：① **PR#3791 Phase C dialog 集成正式合并**（体量从 OPEN 时的 +357/-40 增长到 +791/-49 · 8 文件 / 2 commits · kind framework 真正 cross-kind 验证）；② **PR#3749 非交互模式 API 错误打印修复**（+308/-27 · 3 处独立站点的双重格式化收敛到 `AlreadyReportedError` marker + `handleError` short-circuit）；③ **PR#3800 DeepSeek `reasoning_effort: 'max'` 路线打开**（+516/-57 OPEN · 直接命中 [reasoning-effort-deep-dive §3.3 推荐实施方案 Step 1+2](./reasoning-effort-deep-dive.md#33-推荐实施方案4-步)）。
+
+#### 🟢 MERGED（2 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| **[PR#3791](https://github.com/QwenLM/qwen-code/pull/3791)** | feat(cli): wire Monitor entries into combined Background tasks dialog | 2026-05-03 02:05 UTC | 🌟 **Phase C dialog 集成正式合并**（**+791/-49** · 体量从 OPEN 时 +357/-40 翻倍 · 8 文件 / 2 commits）—— kind framework 现有 **三个真实消费者**（agent / shell / **monitor**），把"generic framework"从声称变为证据。**新机制**：core `MonitorRegistry.setStatusChangeCallback` 镜像 `BackgroundShellRegistry` / `BackgroundTaskRegistry` 的 sync-fire-on-register 模式；CLI hook 监听 + pill / dialog / context 三层接入；详情视图按 kind 派发新增 `MonitorDetailBody`（command / status / pid / event count / dropped lines）；`x` 键路由 `monitorRegistry.cancel(monitorId)` 同步 settle 与 `task_stop` 一致。**Commit 7999b85 lint fix** 是有意义的工程实践：5 个新 switch 的 `default: { const _exhaustive: never = entry; throw ... }` 同时保运行时 guard 和编译期 exhaustiveness 检查（4th kind 出现时 TS 立即指出 5 个 site 需新加 arm）|
+| **[PR#3749](https://github.com/QwenLM/qwen-code/pull/3749)** | fix(cli): stop double-wrapping and double-printing API errors in non-interactive mode | 2026-05-03 00:39 UTC | **非交互错误打印路径修复**（+308/-27）—— 用户从 gateway 看到 routine 4xx 时 CLI 报"An unexpected critical error occurred"+ 三行重复内容（`parseAndFormatApiError` 在已 wrap 输出上再 wrap）。修复：① 新 `AlreadyReportedError` marker；② `handleError` short-circuit；③ `parseAndFormatApiError` 加 idempotency guard 作安全网；④ `nonInteractiveCli.ts` catch 块 TEXT 模式跳过 adapter emit 当错误已标记。意义：非交互输出对 CI / 脚本调试极重要，"上下文错误信息一行就够"是合理体验 |
+
+#### 🟡 关键 OPEN（值得追踪）
+
+| PR | 方向 | 与已有 item 关系 |
+|---|---|---|
+| **[PR#3800](https://github.com/QwenLM/qwen-code/pull/3800)** | feat(core): support reasoning effort 'max' tier (DeepSeek extension) | 🌟 **直接命中 [reasoning-effort-deep-dive §3.3 推荐实施方案 Step 1+2](./reasoning-effort-deep-dive.md#33-推荐实施方案4-步)**（+516/-57）—— DeepSeek 在 `reasoning_effort` 上扩展了 `max` tier（强于 `high`），DeepSeek 文档直接说"对一些复杂 Agent 类请求（如 Claude Code、OpenCode），自动设置为 `max`"。修复两个问题：① **`max` 类型未接受**：`ContentGeneratorConfig.reasoning.effort` 原本只允许 `'low' \| 'medium' \| 'high'`；② **`reasoning.effort` 在 DeepSeek 路径被静默忽略**：OpenAI pipeline 直接传 `{ reasoning: { effort } }`，但 DeepSeek 期望**扁平 `reasoning_effort` body 参数**——用户配的 effort 永远到不了服务器，static 默认 `high`。修复：新增 `translateReasoningEffort()` 在 deepseek provider 的 `buildRequest` 把 `reasoning.effort` 拍平为顶级 `reasoning_effort`；`low`/`medium` → `high`；`xhigh` → `max`（向后兼容）；用户 `samplingParams` / `extra_body` 已设值时不覆盖。Anthropic generator 的 `output_config.effort` 类型扩展含 `'max'`；`thinking.budget_tokens` 阶梯升到 128K（low 16K / med 32K / high 64K / max 128K）|
+
+#### 🎯 重点解析：PR#3791 — kind framework 从声称到证据
+
+PR#3720（shell）+ PR#3791（monitor）是 **kind framework 的两次外部验证**——PR#3488 引入抽象时只有 agent 一个消费者，无法验证抽象是否合理；PR#3720 加 shell 是第二个；PR#3791 加 monitor 是**第三个**，真正证明 framework 是 cross-kind 而非"为 agent 量身的特例代码"。
+
+**Before/After 对比**：
+
+| 维度 | Before（PR#3791 之前）| After（PR#3791 合并后）|
+|---|---|---|
+| pill 显示 | `1 shell, 1 local agent` | `1 shell, 1 local agent, 2 monitors`，全部终止后塌陷为 `N tasks done` |
+| `Ctrl+T` overlay | agent + shell 行 | 单 Background tasks 区域含三类，monitor 行前缀 `[monitor] <description>` |
+| Cancel 键 `x` | 无法停 monitor | 路由 `monitorRegistry.cancel(monitorId)` 同步 settle |
+| Detail view | agent / shell 各自 body | 按 kind 派发，monitor 走新 `MonitorDetailBody`（command / status / pid / event count / dropped lines）|
+
+**剩余 gap**：PR#3684 自述"未做"第 2 项 `send_message` 集成仍未在 PR#3791 范围内（`task_stop` 路径在 PR#3791 中顺带覆盖 via `x` 键）。
+
+#### 🟢 状态升级
+
+| Item | 旧状态 | 新状态 |
+|---|---|---|
+| **subagent-display §零** Phase C dialog 集成 | PR#3791 OPEN | **✓ 已合并**（kind framework 三消费者验证完成）|
+| **CLI 非交互错误打印** | 双重格式化导致 4xx 看起来像 crash | ✓ 修复（PR#3749）|
+
+#### 累计计数
+
+- 已合并 PR: 144 → **146**（+2）
+- 关键 OPEN PR：PR#3791 退出（已合并），新增 PR#3800
+
+---
+
 ### 2026-05-03（~10h 增量 · 2 项合并 + 3 项关键 OPEN · DeepSeek anthropic-compat thinking 系列收官 + Stats model cost estimation 二度落地）
 
 扫描窗口：2026-05-02 14:57 UTC → 2026-05-03 00:36 UTC。窗口内 **2 项合并 + 3 项关键 OPEN**。本次主线：① **PR#3788 DeepSeek thinking 块系列正式收官**（**+1407/-76** · 远超原始描述的 small fix · 为整个 OpenAI/Anthropic 双轨 thinking-content 跨提供商 normalize 框架收尾）；② **PR#3780 Stats model cost estimation 二度落地**（+819/-10 · PR#3631 之后的 rebase 合并）；③ **API retry classifier 路线打开**（PR#3798 OPEN · 把 item-8 从"仅 SSE 429 检测"扩到 deterministic vs transport 两类完整分类）；④ `/model list` 路线（PR#3797/3799 OPEN · 模型动态发现 + 跨 OpenAI-compat 端点响应规范化）。
@@ -542,7 +588,7 @@ $ grep "@opentelemetry" packages/core/package.json
 
 | PR | 方向 | 与已有 item 关系 |
 |---|---|---|
-| **[PR#3791](https://github.com/QwenLM/qwen-code/pull/3791)** | feat(cli): wire Monitor entries into combined Background tasks dialog | 🌟 **PR#3684 自述"未做"清单的直接 follow-up**（+357/-40 / 8 文件，2026-05-02 14:32 UTC）—— Monitor 接入 PR#3488/3720 的 BackgroundTasksDialog（kind framework 的第三个消费者：agent / shell / **monitor**）：pill 显示 `1 shell, 1 local agent, 2 monitors`；overlay 单 Background tasks 区域含三类，monitor 行前缀 `[monitor]`；detail view 按 kind 派发新增 `MonitorDetailBody`（command / status / pid / event count / dropped lines）；`x` 键路由到 `monitorRegistry.cancel(monitorId)` 同步 settle。Core 改动：`MonitorRegistry.setStatusChangeCallback` 镜像 `BackgroundShellRegistry` / `BackgroundTaskRegistry`。**意义**：验证 PR#3488 / PR#3720 引入的 kind framework 是真正 cross-kind 的 |
+| **[PR#3791](https://github.com/QwenLM/qwen-code/pull/3791)** | feat(cli): wire Monitor entries into combined Background tasks dialog | 🌟 **PR#3684 自述"未做"清单的直接 follow-up** ✅ **已于 2026-05-03 02:05 UTC 合并 +791/-49**（详见 2026-05-03 changelog 重点解析） |
 | **[PR#3792](https://github.com/QwenLM/qwen-code/pull/3792)** | fix(core): address post-merge monitor tool and UI routing issues | 🌟 **PR#3684 review review 反馈的清扫 follow-up**（+199/-199，2026-05-02 14:36 UTC）—— ① **Token bucket clock-drift guard**：系统 suspend/resume 后 `Date.now()` 可能倒退导致 elapsed 为负、token bucket 饿死，加 `lastRefill` 重置；② **AST parse failure logging**：`getConfirmationDetails` catch 块原本完全静默，加 `debugLogger.warn` 与 `getDefaultPermission` 一致；③ **合并 `SHELL_TOOL_NAMES`**：PR#3726 在 `rule-parser.ts` / `permission-manager.ts` 中以两个不同名字定义了相同的 `Set(['run_shell_command', 'monitor'])`，统一从 `rule-parser.ts` 导出；④ **抽 background-work utils**：`hasBlockingBackgroundWork()` / `resetBackgroundStateForSessionSwitch()` 在 `clearCommand.ts` 与 `useResumeCommand.ts` 字节级重复，抽到共享模块；⑤ **`getToolCallComponent` 路由统一**：`ChatViewer.tsx` 与 VSCode toolcalls router 几乎相同的 routing 逻辑抽到 `@qwen-code/webui` 的 `routing.ts`；同时给 VSCode 路径补 `web_search` 兼容别名 |
 | **[PR#3788](https://github.com/QwenLM/qwen-code/pull/3788)** | fix(core): inject thinking blocks for DeepSeek anthropic-compatible provider | **延续 item-22 thinking 块跨轮保留** —— DeepSeek 的 `api.deepseek.com/anthropic` 端点在 thinking 模式下要求 assistant turn 必须带 `thinking` block，否则 HTTP 400。✅ **已于 2026-05-02 16:31 合并 +1407/-76**（详见 2026-05-03 changelog） |
 | [PR#3785](https://github.com/QwenLM/qwen-code/pull/3785) | feat(cli): add memory diagnostics doctor command | **延伸 /doctor**（已合并的 PR#3404 之上）—— `/doctor memory` 子命令 + `--json` 输出 + `collectMemoryDiagnostics()`（Node/V8 内存数据 + 风险提示），为 #3000 系列首层 |
