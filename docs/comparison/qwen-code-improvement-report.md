@@ -73,7 +73,7 @@
 | **P1** | [Token Budget 续行与自动交接](./token-budget-continuation-deep-dive.md) — 90% 续行 + 递减检测 + 分层压缩回退 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-4) | 70% 一次性压缩 | 中 | — |
 | **P1** | 同步 I/O 异步化 — readFileSync/statSync 替换为 async，解阻塞事件循环 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-5) | ✓ 已实现 | 中 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓（2026-04-24 合并 · hot path 110→10 syscall/prompt，-91%）|
 | **P1** | [Prompt Cache 分段与工具稳定排序](./prompt-cache-optimization-deep-dive.md) — static/dynamic 分界 + 内置工具前缀 + schema 锁定 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-6) | 无分段缓存 | 中 | — |
-| **P1** | [API 指数退避与降级重试](./api-retry-fallback-deep-dive.md) — 10 次退避 + 529 模型降级 + 401 token 刷新 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-8) | 仅配置重试次数 | 中 | [PR#3246](https://github.com/QwenLM/qwen-code/pull/3246) ✓（SSE 流式 429 检测） |
+| **P1** | [API 指数退避与降级重试](./api-retry-fallback-deep-dive.md) — 10 次退避 + 529 模型降级 + 401 token 刷新 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-8) | 🟡 部分（429 SSE 检测 ✓；正式 classifier 进行中）| 中 | [PR#3246](https://github.com/QwenLM/qwen-code/pull/3246) ✓（SSE 流式 429 检测） / [PR#3798](https://github.com/QwenLM/qwen-code/pull/3798) 🟡 OPEN（**+397/-4** · `classifyError()` 正式区分 deterministic 错误 400/401/403/404/422 不重试 vs transport 错误 429/408/409/500-599/network 可重试 · 91 测试 16 新增）|
 | **P1** | [优雅关闭序列与信号处理](./graceful-shutdown-deep-dive.md) — SIGINT/SIGTERM + 清理注册 + 5s failsafe [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-9) | 无信号处理 | 中 | — |
 | **P1** | [反应式压缩](./reactive-compression-deep-dive.md) — prompt_too_long 自动裁剪最早消息 + 重试 3 次 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-10) | 无被动恢复 | 中 | — |
 | **P1** | [持久化重试模式](./persistent-retry-deep-dive.md) — CI/后台无限重试 + 5min 退避上限 + 30s 心跳 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-11) | 失败即退出 | 中 | [PR#3080](https://github.com/QwenLM/qwen-code/pull/3080) |
@@ -89,7 +89,7 @@
 | **P1** | [系统提示内容完善](./system-prompt-content-guidelines-deep-dive.md) — OWASP 安全 + prompt injection检测 + 代码风格约束 + 输出格式 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-24) | 缺少具体指导 | 中 | — |
 | **P1** | [@include 指令与嵌套记忆发现](./nested-memory-include-deep-dive.md) — @path 递归引用 + 文件操作触发目录遍历 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-20) | **✓ 已实现**（`memoryImportProcessor` @path + `maxDepth=5` + 循环防护；`memoryDiscovery` upward scan；`ConditionalRulesRegistry` 按 `paths:` glob 匹配工具调用时注入）| — | — |
 | **P1** | [附件类型协议与令牌预算](./attachment-protocol-budget-deep-dive.md) — 40+ 类型 + per-type 预算 + 3 阶段有序执行 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-21) | 字符串拼接/无预算 | 中 | — |
-| **P1** | [Thinking 块跨轮保留与空闲清理](./thinking-block-retention-deep-dive.md) — 活跃保留 + 1h 空闲清理 + latch 防缓存破坏 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-22) | 每轮独立/无清理 | 中 | [PR#2897](https://github.com/QwenLM/qwen-code/pull/2897) ✓ + [PR#3590](https://github.com/QwenLM/qwen-code/pull/3590) ✓（resume + active session 保留 · GH#3579）+ [PR#3682](https://github.com/QwenLM/qwen-code/pull/3682) ✓（2026-04-28 · model switch + history load 不剥离 reasoning）+ [PR#3691](https://github.com/QwenLM/qwen-code/pull/3691) ✓（preserve description in subject-bearing thought chunks）+ [PR#3729](https://github.com/QwenLM/qwen-code/pull/3729) ✓（2026-04-29 · DeepSeek tool-call replay 注入 reasoning_content）+ [PR#3747](https://github.com/QwenLM/qwen-code/pull/3747) ✓（2026-04-29 · DeepSeek 全 assistant turn replay reasoning_content）+ [PR#3737](https://github.com/QwenLM/qwen-code/pull/3737) ✓（2026-04-30 · rewind / compression / merge 路径全保留 reasoning_content · −361 行清理）|
+| **P1** | [Thinking 块跨轮保留与空闲清理](./thinking-block-retention-deep-dive.md) — 活跃保留 + 1h 空闲清理 + latch 防缓存破坏 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-22) | 每轮独立/无清理 | 中 | [PR#2897](https://github.com/QwenLM/qwen-code/pull/2897) ✓ + [PR#3590](https://github.com/QwenLM/qwen-code/pull/3590) ✓（resume + active session 保留 · GH#3579）+ [PR#3682](https://github.com/QwenLM/qwen-code/pull/3682) ✓（2026-04-28 · model switch + history load 不剥离 reasoning）+ [PR#3691](https://github.com/QwenLM/qwen-code/pull/3691) ✓（preserve description in subject-bearing thought chunks）+ [PR#3729](https://github.com/QwenLM/qwen-code/pull/3729) ✓（2026-04-29 · DeepSeek tool-call replay 注入 reasoning_content）+ [PR#3747](https://github.com/QwenLM/qwen-code/pull/3747) ✓（2026-04-29 · DeepSeek 全 assistant turn replay reasoning_content）+ [PR#3737](https://github.com/QwenLM/qwen-code/pull/3737) ✓（2026-04-30 · rewind / compression / merge 路径全保留 reasoning_content · −361 行清理）+ [PR#3788](https://github.com/QwenLM/qwen-code/pull/3788) ✓（**2026-05-02 合并 · +1407/-76** · DeepSeek anthropic-compat 端点：`normalizeAssistantThinkingSignature` 跨提供商补 `signature: ''` + `injectThinkingOnToolUseTurns` 给带 tool_use 但缺 thinking 的 assistant turn 注入空 thinking block）|
 | **P1** | [输出 Token 自适应升级](./output-token-adaptive-upgrade-deep-dive.md) — 8K 默认 + max_tokens 截断时自动 64K 重试 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-23) | 固定值/不重试 | 小 | [PR#2898](https://github.com/QwenLM/qwen-code/pull/2898) ✓ |
 | **P1** | QWEN.md system-reminder 注入 — 项目指令从系统提示移到用户消息 `<system-reminder>` 标签注入，避免打破 Prompt Cache [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-26) | 直接拼入系统提示 | 小 | — |
 | **P1** | 错误恢复分类路由 — truncation→continuation、overflow→compaction、transport→backoff 三分支 + per-category 重试预算 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-27) | 统一 catch 重试 | 中 | — |
@@ -449,6 +449,56 @@
 
 ## 六、更新日志
 
+### 2026-05-03（~10h 增量 · 2 项合并 + 3 项关键 OPEN · DeepSeek anthropic-compat thinking 系列收官 + Stats model cost estimation 二度落地）
+
+扫描窗口：2026-05-02 14:57 UTC → 2026-05-03 00:36 UTC。窗口内 **2 项合并 + 3 项关键 OPEN**。本次主线：① **PR#3788 DeepSeek thinking 块系列正式收官**（**+1407/-76** · 远超原始描述的 small fix · 为整个 OpenAI/Anthropic 双轨 thinking-content 跨提供商 normalize 框架收尾）；② **PR#3780 Stats model cost estimation 二度落地**（+819/-10 · PR#3631 之后的 rebase 合并）；③ **API retry classifier 路线打开**（PR#3798 OPEN · 把 item-8 从"仅 SSE 429 检测"扩到 deterministic vs transport 两类完整分类）；④ `/model list` 路线（PR#3797/3799 OPEN · 模型动态发现 + 跨 OpenAI-compat 端点响应规范化）。
+
+#### 🟢 MERGED（2 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| **[PR#3788](https://github.com/QwenLM/qwen-code/pull/3788)** | fix(core): inject thinking blocks for DeepSeek anthropic-compatible provider | 2026-05-02 16:31 UTC | 🌟 **延续 item-22 thinking 块系列收官**（**+1407/-76** · 远超 PR 简介隐含的"small fix" · 实际是跨提供商 thinking-content 规范化框架）—— Closes #3786。问题：DeepSeek `api.deepseek.com/anthropic` 端点在 thinking 模式下 reject 缺 `thinking` block 的 tool_use turn（HTTP 400）。**两个协调的 converter 行为**：① `normalizeAssistantThinkingSignature` —— 在所有缺 `signature` 字段的 assistant `thinking` block 上补 `signature: ''`（**保留原 thinking 文本**），覆盖 cross-provider history 中 OpenAI/Gemini/agent-runtime 仅设 `thought: true` 的情况 + redacted_thinking block 经 Gemini-Part 往返丢失 `data` 字段的情况；② `injectThinkingOnToolUseTurns` —— 给带 `tool_use` 但缺任何 thinking block 的 assistant turn 前置注入空 thinking block（仅在该案例触发，避免 bloat）。配合已合并 PR#3729/3747/3737 完成 OpenAI/Anthropic 双轨完整覆盖 |
+| **[PR#3780](https://github.com/QwenLM/qwen-code/pull/3780)** | Feat/stats model cost estimation rebase | 2026-05-02 23:31 UTC | **`/stats` 加 cost 估算**（+819/-10）—— PR#3631 的 rebase 二度合并版本。会话累计 token usage × per-model 单价的成本估算 |
+
+#### 🟡 关键 OPEN（值得追踪）
+
+| PR | 方向 | 与已有 item 关系 |
+|---|---|---|
+| **[PR#3798](https://github.com/QwenLM/qwen-code/pull/3798)** | feat(core): classify retryable transport/provider failures vs deterministic request errors | 🌟 **关联 item-8 API 指数退避**（+397/-4 / 91 测试 16 新增）—— 新增 `classifyError()`：① **deterministic errors**（永不重试）：400 / 401 / 403 / 404 / 422；② **retryable**：429 / 408 / 409 / 500-599 / 网络错误（ECONNRESET / ETIMEDOUT 等）。**意义**：item-8 之前只有 PR#3246 的 SSE 429 检测，本 PR 把"哪些可重试"做成正式分类器，是后续完整 10 次退避 + 模型降级的前置条件 |
+| **[PR#3797](https://github.com/QwenLM/qwen-code/pull/3797)** | feat(cli): add /model list subcommand for dynamic model discovery | **新 CLI 入口**（+99/0）—— `/model list` 查询配置的 OpenAI-compatible `/models` 端点，pipe-friendly（每行一个 model id）。配合 PR#3783（switch models non-interactively from CLI）形成"列出 + 切换"完整 headless 模型管理 |
+| **[PR#3799](https://github.com/QwenLM/qwen-code/pull/3799)** | feat(cli): normalize model list response parsing across OpenAI-compatible endpoints | **配套 PR#3797**（+366/-1）—— 规范化 `fetchModels()` 处理 3 种响应形态：① OpenAI 标准 `{ data: [...] }`；② DeepSeek 带 `object: "list"`；③ bare array（部分 provider 跳过 wrapper）。`owned_by` / `created` / `permission` 等额外字段忽略，仅取 `id` |
+
+#### 🎯 重点：item-22 thinking 块系列正式收官
+
+PR#3788 的 **+1407/-76** 体量远超"为某端点注入空 thinking block"的简单描述。它实际是 **thinking-content 跨提供商规范化的框架性工作**：
+
+| 起点 | 终点 |
+|---|---|
+| OpenAI 端点 + DeepSeek 部分场景 | OpenAI / Anthropic / Gemini / DeepSeek 四提供商 history 在双轨（OpenAI tool_use replay + Anthropic-compat tool_use turn）下都正确处理 thinking block |
+| 缺 `signature` 字段就直接报错 | `normalizeAssistantThinkingSignature` 自动补全（保留原文本，仅补空字段） |
+| 跨 provider 时 `redacted_thinking` 经 Gemini-Part 往返丢 `data` 字段 → 后续 reject | 同上 normalize 路径处理 |
+| `tool_use` turn 缺 thinking block 直接 HTTP 400 | `injectThinkingOnToolUseTurns` 仅在该案例注入空 block，避免普通 turn bloat |
+
+主矩阵 line 92 已同步：item-22 PR 列表加 PR#3788 ✓。
+
+#### 🟢 状态升级
+
+| Item | 旧状态 | 新状态 |
+|---|---|---|
+| **item-22** Thinking 块跨轮保留 | OpenAI/Anthropic 双轨 + 6 PR 已合并 | **+ PR#3788 框架性收官**（cross-provider thinking-content normalize）|
+| **item-8** API 指数退避与降级重试 | 仅 SSE 429 检测（PR#3246） | 🟡 部分（+ PR#3798 OPEN 正式 classifier，把"可重试 vs 确定性失败"做成框架）|
+
+#### 累计计数
+
+- 已合并 PR: 142 → **144**（+2）
+- 关键 OPEN PR 增加 3 项（PR#3797 / PR#3798 / PR#3799）
+
+#### 备忘：模型管理三件套
+
+PR#3797（`/model list`）+ PR#3799（response 规范化）+ PR#3783（headless 切模型）三件套合并后将形成完整的 **headless / 脚本友好的模型管理 CLI**——预计在 OpenAI-compat 多 provider（DeepSeek / 兼容 OpenAI 的国产模型 / 自部署 vllm/sglang）场景下显著提升可用性。
+
+---
+
 ### 2026-05-02（~35h 增量 · 7 项合并 · 含 PR#3684 Phase C event monitor +6297/-147 系列追踪以来最大单 PR · `/review` 第二轮架构升级 + OTel HTTP routing + MCP health pill · item-26 状态勘误）
 
 扫描窗口：2026-05-01 04:14 UTC → 2026-05-02 14:57 UTC（**第二次扫描补登 PR#3684 + PR#3741 + PR#3792**）。窗口内 **7 项合并**。本次主线：① **PR#3684 Phase C event monitor tool 上线**（**+6297/-147 系列追踪以来最大单 PR** · 补足 background tasks 三件套之外的"长跑命令 + 节流事件流"维度）；② **`/review` skill 第二轮架构升级**（PR#3754 +2423/-138 · 5→9 agent + 3 personas + 6 个 CLI 子命令）；③ **OTel HTTP OTLP routing 上线**（PR#3779 +1387/-102 · 直接触发 item-26 状态勘误）；④ **MCP health pill** 上线（PR#3741 +182/-0 · DISCONNECTED MCP 服务器在 footer 可见）；⑤ **item-26 状态严重勘误** —— 原描述"无 OpenTelemetry 支持"已大幅过时，经源码核查 Qwen Code 早已集成 `@opentelemetry/sdk-node` + 6 个 exporter。
@@ -494,11 +544,11 @@ $ grep "@opentelemetry" packages/core/package.json
 |---|---|---|
 | **[PR#3791](https://github.com/QwenLM/qwen-code/pull/3791)** | feat(cli): wire Monitor entries into combined Background tasks dialog | 🌟 **PR#3684 自述"未做"清单的直接 follow-up**（+357/-40 / 8 文件，2026-05-02 14:32 UTC）—— Monitor 接入 PR#3488/3720 的 BackgroundTasksDialog（kind framework 的第三个消费者：agent / shell / **monitor**）：pill 显示 `1 shell, 1 local agent, 2 monitors`；overlay 单 Background tasks 区域含三类，monitor 行前缀 `[monitor]`；detail view 按 kind 派发新增 `MonitorDetailBody`（command / status / pid / event count / dropped lines）；`x` 键路由到 `monitorRegistry.cancel(monitorId)` 同步 settle。Core 改动：`MonitorRegistry.setStatusChangeCallback` 镜像 `BackgroundShellRegistry` / `BackgroundTaskRegistry`。**意义**：验证 PR#3488 / PR#3720 引入的 kind framework 是真正 cross-kind 的 |
 | **[PR#3792](https://github.com/QwenLM/qwen-code/pull/3792)** | fix(core): address post-merge monitor tool and UI routing issues | 🌟 **PR#3684 review review 反馈的清扫 follow-up**（+199/-199，2026-05-02 14:36 UTC）—— ① **Token bucket clock-drift guard**：系统 suspend/resume 后 `Date.now()` 可能倒退导致 elapsed 为负、token bucket 饿死，加 `lastRefill` 重置；② **AST parse failure logging**：`getConfirmationDetails` catch 块原本完全静默，加 `debugLogger.warn` 与 `getDefaultPermission` 一致；③ **合并 `SHELL_TOOL_NAMES`**：PR#3726 在 `rule-parser.ts` / `permission-manager.ts` 中以两个不同名字定义了相同的 `Set(['run_shell_command', 'monitor'])`，统一从 `rule-parser.ts` 导出；④ **抽 background-work utils**：`hasBlockingBackgroundWork()` / `resetBackgroundStateForSessionSwitch()` 在 `clearCommand.ts` 与 `useResumeCommand.ts` 字节级重复，抽到共享模块；⑤ **`getToolCallComponent` 路由统一**：`ChatViewer.tsx` 与 VSCode toolcalls router 几乎相同的 routing 逻辑抽到 `@qwen-code/webui` 的 `routing.ts`；同时给 VSCode 路径补 `web_search` 兼容别名 |
-| **[PR#3788](https://github.com/QwenLM/qwen-code/pull/3788)** | fix(core): inject thinking blocks for DeepSeek anthropic-compatible provider | **延续 item-22 thinking 块跨轮保留** —— DeepSeek 的 `api.deepseek.com/anthropic` 端点在 thinking 模式下要求 assistant turn 必须带 `thinking` block，否则 HTTP 400。本 PR 为该端点注入空 thinking block（`{type: 'thinking', thinking: '', signature: ''}`），与已合并的 PR#3729/3747 形成 OpenAI/Anthropic-compat 双轨完整覆盖 |
+| **[PR#3788](https://github.com/QwenLM/qwen-code/pull/3788)** | fix(core): inject thinking blocks for DeepSeek anthropic-compatible provider | **延续 item-22 thinking 块跨轮保留** —— DeepSeek 的 `api.deepseek.com/anthropic` 端点在 thinking 模式下要求 assistant turn 必须带 `thinking` block，否则 HTTP 400。✅ **已于 2026-05-02 16:31 合并 +1407/-76**（详见 2026-05-03 changelog） |
 | [PR#3785](https://github.com/QwenLM/qwen-code/pull/3785) | feat(cli): add memory diagnostics doctor command | **延伸 /doctor**（已合并的 PR#3404 之上）—— `/doctor memory` 子命令 + `--json` 输出 + `collectMemoryDiagnostics()`（Node/V8 内存数据 + 风险提示），为 #3000 系列首层 |
 | [PR#3790](https://github.com/QwenLM/qwen-code/pull/3790) | fix(core): improve stream rate-limit retry diagnostics | 关联 [item-8 API 指数退避](./qwen-code-improvement-report-p0-p1-engine.md#item-8) —— 流式 SSE rate-limit 重试诊断 |
 | [PR#3783](https://github.com/QwenLM/qwen-code/pull/3783) | feat(cli): switch models non-interactively from the cli | 模型切换 CLI 入口（headless 友好） |
-| [PR#3780](https://github.com/QwenLM/qwen-code/pull/3780) | Feat/stats model cost estimation rebase | session 成本估算 |
+| [PR#3780](https://github.com/QwenLM/qwen-code/pull/3780) | Feat/stats model cost estimation rebase | session 成本估算 ✅ **已于 2026-05-02 23:31 合并 +819/-10**（详见 2026-05-03 changelog） |
 | [PR#3781](https://github.com/QwenLM/qwen-code/pull/3781) | feat(weixin): add image sending support via CDN upload | Channels weixin 适配增强 |
 | [PR#3776](https://github.com/QwenLM/qwen-code/pull/3776) | feat(installer): add standalone archive installation | 独立归档安装方式 |
 | [PR#3775](https://github.com/QwenLM/qwen-code/pull/3775) | refactor(core): route side-query LLM calls through runSideQuery chokepoint | side-query 调用统一抽象 |
