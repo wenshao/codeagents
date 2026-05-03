@@ -449,6 +449,62 @@
 
 ## 六、更新日志
 
+### 2026-05-03 第三轮（~9h 16min 增量 · 1 项合并 + 3 项关键 OPEN · Phase B 收官 + Phase D 开启 · `/tasks` 含 monitors + 长跑 foreground bash 后台化提示）
+
+扫描窗口：2026-05-03 02:14 UTC → 2026-05-03 11:30 UTC。窗口内 **1 项合并 + 3 项关键 OPEN**。本次主线：① **Phase B 完整收官**（PR#3801 把 monitors 加入 `/tasks` + interactive 模式 hint，关闭 issue #3634 Phase B 留给"delete / keep as fallback / deprecation hint—选其一"的开放问题，最终采用"keep + add hint scoped to interactive mode"混合方案）；② **Phase D 开启**（PR#3809 OPEN — 长跑 foreground bash 命令完成时提示模型下次用 `is_background: true`）；③ 多项 ergonomics 修复（telemetry 启动 warning + 文档对齐）。
+
+#### 🟢 MERGED（1 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| **[PR#3801](https://github.com/QwenLM/qwen-code/pull/3801)** | feat(cli): include monitors in /tasks + add interactive-mode hint | 2026-05-03 10:45 UTC | 🌟 **Phase B 完整收官**（**+401/-39** · Issue #3634 Phase B closure）—— 两个耦合改动：① **Bug 修复**：`/tasks` 命令在 PR#3684/3791 之前最后修改过，只合并了 agent + shell 而 **monitors 在 headless / non-interactive / ACP 列表路径上静默消失**。本 PR 加上 `getMonitorRegistry()` 并把 monitor 穿过所有 helper（`statusLabel` / `taskLabel` / `taskId` / `taskOutputPath`）；② **Surface redirect（不是删除）**：富 `Ctrl+T` dialog（PR#3488/3720/3791）已可用后，`/tasks` 变为**非 TTY 消费者的 long-form fallback**而非主要 surface。`executionMode === 'interactive'` 时输出顶部加一行 hint，`non_interactive` / `acp` 保持纯列表。**架构决策**：Issue #3634 Phase B 留下"delete / keep as fallback / add deprecation hint—pick one"的开放问题，本 PR 最终采用 **"keep + add hint scoped to interactive mode"**——`/tasks` 是 `non_interactive`（`-p` flag）、`acp`（IDE bridges 如 Zed）、SDK consumer 的**唯一**后台任务检查路径，删除会静默破坏；但"deprecation hint"暗示有 removal path，实际并无——`/tasks` 对非 TTY 路径无限期保留 |
+
+#### 🟡 关键 OPEN（值得追踪）
+
+| PR | 方向 | 与已有 item 关系 |
+|---|---|---|
+| **[PR#3809](https://github.com/QwenLM/qwen-code/pull/3809)** | feat(core): hint to background long-running foreground bash commands | 🌟 **Phase D 开启 part (a)**（+130/0 · 纯加 · `shell.ts` + `shell.test.ts`）—— 当 foreground `shell` tool call 运行 **≥60 秒** 且完成（成功或错误）时，LLM-facing tool result 加 advisory：next time 用 `is_background: true`。**意义**：今天 foreground bash 跑几分钟（build watcher / soak test / 慢 `npm install` / 轮询循环）会**无限期阻塞 agent**——用户已经付了等待成本，agent 下一个 turn 本可以在 `is_background: true` 下并行跑。PR#3684 的 **sleep interception 在 validate 时**处理了 `sleep N` 极端情况；本 PR 在 **result 时**处理 legitimate-but-long 情况——双层防御 |
+| [PR#3808](https://github.com/QwenLM/qwen-code/pull/3808) | docs(core): point background-shell guidance at both /tasks and the dialog | **PR#3801 follow-up**（+10/-8）—— PR#3801 描述里承诺的"separate small PR"。`shell.ts`（spawn background shell 后）与 `task-stop.ts`（请求 cancel 后）的 model-facing 字符串原本只引用 `/tasks` 路径——这些写于 dialog 落地（PR#3488/3720/3791）之前。现在 dialog 处理三类（agent/shell/monitor），两个 surface 都应该让 LLM 可见，由 LLM 根据用户模式（TTY vs headless/SDK/ACP）建议正确的 |
+| [PR#3807](https://github.com/QwenLM/qwen-code/pull/3807) | fix(telemetry): suppress async resource attribute warning on startup | **关联 item-26 OTel**（+13/0）—— `NodeSDK` 默认跑 3 个 async resource detector（`envDetector` / `processDetector` / `hostDetector`），`start()` 是 sync 不 await。第一个 HTTP span 导出时（如 `HttpInstrumentation`）读 `resource.attributes` 而 `asyncAttributes` 还没 settle —— 终端 UI 每次启动都打印 "Accessing resource attributes before async attributes settled" warning。修复：`autoDetectResources: false` |
+
+#### 🎯 重点解析：Background tasks roadmap (#3634) 四阶段全图
+
+PR#3801 + PR#3809 让 #3634 的全貌浮现：
+
+| Phase | 内容 | 状态 |
+|---|---|---|
+| **A** | 后台 subagents（PR#3076 早期合并）| ✓ |
+| **B** | Managed background shell pool + `/tasks` 命令 + dialog/pill 整合 | ✓ **本轮收官**（PR#3642 + PR#3720 + PR#3801）|
+| **C** | Event monitor tool（spawn 长跑 shell + token-bucket 节流 + Monitor → dialog 集成）| ✓（PR#3684 + PR#3791）|
+| **D part (a)** | 长跑 foreground bash 完成时提示模型下次后台化 | 🟡 OPEN（PR#3809）|
+
+**双层 sleep / 长跑防御**：
+
+| 时机 | 机制 | 实现 |
+|---|---|---|
+| validate 时 | shell 层 sleep 拦截 | PR#3684 拦截前台 `sleep N`(N≥2) |
+| result 时 | LLM nudge | PR#3809 OPEN ≥60s 后台化 hint |
+
+Phase D 后续 part (b/c/...) 待观察。
+
+#### 🟢 状态升级
+
+| Item | 旧状态 | 新状态 |
+|---|---|---|
+| **Background tasks roadmap #3634 Phase B** | 打开（PR#3801 OPEN）| ✓ **收官** |
+| **Phase D（长跑 foreground 后台化提示）** | 未开始 | 🟡 part (a) OPEN（PR#3809）|
+
+#### 累计计数
+
+- 已合并 PR: 146 → **147**（+1）
+- 关键 OPEN PR：新增 PR#3809（Phase D）、PR#3808（PR#3801 docs follow-up）、PR#3807（OTel startup warning）
+
+#### 备忘：roadmap 视角的价值
+
+把 PR 按 **Issue #3634 Phase A/B/C/D** 串起来比按时间堆 changelog 更能看出 Qwen 团队的设计意图。建议下一轮在 changelog 头加"Roadmap 进度"小节，明确各 phase 状态。
+
+---
+
 ### 2026-05-03 第二轮（~98 分钟增量 · 2 项合并 + 1 项关键 OPEN · Phase C dialog 集成正式合并 + 非交互错误打印修复 + DeepSeek `max` reasoning effort）
 
 扫描窗口：2026-05-03 00:36 UTC → 2026-05-03 02:14 UTC。窗口内 **2 项合并 + 1 项关键 OPEN**。本次主线：① **PR#3791 Phase C dialog 集成正式合并**（体量从 OPEN 时的 +357/-40 增长到 +791/-49 · 8 文件 / 2 commits · kind framework 真正 cross-kind 验证）；② **PR#3749 非交互模式 API 错误打印修复**（+308/-27 · 3 处独立站点的双重格式化收敛到 `AlreadyReportedError` marker + `handleError` short-circuit）；③ **PR#3800 DeepSeek `reasoning_effort: 'max'` 路线打开**（+516/-57 OPEN · 直接命中 [reasoning-effort-deep-dive §3.3 推荐实施方案 Step 1+2](./reasoning-effort-deep-dive.md#33-推荐实施方案4-步)）。
