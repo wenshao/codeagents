@@ -449,6 +449,44 @@
 
 ## 六、更新日志
 
+### 2026-05-05（OPEN-only 增量 · kind framework 第 4 个消费者 dream 任务出现）
+
+扫描窗口：2026-05-04 15:32 UTC → 2026-05-04 17:20 UTC。窗口内 **0 项合并 + 1 项关键新 OPEN + 4 项 sdk-python release 工具 OPEN**。本次主线：**[PR#3836](https://github.com/QwenLM/qwen-code/pull/3836) OPEN —— kind framework 从 3 消费者扩到 4 消费者**（agent / shell / monitor / **dream**），把 auto-memory dream tasks 接入 Background tasks pill+dialog 统一调度面，进一步压测 PR#3488 / PR#3720 引入的 framework 是否真正 generic。
+
+#### 🟡 关键 OPEN（值得追踪 1 项）
+
+| PR | 方向 | 与已有 item 关系 |
+|---|---|---|
+| **[PR#3836](https://github.com/QwenLM/qwen-code/pull/3836)** | feat(cli): surface auto-memory dream tasks in Background tasks dialog | 🌟 **Kind framework 第 4 个消费者**（+598/-19）—— 今天 managed auto-memory dream 任务（每 UserQuery 通过 `MemoryManager.scheduleDream` 调度）静默后台跑，用户只能见 `memory_saved` toast。本 PR 加 dream 为第 4 种 kind：footer pill 含 dream 计数；dialog 列表 `[dream] memory consolidation reviewing N sessions`；detail body 显示 sessions / progress / topics / failures。**关键设计**：复用 `MemoryManager.subscribe()` / `listTasksByType()` —— **zero core-package changes**。`MAX_RETAINED_TERMINAL_DREAMS = 3` 镜像 `MonitorRegistry` 终端 cap；`pending`/`skipped` 过滤；`extract` tasks intentional 排除（每 UserQuery 触发 flood）。**Scope-out**：PR-2 cancellation；PR-3 live progress（需 `runForkedAgent` 加 `onAssistantMessage` callback 涉及 4 调用点）。**关联 [item-4 会话记忆 / item-5 Auto Dream](./qwen-code-improvement-report-p0-p1-core.md#item-4)** + [subagent-display Background tasks dialog 设计](./subagent-display-deep-dive.md) |
+
+#### 🎯 重点解析：kind framework 真正 generic 的证据链
+
+PR#3488 引入 BackgroundTasksDialog 时只有 1 个消费者（agent），存在"generic 是声称还是事实"的悬念。后续 PR 逐步压测：
+
+| 时间线 | 消费者数 | PR | 验证内容 |
+|---|---|---|---|
+| 2026-04-28 | **1**（agent）| PR#3488 | 引入 framework |
+| 2026-04-29 | **2**（agent + shell）| PR#3720 | shell 接入，framework 第一次外部验证 |
+| 2026-05-03 | **3**（agent + shell + monitor）| PR#3791 | monitor 接入（kind framework 第三个消费者，Lint fix 加 `default: { const _exhaustive: never }`）|
+| **2026-05-04 OPEN** | **4**（+ dream）| PR#3836 | dream 接入，**zero core-package changes** —— framework 真正 generic 的最强证据 |
+
+**zero core-package changes 的意义**：第 1 / 2 / 3 个消费者每加一个都需要 core 改动（新 registry 类、新 callback 接口）。**第 4 个消费者 dream 复用 MemoryManager 已有 API 即可** —— 这说明 framework 的"generic 抽象"不仅仅是命名，是真的能不修改 core 就接入新 kind。
+
+#### 🟡 sdk-python release 工具系列 OPEN（4 项）
+
+PR#3833 / PR#3834 / PR#3835 / PR#3832 是 sdk-python 包的 release 自动化工具改进（network timeouts / extract shared helpers / `--generate-notes` / `TAG_PREFIX` 标准化）。与改进 item 无直接关联，仅在此处登记。
+
+#### 状态
+
+- 已合并 PR: **153**（无变化）
+- 关键 OPEN PR：**新增 PR#3836（dream 任务接入 dialog）**
+
+#### 备忘：Background tasks framework 演进观察
+
+5 月份连续 4 周 PR 围绕 Background tasks 系统迭代——从 PR#3471/3488 控制面引入到 PR#3836 第 4 消费者扩展，**Qwen Code 的"统一调度面"是这个月最一致的工程主题**。建议为这个主题专门补一篇 deep-dive（"Kind Framework Deep-Dive"），系统记录从 PR#3488 到 PR#3836 的设计演进。
+
+---
+
 ### 2026-05-04（~28h 增量 · 6 项合并 + 9 项新 OPEN · Phase D part(a) 收官 + DeepSeek `max` tier 落地 + FileReadCache 关键 invalidation 修复）
 
 扫描窗口：2026-05-03 11:30 UTC → 2026-05-04 15:32 UTC。窗口内 **6 项合并 + 9 项新 OPEN**。本次主线：① **Phase D part (a) 收官**（PR#3809 +649/-1 合并，体量从 OPEN 时 +130 增长 5 倍 · 关键设计精化：阈值改为"effective timeout 的一半"per-invocation 含 1000ms floor）；② **DeepSeek `max` tier 落地**（PR#3800 +926/-80 合并 · 体量从 OPEN 时 +516 大幅增长）；③ **PR#3810 FileReadCache 关键 invalidation 修复**（+579/0 · 修复 #3805 "read tool returns no content in long-running sessions" · PR#3717 漏掉 5 条 history-rewrite 路径的清缓存逻辑）；④ **PR#3792 post-merge cleanup 体量翻倍**（+664/-227 vs OPEN 时 +199/-199）；⑤ **多项性能/可靠性新方向 OPEN**（MCP coalesce + retry policy 统一 + auto-memory 不阻塞主请求）。

@@ -38,6 +38,7 @@
 
 | PR | 方向 |
 |---|---|
+| **[PR#3836](https://github.com/QwenLM/qwen-code/pull/3836)** 🟡 OPEN（2026-05-04 17:14 UTC，+598/-19）| 🌟 **Kind framework 第 4 个消费者：dream 任务** —— `feat(cli): surface auto-memory dream tasks in Background tasks dialog`。**今天 managed auto-memory dream 任务静默后台运行**（每 UserQuery 通过 `MemoryManager.scheduleDream` 调度），用户只能看到完成时的 `memory_saved` toast，无法看到正在 review 什么 / 失败原因。本 PR 把 dream 加为第 4 种 kind（agent / shell / monitor / **dream**）：footer pill 含 dream 计数（如 `1 shell, 1 dream`）；dialog 列表显示 `[dream] memory consolidation reviewing N sessions`；per-kind detail body 显示 sessions reviewing / progress text / topics touched / failures。**核心设计**：复用 `MemoryManager` 已有的 `subscribe()` / `listTasksByType()` API —— **zero core-package changes**。`MAX_RETAINED_TERMINAL_DREAMS = 3`（镜像 `MonitorRegistry` 的 terminal-cap 模式）；`pending` / `skipped` 过滤掉（每 UserQuery 都创建 task，大部分被 gated 跳过，surface 会产生 dozens of 无用条目）；intentional 不含 `extract` tasks（每 UserQuery fire 会 flood pill，已有 `memory_saved` toast）。**Scope-out**：PR-2 cancellation via `task_stop` + `x` 键 + dream-fork abort + lock rollback；PR-3 live in-flight progress（需 `runForkedAgent` 的 `AgentPathParams` 加 `onAssistantMessage` callback，涉及 4 个调用点）|
 | [PR#3768](https://github.com/QwenLM/qwen-code/pull/3768) | route foreground subagents through pill+dialog while running —— 把前台 subagent 也接入 pill+dialog，与已合并的后台路径形成对偶 |
 | [PR#3735](https://github.com/QwenLM/qwen-code/pull/3735) | auto-compact subagent context to prevent overflow —— subagent 上下文溢出前自动压缩 |
 | ❌ monitor → `send_message` 集成 | PR#3684 自述"未做"清单第 2 项 —— `task_stop` 集成已经在 PR#3791（已合并）中通过 `x` 键路由 `monitorRegistry.cancel()` 顺带覆盖，但 `send_message` 集成暂未对接 |
@@ -432,6 +433,8 @@ t=30: [行消失，被驱逐]
 | `send_message` 集成 | ❌ 仍缺 | 当前未在 PR#3791 范围内 |
 
 **PR#3791 合并后已完成**：monitor 与 subagent / background shell 共享同一个 pill+dialog 调度面 —— **Phase C 与 PR#3471/3488 调度面的主要对接已完成**，kind framework 现有 **agent / shell / monitor 三个真实消费者**，把"generic framework"从声称变为证据。
+
+**[PR#3836](https://github.com/QwenLM/qwen-code/pull/3836) 🟡 OPEN（2026-05-04）**：将 **dream** 加为**第 4 种 kind**（auto-memory consolidation 后台任务），把 framework 的 3 消费者扩展到 4——这是对"generic framework"的进一步压力测试，且复用 `MemoryManager.subscribe()` 实现 **zero core-package changes**（仅 CLI 侧扩展），印证 framework 的边界设计正确性。
 
 **Lint fix 工程实践**：commit `7999b85` 给 5 个新 switch 加 `default: { const _exhaustive: never = entry; throw ... }`，同时保运行时 guard 和编译期 exhaustiveness 检查——4th kind 出现时 TypeScript 立即指出 5 个 site 需新加 arm。
 
