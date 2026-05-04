@@ -4,11 +4,17 @@
 >
 > 返回 [Qwen Code 改进建议总览](./qwen-code-improvement-report.md)
 >
-> **2026-05-02 重大更新**：本文写作于 2026-04 中旬时 Qwen Code SubAgent 还**仅有嵌入式展示**；2026-04-27 → 2026-05-02 在 ~6 天内合并了 **9 个 PR**（PR#3471/3488/3642/3684/3687/3720/3721/3771/3739），Qwen Code 现已**完整实现真正后台并发 + pill+dialog UI + background agent resume + Phase C event monitor**——把原"Qwen 借鉴 Claude 的 3 个机会"清单基本兑现，部分设计还**反超 Claude**。文末"八、相关追踪 item"的状态全部更新为 ✓ 已实现。
+> **2026-05-04 重大更新**：本文写作于 2026-04 中旬时 Qwen Code SubAgent 还**仅有嵌入式展示**；2026-04-27 → 2026-05-04 在 ~8 天内合并了 **15 个 PR**（PR#3471/3488/3642/3684/3687/3720/3721/3771/3739/3791/3801/3784/3792/3808/3809），Qwen Code 现已**完整实现真正后台并发 + pill+dialog UI + background agent resume + Phase C event monitor + Phase D part(a) 长跑 foreground 后台化提示**——把原"Qwen 借鉴 Claude 的 3 个机会"清单基本兑现，部分设计还**反超 Claude**。文末"八、相关追踪 item"的状态全部更新为 ✓ 已实现。
 
-## 零、最新动态（2026-04-27 → 2026-05-02 · Background tasks roadmap #3634 三阶段全部落地）
+## 零、最新动态（2026-04-27 → 2026-05-04 · Background tasks roadmap #3634 四阶段全部落地）
 
-> **Background tasks roadmap (#3634) 四阶段**（2026-05-04 更新）：Phase A = 后台 subagents（PR#3076 早期合并 ✓）；Phase B = managed background shell pool + `/tasks` + dialog 整合（PR#3642 + PR#3720 + PR#3801 ✓ 2026-05-03 收官）；Phase C = event monitor tool（PR#3684 ✓ 2026-05-02 + PR#3791 ✓ 2026-05-03 dialog 集成）；**Phase D part (a) = 长跑 foreground bash 后台化提示**（**PR#3809 ✓ 2026-05-04 收官** · +649/-1 体量从 OPEN 时 +130 增长 5 倍）。四阶段加上 PR#3471/3488 控制面 + UI、PR#3687 整合、PR#3739 resume 后形成**完整的多模态后台任务调度系统**。
+> **Background tasks roadmap (#3634) 四阶段**（2026-05-04 全部 ✓）：
+> - **Phase A** = 后台 subagents（PR#3076 早期合并 ✓）
+> - **Phase B** = managed background shell pool + `/tasks` + dialog 整合（PR#3642 + PR#3720 + PR#3801 ✓ 2026-05-03 收官）
+> - **Phase C** = event monitor tool（PR#3684 ✓ 2026-05-02 + PR#3791 ✓ 2026-05-03 dialog 集成 + PR#3792 ✓ 2026-05-04 review 反馈清扫）
+> - **Phase D part (a)** = 长跑 foreground bash 后台化提示（**PR#3809 ✓ 2026-05-04 收官** · +649/-1 体量从 OPEN 时 +130 增长 5 倍 · 阈值精化为 effective timeout 一半 per-invocation 含 1000ms floor + advisory 加 stateful 警告）
+>
+> 四阶段加上 PR#3471/3488 控制面 + UI、PR#3687 整合、PR#3739 resume、PR#3721 显示稳定性 后形成**完整的多模态后台任务调度系统**。
 
 | PR | 合并时间 | 内容 | 影响章节 |
 |---|---|---|---|
@@ -25,14 +31,13 @@
 | [PR#3791](https://github.com/QwenLM/qwen-code/pull/3791) | 2026-05-03 | **Phase C dialog 集成**（+791/-49 · 体量从 OPEN 时 +357/-40 翻倍）—— Monitor 接入 BackgroundTasksDialog；core `MonitorRegistry.setStatusChangeCallback` 镜像 `BackgroundShellRegistry`；`x` 键 + detail view 按 kind 派发 `MonitorDetailBody`；commit `7999b85` lint fix 加 `default: { const _exhaustive: never }` 保运行时 + 编译期 exhaustiveness | §六.5 ✓ |
 | [PR#3801](https://github.com/QwenLM/qwen-code/pull/3801) | 2026-05-03 | **Phase B 收官**（+401/-39 · Issue #3634 Phase B closure）—— `/tasks` 含 monitors（修 headless/non_interactive/ACP 路径 monitor 静默消失 bug）+ interactive 模式 hint 指向 Ctrl+T dialog；`/tasks` 保留为非 TTY 消费者的 long-form fallback。**架构决策**：`/tasks` 不删除（是非 TTY 消费者的唯一检查路径）+ 不"deprecate"（无 removal path）+ 加 hint scoped to interactive | 配套 §六.5 |
 | [PR#3809](https://github.com/QwenLM/qwen-code/pull/3809) | 2026-05-04 | **Phase D part (a) 收官**（+649/-1 · 体量从 OPEN 时 +130 增长 5 倍）—— foreground `shell` 跑 ≥**effective timeout 的一半**（per-invocation，含 1000ms floor）完成时给 LLM-facing result 加 advisory。default-timeout 120s → 60s；显式 `timeout: 600_000` → 300s；`timeout: 1` 不会出"ran for 0s"噪声。Advisory 显式警告"别重跑刚完成的命令"——matters for stateful ops（deploys / migrations / `git push`）。配合 PR#3684 sleep interception 形成完整双层"长跑后台化"防御 | §六.6 新增 |
-| [PR#3792](https://github.com/QwenLM/qwen-code/pull/3792) | 2026-05-04 | **PR#3684 review 反馈清扫**（+664/-227 · 体量从 OPEN 时 +199/-199 增长 3.3 倍）—— Token bucket clock-drift guard / AST parse logging / 合并 SHELL_TOOL_NAMES / 抽 background-work utils / 路由统一 | 配套 |
+| [PR#3792](https://github.com/QwenLM/qwen-code/pull/3792) | 2026-05-04 | **PR#3684 review 反馈清扫**（+664/-227 · 体量从 OPEN 时 +199/-199 增长 3.3 倍）—— Token bucket clock-drift guard（系统 suspend/resume 后 `Date.now()` 倒退保护）/ AST parse logging / 合并 SHELL_TOOL_NAMES / 抽 background-work utils / 路由统一 | 配套 §六.5 |
+| [PR#3808](https://github.com/QwenLM/qwen-code/pull/3808) | 2026-05-04 | **PR#3801 docs follow-up**（+24/-12）—— `shell.ts` / `task-stop.ts` model-facing 字符串从只引用 `/tasks` 升级为同时提及 dialog（让 LLM 根据 TTY/headless/SDK/ACP 模式建议对的 surface）| 配套 §六.5 |
 
 **关键 OPEN（追踪中）**：
 
 | PR | 方向 |
 |---|---|
-| ✅ ~~[PR#3809](https://github.com/QwenLM/qwen-code/pull/3809)~~ | **已于 2026-05-04 15:24 UTC 合并 +649/-1**（体量从 OPEN 时 +130 增长 5 倍）—— Phase D part (a) 收官，阈值改为"effective timeout 的一半"per-invocation 含 1000ms floor，advisory 加 stateful 警告 |
-| ✅ ~~[PR#3808](https://github.com/QwenLM/qwen-code/pull/3808)~~ | **已于 2026-05-04 14:27 UTC 合并 +24/-12** —— `shell.ts` / `task-stop.ts` model-facing 字符串同时提及 `/tasks` 与 dialog |
 | [PR#3768](https://github.com/QwenLM/qwen-code/pull/3768) | route foreground subagents through pill+dialog while running —— 把前台 subagent 也接入 pill+dialog，与已合并的后台路径形成对偶 |
 | [PR#3735](https://github.com/QwenLM/qwen-code/pull/3735) | auto-compact subagent context to prevent overflow —— subagent 上下文溢出前自动压缩 |
 | ❌ monitor → `send_message` 集成 | PR#3684 自述"未做"清单第 2 项 —— `task_stop` 集成已经在 PR#3791（已合并）中通过 `x` 键路由 `monitorRegistry.cancel()` 顺带覆盖，但 `send_message` 集成暂未对接 |
@@ -322,9 +327,9 @@ t=30: [行消失，被驱逐]
 
 ---
 
-## 六、Qwen Code 已落地的 5 项 + 2 项反超 Claude
+## 六、Qwen Code 已落地的 6 项 + 2 项反超 Claude
 
-> **本节状态变化（2026-04 → 2026-05）**：原本列出 3 个"待借鉴机会"，到 2026-05-02 全部已通过 9 个 PR 落地，外加 Qwen 自己**新增了 2 个 Claude 没有的设计**（统一调度面 + transcript-first fork resume）+ Phase C event monitor tool。
+> **本节状态变化（2026-04 → 2026-05）**：原本列出 3 个"待借鉴机会"，到 2026-05-04 全部已通过 **15 个 PR** 落地，外加 Qwen 自己**新增了 2 个 Claude 没有的设计**（统一调度面 + transcript-first fork resume）+ Phase C event monitor tool + **Phase D part (a) 长跑 foreground bash 提示**（双层防御机制）。
 
 ### 🥇 已落地 1：真正后台并发 + UI 调度面（PR#3471/3488/3642）✓
 
@@ -432,13 +437,39 @@ t=30: [行消失，被驱逐]
 
 ---
 
+### 已落地 6：Phase D part (a) 长跑 foreground bash 后台化提示（PR#3809）✓ 2026-05-04 收官
+
+[PR#3809](https://github.com/QwenLM/qwen-code/pull/3809) ✓ 2026-05-04 15:24 UTC（**+649/-1** · 体量从 OPEN 时 +130/0 增长 5 倍 · 5 commits · 91 测试）—— Background tasks roadmap (#3634) Phase D part (a)。当 foreground `shell` tool call 完成（成功或错误）时，LLM-facing tool result 加 advisory 行，建议下次类似长命令用 `is_background: true`。
+
+**关键设计精化**（OPEN → MERGED）：
+
+| 维度 | OPEN（+130/0）| MERGED（+649/-1）|
+|---|---|---|
+| 触发阈值 | 固定 60 秒 | **effective timeout 的一半 per-invocation 含 1000ms floor** |
+| default 120s 命令跑 90s | ✓ 60s 出 advisory | ✓ 60s 出 advisory（不变）|
+| `timeout: 600_000` 跑 400s | 60s 出（**过早**——300s 才合理）| **300s 出 advisory**（per-invocation 适配）|
+| `timeout: 1` 跑 0.5s | 0.05s 出"ran for 0s"噪声 | **1000ms floor 不出**（避免噪声）|
+| Advisory 内容 | 裸"use is_background next time" | **加 stateful 警告**："**别重跑刚完成的命令**"——matters for stateful operations（deploys / migrations / `git push`）|
+
+**与 PR#3684 sleep interception 的双层防御**：
+
+| 时机 | 机制 | PR | 触发 |
+|---|---|---|---|
+| **validate 时** | shell 层 `sleep N`(N≥2) 拦截 | PR#3684 | 拦截**显式 sleep** |
+| **result 时** | LLM advisory 提示后台化 | PR#3809 | nudge **legitimate-but-long** 命令 |
+
+意义：今天 foreground bash 跑几分钟（build watcher / soak test / 慢 `npm install` / 轮询循环）会**无限期阻塞 agent**——用户已经付了等待成本，agent 下一个 turn 本可以在 `is_background: true` 下并行跑。双层防御覆盖了"显式 sleep"和"业务上合理但实际很长"两种情况。
+
+---
+
 ### 还有什么可以做？（剩余 gap）
 
-虽然主体已落地，仍有 2 个值得追踪的方向：
+虽然主体已落地（**roadmap #3634 四阶段全部 ✓**），仍有 4 个值得追踪的方向：
 
 1. **前台 subagent 也接入 pill+dialog**：[PR#3768](https://github.com/QwenLM/qwen-code/pull/3768) 🟡 OPEN —— 让前台 subagent 也用统一 UI，与已合并的后台路径形成对偶
 2. **subagent 上下文自动压缩**：[PR#3735](https://github.com/QwenLM/qwen-code/pull/3735) 🟡 OPEN —— 防止长跑 subagent 上下文溢出
 3. **`/agents --history` 归档对比视图**：当前 `BackgroundTasksDialog` 偏运行时管理；历史归档 + 对比 diff 仍未实现
+4. **monitor → `send_message` 集成**：PR#3684 自述"未做"清单第 2 项 —— `task_stop` 已通过 PR#3791 顺带覆盖，但 `send_message` 让 monitor 接收外部消息（如 LLM 主动 hint）暂未对接
 
 ---
 
@@ -466,17 +497,18 @@ t=30: [行消失，被驱逐]
 
 ## 八、相关追踪 item
 
-| item | 方向 | 状态（2026-05-02 更新）|
+| item | 方向 | 状态（2026-05-04 更新）|
 |---|---|---|
 | [item-56](./qwen-code-improvement-report-p2-stability.md#item-56) | 真正后台并发 + TTL 驱逐 | **✓ 已实现**（PR#3471 + PR#3488 + PR#3642 + PR#3687 + PR#3720 共 5 件套，且超出 Claude 设计）|
-| [item-57](./qwen-code-improvement-report-p2-stability.md#item-57) | `/agents` 独立管理视图 | 🟡 部分（`/tasks` 命令 + dialog 已有运行时管理；历史归档/对比 diff 仍缺）|
+| [item-57](./qwen-code-improvement-report-p2-stability.md#item-57) | `/agents` 独立管理视图 | 🟡 部分（`/tasks` 命令 + dialog 已有运行时管理 + PR#3801 hint 路径分流；历史归档/对比 diff 仍缺）|
 | [item-58](./qwen-code-improvement-report-p2-stability.md#item-58) | Coordinator 协调器面板 | **✓ 已实现**（PR#3488 pill + combined dialog + detail view，与 Claude footer 常驻面板设计取舍不同）|
 | [item-18](./qwen-code-improvement-report-p0-p1-engine.md#item-18) | Agent 恢复与续行 | **✓ 已实现**（PR#3739 +4087/-165，transcript-first fork resume 比 Claude 更稳健）|
 | [p0-p1-engine item-14](./qwen-code-improvement-report-p0-p1-engine.md#item-14) | Coordinator/Swarm 多 Agent 编排 | 🟡 持续推进（PR#3433 ⚠️ revert，但 PR#3471/3488 已落地控制面 + UI）|
+| **新方向：长跑 foreground bash 后台化提示** | foreground 命令 ≥ effective timeout 一半时 LLM nudge | **✓ 已实现**（PR#3809 +649/-1 · Phase D part (a) · 配合 PR#3684 sleep interception 形成双层防御）|
 
 ---
 
-## 九、关键文件速查表（2026-05-02 更新）
+## 九、关键文件速查表（2026-05-04 更新）
 
 | 技术 | Claude Code | Qwen Code |
 |---|---|---|
