@@ -68,7 +68,7 @@
 | **P1** | [/teleport 跨端双向迁移](./teleport-session-migration-deep-dive.md) — Web session → 终端 session 双向迁移 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-8) | 缺失 | 大 | — |
 | **P1** | [GitLab CI/CD](./gitlab-ci-cd-deep-dive.md) — 官方 GitLab pipeline 集成 [↓](./qwen-code-improvement-report-p0-p1-platform.md#item-9) | 缺失 | 中 | — |
 | **P1** | [流式工具执行流水线](./streaming-tool-execution-deep-dive.md) — API 流式返回 tool_use 时立即开始执行，不等完整响应 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-1) | 等完整响应后执行 | 中 | — |
-| **P1** | [文件读取缓存 + 批量并行 I/O](./file-read-cache-deep-dive.md) — 1000 条 LRU + mtime 失效 + 32 批并行 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-2) | 🟡 主体已实现（查询缓存 ✓ + FileReadCache ✓，仅 32 批并行 readManyFiles 仍待 · prior-read 守卫 PR 进行中）| 小 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓（2026-04-24 合并 · `workspaceContext` / `validatePath` / `.qwenignore` 查询缓存）/ [PR#3717](https://github.com/QwenLM/qwen-code/pull/3717) ✓（2026-04-30 合并 · session-scoped `FileReadCache` + 未变更 Read 短路占位符 · `(dev,ino)` key + 三态 check API + `READ_FILE_CACHE_*` env 度量开关）/ [PR#3774](https://github.com/QwenLM/qwen-code/pull/3774) 🟡 OPEN（follow-up · 用 FileReadCache 强制 Edit/WriteFile 必须先 read · 新增 `EDIT_REQUIRES_PRIOR_READ` / `FILE_CHANGED_SINCE_READ` 错误码 · +611/-2）|
+| **P1** | [文件读取缓存 + 批量并行 I/O](./file-read-cache-deep-dive.md) — 1000 条 LRU + mtime 失效 + 32 批并行 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-2) | 🟡 主体已实现（查询缓存 ✓ + FileReadCache ✓ + history-rewrite invalidation 修复 ✓，仅 32 批并行 readManyFiles 仍待 · prior-read 守卫 PR 进行中）| 小 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓（2026-04-24 合并 · `workspaceContext` / `validatePath` / `.qwenignore` 查询缓存）/ [PR#3717](https://github.com/QwenLM/qwen-code/pull/3717) ✓（2026-04-30 合并 · session-scoped `FileReadCache` + 未变更 Read 短路占位符 · `(dev,ino)` key + 三态 check API + `READ_FILE_CACHE_*` env 度量开关）/ [PR#3810](https://github.com/QwenLM/qwen-code/pull/3810) ✓（**2026-05-04 合并 · +579/-0** · 修复 #3805 "read tool returns no content in long-running sessions" · 给 PR#3717 漏掉的 5 条 history-rewrite 路径补 `clear()`：microcompactHistory / setHistory / truncateHistory / resetChat / stripOrphanedUserEntriesFromHistory）/ [PR#3774](https://github.com/QwenLM/qwen-code/pull/3774) 🟡 OPEN（follow-up · 用 FileReadCache 强制 Edit/WriteFile 必须先 read · 新增 `EDIT_REQUIRES_PRIOR_READ` / `FILE_CHANGED_SINCE_READ` 错误码 · +611/-2）|
 | **P1** | [记忆/附件异步prefetch](./memory-prefetch-deep-dive.md) — 工具执行期间并行搜索相关记忆 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-3) | 无prefetch | 中 | — |
 | **P1** | [Token Budget 续行与自动交接](./token-budget-continuation-deep-dive.md) — 90% 续行 + 递减检测 + 分层压缩回退 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-4) | 70% 一次性压缩 | 中 | — |
 | **P1** | 同步 I/O 异步化 — readFileSync/statSync 替换为 async，解阻塞事件循环 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-5) | ✓ 已实现 | 中 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓（2026-04-24 合并 · hot path 110→10 syscall/prompt，-91%）|
@@ -449,6 +449,82 @@
 
 ## 六、更新日志
 
+### 2026-05-04（~28h 增量 · 6 项合并 + 9 项新 OPEN · Phase D part(a) 收官 + DeepSeek `max` tier 落地 + FileReadCache 关键 invalidation 修复）
+
+扫描窗口：2026-05-03 11:30 UTC → 2026-05-04 15:32 UTC。窗口内 **6 项合并 + 9 项新 OPEN**。本次主线：① **Phase D part (a) 收官**（PR#3809 +649/-1 合并，体量从 OPEN 时 +130 增长 5 倍 · 关键设计精化：阈值改为"effective timeout 的一半"per-invocation 含 1000ms floor）；② **DeepSeek `max` tier 落地**（PR#3800 +926/-80 合并 · 体量从 OPEN 时 +516 大幅增长）；③ **PR#3810 FileReadCache 关键 invalidation 修复**（+579/0 · 修复 #3805 "read tool returns no content in long-running sessions" · PR#3717 漏掉 5 条 history-rewrite 路径的清缓存逻辑）；④ **PR#3792 post-merge cleanup 体量翻倍**（+664/-227 vs OPEN 时 +199/-199）；⑤ **多项性能/可靠性新方向 OPEN**（MCP coalesce + retry policy 统一 + auto-memory 不阻塞主请求）。
+
+#### 🟢 MERGED（6 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| **[PR#3809](https://github.com/QwenLM/qwen-code/pull/3809)** | feat(core): hint to background long-running foreground bash commands | 2026-05-04 15:24 UTC | 🌟 **Phase D part (a) 收官**（**+649/-1** · 体量从 OPEN 时 +130 增长 5 倍 · 5 commits）—— **关键设计精化**：阈值不是固定 60 秒，而是**effective timeout 的一半**（per-invocation），1000ms floor。default-timeout（120s）调用在 60s 出 advisory；显式 `timeout: 600_000` 在 300s 出；pathological tiny timeouts（`timeout: 1`）不会冒出"ran for 0s" advisory。**Advisory 显式警告"别重跑刚完成的命令"**——matters for stateful operations like deploys / migrations / `git push`。配合 PR#3684 sleep interception（**validate 时**），形成完整双层"长跑后台化"防御 |
+| **[PR#3800](https://github.com/QwenLM/qwen-code/pull/3800)** | feat(core): support reasoning effort 'max' tier (DeepSeek extension) | 2026-05-04 14:42 UTC | 🌟 **DeepSeek `max` tier 落地**（**+926/-80** · 体量从 OPEN 时 +516/-57 大幅增长 · 直接命中 [reasoning-effort-deep-dive §3.3 推荐实施方案 Step 1+2](./reasoning-effort-deep-dive.md#33-推荐实施方案4-步)）—— `ContentGeneratorConfig.reasoning.effort` 联合类型加 `'max'`；deepseek provider `translateReasoningEffort()` 把 `reasoning.effort` 扁平化为 `reasoning_effort` body 参数；backward-compat：`low`/`medium` → `high`，`xhigh` → `max`；Anthropic generator `thinking.budget_tokens` 阶梯：low 16K / med 32K / high 64K / **max 128K** |
+| **[PR#3810](https://github.com/QwenLM/qwen-code/pull/3810)** | fix(core): clear FileReadCache on every history rewrite path | 2026-05-04 14:42 UTC | 🌟 **关键正确性 bugfix**（**+579/-0** · 修复 #3805 "read tool returns no content in long-running sessions"）—— **PR#3717 漏检的 5 条 history-rewrite 路径**：原 PR#3717 wired invalidation 到 `tryCompressChat` + `Config.startNewSession` 两条路径，但**漏掉**：① `microcompactHistory`（idle cleanup ≥60min）；② `GeminiClient.setHistory`（`/restore` / `/load_history`）；③ `GeminiClient.truncateHistory`（rewind）；④ `GeminiClient.resetChat`（public API）；⑤ `stripOrphanedUserEntriesFromHistory`（retry path）。每路径单 `getFileReadCache().clear()` + 集成测试用真实 ReadFileTool / on-disk 文件验证 bug 真实存在。**意义**：FileReadCache 的占位符依赖 prior tool result 仍在 history，history rewrite 后必须 invalidate；遗漏导致 Read 在 tool 层成功但 LLM 拿到空内容 |
+| **[PR#3792](https://github.com/QwenLM/qwen-code/pull/3792)** | fix(core): address post-merge monitor tool and UI routing issues | 2026-05-04 13:19 UTC | **PR#3684 review 反馈清扫**（+664/-227 · 体量从 OPEN 时 +199/-199 增长 3.3 倍）—— Token bucket clock-drift guard / AST parse failure logging / 合并 `SHELL_TOOL_NAMES` / 抽 background-work utils / `getToolCallComponent` 路由统一 + `web_search` 兼容别名 |
+| **[PR#3808](https://github.com/QwenLM/qwen-code/pull/3808)** | docs(core): point background-shell + monitor guidance at both /tasks and the dialog | 2026-05-04 14:27 UTC | **PR#3801 docs follow-up**（+24/-12）—— `shell.ts` / `task-stop.ts` 的 model-facing 字符串从只引用 `/tasks` 升级为同时提及 dialog（让 LLM 根据 TTY/headless/SDK/ACP 模式建议对的 surface）|
+| **[PR#3807](https://github.com/QwenLM/qwen-code/pull/3807)** | fix(telemetry): suppress async resource attribute warning on startup | 2026-05-03 11:36 UTC | **关联 item-26 OTel**（+13/0）—— `NodeSDK` 加 `autoDetectResources: false` 消除每次启动打印的 "Accessing resource attributes before async attributes settled" warning |
+
+#### 🟡 关键 OPEN（值得追踪 9 项）
+
+| PR | 方向 | 关联 |
+|---|---|---|
+| **[PR#3827](https://github.com/QwenLM/qwen-code/pull/3827)** | refactor(core): unify retry delay policy | **关联 item-8 API 指数退避** —— retry delay 策略统一抽象。配合已 OPEN 的 PR#3798（classifyError）+ PR#3790（rate-limit retry handling）形成 retry 系统三件套 |
+| **[PR#3818](https://github.com/QwenLM/qwen-code/pull/3818)** | fix(core): coalesce MCP server rediscovery | **关联 item-13 MCP Auto-Reconnect** —— 多次并发重发现合并为一次 |
+| **[PR#3819](https://github.com/QwenLM/qwen-code/pull/3819)** | fix(core): prevent duplicate MCP processes from concurrent discovery | 配套 PR#3818 —— 防止并发 discovery 起重复 MCP 进程 |
+| **[PR#3814](https://github.com/QwenLM/qwen-code/pull/3814)** | fix(core): prevent auto-memory recall from blocking main request | **关联 item-4 会话记忆 / item-5 Auto Dream** —— PR#3087 auto-memory 在主请求路径上同步召回，本 PR 解阻塞 |
+| **[PR#3815](https://github.com/QwenLM/qwen-code/pull/3815)** | fix(core): use per-model settings for fast model side queries | **关联 fast model 路由** —— side queries 用 per-model 配置而非全局默认 |
+| **[PR#3820](https://github.com/QwenLM/qwen-code/pull/3820)** | fix(core): unescape shell-escaped file paths in Edit/WriteFile/ReadFile | 文件路径处理 bug —— shell-escaped 路径在 file 工具中未 unescape |
+| **[PR#3813](https://github.com/QwenLM/qwen-code/pull/3813)** | fix(telemetry): bounded shutdown timeout + service.version resource attribute | **关联 item-26 OTel** —— 关闭时无界等待 + service.version 资源属性 |
+| **[PR#3826](https://github.com/QwenLM/qwen-code/pull/3826)** | fix(cli): track model-sent slash command history | 模型发出的 slash 命令也记录到 history（headless / SDK 路径）|
+| **[PR#3828](https://github.com/QwenLM/qwen-code/pull/3828)** | feat(installer): publish release installer assets | 与 PR#3776 standalone archive installation 配套 |
+
+#### 🎯 重点解析 1：Phase D part (a) 阈值精化（PR#3809）
+
+OPEN 版本（+130/0）阈值为固定 60 秒；MERGED 版本（+649/-1）改为**effective timeout 的一半**：
+
+| 场景 | OPEN 行为 | MERGED 行为 |
+|---|---|---|
+| default timeout（120s）的命令跑 90s | 60s 出 advisory（合理）| 60s 出 advisory（不变）|
+| 显式 `timeout: 600_000` 跑 400s | 60s 出 advisory（**过早**——300s 才合理）| 300s 出 advisory（per-invocation 适配）|
+| 病态 `timeout: 1` 的命令跑 0.5s | 0.05s 出 advisory（"ran for 0s" 噪声）| 1000ms floor 不出（避免噪声）|
+
+**Advisory 显式警告**：not just "use is_background next time"，还包括 "**别重跑这条刚完成的命令**"——这是 stateful 操作（deploys / migrations / `git push`）的真实风险点。这种"防止 LLM 误以为 advisory 是建议立刻重跑"的细节是合并前 review 中加的——OPEN 时是裸 advisory，MERGED 时加 stateful 警告。
+
+#### 🎯 重点解析 2：FileReadCache invalidation 漏检（PR#3810）
+
+PR#3717 引入 FileReadCache（item-2）时，invalidation 只 wired 进 2 条路径。本 PR multi-round 审计暴露了 **5 条遗漏路径**——这是个**架构层 audit 发现的真实正确性 bug**（不是性能问题）：
+
+| 路径 | 触发场景 | 原 PR#3717 是否清缓存 |
+|---|---|---|
+| `tryCompressChat` | auto compaction | ✓ |
+| `Config.startNewSession` | `/clear`、session resume | ✓ |
+| `microcompactHistory` | idle cleanup（≥60min）| ✗ → ✓ 本 PR 修 |
+| `GeminiClient.setHistory` | `/restore`、`/load_history` | ✗ → ✓ 本 PR 修 |
+| `GeminiClient.truncateHistory` | rewind | ✗ → ✓ 本 PR 修 |
+| `GeminiClient.resetChat` | 公共 API | ✗ → ✓ 本 PR 修 |
+| `stripOrphanedUserEntriesFromHistory` | retry path | ✗ → ✓ 本 PR 修 |
+
+**用户可见症状**：长会话中 Read 工具调用看似成功但模型拿到空内容（`file_unchanged` 占位符指向已被 history rewrite 删掉的 prior tool result）。**集成测试**用真实 `ReadFileTool` + on-disk 文件 + 真实 `microcompactHistory` 复现 bug，是工程上扎实的回归保障。
+
+#### 🟢 状态升级
+
+| Item | 旧状态 | 新状态 |
+|---|---|---|
+| **Background tasks roadmap #3634 Phase D part (a)** | 🟡 OPEN | ✓ **收官** |
+| **item-2 文件读取缓存** | 🟡 主体已实现 + invalidation 在 2 条路径 | 🟡 主体已实现 + **invalidation 在 7 条路径全覆盖**（PR#3810）|
+| **DeepSeek `reasoning_effort` 'max' tier** | 🟡 OPEN | ✓ **落地**（PR#3800 +926/-80）|
+
+#### 累计计数
+
+- 已合并 PR: 147 → **153**（+6）
+- 关键 OPEN PR：本轮新增 9 项（retry 三件套配套 + MCP coalesce 双件 + auto-memory + fast model + 文件路径 + telemetry + slash history + installer）
+
+#### 备忘：retry 系统三件套即将落地
+
+PR#3798（classifyError）+ PR#3790（rate-limit retry handling）+ PR#3827（unify retry delay policy）形成 **API 重试系统的三件套**——合并后 item-8 P1 API 指数退避将从"只有 SSE 429 检测"升级到完整的"分类 + 退避 + 重试调度"框架。
+
+---
+
 ### 2026-05-03 第三轮（~9h 16min 增量 · 1 项合并 + 3 项关键 OPEN · Phase B 收官 + Phase D 开启 · `/tasks` 含 monitors + 长跑 foreground bash 后台化提示）
 
 扫描窗口：2026-05-03 02:14 UTC → 2026-05-03 11:30 UTC。窗口内 **1 项合并 + 3 项关键 OPEN**。本次主线：① **Phase B 完整收官**（PR#3801 把 monitors 加入 `/tasks` + interactive 模式 hint，关闭 issue #3634 Phase B 留给"delete / keep as fallback / deprecation hint—选其一"的开放问题，最终采用"keep + add hint scoped to interactive mode"混合方案）；② **Phase D 开启**（PR#3809 OPEN — 长跑 foreground bash 命令完成时提示模型下次用 `is_background: true`）；③ 多项 ergonomics 修复（telemetry 启动 warning + 文档对齐）。
@@ -463,9 +539,9 @@
 
 | PR | 方向 | 与已有 item 关系 |
 |---|---|---|
-| **[PR#3809](https://github.com/QwenLM/qwen-code/pull/3809)** | feat(core): hint to background long-running foreground bash commands | 🌟 **Phase D 开启 part (a)**（+130/0 · 纯加 · `shell.ts` + `shell.test.ts`）—— 当 foreground `shell` tool call 运行 **≥60 秒** 且完成（成功或错误）时，LLM-facing tool result 加 advisory：next time 用 `is_background: true`。**意义**：今天 foreground bash 跑几分钟（build watcher / soak test / 慢 `npm install` / 轮询循环）会**无限期阻塞 agent**——用户已经付了等待成本，agent 下一个 turn 本可以在 `is_background: true` 下并行跑。PR#3684 的 **sleep interception 在 validate 时**处理了 `sleep N` 极端情况；本 PR 在 **result 时**处理 legitimate-but-long 情况——双层防御 |
-| [PR#3808](https://github.com/QwenLM/qwen-code/pull/3808) | docs(core): point background-shell guidance at both /tasks and the dialog | **PR#3801 follow-up**（+10/-8）—— PR#3801 描述里承诺的"separate small PR"。`shell.ts`（spawn background shell 后）与 `task-stop.ts`（请求 cancel 后）的 model-facing 字符串原本只引用 `/tasks` 路径——这些写于 dialog 落地（PR#3488/3720/3791）之前。现在 dialog 处理三类（agent/shell/monitor），两个 surface 都应该让 LLM 可见，由 LLM 根据用户模式（TTY vs headless/SDK/ACP）建议正确的 |
-| [PR#3807](https://github.com/QwenLM/qwen-code/pull/3807) | fix(telemetry): suppress async resource attribute warning on startup | **关联 item-26 OTel**（+13/0）—— `NodeSDK` 默认跑 3 个 async resource detector（`envDetector` / `processDetector` / `hostDetector`），`start()` 是 sync 不 await。第一个 HTTP span 导出时（如 `HttpInstrumentation`）读 `resource.attributes` 而 `asyncAttributes` 还没 settle —— 终端 UI 每次启动都打印 "Accessing resource attributes before async attributes settled" warning。修复：`autoDetectResources: false` |
+| **[PR#3809](https://github.com/QwenLM/qwen-code/pull/3809)** | feat(core): hint to background long-running foreground bash commands | 🌟 **Phase D 开启 part (a)** ✅ **已于 2026-05-04 15:24 合并 +649/-1**（详见 2026-05-04 changelog · 阈值改为"effective timeout 的一半"per-invocation 含 1000ms floor，advisory 显式警告别重跑刚完成的命令——matters for stateful ops 如 deploys/migrations/git push）|
+| [PR#3808](https://github.com/QwenLM/qwen-code/pull/3808) | docs(core): point background-shell guidance at both /tasks and the dialog | **PR#3801 follow-up** ✅ **已于 2026-05-04 14:27 合并 +24/-12** |
+| [PR#3807](https://github.com/QwenLM/qwen-code/pull/3807) | fix(telemetry): suppress async resource attribute warning on startup | **关联 item-26 OTel** ✅ **已于 2026-05-03 11:36 合并 +13/0** |
 
 #### 🎯 重点解析：Background tasks roadmap (#3634) 四阶段全图
 
@@ -520,7 +596,7 @@ Phase D 后续 part (b/c/...) 待观察。
 
 | PR | 方向 | 与已有 item 关系 |
 |---|---|---|
-| **[PR#3800](https://github.com/QwenLM/qwen-code/pull/3800)** | feat(core): support reasoning effort 'max' tier (DeepSeek extension) | 🌟 **直接命中 [reasoning-effort-deep-dive §3.3 推荐实施方案 Step 1+2](./reasoning-effort-deep-dive.md#33-推荐实施方案4-步)**（+516/-57）—— DeepSeek 在 `reasoning_effort` 上扩展了 `max` tier（强于 `high`），DeepSeek 文档直接说"对一些复杂 Agent 类请求（如 Claude Code、OpenCode），自动设置为 `max`"。修复两个问题：① **`max` 类型未接受**：`ContentGeneratorConfig.reasoning.effort` 原本只允许 `'low' \| 'medium' \| 'high'`；② **`reasoning.effort` 在 DeepSeek 路径被静默忽略**：OpenAI pipeline 直接传 `{ reasoning: { effort } }`，但 DeepSeek 期望**扁平 `reasoning_effort` body 参数**——用户配的 effort 永远到不了服务器，static 默认 `high`。修复：新增 `translateReasoningEffort()` 在 deepseek provider 的 `buildRequest` 把 `reasoning.effort` 拍平为顶级 `reasoning_effort`；`low`/`medium` → `high`；`xhigh` → `max`（向后兼容）；用户 `samplingParams` / `extra_body` 已设值时不覆盖。Anthropic generator 的 `output_config.effort` 类型扩展含 `'max'`；`thinking.budget_tokens` 阶梯升到 128K（low 16K / med 32K / high 64K / max 128K）|
+| **[PR#3800](https://github.com/QwenLM/qwen-code/pull/3800)** | feat(core): support reasoning effort 'max' tier (DeepSeek extension) | 🌟 **直接命中 [reasoning-effort-deep-dive §3.3 推荐实施方案 Step 1+2](./reasoning-effort-deep-dive.md#33-推荐实施方案4-步)** ✅ **已于 2026-05-04 14:42 合并 +926/-80**（体量从 OPEN 时 +516/-57 大幅增长，详见 2026-05-04 changelog）|
 
 #### 🎯 重点解析：PR#3791 — kind framework 从声称到证据
 
@@ -645,7 +721,7 @@ $ grep "@opentelemetry" packages/core/package.json
 | PR | 方向 | 与已有 item 关系 |
 |---|---|---|
 | **[PR#3791](https://github.com/QwenLM/qwen-code/pull/3791)** | feat(cli): wire Monitor entries into combined Background tasks dialog | 🌟 **PR#3684 自述"未做"清单的直接 follow-up** ✅ **已于 2026-05-03 02:05 UTC 合并 +791/-49**（详见 2026-05-03 changelog 重点解析） |
-| **[PR#3792](https://github.com/QwenLM/qwen-code/pull/3792)** | fix(core): address post-merge monitor tool and UI routing issues | 🌟 **PR#3684 review review 反馈的清扫 follow-up**（+199/-199，2026-05-02 14:36 UTC）—— ① **Token bucket clock-drift guard**：系统 suspend/resume 后 `Date.now()` 可能倒退导致 elapsed 为负、token bucket 饿死，加 `lastRefill` 重置；② **AST parse failure logging**：`getConfirmationDetails` catch 块原本完全静默，加 `debugLogger.warn` 与 `getDefaultPermission` 一致；③ **合并 `SHELL_TOOL_NAMES`**：PR#3726 在 `rule-parser.ts` / `permission-manager.ts` 中以两个不同名字定义了相同的 `Set(['run_shell_command', 'monitor'])`，统一从 `rule-parser.ts` 导出；④ **抽 background-work utils**：`hasBlockingBackgroundWork()` / `resetBackgroundStateForSessionSwitch()` 在 `clearCommand.ts` 与 `useResumeCommand.ts` 字节级重复，抽到共享模块；⑤ **`getToolCallComponent` 路由统一**：`ChatViewer.tsx` 与 VSCode toolcalls router 几乎相同的 routing 逻辑抽到 `@qwen-code/webui` 的 `routing.ts`；同时给 VSCode 路径补 `web_search` 兼容别名 |
+| **[PR#3792](https://github.com/QwenLM/qwen-code/pull/3792)** | fix(core): address post-merge monitor tool and UI routing issues | 🌟 **PR#3684 review review 反馈的清扫 follow-up** ✅ **已于 2026-05-04 13:19 合并 +664/-227**（体量从 OPEN 时 +199/-199 大幅增长——5 项清扫见原描述，详见 2026-05-04 changelog）|
 | **[PR#3788](https://github.com/QwenLM/qwen-code/pull/3788)** | fix(core): inject thinking blocks for DeepSeek anthropic-compatible provider | **延续 item-22 thinking 块跨轮保留** —— DeepSeek 的 `api.deepseek.com/anthropic` 端点在 thinking 模式下要求 assistant turn 必须带 `thinking` block，否则 HTTP 400。✅ **已于 2026-05-02 16:31 合并 +1407/-76**（详见 2026-05-03 changelog） |
 | [PR#3785](https://github.com/QwenLM/qwen-code/pull/3785) | feat(cli): add memory diagnostics doctor command | **延伸 /doctor**（已合并的 PR#3404 之上）—— `/doctor memory` 子命令 + `--json` 输出 + `collectMemoryDiagnostics()`（Node/V8 内存数据 + 风险提示），为 #3000 系列首层 |
 | [PR#3790](https://github.com/QwenLM/qwen-code/pull/3790) | fix(core): improve stream rate-limit retry diagnostics | 关联 [item-8 API 指数退避](./qwen-code-improvement-report-p0-p1-engine.md#item-8) —— 流式 SSE rate-limit 重试诊断 |

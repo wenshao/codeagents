@@ -8,7 +8,7 @@
 
 ## 零、最新动态（2026-04-27 → 2026-05-02 · Background tasks roadmap #3634 三阶段全部落地）
 
-> **Background tasks roadmap (#3634) 四阶段**（2026-05-03 第三轮更新）：Phase A = 后台 subagents（PR#3076 早期合并 ✓）；Phase B = managed background shell pool + `/tasks` + dialog 整合（PR#3642 + PR#3720 + **PR#3801 ✓ 2026-05-03 收官**）；Phase C = event monitor tool（PR#3684 ✓ 2026-05-02 + PR#3791 ✓ 2026-05-03 dialog 集成）；**Phase D = 长跑 foreground bash 后台化提示**（PR#3809 🟡 OPEN part (a)）。四阶段加上 PR#3471/3488 控制面 + UI、PR#3687 整合、PR#3739 resume 后形成**完整的多模态后台任务调度系统**。
+> **Background tasks roadmap (#3634) 四阶段**（2026-05-04 更新）：Phase A = 后台 subagents（PR#3076 早期合并 ✓）；Phase B = managed background shell pool + `/tasks` + dialog 整合（PR#3642 + PR#3720 + PR#3801 ✓ 2026-05-03 收官）；Phase C = event monitor tool（PR#3684 ✓ 2026-05-02 + PR#3791 ✓ 2026-05-03 dialog 集成）；**Phase D part (a) = 长跑 foreground bash 后台化提示**（**PR#3809 ✓ 2026-05-04 收官** · +649/-1 体量从 OPEN 时 +130 增长 5 倍）。四阶段加上 PR#3471/3488 控制面 + UI、PR#3687 整合、PR#3739 resume 后形成**完整的多模态后台任务调度系统**。
 
 | PR | 合并时间 | 内容 | 影响章节 |
 |---|---|---|---|
@@ -24,15 +24,17 @@
 | [PR#3784](https://github.com/QwenLM/qwen-code/pull/3784) | 2026-05-02 | Phase C 配套 Windows taskkill 兼容修复（+15/-18） | 配套 |
 | [PR#3791](https://github.com/QwenLM/qwen-code/pull/3791) | 2026-05-03 | **Phase C dialog 集成**（+791/-49 · 体量从 OPEN 时 +357/-40 翻倍）—— Monitor 接入 BackgroundTasksDialog；core `MonitorRegistry.setStatusChangeCallback` 镜像 `BackgroundShellRegistry`；`x` 键 + detail view 按 kind 派发 `MonitorDetailBody`；commit `7999b85` lint fix 加 `default: { const _exhaustive: never }` 保运行时 + 编译期 exhaustiveness | §六.5 ✓ |
 | [PR#3801](https://github.com/QwenLM/qwen-code/pull/3801) | 2026-05-03 | **Phase B 收官**（+401/-39 · Issue #3634 Phase B closure）—— `/tasks` 含 monitors（修 headless/non_interactive/ACP 路径 monitor 静默消失 bug）+ interactive 模式 hint 指向 Ctrl+T dialog；`/tasks` 保留为非 TTY 消费者的 long-form fallback。**架构决策**：`/tasks` 不删除（是非 TTY 消费者的唯一检查路径）+ 不"deprecate"（无 removal path）+ 加 hint scoped to interactive | 配套 §六.5 |
+| [PR#3809](https://github.com/QwenLM/qwen-code/pull/3809) | 2026-05-04 | **Phase D part (a) 收官**（+649/-1 · 体量从 OPEN 时 +130 增长 5 倍）—— foreground `shell` 跑 ≥**effective timeout 的一半**（per-invocation，含 1000ms floor）完成时给 LLM-facing result 加 advisory。default-timeout 120s → 60s；显式 `timeout: 600_000` → 300s；`timeout: 1` 不会出"ran for 0s"噪声。Advisory 显式警告"别重跑刚完成的命令"——matters for stateful ops（deploys / migrations / `git push`）。配合 PR#3684 sleep interception 形成完整双层"长跑后台化"防御 | §六.6 新增 |
+| [PR#3792](https://github.com/QwenLM/qwen-code/pull/3792) | 2026-05-04 | **PR#3684 review 反馈清扫**（+664/-227 · 体量从 OPEN 时 +199/-199 增长 3.3 倍）—— Token bucket clock-drift guard / AST parse logging / 合并 SHELL_TOOL_NAMES / 抽 background-work utils / 路由统一 | 配套 |
 
 **关键 OPEN（追踪中）**：
 
 | PR | 方向 |
 |---|---|
-| **[PR#3809](https://github.com/QwenLM/qwen-code/pull/3809)** 🟡 OPEN（2026-05-03 11:17 UTC，+130/0）| 🌟 **Phase D part (a) 开启** —— foreground `shell` tool 运行 ≥60s 完成时，LLM-facing result 加 advisory："next time 用 `is_background: true`"。配合 PR#3684 的 sleep interception（**validate 时**拦截 `sleep N`），形成双层"长跑后台化"防御（**result 时** nudge legitimate-but-long 命令）|
+| ✅ ~~[PR#3809](https://github.com/QwenLM/qwen-code/pull/3809)~~ | **已于 2026-05-04 15:24 UTC 合并 +649/-1**（体量从 OPEN 时 +130 增长 5 倍）—— Phase D part (a) 收官，阈值改为"effective timeout 的一半"per-invocation 含 1000ms floor，advisory 加 stateful 警告 |
+| ✅ ~~[PR#3808](https://github.com/QwenLM/qwen-code/pull/3808)~~ | **已于 2026-05-04 14:27 UTC 合并 +24/-12** —— `shell.ts` / `task-stop.ts` model-facing 字符串同时提及 `/tasks` 与 dialog |
 | [PR#3768](https://github.com/QwenLM/qwen-code/pull/3768) | route foreground subagents through pill+dialog while running —— 把前台 subagent 也接入 pill+dialog，与已合并的后台路径形成对偶 |
 | [PR#3735](https://github.com/QwenLM/qwen-code/pull/3735) | auto-compact subagent context to prevent overflow —— subagent 上下文溢出前自动压缩 |
-| [PR#3808](https://github.com/QwenLM/qwen-code/pull/3808) | docs(core): point background-shell guidance at both /tasks and the dialog —— PR#3801 follow-up，把 model-facing 字符串中只引用 `/tasks` 的地方改为同时提及 dialog（让 LLM 根据 TTY/headless/SDK/ACP 模式建议正确的 surface）|
 | ❌ monitor → `send_message` 集成 | PR#3684 自述"未做"清单第 2 项 —— `task_stop` 集成已经在 PR#3791（已合并）中通过 `x` 键路由 `monitorRegistry.cancel()` 顺带覆盖，但 `send_message` 集成暂未对接 |
 
 ---

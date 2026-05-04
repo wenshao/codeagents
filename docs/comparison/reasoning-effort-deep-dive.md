@@ -356,7 +356,7 @@ DeepSeek 多轮对话需要 reasoning 字段在 message 间持续传递，OpenCo
 
 ### 3.1 Qwen Code 当前状态
 
-> **2026-05-03 进展**：[PR#3800](https://github.com/QwenLM/qwen-code/pull/3800) 🟡 OPEN（+516/-57）—— **直接命中本节 §3.3 推荐实施方案 Step 1 + Step 2**。该 PR 修复两个问题：① **`max` 类型未接受**——`ContentGeneratorConfig.reasoning.effort` 原本只允许 `'low' \| 'medium' \| 'high'`；② **`reasoning.effort` 在 DeepSeek 路径被静默忽略**——OpenAI pipeline 直接传 `{ reasoning: { effort } }`，但 DeepSeek 期望**扁平 `reasoning_effort` body 参数**，user-configured effort 永远到不了 server，static 默认 `high`。修复：新增 `translateReasoningEffort()` 在 deepseek provider 的 `buildRequest` 把 `reasoning.effort` 拍平为顶级 `reasoning_effort`；`low`/`medium` → `high`；`xhigh` → `max`（与 §2.4 表 Codex 行为一致）；用户 `samplingParams` / `extra_body` 已设值时不覆盖。Anthropic generator 的 `output_config.effort` 类型扩展含 `'max'`；`thinking.budget_tokens` 阶梯升到 128K（low 16K / med 32K / high 64K / max 128K）。**合并后 §3.1 当前缺失清单的 #2 `max` 档识别将 ✓**。
+> **2026-05-04 更新**：[PR#3800](https://github.com/QwenLM/qwen-code/pull/3800) ✅ **已合并 2026-05-04 14:42 UTC** —— 体量从 OPEN 时 +516/-57 增长到 **+926/-80**。**直接命中本节 §3.3 推荐实施方案 Step 1 + Step 2**：① `ContentGeneratorConfig.reasoning.effort` 类型扩展含 `'max'`；② DeepSeek provider 新 `translateReasoningEffort()` 在 `buildRequest` 把 `reasoning.effort` 拍平为顶级 `reasoning_effort`；③ backward-compat `low`/`medium` → `high`、`xhigh` → `max`（与 §2.4 表 Codex 行为一致）；④ 用户 `samplingParams` / `extra_body` 已设值时不覆盖；⑤ Anthropic generator `output_config.effort` 含 `'max'`，`thinking.budget_tokens` 阶梯：low 16K / med 32K / high 64K / **max 128K**。**§3.1 当前缺失清单的 `max` 档识别项已 ✓ 落地**。
 
 源码 `packages/core/src/core/openaiContentGenerator/pipeline.ts:437-464` `buildReasoningConfig`：
 
@@ -375,12 +375,12 @@ private buildReasoningConfig(request: GenerateContentParameters) {
 - ✓ `pipeline.ts:443-447` 注释列出多 provider 的 thinking 行为差异（含 deepseek-reasoner）
 - ✓ `provider/deepseek.ts:13` `DeepSeekOpenAICompatibleProvider` 类已存在（处理 content array → string flatten）
 
-**当前缺失**（截至 2026-05-03，PR#3800 进行中部分项已开始解决）：
-- ✗ **无 user-facing 入口**让用户传 `reasoning.effort = "high"`（settings.json / CLI / slash 都没）—— PR#3800 的"用户改 settings.json 可生效"是入口实现的前置
-- 🟡 **DeepSeek V4 的 `max` 档**识别 —— [PR#3800](https://github.com/QwenLM/qwen-code/pull/3800) 🟡 OPEN 正在加（type expansion + DeepSeek provider 扁平化映射）
-- ✗ **DeepSeek assistant-message-must-have-reasoning 约束** —— **PR#3788（已合并 2026-05-02 +1407/-76）已覆盖**，详见 [qwen-code-improvement-report 2026-05-03 changelog](./qwen-code-improvement-report.md#2026-05-03)（`injectThinkingOnToolUseTurns` + `normalizeAssistantThinkingSignature` 跨提供商规范化）
-- ✗ **DeepSeek `reasoning_content` 字段往返** —— **PR#3729 / PR#3747 / PR#3737 / PR#3788 系列（均已合并）已覆盖**（详见 [item-22 thinking 块跨轮保留](./qwen-code-improvement-report-p0-p1-engine.md#item-22)）
-- ✗ **no per-provider effort 列表表**（Claude 用白/黑名单，Codex 用 nearest_effort，OpenCode 用 per-provider switch）—— PR#3800 的 deepseek provider `translateReasoningEffort()` 是**第一个 per-provider 适配**，路径已开
+**当前缺失**（截至 2026-05-04，PR#3800 / PR#3788 已合并解决多项）：
+- 🟡 **user-facing 入口** —— PR#3800 提供 settings.json 入口（用户配 `reasoning.effort: 'max'` 生效）；CLI flag / slash 命令仍可补
+- ✅ **DeepSeek V4 的 `max` 档**识别 —— [PR#3800](https://github.com/QwenLM/qwen-code/pull/3800) ✅ **已合并 2026-05-04**（+926/-80 · type expansion + DeepSeek provider 扁平化 `translateReasoningEffort()` + Anthropic generator `thinking.budget_tokens` 128K 阶梯）
+- ✅ **DeepSeek assistant-message-must-have-reasoning 约束** —— **PR#3788（已合并 2026-05-02 +1407/-76）已覆盖**（`injectThinkingOnToolUseTurns` + `normalizeAssistantThinkingSignature` 跨提供商规范化）
+- ✅ **DeepSeek `reasoning_content` 字段往返** —— **PR#3729 / PR#3747 / PR#3737 / PR#3788 系列（均已合并）已覆盖**（详见 [item-22 thinking 块跨轮保留](./qwen-code-improvement-report-p0-p1-engine.md#item-22)）
+- 🟡 **per-provider effort 列表表**（Claude 用白/黑名单，Codex 用 nearest_effort，OpenCode 用 per-provider switch）—— PR#3800 的 deepseek provider `translateReasoningEffort()` 已是**第一个 per-provider 适配**；其他 provider（GPT/Anthropic/Gemini）的 effort 范围是否有特殊处理待源码二次核查
 
 ### 3.2 DeepSeek 系列的实际 effort 行为
 
