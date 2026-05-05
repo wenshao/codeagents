@@ -1,4 +1,4 @@
-# Deep-Dive 文章索引（148 篇）
+# Deep-Dive 文章索引（149 篇）
 
 > 按主题分类的深度分析文章，每篇聚焦一个具体技术机制的 Claude Code vs Qwen Code 对比。
 >
@@ -30,7 +30,7 @@
 | [反应式压缩](./reactive-compression-deep-dive.md) | prompt_too_long 恢复 |
 | [命令队列编排](./command-queue-orchestration-deep-dive.md) | 统一队列 + 优先级调度 |
 
-## 工具与命令（16 篇）
+## 工具与命令（17 篇）
 
 | 文章 | 主题 |
 |------|------|
@@ -46,6 +46,7 @@
 | [MCP 集成](./mcp-integration-deep-dive.md) | MCP 服务器管理 |
 | [MCP 并行连接](./mcp-parallel-connection-deep-dive.md) | 动态插槽调度 |
 | [MCP 自动重连](./mcp-auto-reconnect-deep-dive.md) | 断线恢复 |
+| [WebSearch 工具](./web-search-tool-deep-dive.md) | 5 家 Code Agent + 阿里云百炼对比 |
 | [Bash File Watcher](./file-watcher-stale-edit-deep-dive.md) | stale-edit 防护 |
 | [Ripgrep 回退](./ripgrep-fallback-deep-dive.md) | 三级回退 |
 | [Notebook Edit](./notebook-edit-deep-dive.md) | Jupyter cell 编辑 |
