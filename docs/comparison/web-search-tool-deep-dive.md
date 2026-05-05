@@ -17,7 +17,7 @@
 | **Claude Code** | 自家提供商**服务端原生**（Anthropic）| `web_search_20250305` beta | 569 |
 | **Codex** | 自家提供商**Responses API 原生**（OpenAI）| Responses API `web_search` | 39（仅显示）|
 | **OpenCode** | **第三方 MCP**（Exa AI）| `mcp.exa.ai/mcp` | 71 |
-| **Kimi CLI** | **自家提供商私有服务**（Moonshot）| `moonshot_search` HTTP | ~150 |
+| **Kimi CLI** | **自家提供商私有服务**（Moonshot）| `moonshot_search` HTTP | 163 |
 | **Qwen Code** | ❌ **没有 WebSearch 工具** | — | 0 |
 
 **关键发现**：阿里云百炼（Qwen 模型的官方 API 平台）**早就有功能丰富的 server-side `web_search` built-in tool**（4 档 search_strategy + 4 档 freshness + forced_search + enable_citation + 25 个 domain allowlist），但 **Qwen Code CLI 没有把它暴露成本地工具**——这是 CLI 实现层 gap，不是 provider 层缺失。
@@ -46,7 +46,7 @@
 
 ### 3.1 Claude Code（Anthropic 服务端原生）
 
-**源码**：`tools/WebSearchTool/WebSearchTool.ts`（569 LOC，反编译自二进制）
+**源码**：`tools/WebSearchTool/WebSearchTool.ts`（569 LOC，反编译自二进制；EVIDENCE 见 [`docs/tools/claude-code/EVIDENCE.md`](../tools/claude-code/EVIDENCE.md)）
 
 ```typescript
 // 关键常量（EVIDENCE.md 已验证）
@@ -71,7 +71,7 @@
 ### 3.2 Codex（OpenAI Responses API 原生）
 
 **源码**：
-- `codex-rs/protocol/src/models.rs:1107-1133`（`WebSearchAction` enum）
+- `codex-rs/protocol/src/models.rs:1107-1132`（`WebSearchAction` enum）
 - `codex-rs/core/src/web_search.rs`（39 LOC，仅显示格式化）
 
 ```rust
@@ -333,7 +333,7 @@ search_options = {
 | 维度 | Claude Code | Codex | OpenCode | Kimi CLI | Bailian |
 |---|---|---|---|---|---|
 | **架构** | 一体化 | 一体化 | 开放（MCP）| 一体化 | 一体化 |
-| **客户端 LOC** | 569 | 39 | 71 | ~150 | —（无 CLI 端）|
+| **客户端 LOC** | 569 | 39 | 71 | 163 | —（无 CLI 端）|
 | **客户端职责** | API 调用 + 安全/限流 | **仅显示格式化** | MCP 客户端 + 权限路由 | 完整 HTTP + 错误处理 | — |
 | **服务端"智能"** | 高（domain 过滤/限流均服务端）| **最高**（搜索逻辑全在 API）| 高（Exa 处理 livecrawl/type）| 中（基础搜索 API）| **最高**（4 档 strategy + 4 档 freshness 全服务端）|
 | **可扩展性** | ❌ 绑死 Anthropic | ❌ 绑死 OpenAI | ✓ 换 MCP server | ❌ 绑死 Moonshot | ❌ 绑死阿里 |
@@ -447,7 +447,7 @@ export class WebSearchTool extends BaseDeclarativeTool<WebSearchParams> {
 |---|---|
 | Claude Code WebSearchTool（反编译）| `tools/WebSearchTool/WebSearchTool.ts` —— 569 LOC，`max_uses = 8`，`web_search_20250305` beta |
 | Claude Code COMPACTABLE_TOOLS | `services/compact/microCompact.ts` —— 含 WebSearch |
-| Codex WebSearchAction enum | `codex-rs/protocol/src/models.rs:1107-1133` |
+| Codex WebSearchAction enum | `codex-rs/protocol/src/models.rs:1107-1132` |
 | Codex WebSearch 显示 | `codex-rs/core/src/web_search.rs` —— 39 LOC |
 | Codex feature gates | `codex-rs/core/src/config/mod.rs:1663-1666` —— `WebSearchCached` / `WebSearchRequest` |
 | OpenCode websearch | `packages/opencode/src/tool/websearch.ts` —— 71 LOC |
