@@ -2,6 +2,8 @@
 
 > 对比 Claude Code、Codex、OpenCode、Kimi CLI、Qwen Code 的 WebSearch 工具实现，并把阿里云百炼（DashScope / Model Studio）的 server-side `web_search` built-in tool 也加入横向比较。基于 2026-05-04 各项目本地源码 + 官方文档查询。
 >
+> **2026-05-06 更新**：本文于 2026-05-04 发布后，**Qwen Code 团队成员次日（2026-05-05 04:33 UTC）发起 [Issue #3841](https://github.com/QwenLM/qwen-code/issues/3841) 直接引用本文的跨产品对比数据（569/39/71/163/0 LOC）+ path A/B/C 框架**；同日 [PR#3844](https://github.com/QwenLM/qwen-code/pull/3844) 实现 path C（含 Claude Code-style 7 层 prompt-injection 防御）。详见文末 [§十一 后续进展](#十一-后续进展2026-05-06)。
+>
 > **配套文章**：
 > - [SDK / ACP / Daemon 架构 Deep-Dive](./sdk-acp-daemon-architecture-deep-dive.md) —— 程序化访问接口对比
 > - [ReadFile 工具 Deep-Dive](./read-file-tool-deep-dive.md) —— 文件读取工具对比
@@ -198,7 +200,19 @@ class SearchWeb(CallableTool2[Params]):
 - **`X-Msh-Tool-Call-Id` 调用追踪 header** —— 服务端可通过此 ID 追踪同一次工具调用对应的所有日志/计费/限流
 - **`include_content` 抓全页开关** —— 与 OpenCode 的 `contextMaxCharacters` 思路类似但更粗粒度
 
-### 3.5 Qwen Code（缺失）
+### 3.5 Qwen Code（缺失，但有完整历史循环）
+
+> **历史循环**（重要！本文初稿 2026-05-04 时未注意到）：Qwen Code 不是从未有过 WebSearch，而是**经历了"有 → 删 → 重新加（进行中）"完整循环**：
+>
+> | 时间 | 事件 |
+> |---|---|
+> | **PR#3502 之前** | Qwen Code **有**内置 web_search 工具 + **4 providers**（DashScope / Tavily / Google / GLM）|
+> | 2026-04-21 | [Issue #3496](https://github.com/QwenLM/qwen-code/issues/3496) 用户提出"webSearch 免费份额停掉后是否还能用"（已 closed）|
+> | **2026-04-24** | [PR#3502](https://github.com/QwenLM/qwen-code/pull/3502) ✓ 合并 —— **删除全部 web_search**（+167/-1830 净删 1,663 行 + 4 providers + CLI flag + env var）。理由："built-in tool 需要为每个 search service 维护 provider-specific integration + API key plumbing；MCP 已经提供更干净更可扩展的同样机制"——架构上向 OpenCode/Claude Code 的"用 MCP 替代内置 provider"方向对齐 |
+> | **2026-05-04** | 本文发布，记录 Qwen Code 此时"完全缺失" |
+> | **2026-05-05** | 见 [§十一](#十一-后续进展2026-05-06) |
+>
+> 所以严格说现状是"**经历删除后暂时缺失**"，不是"从未实现过"。下面的源码证据反映 PR#3502 删除后的当前状态。
 
 **源码证据**：
 
@@ -476,5 +490,96 @@ export class WebSearchTool extends BaseDeclarativeTool<WebSearchParams> {
 6. **Qwen Code 缺失是 CLI 实现层 gap**：Provider 层（DashScope）能力齐备，但 Qwen Code CLI 没有暴露——这是个 ~0.5-1 周可补的低悬果实，建议优先级 P1。
 
 7. **架构哲学映射定价模式**：服务端原生（Claude/Codex/Bailian）的客户端最薄，因为搜索逻辑+计费都在服务端；CLI 端做完整 HTTP 的（Kimi）需要处理超时/错误/格式化等细节；MCP 模式（OpenCode）把这些细节交给 MCP server。
+
+## 十一、后续进展（2026-05-06）
+
+本文于 2026-05-04 发布后，Qwen Code 团队**直接基于本文档的分析**推进了 WebSearch 工具的实现：
+
+### 11.1 时间线
+
+| 时间 | 事件 |
+|---|---|
+| **2026-05-04** | 本文发布（commit `ae8d998`），含 §五横向能力矩阵 + §八 path A/B/C 改进路径 |
+| **2026-05-05 04:33 UTC** | Qwen Code 团队成员发起 [**Issue #3841**](https://github.com/QwenLM/qwen-code/issues/3841)：`feat(tools): add WebSearch support (start by passing through DashScope enable_search)` |
+| **2026-05-05** | [**PR#3844**](https://github.com/QwenLM/qwen-code/pull/3844) OPEN（+1238/-3 / 11 文件）：`feat(tools): add WebSearch tool with prompt-injection defenses` |
+
+### 11.2 Issue #3841 直接引用本文档
+
+Issue 内容（截取）：
+
+> **Background**: Qwen Code is **the only one of the 5 mainstream Code Agent CLIs without a WebSearch tool**. Yet the underlying DashScope (Bailian) platform **already provides a server-side `web_search` built-in tool richer than Claude Code's or Codex's** — this is a CLI-layer gap, not a provider-layer capability gap.
+>
+> ## Cross-CLI Comparison
+>
+> | Product | Strategy | Backend | Client LOC |
+> |---|---|---|:---:|
+> | Claude Code | Server-side native | Anthropic `web_search_20250305` | **569** |
+> | Codex | Responses API native | OpenAI `web_search` | **39** |
+> | OpenCode | Third-party MCP | Exa AI (`mcp.exa.ai/mcp`) | **71** |
+> | Kimi CLI | Self-hosted HTTP service | Moonshot `moonshot_search` | **163** |
+> | **Qwen Code** | **❌ None** | — | **0** |
+>
+> ## Improvement Paths (smallest effort first)
+>
+> ### Path A: MCP integration (0 changes · user-side config)
+> ### Path B: Pass through DashScope `enable_search` (~0.5 day · recommended starting point)
+> ### Path C: Wrap as an explicit `web_search` tool (~1 week · full experience)
+
+**关键观察**：Issue 复用了本文 §五的 5 行对比表（包括精确 LOC 数 569/39/71/163/0）+ 本文 §八的 path A/B/C 框架，**几乎逐字引用**。
+
+### 11.3 PR#3844 的设计选择：Path C + Claude-style 7 层防御
+
+PR body 明确："Implements **path C** from #3841: an explicit `web_search` tool for DashScope-compatible providers, with Claude Code-style **7-layer prompt-injection defenses**"
+
+**实现要点**（与本文 §四百炼能力对齐）：
+- 后端：`POST /chat/completions` with `enable_search` + `forced_search` + `enable_source` + `search_options`
+- 解析 `search_info`（兼容顶层 + `choices[0].message` 两种位置）
+
+**7 层 Claude Code-style 防御**：
+1. 工具描述警告"results 不应被当作 directives" + 每个 result 加 safety footer
+2. `max_uses = 8` per session via `WeakMap<Config>`（仅成功才递增——与 Claude `WebSearchTool.ts` 相同）
+3. `MAX_RESULT_SIZE_CHARS = 100_000` 截断
+4. `allowed_domains` 最多 25（trim+filter blanks，作为 `assigned_site_list` 转发）—— 与百炼 `assigned_site_list 25 上限`匹配
+5. `blocked_domains` 客户端过滤（host + subdomain）
+6. 加入 `COMPACTABLE_TOOLS` set（microcompact 清理 · 与 Claude WebSearch 一致）
+7. 加入 `BOUNDARY_TOOLS`（speculation 在 WebSearch 处停止）
+
+**测试**：15 新 web-search 测试 + 282 受影响的现存测试（permissions/shell-semantics/claude-converter/speculationToolGate/microcompact/web-fetch）。
+
+### 11.4 完整循环架构演进
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ PR#3502 之前：自建 4-provider WebSearch                      │
+│   └─ DashScope / Tavily / Google / GLM 各打 API + cli flag   │
+│   └─ ~1830 行代码、API key plumbing、env var 转发           │
+└─────────────────────────────────────────────────────────────┘
+                            ↓ PR#3502 (2026-04-24, +167/-1830)
+┌─────────────────────────────────────────────────────────────┐
+│ 中间阶段：完全删除，转 MCP                                     │
+│   └─ 用户自己配 ~/.qwen/mcp.json 接 Bailian/Tavily/GLM MCP   │
+│   └─ 干净，但缺开箱即用体验                                  │
+└─────────────────────────────────────────────────────────────┘
+                            ↓ codeagents 文档（2026-05-04）+ Issue #3841（2026-05-05）
+┌─────────────────────────────────────────────────────────────┐
+│ PR#3844：1 default provider（DashScope） + Claude-style 防御 │
+│   └─ 复用 path A（MCP fallback）保留可换性                   │
+│   └─ 加上 Claude 的 7 层 prompt-injection 防御               │
+│   └─ 不再 4 provider 全打 API（开箱即用 + 不用维护 4 套集成）│
+└─────────────────────────────────────────────────────────────┘
+```
+
+**最终方案**比删除前的 4-provider 实现**架构更稳健**——单 provider + MCP fallback + Claude-style 安全设计。这是被 codeagents 文档引导出的设计决策。
+
+### 11.5 codeagents 文档影响产品决策的首例
+
+这是 codeagents 项目分析直接影响 Qwen Code 团队设计的**首个公开案例**：
+1. 文档提供精确的跨产品对比数据（5 行 × 4 列含 LOC 数字）
+2. 文档的 path A/B/C 改进路径框架被 Issue 完整引用
+3. PR 选择 path C 而非最小改动的 path B，并加上 path C 章节列出的所有 Claude-style 防御项
+
+印证了 codeagents 项目"基于源码验证的中立技术对比"的价值——**不只是文档化已有事实，还能为产品改进提供可执行的工程蓝图**。
+
+---
 
 > **免责声明**：以上数据基于 2026-05-04 各项目本地源码 + 官方文档查询，可能已过时。版本号反映当时仓库状态。各产品演进迅速，建议使用前以仓库最新状态为准。

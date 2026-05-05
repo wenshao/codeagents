@@ -449,6 +449,78 @@
 
 ## 六、更新日志
 
+### 2026-05-06（~24h 增量 · 6 项合并 + 12 项关键 OPEN · WebSearch 工具回归（PR#3844）+ Issue #3841 引用 web-search-tool-deep-dive 分析）
+
+扫描窗口：2026-05-04 17:20 UTC → 2026-05-05 17:20 UTC。窗口内 **6 项合并 + 12 项关键 OPEN**。本次主线：① **WebSearch 工具回归**（PR#3502 ✓ 2026-04-24 移除 1,830 行 → PR#3844 OPEN 2026-05-05 重新添加，**但 Issue #3841 直接引用 codeagents 项目的 [web-search-tool-deep-dive.md](./web-search-tool-deep-dive.md) 跨产品对比分析**——文档影响产品决策的具体案例）；② **MCP coalesce 落地**（PR#3818 +239/-2）；③ **shell-escaped 文件路径修复**（PR#3820 +561/-168）；④ **OTel telemetry shutdown timeout**（PR#3813 +130/-3）。
+
+#### 🟢 MERGED（6 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| **[PR#3820](https://github.com/QwenLM/qwen-code/pull/3820)** | fix(core): unescape shell-escaped file paths in Edit, WriteFile, and ReadFile tools | 2026-05-04 17:33 UTC | **正确性 bugfix**（**+561/-168**）—— 加 `unescapePath` 在 `validateToolParamValues` 中规范化（含 `Edit` / `ReadFile` / `WriteFile` + `CoreToolScheduler` 条件规则匹配）。LLM 可能从 at-completion 或人工输入收到 shell-escaped 路径如 `my\ file.txt`，转换为 `my file.txt` 后才执行。修复"含空格/括号/&等特殊字符的文件名"被报"file not found"的问题 |
+| **[PR#3818](https://github.com/QwenLM/qwen-code/pull/3818)** | fix(core): coalesce MCP server rediscovery | 2026-05-05 10:31 UTC | **关联 [item-13 MCP Auto-Reconnect](./qwen-code-improvement-report-p2-tools-commands.md#item-13)**（+239/-2）—— 同 server 的并发 rediscovery 请求**共享 in-flight restart**，不再独立启动 replacement clients；rediscovery 替换连接前停掉旧 health-check timer。修复多个 reconnect/restart 路径并发尝试替换同一连接导致额外 MCP 进程游离（无 tracked client）|
+| **[PR#3813](https://github.com/QwenLM/qwen-code/pull/3813)** | fix(telemetry): add bounded shutdown timeout and fix service.version resource attribute | 2026-05-05 03:12 UTC | **关联 item-26 OTel Tracing**（+130/-3）—— 关闭时无界等待修复 + service.version resource attribute 修正 |
+| **[PR#3834](https://github.com/QwenLM/qwen-code/pull/3834)** | refactor: extract shared release helper utilities | 2026-05-05 02:15 UTC | sdk-python release 工具复用（+211/-108）|
+| **[PR#3833](https://github.com/QwenLM/qwen-code/pull/3833)** | feat(sdk-python): add network timeouts to release version helper | 2026-05-05 11:25 UTC | sdk-python release 网络超时（+105/-3）|
+| **[PR#3783](https://github.com/QwenLM/qwen-code/pull/3783)** | feat(cli): Add ability to switch models non-interactively from the cli | 2026-05-05 16:54 UTC | **配套 PR#3797 / PR#3799 形成模型管理三件套**（+92/-17）—— headless 切模型 CLI 入口；与已 OPEN 的 `/model list` + 跨 OpenAI-compat 端点响应规范化形成完整 headless 模型管理 |
+
+#### 🟡 关键 OPEN（值得追踪 12 项）
+
+| PR | 方向 | 关联 |
+|---|---|---|
+| **[PR#3844](https://github.com/QwenLM/qwen-code/pull/3844)** | feat(tools): add WebSearch tool with prompt-injection defenses | 🌟🌟🌟 **WebSearch 工具回归**（+1238/-3 / 11 文件）—— **Issue [#3841](https://github.com/QwenLM/qwen-code/issues/3841) 直接引用 codeagents [web-search-tool-deep-dive.md](./web-search-tool-deep-dive.md) 的跨产品对比 + 路径 A/B/C 框架**；本 PR 实现 **path C**：DashScope-compat provider 显式 `web_search` 工具 + Claude Code-style **7 层 prompt-injection 防御**（max_uses=8 via WeakMap、MAX_RESULT_SIZE_CHARS=100K、allowed_domains/blocked_domains、加入 COMPACTABLE_TOOLS / BOUNDARY_TOOLS）。15 新测试。**意义**：填补本系列长期追踪的 WebSearch gap 同时与 PR#3502（2026-04-24 删除 1,830 行原 4-provider 实现）形成"删除→反思→Claude-style 重新设计"完整循环 |
+| **[PR#3850](https://github.com/QwenLM/qwen-code/pull/3850)** | refactor(core): classify retry errors | **关联 item-8 + 已 OPEN PR#3798 + PR#3827** —— retry 系统统一化重构。这是 retry 三件套（classify + delay policy + rate-limit handling）的进一步整合 |
+| **[PR#3849](https://github.com/QwenLM/qwen-code/pull/3849)** | feat(models): add cross-authType model resolution to ModelRegistry and ModelsConfig | 跨认证方式（OAuth / API key / 等）的模型解析统一 |
+| **[PR#3852](https://github.com/QwenLM/qwen-code/pull/3852)** | fix(core): activate skills from discovered result paths | **关联 item-28 Skill 装载** —— 从 discovered result paths 激活 skill |
+| **[PR#3848](https://github.com/QwenLM/qwen-code/pull/3848)** | fix(memory): route auto-memory recall selector to fast model | **关联 item-4/5 会话记忆 + Auto Dream + fast model 应用** —— auto-memory recall selector 走 fast model（参考 [fast-model-usage-deep-dive 第 6 项](./fast-model-usage-deep-dive.md)）|
+| **[PR#3847](https://github.com/QwenLM/qwen-code/pull/3847)** | feat(telemetry): inject traceId/spanId into debug log files for OTel correlation | **关联 item-26 OTel** —— debug 日志与 OTel span 关联 |
+| **[PR#3842](https://github.com/QwenLM/qwen-code/pull/3842)** | feat(core): add signal.reason convention for ShellExecutionService (#3831 PR-1 of 3) | **新 3 件套预告** —— ShellExecutionService 重构系列首 PR（标题写明 "PR-1 of 3"）|
+| **[PR#3840](https://github.com/QwenLM/qwen-code/pull/3840)** | feat(core): refuse Edit/WriteFile when the file changed since last read | **关联 item-2 FileReadCache + PR#3774 prior-read enforcement** —— 文件 last read 后被外部修改时拒绝 Edit/WriteFile（与 PR#3774 是双轨：3774 要求"必须先 read"，3840 要求"read 后未变" · 是 prior-read enforcement 的另一面）|
+| **[PR#3856](https://github.com/QwenLM/qwen-code/pull/3856)** | feat(cli): polish --add-dir / --include-directories feature | `--add-dir` 用户体验抛光 |
+| **[PR#3855](https://github.com/QwenLM/qwen-code/pull/3855)** | feat(installer): verify installation release assets | installer 验证 |
+| **[PR#3853](https://github.com/QwenLM/qwen-code/pull/3853)** | feat(installer): add hosted install release alias | installer hosted alias |
+| **[PR#3854](https://github.com/QwenLM/qwen-code/pull/3854)** | ci: add Qwen Code issue follow-up bot workflow | issue 跟进 bot |
+
+#### 🎯 重点解析：WebSearch 工具的"删除→反思→Claude-style 重新设计"循环
+
+PR#3844 的合并将完成**Qwen Code 的 WebSearch 工具完整循环**：
+
+| 时间 | 事件 |
+|---|---|
+| **PR#3502 之前** | Qwen Code **有**内置 web_search 工具 + **4 providers**（DashScope/Tavily/Google/GLM）|
+| **2026-04-21** | [Issue #3496](https://github.com/QwenLM/qwen-code/issues/3496) "webSearch功能，在免费份额停掉以后是不是也无法使用了" 提出（已 closed） |
+| **2026-04-24** | [PR#3502](https://github.com/QwenLM/qwen-code/pull/3502) ✓ 合并 —— **删除全部 web_search**（+167/-1830 净删 1,663 行 + 4 providers + cli flag + env var）转为 "MCP-based approach"，理由："built-in tool required maintaining provider-specific integrations and API key plumbing... while MCP already provides a cleaner, more extensible mechanism" |
+| **2026-05-04** | codeagents 项目发布 [web-search-tool-deep-dive.md](./web-search-tool-deep-dive.md) —— 对比 5 大 Code Agent + Bailian 后端，记录 Qwen Code 此时"完全缺失"WebSearch + 提出 path A/B/C 改进路径 |
+| **2026-05-05 04:33 UTC** | Qwen Code 团队成员发起 [Issue #3841](https://github.com/QwenLM/qwen-code/issues/3841) "feat(tools): add WebSearch support (start by passing through DashScope enable_search)" —— **直接引用 codeagents 文档的跨产品对比表 + 数字（569/39/71/163/0）+ path A/B/C 框架** |
+| **2026-05-05** | [PR#3844](https://github.com/QwenLM/qwen-code/pull/3844) OPEN —— 实现 path C，但**带 Claude Code-style 7 层 prompt-injection 防御**（max_uses=8 / MAX_RESULT_SIZE_CHARS=100K / allowed_domains 25 / blocked_domains client-side / COMPACTABLE_TOOLS / BOUNDARY_TOOLS / safety footer + warning）—— 比删除前的 4-provider 版本架构更稳健 |
+
+**架构演进意义**：从"自建 4 provider 各打 API"→"MCP 完全外部化"→"DashScope 单 provider + Claude-style 防御"。**最终方案不是 PR#3502 的 MCP only，也不是删除前的 4-provider all-in-one，而是吸收 Claude Code 安全设计后的 "1 default provider + MCP fallback"**——这是被 codeagents 文档引导出的设计决策。
+
+#### 🟢 状态升级
+
+| Item | 旧状态 | 新状态 |
+|---|---|---|
+| **WebSearch 工具** | 完全缺失（PR#3502 删除后）| 🟡 **回归进行中**（PR#3844 OPEN，含 Claude-style 7 层防御）|
+| **MCP Auto-Reconnect** | 🟡 部分（reconnect-on-error）| 🟡 部分 + **rediscovery 并发合并**（PR#3818 ✓ 修复同 server 并发 reconnect 留游离进程）|
+| **shell-escaped 路径处理** | bug | ✓ 修复（PR#3820 +561/-168）|
+| **OTel telemetry shutdown** | 无界等待 | ✓ bounded（PR#3813）|
+
+#### 累计计数
+
+- 已合并 PR: 153 → **159**（+6）
+- 关键 OPEN PR：本轮新增 12 项（含 PR#3844 WebSearch 回归 + retry 三件套整合 + ShellExecutionService 重构 PR-1/3 + auto-memory fast model 路由 + ...）
+
+#### 备忘：codeagents 文档影响产品决策的首例
+
+Issue #3841 + PR#3844 是**codeagents 项目的分析直接影响 Qwen Code 团队设计决策的首个案例**：
+1. 我们的 deep-dive 提供了精确的跨产品对比数据（569/39/71/163/0 LOC）
+2. 我们的"path A/B/C"框架被原文引用
+3. PR 选择了 path C 而非 path B（最小改动），并加上了 path C 章节"Mandatory Prompt Injection Defenses"列出的所有 Claude-style 防御项
+
+这印证了 codeagents 项目"基于源码验证的中立技术对比"价值——不只是文档化已有事实，还能**为产品改进提供可执行的工程蓝图**。
+
+---
+
 ### 2026-05-05（OPEN-only 增量 · kind framework 第 4 个消费者 dream 任务出现）
 
 扫描窗口：2026-05-04 15:32 UTC → 2026-05-04 17:20 UTC。窗口内 **0 项合并 + 1 项关键新 OPEN + 4 项 sdk-python release 工具 OPEN**。本次主线：**[PR#3836](https://github.com/QwenLM/qwen-code/pull/3836) OPEN —— kind framework 从 3 消费者扩到 4 消费者**（agent / shell / monitor / **dream**），把 auto-memory dream tasks 接入 Background tasks pill+dialog 统一调度面，进一步压测 PR#3488 / PR#3720 引入的 framework 是否真正 generic。
