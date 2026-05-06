@@ -14,7 +14,7 @@
 | **Stage 2** | 32 批并行 `readManyFiles` | — | ❌ 仍未实现 |
 | **Stage 3** | 同步 I/O 异步化（hot path 91%）| [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) | ✅ **2026-04-24 合并** |
 | **Bugfix** | FileReadCache invalidation 5 条遗漏路径 | [PR#3810](https://github.com/QwenLM/qwen-code/pull/3810) | ✅ **2026-05-04 合并 +579/-0**（修复 #3805 "read tool returns no content in long-running sessions"）|
-| **Follow-up A** | 强制 prior-read（Edit/WriteFile）| [PR#3774](https://github.com/QwenLM/qwen-code/pull/3774) | 🟡 OPEN（+611/-2）|
+| **Follow-up A** | 强制 prior-read（Edit/WriteFile）| [PR#3774](https://github.com/QwenLM/qwen-code/pull/3774) | ✅ **2026-05-06 合并 +1891/-118**（体量从 OPEN 时 +611/-2 增长 3x）|
 | **Follow-up B** | file-changed-since-read 拒绝 | [PR#3840](https://github.com/QwenLM/qwen-code/pull/3840) | 🟡 OPEN |
 
 **Stage 1 / Stage 3 详解见 [§四 已落地内容详解](#四-已落地内容详解2026-04-到-2026-05)**；prior-read 守卫的双轨设计见 [§五](#五-prior-read-enforcement-双轨设计-pr3774--pr3840)。
@@ -167,12 +167,12 @@ PR 拆 3 个 commit：
 
 ## 五、prior-read enforcement 双轨设计（PR#3774 + PR#3840）
 
-PR#3717 的 FileReadCache 三态 API（`hit-fresh` / `hit-stale` / `miss`）**预留**了 prior-read 守卫的实现。两个 OPEN PR 从不同方向使用此能力：
+PR#3717 的 FileReadCache 三态 API（`hit-fresh` / `hit-stale` / `miss`）**预留**了 prior-read 守卫的实现。两个 PR 从不同方向使用此能力：
 
-| PR | 方向 | 触发条件 | 错误码 |
-|---|---|---|---|
-| **[PR#3774](https://github.com/QwenLM/qwen-code/pull/3774)** | 必须先读 | Edit/WriteFile 时 cache `miss` | `EDIT_REQUIRES_PRIOR_READ` |
-| **[PR#3840](https://github.com/QwenLM/qwen-code/pull/3840)** | 读后未变 | Edit/WriteFile 时 cache `hit-stale`（mtime 已变）| `FILE_CHANGED_SINCE_READ` |
+| PR | 方向 | 触发条件 | 错误码 | 状态 |
+|---|---|---|---|---|
+| **[PR#3774](https://github.com/QwenLM/qwen-code/pull/3774)** | 必须先读 | Edit/WriteFile 时 cache `miss` | `EDIT_REQUIRES_PRIOR_READ` | ✅ **2026-05-06 合并 +1891/-118** |
+| **[PR#3840](https://github.com/QwenLM/qwen-code/pull/3840)** | 读后未变 | Edit/WriteFile 时 cache `hit-stale`（mtime 已变）| `FILE_CHANGED_SINCE_READ` | 🟡 OPEN |
 
 **为什么需要双轨**：
 - PR#3774 挡的是"模型凭想象 Edit"——`old_string` 恰好碰巧匹配文件中真实存在的串，但模型从未读过该文件
@@ -225,7 +225,7 @@ for (const batch of chunkArray(filePaths, READ_BATCH_SIZE)) {
 | invalidation 5 条遗漏路径 | ✅ PR#3810 |
 | sync I/O 异步化（hot path 91%）| ✅ PR#3581 |
 | 32 批并行 readManyFiles | ❌ 仍未实现 |
-| prior-read 守卫（必须先读）| 🟡 PR#3774 OPEN |
+| prior-read 守卫（必须先读）| ✅ PR#3774 已于 2026-05-06 合并（+1891/-118）|
 | file-changed-since-read 拒绝 | 🟡 PR#3840 OPEN |
 
 主体已实现（5/7 子项 ✓ + 2/7 OPEN），仅剩 32 批并行 cold path 优化。
