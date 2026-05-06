@@ -19,6 +19,7 @@
 | 09 | [与 OpenCode 详细对比](./09-comparison-with-opencode.md) | 路由、技术栈、设计哲学的逐项对照 |
 | 10 | [SDK / ACP 协议兼容性](./10-protocol-compatibility.md) | 单进程 vs Daemon 4 层兼容性矩阵 + 双向 RPC 同步→异步处理 + 用户代码 0 改动证明 |
 | 11 | [多租户与 Shell 沙箱](./11-multi-tenancy-and-sandbox.md) | 4 个 Level 演进路径（单租户→多租户→沙箱→SaaS）+ Tenant 抽象层 + 5 种本地沙箱（OS user / namespace / container 等）+ **远程 sandbox 设计**（SSH / gRPC / k8s job 4 种实现，workspace 同步 / 实时流 / 取消 / 容错 5 大挑战）+ Stage 4-6 路线图 + 软兼容性 audit |
+| 12 | [多租户水平越权防御](./12-horizontal-privilege-defense.md) | **5 层防御纵深 + 17 个攻击向量 + 24+ 测试用例** —— Auth/ACL 层（token 替换 / workspace 越权 / session 猜测）+ Filesystem 层（path traversal / symlink / mount escape / race condition）+ Cache/State 层（key 碰撞 / GlobalBus 泄漏 / permission decision 跨 tenant）+ Sandbox 层（escape / cgroups / network / /tmp）+ Side-channel & DoS（timing / quota / audit / resource）+ OWASP Top 10 映射 |
 
 ## 一句话 TL;DR
 

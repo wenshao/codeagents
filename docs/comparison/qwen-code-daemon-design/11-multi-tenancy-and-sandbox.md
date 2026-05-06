@@ -1,6 +1,6 @@
 # 11 — 多租户与 Shell 沙箱
 
-> [← 上一篇：协议兼容性](./10-protocol-compatibility.md) · [回到 README](./README.md)
+> [← 上一篇：协议兼容性](./10-protocol-compatibility.md) · [下一篇：水平越权防御 →](./12-horizontal-privilege-defense.md)
 
 > 当前设计（Stage 1-3）针对单租户。本章评估**多租户 + Shell 沙箱**的演进路径——结论：核心抽象已为多租户预留（Stage 4 是 soft launch），shell sandbox 需要 Stage 5 单独工程投入。
 
