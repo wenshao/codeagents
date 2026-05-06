@@ -2,63 +2,60 @@
 
 > [← 上一篇：TUI 兼容性](./13-tui-compatibility.md) · [下一篇：持久层与外部存储 →](./15-persistence-and-storage.md)
 
-> 把前面 13 章散落在各处的实体（User / Tenant / Workspace / Session / Task / Client / Tool）汇总到一张层级图，定义它们的关系、资源所有权、生命周期、跨边界约束。
+> 把前面 13 章散落在各处的实体（Tenant / Workspace / Session / Task / Tool / Client）汇总到一张层级图，定义它们的关系、资源所有权、生命周期、跨边界约束。
 
-## 一、TL;DR — 6 层 + 横切
+## 一、TL;DR — 5 层 hierarchy + 认证侧 + 横切层
 
-```
-┌─ Layer 0: User (自然人)                        ───┐
-│   - daemon 不直接管理（外部 IDP / 本地用户）       │
-│   - 通过 Token 与 Tenant 建立联系                  │
-│                                                    │
-├─ Layer 1: Tenant (租户 = 计费/隔离单位)            │
-│   - 实体：个人 / 团队 / 部门 / 公司                │
-│   - 持有 Token 集合 / Workspace allowlist          │
-│   - quota / audit / sandbox tier 在此层            │
-│                                                    │
-├─ Layer 2: Workspace (工作区 = 项目目录)            │
-│   - 1:1 对应物理 directory (git repo)              │
-│   - LSP / MCP / auth credentials per-workspace     │
-│                                                    │
-├─ Layer 3: Session (会话 = LLM 对话上下文)         │
-│   - Transcript / FileReadCache / 当前 model       │
-│   - 串行 prompt FIFO + 多 client fan-out          │
-│                                                    │
-├─ Layer 4: Background Task (kind framework)        │
-│   - kind=agent/shell/monitor/dream 4 消费者       │
-│                                                    │
-└─ Layer 5: Tool Execution (Bash/Edit/Read/...)   ───┘
-
-横切层 (Cross-cutting):
-─────────────────────────────────────────────────────
-  Client (TUI/SDK/WebUI/IM) — 订阅 1+ session
-  Permission decisions — tenant + workspace 双键
-  Provider/Skill registry — daemon 全局只读单例
-```
-
-## 二、6 层详解
-
-### Layer 0: User（自然人）
-
-**定义**：真实物理用户，与 daemon 没有直接对应实体。
-
-**为什么不在 daemon 内**：
-- daemon 不做身份认证（这是 IDP / OAuth 的职责）
-- daemon 只接受 Token 校验 → 通过 Token 找到 Tenant
-
-**关系**：
-- 1 user 可持有多 token（开发 / CI / SDK / 不同设备各一）
-- 1 user 可属于多 tenant（个人项目 + 公司 tenant + 顾问项目）
+### 认证侧（不属于 hierarchy）
 
 ```
-Alice (人)
-├─ Token "alice-laptop"      → Tenant alice-personal
-├─ Token "alice-ci-runner"   → Tenant alice-personal
-├─ Token "alice-work"        → Tenant company-engineering
-└─ Token "alice-consulting"  → Tenant client-acme
+External User (自然人)            ← daemon 不可见，由外部 IDP / 本地账户管理
+       │ 持有
+       ▼
+Token (bearer)                    ← daemon 凭此识别"哪个 tenant"
+       │ 1:1 属于
+       ▼
+Tenant (进入下方 hierarchy)
 ```
 
-**daemon 视角**：daemon 只看到 4 个 token + 3 个 tenant；Alice 这个"人"在 daemon 内不存在抽象。Stage 6 SaaS 加 OIDC 时才会把 OIDC subject claim 与 token 关联。
+- 1 user 可持有多 token（laptop / CI / SDK / 不同设备各一）
+- 1 token 仅属一 tenant（清晰归属）
+- "1 user 属多 tenant" 是外部 IDP 的事实，**不在 daemon 实体模型内**
+- Stage 6 加 OIDC 时把 `oidc_subject` 写到 `tokens` 表，但仍不引入 user 实体
+
+### Daemon 实体 hierarchy（5 层）
+
+```
+┌─ Layer 1: Tenant (租户 = 计费/隔离单位)            ───┐
+│   - 实体：个人 / 团队 / 部门 / 公司                   │
+│   - 持有 Token 集合 / Workspace allowlist             │
+│   - quota / audit / sandbox tier 在此层               │
+│                                                       │
+├─ Layer 2: Workspace (工作区 = 项目目录)               │
+│   - 1:1 对应物理 directory (git repo)                 │
+│   - LSP / MCP / auth credentials per-workspace        │
+│                                                       │
+├─ Layer 3: Session (会话 = LLM 对话上下文)             │
+│   - Transcript / FileReadCache / 当前 model           │
+│   - 串行 prompt FIFO + 多 client fan-out              │
+│                                                       │
+├─ Layer 4: Background Task (kind framework)           │
+│   - kind=agent/shell/monitor/dream 4 消费者           │
+│                                                       │
+└─ Layer 5: Tool Execution (Bash/Edit/Read/...)      ───┘
+```
+
+### 横切层（Cross-cutting）
+
+```
+Client subscription (TUI/SDK/WebUI/IM) — 订阅 1+ session 的 SSE 长连接
+Permission decisions — tenant + workspace 双键
+Provider/Skill/Model registry — daemon 全局只读单例
+```
+
+## 二、5 层详解
+
+> 关于 User / Token：不在 hierarchy 中，详见 [§一 认证侧](#一tldr--5-层-hierarchy--认证侧--横切层)。daemon 内的代码只引用 Token 和 TenantId，不存在 User 类型。
 
 ### Layer 1: Tenant（租户）
 
@@ -77,7 +74,7 @@ Alice (人)
 | Provider config | API keys / OAuth tokens（per-tenant）|
 
 **关系**：
-- 1 tenant ↔ N user（M:N，通过 token）
+- 1 tenant 拥有 N token（每 token 一对一属于本 tenant）
 - 1 tenant 拥有 N workspace（决策 §11 §3 不跨 tenant 共享 workspace）
 
 **Stage 4 加入此层** —— Stage 1-3 单租户模式下相当于"虚拟单 tenant"。
@@ -172,11 +169,11 @@ Alice (人)
 
 ## 三、关系类型矩阵
 
+> User ↔ Token / User ↔ Tenant 是外部 IDP 事实，不在表内（详见 [§一 认证侧](#一tldr--5-层-hierarchy--认证侧--横切层)）。
+
 | 关系 | 类型 | 说明 |
 |---|---|---|
-| User ↔ Token | 1:N | 一人多 token |
-| User ↔ Tenant | M:N | 一人可属多 tenant（不同账户）|
-| Token ↔ Tenant | N:1 | 一 token 仅属一 tenant（清晰归属）|
+| Token ↔ Tenant | N:1 | 一 token 仅属一 tenant（认证凭证，不是 hierarchy）|
 | Tenant ↔ Workspace | 1:N | tenant 拥有多 workspace |
 | **Tenant ↔ Workspace 跨 tenant 共享** | ❌ **不允许** | 决策 §11 §3 + 同 directory 在不同 tenant 下是不同 workspace 实例 |
 | Workspace ↔ Session | 1:N | 同 workspace 可有多 session |
@@ -212,10 +209,11 @@ Alice (人)
 
 ## 五、生命周期与创建/销毁
 
+> User 不在表内（外部 IDP 管理）。
+
 | 实体 | 创建时机 | 销毁时机 | 持久化？ |
 |---|---|---|---|
-| User | daemon 不管理（外部 IDP）| 同 | N/A |
-| Token | 显式 admin API / settings.json | revoke / TTL 过期 | SQLite |
+| Token | 显式 admin API / settings.json | revoke / TTL 过期 | Stage 3+ SQLite（之前 settings.json）|
 | Tenant | settings 加 entry / `qwen tenant create` | settings 移除 | SQLite + tenants/&lt;id&gt;.json |
 | Workspace | **Lazy**：第一次访问 directory 时 | 显式 `Workspace.dispose()` / daemon 重启 | SQLite + 内存 Map |
 | Session | 显式 `POST /session` | TTL（默认 7 天空闲）/ 显式 DELETE | JSONL（transcript）+ SQLite（meta）|
@@ -258,7 +256,7 @@ Alice (人)
 ```
 sessionScope: 'single' (默认)
   └─ 同 workspace 多 client 共享同一 session
-     User Alice 的 CLI + IDE + WebUI → 都看 sess-foo
+     Alice 的 CLI + IDE + WebUI → 都看 sess-foo
      Workspace ↔ Session 关系：1:1 (在 active 时)
      体现 "live collaboration"
 
@@ -366,7 +364,7 @@ Session (runtime SetSessionConfigOptionRequest)
 | 章节 | 决策 | 对应实体层 |
 |---|---|---|
 | §03 §1 | sessionScope = 'single' default | Workspace ↔ Session 1:1 关系 |
-| §03 §2 | 单 daemon 进程承载全部 session | Layer 0-5 都在同一 V8 isolate |
+| §03 §2 | 单 daemon 进程承载全部 session | Layer 1-5 都在同一 V8 isolate |
 | §03 §3 | MCP per-workspace | MCP 资源所有权 = Workspace |
 | §03 §4 | FileReadCache per-session | FileReadCache 资源所有权 = Session |
 | §03 §5 | Permission flow 第 4-5 mode | tool call 层 + tenant + workspace 双键决策 |
@@ -382,7 +380,7 @@ Session (runtime SetSessionConfigOptionRequest)
 ### 11.1 单用户开发场景（Stage 1-3）
 
 ```
-User Alice (虚拟 single tenant)
+Tenant 'default' (Stage 1-3 虚拟单 tenant)
 └─ Workspace /work/repo-a
    └─ Session sess-foo
       └─ active prompt: "重构 src/foo.ts"
@@ -420,16 +418,19 @@ Tenant alice                       Tenant bob
 
 ### 11.4 跨 channel 续行（'user' scope）
 
+外部 user Alice 通过两个 token 接入同一 tenant，daemon 用 token→tenant 映射 + 'user' scope 路由到同一 session：
+
 ```
-User Alice
-├─ Token "alice-mobile" via Telegram → Tenant alice → Session sess-mobile
-└─ Token "alice-laptop" via SDK     → Tenant alice → Load sess-mobile
-                                                     (transcript-first fork resume PR#3739)
+Token "alice-mobile" via Telegram ─┐
+                                    ├─→ Tenant alice → Session sess-shared
+Token "alice-laptop" via SDK     ──┘     (transcript-first fork resume PR#3739)
 ```
+
+**注意**：daemon 不知道这两个 token 是"同一个人"——'user' scope 的实现是 token 上挂的 `userScopeKey` 属性（Stage 6 OIDC 场景下可由 `oidc_subject` 提供），而非外部 User 实体。
 
 ## 十二、一句话总结
 
-**Qwen daemon 实体模型 = 6 层（User → Token → Tenant → Workspace → Session → Task）+ 1 横切（Client subscription）。每层有清晰的资源所有权（Tenant 持 quota / Workspace 持 LSP+MCP / Session 持 transcript+FileReadCache / Task 持 4 kinds 状态）。跨 tenant 边界硬隔离（auth/credentials/sessions/decisions），同 workspace 共享重资源（LSP/MCP），同 session 串行 prompt + fan-out 多 client 订阅 + 任意 client 应答 permission（决策 §1+§6 启用）。配置 cascade 4 层（daemon-global → tenant → workspace → session），存储 ER 图清晰区分入库实体（meta + audit + decisions）vs 文件存储（transcript JSONL）vs 内存（subscriptions/cache/instances）。**
+**Qwen daemon 实体模型 = 5 层 hierarchy（Tenant → Workspace → Session → Background Task → Tool Execution）+ 1 横切层（Client subscription）+ 认证侧 sidebar（External User → Token → Tenant，user 不在 daemon 内）。每层有清晰的资源所有权（Tenant 持 token+quota+audit / Workspace 持 LSP+MCP+auth / Session 持 transcript+FileReadCache / Task 持 4 kinds 状态 / Tool call 瞬时 AsyncLocalStorage Instance）。跨 tenant 边界硬隔离（auth/credentials/sessions/decisions），同 workspace 共享重资源（LSP/MCP），同 session 串行 prompt + fan-out 多 client 订阅 + 任意 client 应答 permission（决策 §1+§6 启用）。配置 cascade 4 层（daemon-global → tenant → workspace → session），存储 ER 图清晰区分入库实体（meta + audit + decisions）vs 文件存储（transcript JSONL）vs 内存（subscriptions/cache/instances）。设计哲学：实体模型只描述 daemon 内部能引用 / 持久化 / 拥有 lifecycle 的对象——User 是外部 IDP 概念，Token 是认证凭证而非容器，二者都不算 hierarchy 层。**
 
 ---
 

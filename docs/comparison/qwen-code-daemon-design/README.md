@@ -57,7 +57,7 @@ daemon 与外部世界对话的协议层、daemon 进程内部的运行时机制
 
 | # | 文档 | 一句话 |
 |---|---|---|
-| 14 | [实体模型与层级关系](./14-entity-model.md) | **6 层 hierarchy**（User → Token → Tenant → Workspace → Session → Background Task）+ 横切层（Client subscription）+ 关系矩阵 + 资源所有权层级表 + 生命周期表 + ER 图 |
+| 14 | [实体模型与层级关系](./14-entity-model.md) | **5 层 hierarchy**（Tenant → Workspace → Session → Background Task → Tool Execution）+ 横切层（Client subscription）+ 认证侧 sidebar（External User / Token：不算 hierarchy）+ 关系矩阵 + 资源所有权层级表 + 生命周期表 + ER 图 |
 | 15 | [持久层与外部存储](./15-persistence-and-storage.md) | **当前 Qwen Code 是纯 JSON+JSONL（无 SQLite / 无 ORM）** → Stage 1-2 沿用现状 → **Stage 3 首次引入 SQLite**（4 类痛点驱动）→ Storage Adapter 抽象 → **Stage 6 切 Postgres + S3**。drizzle-orm 选型 + 8 张核心表 schema + 替代方案对比 |
 
 ### Part V — 多租户、安全与高可用（生产级能力）
@@ -111,7 +111,7 @@ Qwen Code 已有 ACP agent 838 行 + Channels 多路由设施 + WebUI 包 + SDK 
 | FileReadCache 共享 | [§03 决策](./03-architectural-decisions.md) §4 session-private + [§06 资源共享](./06-mcp-resources.md) §2 |
 | Permission flow | [§03 决策](./03-architectural-decisions.md) §5 + [§07 权限/认证](./07-permission-auth.md) |
 | 多 client 并发请求 | [§03 决策](./03-architectural-decisions.md) §6 FIFO + fan-out + first responder + [§18 多端协调](./18-client-coordination.md) |
-| 实体层级 | [§14 实体模型](./14-entity-model.md) 6 层 hierarchy |
+| 实体层级 | [§14 实体模型](./14-entity-model.md) 5 层 hierarchy + 认证侧 |
 | 持久化 | [§15 持久层](./15-persistence-and-storage.md) JSON → SQLite → Postgres 演进 |
 | 多租户 / 沙箱 | [§11 多租户](./11-multi-tenancy-and-sandbox.md) + [§12 越权防御](./12-horizontal-privilege-defense.md) |
 | HA / SaaS 部署 | [§16 高可用](./16-high-availability.md) |
