@@ -1,6 +1,6 @@
 # 12 — 多租户水平越权防御
 
-> [← 上一篇：多租户与 Shell 沙箱](./11-multi-tenancy-and-sandbox.md) · [回到 README](./README.md)
+> [← 上一篇：多租户与 Shell 沙箱](./11-multi-tenancy-and-sandbox.md) · [下一篇：TUI 兼容性 →](./13-tui-compatibility.md)
 
 > 多租户下"水平越权"（Horizontal Privilege Escalation, HPE）= 同等级 tenant 访问另一 tenant 的资源。本章系统列出 **17 个攻击向量** 并给出**分层防御**方案。
 
