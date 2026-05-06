@@ -24,6 +24,7 @@
 | 14 | [实体模型与层级关系](./14-entity-model.md) | **6 层 hierarchy**（User → Token → Tenant → Workspace → Session → Background Task）+ 横切层（Client subscription）+ 关系类型矩阵（M:N / 1:N / 跨 tenant 硬约束）+ 资源所有权层级表（LSP per-workspace / FileReadCache per-session / quota+audit per-tenant）+ 生命周期表 + ER 图 + 与 12 个决策的对照 + 4 个典型场景路径 |
 | 15 | [持久层与外部存储](./15-persistence-and-storage.md) | **SQLite + JSONL 当前栈** → **Storage Adapter 抽象** → **Postgres / MySQL / S3 Stage 6 路径**。drizzle-orm 选型（与 OpenCode 一致）+ 8 张核心表 schema + Transcript JSONL 文件不入 RDBMS + 多 daemon sticky session + Redis 加速 + AES-GCM 敏感字段加密 + drizzle-kit migration + 5 个外部 RDBMS 触发场景 + 与 OpenCode/Claude Code 持久化对比 |
 | 16 | [HA 高可用与故障恢复](./16-high-availability.md) | **5 层 HA 架构**（Edge DNS → Ingress sticky-by-sessionId → StatefulSet pod N≥3 → Postgres Patroni + Redis Sentinel + S3 多 AZ）+ **SSE Last-Event-ID 重连协议**（复用 PR#3739 transcript 作 event store）+ **LLM streaming 中断 7 类场景**（核心：不自动续接避免重复计费）+ **90s graceful drain** + **degraded mode 退化** + **15 项 Chaos 测试** + **99.9% SLO** + Stage 6→8 演进路径 |
+| 17 | [远端 CLI 模式与 Client Capability 协议](./17-remote-cli-mode.md) | **3 类拓扑**（Local-Local / Local-Remote 不推荐 / **Remote-Remote 推荐**）+ **Client Capability 反向 RPC 协议**（daemon 通过 SSE 反向调用 CLI）+ **5 类 capability**（editor / clipboard / browser / notification / file_picker）+ **TLS/mTLS/Bearer 三因子 auth 链** + **NAT 穿透**（Cloudflare Tunnel / Tailscale / SSH reverse tunnel）+ **Local echo** 抹平键击 RTT + **离线降级**（`--daemon-or-local`）+ **VSCode Remote-SSH 对比借鉴** + 多端共 session 远端 UX |
 
 ## 一句话 TL;DR
 

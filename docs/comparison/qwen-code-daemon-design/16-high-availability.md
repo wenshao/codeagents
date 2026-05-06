@@ -819,4 +819,4 @@ Stage 8   全球：edge daemon + 区域中心
 
 ---
 
-[← 返回 README](./README.md)
+[← 返回 README](./README.md) · [下一篇：远端 CLI 模式 →](./17-remote-cli-mode.md)
