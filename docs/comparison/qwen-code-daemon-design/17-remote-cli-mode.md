@@ -957,4 +957,4 @@ CLI 端必须验证收到的 SSE event `session_id` 与自己订阅的 sessionId
 
 ---
 
-[← 返回 README](./README.md)
+[← 返回 README](./README.md) · [下一篇：多端协调策略 →](./18-client-coordination.md)
