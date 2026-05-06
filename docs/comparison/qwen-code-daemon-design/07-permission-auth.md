@@ -142,26 +142,56 @@ function handleAskInDaemonHttp(
 }
 ```
 
-### 3.2 跨 client 审批语义
+### 3.2 跨 client 审批语义（核心 UX 设计）
 
-**多 client 同 session 时，谁能审批？**
+[决策 §1](./03-architectural-decisions.md#1-session-是否跨-client-共享) 默认 `single` scope（同 workspace 多 client 共享 session）+ [决策 §6](./03-architectural-decisions.md#6-多-client-并发请求)（事件 fan-out + 任何 client 应答 permission）—— 这给 daemon 带来一个独有的 UX 优势：**审批可以从最舒适的 client 上做**。
 
-```ts
-// 选项 A: 第一个响应的 client 决定
-// 选项 B: 仅特定 "primary" client 能审批（其他 client 只读）
-// 选项 C: 所有 client 都能审批，但需要 majority
+**典型场景**：
 
-// 本设计选 A —— 简单可用
-// （Stage 3 评估 B 用于"主控端 + 观察端"模式）
 ```
+1. 用户在 CLI（terminal）发 prompt: "请重构 src/foo.ts"
+2. Agent 决定调 Bash 跑 npm test → permission_request
+3. CLI / VSCode / Web UI 三个 client 都通过 SSE 收到 permission_request 事件
+4. 用户在哪个 client 都能批准:
+   - CLI: y/n（TUI dialog）
+   - VSCode: 弹原生通知 [Allow] [Deny]
+   - Web UI: 浏览器对话框点击
+5. 任何一个 client 先 POST /permission/:id —— first responder wins
+6. 其他 client 收到 SessionNotification "permission resolved by another client"
+   → 自动关闭弹窗
+```
+
+**实现选择**：
+
+| 选项 | 评估 |
+|---|---|
+| **A：first responder wins（本设计选）** | ✓ 简单可用 ✓ UX 直觉（哪个 client 顺手就批） ✗ 多人模式下可能有"别人替我批了"的困惑 |
+| B：仅 primary client 能审批 | 需要"主控端 + 观察端"角色概念 → 增加 client 类型 ✗ 用户额外管理负担 |
+| C：majority vote | 多人协作场景才有意义；单用户多 client 反而不便 |
+
+Stage 1/2 选 A；Stage 3 评估 B 作为多用户企业部署可选项。
+
+### 3.3 审批响应 schema
 
 ```http
 POST /permission/r1 HTTP/1.1
+Authorization: Bearer xxx
+
 {
   "allow": true,
-  "alwaysAllowFor": "session"  // 'session' / 'workspace' / 'global'
+  "alwaysAllowFor": "session",     // 'session' / 'workspace' / 'global' / null（仅本次）
+  "respondedBy": "client-vscode-1" // 可选 metadata，用于审计 + 通知其他 client 谁批准了
 }
 ```
+
+daemon 收到后：
+1. resolve `waitForPermissionResponse(requestId)` —— 阻塞中的 prompt 继续
+2. 通过 SSE 广播 `permission_resolved` 事件给所有 client（含 originating client + observer）：
+   ```json
+   { "type": "permission_resolved", "requestId": "r1", "decision": "allow", "by": "client-vscode-1" }
+   ```
+3. 如果 `alwaysAllowFor` 不为 null，写 SQLite `permission_decisions` 表（详见 §4）
+4. 后续相同 pattern 的工具调用直接走 cache，不再发 permission_request
 
 ### 3.3 DaemonContext 中的 permission 配置
 

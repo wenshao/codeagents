@@ -151,12 +151,12 @@ OpenCode 用单一 `OPENCODE_SERVER_PASSWORD`（粗粒度访问控制）。Qwen 
 
 | # | 决策 | 选择 | 详细 |
 |---|---|---|---|
-| 1 | session 是否跨 client 共享 | **共享**（一个 session ID 可被多 client 同时观察）| [03 §1](./03-architectural-decisions.md#1-session-是否跨-client-共享) |
+| 1 | session 是否跨 client 共享 | **默认 `single`（同 workspace 多 client 共享）—— 匹配单用户多 client 真实场景** | [03 §1](./03-architectural-decisions.md#1-session-是否跨-client-共享) |
 | 2 | 状态进程模型 | **单 daemon 进程承载全部 session** | [03 §2](./03-architectural-decisions.md#2-状态进程模型) |
 | 3 | MCP server 生命周期 | **daemon 内 pool 跨 session 复用** | [06](./06-mcp-resources.md) |
 | 4 | FileReadCache 共享 | **session 内私有，跨 session 不共享**（保守起步）| [06 §2](./06-mcp-resources.md#2-filereadcache-共享策略) |
-| 5 | Permission flow | **复用 PR#3723，daemon 是第 4 种 mode** | [07](./07-permission-auth.md) |
-| 6 | 多 client 并发请求 | **同 session 串行，跨 session 并行** | [03 §6](./03-architectural-decisions.md#6-多-client-并发请求) |
+| 5 | Permission flow | **复用 PR#3723，daemon 是第 4 种 mode + 任何 client 都能应答** | [07](./07-permission-auth.md) |
+| 6 | 多 client 并发请求 | **同 session prompt 串行 + 事件 fan-out 多 client 协作观察** | [03 §6](./03-architectural-decisions.md#6-多-client-并发请求) |
 
 ## 五、最终用户体验
 
@@ -214,7 +214,7 @@ Channels（IM / Telegram / 微信）用法：保持不变（ChannelAdapter → A
 | **多 channel 支持** | 仅 SDK / TUI / Web | **SDK / TUI / Web / IM / IDE 全走 SessionRouter** |
 | **认证** | 单密码 `OPENCODE_SERVER_PASSWORD` | **bearer token + 应用层 PR#3723 权限流** |
 | **mDNS 发现** | ✓ 默认开启 | 🟡 Stage 2 可选（默认关）|
-| **session 跨 client 共享** | 否（每 SDK call 独立 session）| **是**（手机/电脑续行场景）|
+| **session 跨 client 共享** | 否（每 SDK call 独立 session）| **是（默认 single + 事件 fan-out + 跨 client审批）**——live collaboration 模型 |
 | **WebSocket** | Bun 原生 | 同款 + SSE 兜底 |
 
 详见 [09-与 OpenCode 详细对比](./09-comparison-with-opencode.md)。

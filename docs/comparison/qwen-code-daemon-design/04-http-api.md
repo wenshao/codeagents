@@ -220,27 +220,63 @@ POST /session/sess-yesterday/load HTTP/1.1
 }
 ```
 
-### 4.3 多 client 跨设备续行
+### 4.3 多 client 跨设备续行（默认 `single` scope 下的典型流）
+
+**默认 daemon `sessionScope: 'single'`** —— 同 workspace 多 client 自动共享 session。
 
 ```
-[手机微信]: 通过 channels/weixin → SessionRouter → session sess-foo
-            scope='user', user-id=u123
+[CLI]: qwen workspace register /work/repo-a → workspaceId=ws-a
+       qwen → POST /session { meta: { workspaceId: 'ws-a', scope: 'single' } }
+       daemon SessionRouter.routingKey('http', '*', 'ws-a') = "http:__single__:ws-a"
+       创建 sess-foo（首个 client）
+       → 200 OK { sessionId: 'sess-foo' }
+       开始 prompt: "请重构 src/foo.ts"
 
-[电脑 SDK]:
+[VSCode 同时打开]: 自动连 daemon
+       POST /session { meta: { workspaceId: 'ws-a', scope: 'single' } }
+       同 routing key 命中 sess-foo
+       → 200 OK { sessionId: 'sess-foo', attached: true }
+       
+       GET /session/sess-foo/events （SSE 接入）
+       VSCode 实时看到 CLI 触发的 message_part / tool_call / tool_result
+       
+[Web UI 同时打开]: 同上 → 也看到 sess-foo 实时事件流
+
+→ Agent 决定调 Bash 跑 npm test，触发 permission_request
+  CLI / VSCode / Web UI 三个 client 都通过 SSE 收到事件
+  用户在 Web UI 上点 "Allow"
+  → POST /permission/r1 { allow: true }
+  → daemon SSE 广播 "permission_resolved by client-webui-1" 给所有 client
+  → CLI / VSCode 自动关闭弹窗
+  → Bash 工具继续执行
+```
+
+### 4.4 跨 channel 续行（手机/电脑场景，需要 `scope: 'user'`）
+
+```
+[手机微信]: 通过 channels/weixin → SessionRouter
+            scope='user', user-id=u123 → routing key "weixin:u123:chat-456"
+            创建 sess-mobile
+
+[电脑 SDK]: scope='user' 显式指定
 POST /session HTTP/1.1
-{ "meta": { "workspaceId": "...", "scope": "user", "userId": "u123" } }
-
-  daemon SessionRouter.routingKey('http', 'u123', 'main', undefined)
-  = "http:u123:main"
+{ "meta": { "workspaceId": "ws-a", "scope": "user", "userId": "u123" } }
   
-  匹配到现有 session sess-foo（如果已注册 user-id u123）
-
-→ 200 OK
-{ "sessionId": "sess-foo" }   // ← 同一 session ID
-
-GET /session/sess-foo/events （SSE 接入）
-client 现在能看到手机端正在跑的 background task
+  daemon SessionRouter.routingKey('http', 'u123', 'ws-a') = "http:u123:ws-a"
+  
+  这是不同 channel 的 routing key (weixin: vs http:)，所以 NOT 命中 sess-mobile
+  
+  解决方案：用 LoadSession 显式跨 channel 拉取
+POST /session/sess-mobile/load
+  → 200 OK (LoadSessionResponse 含完整 transcript)
+  
+  现在 SDK client 也接入 sess-mobile，能看到手机端正在跑的 background task
 ```
+
+**关键点**：
+- 同 channel 内（如 `'http'` channel 含 SDK + WebUI + IDE）`single` scope 下默认共享
+- 跨 channel（如 `'weixin'` ↔ `'http'`）需要显式 LoadSession 跨边界拉取
+- 跨 channel 自动共享需要 `scope='user'`（要求双方都标记同 user-id）
 
 ## 五、错误码与状态码
 

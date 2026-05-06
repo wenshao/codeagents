@@ -15,7 +15,7 @@
 | 协议 schema | OpenAPI codegen（13525 行）| **复用 ACP NDJSON zod schema** | Qwen 已有 838 行 ACP agent，0 设计成本 |
 | 多 channel 支持 | 仅 SDK / TUI / Web | **+ IM / IDE 全走 SessionRouter** | Qwen 已有 Channels 包 |
 | 鉴权 | 单密码 `OPENCODE_SERVER_PASSWORD` | **bearer token + PR#3723 应用层权限流** | Qwen 已有 PR#3723 |
-| Session 共享 | 否（per-SDK call）| **可配（thread/single/user）** | Qwen Channels 已有 scope 概念 |
+| Session 共享 | 否（per-SDK call）| **默认 `single` 同 workspace 多 client 共享 + 事件 fan-out + 任意 client 审批 permission** —— **live collaboration 模型** | Qwen Channels 已有 scope 概念 + 单用户多 client 真实场景 |
 | 数据持久化 | SQLite（drizzle-orm）| **JSONL session（PR#3739）+ SQLite for permission decisions** | 复用 Qwen 现有持久层 |
 | 默认安全 | 无 token 警告，仍启动 | **无 token + 0.0.0.0 拒绝启动** | 比 OpenCode 严格 |
 
