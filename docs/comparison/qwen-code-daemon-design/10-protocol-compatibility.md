@@ -50,7 +50,7 @@ import {
 // HTTP 模式: HTTP body 的 JSON.parse 出来也是这些类型
 ```
 
-**协议设计上的关键决定**（[01 §2.2](./01-overview.md#21-与-opencode-共识的-4-条原则)）：daemon 路由 body 直接复用 ACP zod schema，**不自创新 schema**——这是 schema 100% 兼容的工程基础。
+**协议设计上的关键决定**（[01 §2.2](./01-overview.md#22-qwen-独有的-3-条特色)）：daemon 路由 body 直接复用 ACP zod schema，**不自创新 schema**——这是 schema 100% 兼容的工程基础。
 
 ## 三、核心不兼容点：双向 RPC 的不对称
 
@@ -405,7 +405,7 @@ VSCode 的 ide-server.ts 在 Stage 3 可考虑弃用（保留兼容期）。
 
 ### 9.4 IM Channels（Telegram / 微信 / 钉钉）
 
-`packages/channels/base/AcpBridge.ts` 当前 spawn 子进程跑 ACP。daemon 化后可改为连 daemon HTTP：
+`packages/channels/base/src/AcpBridge.ts` 当前 spawn 子进程跑 ACP。daemon 化后可改为连 daemon HTTP：
 
 ```ts
 // 旧

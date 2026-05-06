@@ -9,18 +9,18 @@
 | 资产 | 位置 | 行数 | daemon 复用度 |
 |---|---|:---:|:---:|
 | ACP agent（NDJSON 协议实现）| `packages/cli/src/acp-integration/acpAgent.ts` | 838 | **~95%** |
-| ACP session 状态机 | `packages/cli/src/acp-integration/session/` | ~1000 | **~95%** |
-| Channels SessionRouter | `packages/channels/base/src/SessionRouter.ts` | ~250 | **~80%** |
-| Channels AcpBridge | `packages/channels/base/src/AcpBridge.ts` | ~300 | **~70%** |
+| ACP session 状态机 | `packages/cli/src/acp-integration/session/` | ~4400（17 文件）| **~95%** |
+| Channels SessionRouter | `packages/channels/base/src/SessionRouter.ts` | 234 | **~80%** |
+| Channels AcpBridge | `packages/channels/base/src/AcpBridge.ts` | 250 | **~70%** |
 | SessionService（核心 session 持久化）| `packages/core/src/services/...` | — | **~100%**（无需改动）|
-| FileReadCache（PR#3717 + PR#3810）| `packages/core/src/utils/fileReadCache.ts` | ~250 | **~100%**（已是 session-scoped）|
-| Shared permission flow（PR#3723）| `packages/core/src/permissions/permissionFlow.ts` | — | **~95%**（加 daemon mode 即可）|
-| SDK Transport 抽象 | `packages/sdk-typescript/src/transport/Transport.ts` | 28 | **~100%** —— 注释已预告 HttpTransport |
-| ProcessTransport（参考实现）| `packages/sdk-typescript/src/transport/ProcessTransport.ts` | ~400 | 镜像写 HttpTransport |
-| WebUI 包 + ACPAdapter | `packages/webui/src/adapters/ACPAdapter.ts` | — | 改传输层即可接入 daemon |
-| VSCode IDE companion + express | `packages/vscode-ide-companion/src/ide-server.ts` | ~500 | 参考模板 + 可弃用（直接连 daemon）|
+| FileReadCache（PR#3717 + PR#3810）| `packages/core/src/services/fileReadCache.ts` | 188 | **~100%**（已是 session-scoped）|
+| Shared permission flow（PR#3723）| `packages/core/src/core/permissionFlow.ts` | 161 | **~95%**（加 daemon mode 即可）|
+| SDK Transport 抽象 | `packages/sdk-typescript/src/transport/Transport.ts` | 22 | **~100%** —— 注释已预告 HttpTransport |
+| ProcessTransport（参考实现）| `packages/sdk-typescript/src/transport/ProcessTransport.ts` | 536 | 镜像写 HttpTransport |
+| WebUI 包 + ACPAdapter | `packages/webui/src/adapters/ACPAdapter.ts` | 109 | 改传输层即可接入 daemon |
+| VSCode IDE companion + express | `packages/vscode-ide-companion/src/ide-server.ts` | 477 | 参考模板 + 可弃用（直接连 daemon）|
 | Background task management（PR#3471/3488/3642/3791/3836）| 多文件 | ~3000 | **~100%**（kind framework 4 消费者已稳定）|
-| `/tasks` 命令 | `packages/cli/src/ui/commands/tasksCommand.ts` | ~200 | **~95%**（headless / non-TTY 路径）|
+| `/tasks` 命令 | `packages/cli/src/ui/commands/tasksCommand.ts` | 271 | **~95%**（headless / non-TTY 路径）|
 
 ## 二、关键资产详解
 
@@ -151,7 +151,7 @@ export interface Transport {
 
 ### 2.5 PR#3723 共享 L3→L4 permission flow
 
-**位置**：`packages/core/src/permissions/permissionFlow.ts`（PR#3723 引入）
+**位置**：`packages/core/src/core/permissionFlow.ts`（PR#3723 引入，161 行）
 
 **已合并**——支持 Interactive / Non-Interactive / ACP 三种 mode。daemon 加为第 4 种 mode 即可：
 

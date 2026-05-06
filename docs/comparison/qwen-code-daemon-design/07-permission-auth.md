@@ -111,7 +111,7 @@ L5: 调用方覆盖（YOLO / AUTO_EDIT / PLAN）
 **daemon 加为第 4 种 mode 的扩展点**：
 
 ```ts
-// packages/core/src/permissions/permissionFlow.ts (现有 PR#3723)
+// packages/core/src/core/permissionFlow.ts (现有 PR#3723)
 type ExecutionMode =
   | 'interactive'
   | 'non-interactive'
