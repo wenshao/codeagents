@@ -89,8 +89,8 @@ Stage 3 (~2 月): 对标 OpenCode 完整设计
 | Web UI 接入（HttpAcpAdapter）| 2d | `packages/webui/src/adapters/HttpAcpAdapter.ts` |
 | Permission flow `daemon-http` mode | 2d | 扩展 PR#3723 `evaluatePermissionFlow()` + SSE permission_request |
 | WebSocket 升级 + bidi 通信 | 2d | `Bun.serve` + `createBunWebSocket` |
-| MCP server pool 跨 session 复用 | 2d | 扩展 `mcp-client-manager.ts` + fingerprint 路由 |
-| `/permission/:id` 路由 + persist | 1d | SQLite `permission_decisions` 表 |
+| MCP per-workspace 共享（同 workspace 多 session 复用）| 2d | 扩展 `mcp-client-manager.ts` 绑定 Workspace（决策 §3）|
+| `/permission/:id` 路由 + persist | 1d | Stage 2 写 settings.json / Stage 3 切 SQLite `permission_decisions` 表（§15）|
 | daemon 生命周期（pid file / graceful shutdown / SIGTERM）| 1d | |
 | 集成测试 + 文档 | 2-3d | |
 | **合计** | **~3 周 / 1 人**（或 1.5 周 / 2 人）| ~2000-3000 行 |
@@ -110,15 +110,15 @@ Stage 3 (~2 月): 对标 OpenCode 完整设计
 ### Stage 2 后的架构状态
 
 ```
-                  ┌─────────────────┐
-SDK / Web UI ─────│ qwen serve daemon│
-VSCode       ─────│  多 session HTTP │
-                  │  SQLite 持久化   │
-                  │  AsyncLocalStorage│
-                  │  in-process core │
-                  └─────────────────┘
+                  ┌──────────────────────┐
+SDK / Web UI ─────│ qwen serve daemon     │
+VSCode       ─────│  多 session HTTP      │
+                  │  JSONL + 内存 Map      │   ← Stage 2 沿用现状（§15），SQLite Stage 3 才引入
+                  │  AsyncLocalStorage     │
+                  │  in-process core       │
+                  └──────────────────────┘
 
-跑起来与 OpenCode daemon 同形态，仅差 mDNS / OpenAPI / 企业认证。
+跑起来与 OpenCode daemon 同形态，仅差 mDNS / OpenAPI / 企业认证 / SQLite 持久化（后者 Stage 3 加）。
 ```
 
 ---
@@ -144,7 +144,6 @@ VSCode       ─────│  多 session HTTP │
 | 跨 client 审批 UX | 3-5d | "primary client" 概念 / 多 majority 决策 |
 | 集群多实例 / 负载均衡文档 | 5-7d | sticky session + Redis state（可选）|
 | 健康检查端点 / Metrics（Prometheus）| 3-5d | `/metrics` 标准 OpenMetrics |
-| Stage 3 升级 FileReadCache 跨 session 共享（可选）| 5-7d | 重审 PR#3774 prior-read 语义 |
 | 文档 + 例子 + 性能基准 | 7-10d | |
 | **合计** | **~6-8 周 / 2-3 人** | ~5000-8000 行 |
 

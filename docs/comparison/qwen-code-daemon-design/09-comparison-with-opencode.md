@@ -205,7 +205,7 @@ const q = query({ transport: new HttpTransport({
 2. **VSCode IDE companion 直连 daemon**：替代当前 ide-server.ts 自起 express
 3. **Java SDK 直连 daemon**：Qwen 唯一有 Java acp-sdk，daemon 后跨语言更顺
 4. **Background tasks 4 kinds 跨 client 可见**：Qwen kind framework（PR#3836）能在 daemon 模式下让所有 client 看到所有后台任务（agent/shell/monitor/dream）
-5. **MCP fingerprint pool**：Qwen 通过 PR#3818 / PR#3819 的 in-flight coalesce，跨 session 共享 MCP server pool 比 OpenCode 更精细
+5. **MCP in-flight coalesce + 30s 健康检查**：daemon 设计仍走 per-workspace 路线（与 OpenCode 一致），但同 workspace 内 PR#3818 / PR#3819 提供请求去重和自动健康检查（OpenCode 没有等价物）
 
 ## 九、核心结论
 

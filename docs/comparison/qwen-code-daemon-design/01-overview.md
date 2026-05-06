@@ -46,7 +46,7 @@ Qwen Code 当前的程序化访问形态：
 | daemon 不再 spawn CLI | core 直接 import | 同样 |
 | 多 session 共享主进程 | `Map<directory, InstanceContext>` | 同样（`Map<workspaceId, Instance>`）|
 | `process.cwd()` 不变 | `AsyncLocalStorage` 上下文传播 | 同样（详见 [05-进程模型](./05-process-model.md)）|
-| SQLite 持久化关键状态 | `session.sql.ts:SessionTable` | 复用 Qwen 已有 JSONL session（PR#3739 强化）|
+| 持久化关键状态 | SQLite + drizzle-orm（`session.sql.ts:SessionTable`）| Stage 1-2 沿用 JSONL（PR#3739）+ Stage 3 引入 SQLite 装 permission/audit/tokens（§15）|
 
 ### 2.2 Qwen 独有的 3 条特色
 

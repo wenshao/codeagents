@@ -799,7 +799,7 @@ token-bucket throttling、`MonitorRegistry` 等机制不变。
 | Multi-tenant | ❌ 单租户（个人 dev tool）| ❌ 单用户 CLI | **✓ Stage 4 起支持** |
 | Shell sandbox | ❌ 无 | **✓ PID namespace + env scrub + SCRIPT_CAPS** | **Stage 5 与 Claude 对齐** |
 | Quota / rate limit | ❌ | ❌ | **Stage 4 加** |
-| Audit log | ❌ | log files | **Stage 4 SQLite 持久化** |
+| Audit log | ❌ | log files | **Stage 3 引入 SQLite + Stage 4 加 tenant 索引（§15）**|
 | OIDC / SSO | ❌ | ❌ | **Stage 6 加** |
 | Container runtime | ❌ | ❌ | **Stage 5+ 支持 Docker/Podman/k8s** |
 | k8s deployment | ❌ | ❌ | **Stage 6 helm chart** |

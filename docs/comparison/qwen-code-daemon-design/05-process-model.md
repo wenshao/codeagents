@@ -16,7 +16,7 @@ qwen serve daemon 进程（唯一长期主进程，process.cwd() 启动后不变
 │   ├─ Workspace A（/work/repo-a）
 │   │   ├─ Sessions（in-memory · per-session FileReadCache）
 │   │   ├─ LSP server #A（spawn 一次，跨 session 共享）
-│   │   └─ MCP servers（按 fingerprint 路由 · 见 §06）
+│   │   └─ MCP servers（per-workspace 共享 · 见 §06）
 │   │
 │   └─ Workspace B（/work/repo-b）
 │       └─ ...
@@ -197,7 +197,7 @@ Client B → POST /session  meta: { workspaceId: 'ws-a' }
 
 workspaceMap.get('ws-a') → 同一个 Workspace 对象
   ↓
-两个 session 各自的 FileReadCache 独立（保守起步，决策 §决策 4）
+两个 session 各自的 FileReadCache 独立（决策 §4 session-private terminal decision）
 但共享:
   - LSP server (ws-a 唯一)
   - MCP servers (跨 session 复用)
