@@ -1,6 +1,6 @@
 # 09 — 与 OpenCode 详细对比
 
-> [← 上一篇：3 阶段路线图](./08-roadmap.md) · [回到 README](./README.md)
+> [← 上一篇：3 阶段路线图](./08-roadmap.md) · [下一篇：协议兼容性 →](./10-protocol-compatibility.md)
 
 > 本设计与 OpenCode daemon 在大方向上一致（共进程 + AsyncLocalStorage + SQLite），但在关键路径上做了 4 个有意识的差异化选择。
 

@@ -17,6 +17,7 @@
 | 07 | [权限流与认证](./07-permission-auth.md) | bearer token 鉴权、user permission flow（PR#3723 共享 L3→L4 复用）、跨 client 审批 UX |
 | 08 | [3 阶段路线图](./08-roadmap.md) | Stage 1 MVP（~1 周 HTTP-bridge）/ Stage 2 原生（~3 周）/ Stage 3 完整（~2 月）|
 | 09 | [与 OpenCode 详细对比](./09-comparison-with-opencode.md) | 路由、技术栈、设计哲学的逐项对照 |
+| 10 | [SDK / ACP 协议兼容性](./10-protocol-compatibility.md) | 单进程 vs Daemon 4 层兼容性矩阵 + 双向 RPC 同步→异步处理 + 用户代码 0 改动证明 |
 
 ## 一句话 TL;DR
 
