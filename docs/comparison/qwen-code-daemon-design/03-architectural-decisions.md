@@ -158,32 +158,109 @@ SDK 客户端默认走 C —— 用户感受到的就是"同 workspace 自动共
 
 ## 3. MCP server 生命周期
 
-**问题**：MCP server 是每 session 启动一个？还是 daemon 内 pool 跨 session 复用？
+**问题**：MCP server 是每 session 启动一个？daemon 全局 fingerprint pool 跨 workspace 共享？还是 per-workspace 边界管理？
 
-### 选择
+### 决策（最终）
 
-**daemon 内 pool 跨 session 复用，按 MCP 配置 fingerprint 去重**。
+**per-workspace MCP state**（与 OpenCode 模式一致）—— 每个 workspace 持有自己的一套 MCP client 集，**不跨 workspace 共享**。同 workspace 内的多 session 共享同一组 MCP client。
 
-### 理由
+> 注：早期设计曾考虑"daemon 全局 fingerprint pool 跨 workspace 复用"，经源码核查 OpenCode `packages/opencode/src/mcp/index.ts` (917 行) 走 per-workspace 路线后，本设计改为对齐——理由见下文。
 
-每 session 启 MCP server 重复成本高（典型 MCP server 启动 0.5-2s + 占用一个进程）。OpenCode 已经走"daemon 内共享 MCP" 路线。Qwen 跟进。
+### 共享语义
 
-### 状态泄漏风险与缓解
+```
+Qwen daemon 进程
+├─ Workspace A（/work/repo-a）
+│   └─ McpState（per-workspace）
+│       ├─ github MCP client (子进程 A1)
+│       ├─ filesystem MCP client (子进程 A2)
+│       └─ status: { github: 'connected', filesystem: 'connected' }
+│
+└─ Workspace B（/work/repo-b）
+    └─ McpState（per-workspace）
+        ├─ github MCP client (子进程 B1)   ← 与 A1 配置相同但独立
+        └─ status: { github: 'connected' }
 
-**风险**：MCP server 内部可能持有 session-specific 状态（如对话上下文）。
+同 workspace 内：所有 session 共享同一组 MCP client
+跨 workspace：各自独立的 MCP client 子进程
+```
 
-**缓解**：
-1. MCP server 初始化时不绑定 session，session 通过 MCP request 的 metadata 传递
-2. 如果某个 MCP server 不支持 session-less 模式，**fallback 到 per-session spawn**（settings 提供 `mcpSharedPool: false` 开关）
-3. PR#3818（已合并）的 MCP rediscovery coalesce 机制确保多 session 并发请求同一个 MCP server 时不会起重复进程（PR#3819 follow-up 已 closed，主要功能已被 PR#3818 覆盖）
+### 决策依据
+
+1. **MCP server 可能持有 workspace-specific state** —— 例如 `filesystem` MCP 限制只能访问某目录、`git` MCP 持有该项目的 repo path、企业内部数据库 MCP 持有 workspace 特定连接字符串。跨 workspace 共享会泄漏或破坏这种隔离假设
+2. **配置可能微小差异** —— 同样 `github` MCP，workspace A 用 token X、workspace B 用 token Y → 严格说不是同一个 server，fingerprint hash 会区分但产生意外语义
+3. **OpenCode 已生产验证可行** —— `Effect.acquireUseRelease` + `concurrency: 'unbounded'` + 单 server 失败不传染（`Effect.catch(() => Effect.void)`）三个工程实践经过验证
+4. **与决策 §1 sessionScope: 'single' 协调** —— 既然 session 在 workspace 边界内共享（不跨 workspace），MCP 也按 workspace 边界管理是自然延伸
+5. **避免 fingerprint pool 复杂性** —— 不需要"per-server fallback"开关、不需要 sessionId metadata 透传、不需要应用层去重 hash
+
+### 重复 spawn 的代价是否可接受？
+
+per-workspace 的代价：用户在 daemon 内开 5 个 workspace 都用同一个 `github` MCP server → 启 5 个 github MCP 子进程。
+
+| 维度 | 评估 |
+|---|---|
+| 单个 MCP server 内存 | 50-200MB（轻量 stdio server）|
+| 启动开销 | 0.5-2s，但 lazy 初始化（第一次访问 workspace 才启动）|
+| 同时 active workspace 数 | 大多数用户 ≤ 3 个 |
+| 重复 spawn 数量 | 有限（active workspace × 配置的 MCP server 数）|
+| **隔离收益** | **state 绝对干净，不用担心 token / cache / connection 跨 workspace 泄漏** |
+
+**结论**：可接受。优化跨 workspace 共享是过早优化。
+
+### Qwen 保留的两项独有优化（OpenCode 没有）
+
+per-workspace 模型不等于"完全照抄 OpenCode"——Qwen 在此基础上保留两项 OpenCode 没有的优化：
+
+| 优化 | 状态 | 价值 |
+|---|---|---|
+| **PR#3818 in-flight rediscovery coalesce**（已合并）| ✓ | 同 workspace 内多 session 并发触发 reconnect 时合并为单一 in-flight restart，避免起多余 MCP 进程 |
+| **30s 健康检查 + 自动重连**（PR#3741 footer pill 暗示已存在）| ✓ | OpenCode 没有（无自动重连机制，掉线后用户主动 connect）|
+
+### 状态机（与 OpenCode 一致 + Qwen 现有扩展）
+
+OpenCode 5 种状态：
+
+```ts
+type McpStatus =
+  | { status: 'connected' }
+  | { status: 'disabled' }
+  | { status: 'failed', error: string }
+  | { status: 'needs_auth' }                                  // OAuth 未完成
+  | { status: 'needs_client_registration', error: string }    // dynamic client registration
+```
+
+Qwen 现有 `MCPServerStatus`（`packages/core/src/tools/mcp-client.ts:73`）只有 3 种（CONNECTED / CONNECTING / DISCONNECTED）。daemon 化时建议扩展到与 OpenCode 一致的 5 种 + 加 `'connecting'` 中间态 = 6 种。
 
 ### 实现要点
 
 ```ts
-// 现有 mcp-client-manager.ts 已有 PR#3818 的 in-flight restart coalesce
-// daemon 化只需新增 fingerprint key:
-const fingerprint = hash(JSON.stringify({ command, args, env }))
-mcpClientPool.get(fingerprint)  // ← 跨 session 共享
+// 复用 Qwen 现有 mcp-client-manager.ts（已实现 per-instance 多 client）
+// daemon 化主要工作：把 manager instance 绑定到 Workspace 而非全局
+
+class Workspace {
+  private mcpManager: McpClientManager  // ← 每 workspace 一个 manager
+  
+  constructor(private id: string, private directory: string) {
+    this.mcpManager = new McpClientManager({
+      configFor: this.id,
+      cwd: this.directory,
+    })
+  }
+  
+  async start() {
+    // 复刻 OpenCode 的 lazy 初始化模式
+    // 第一次访问 workspace 时才启动 MCP servers
+    // concurrency: 'unbounded' 全部 MCP server 并发连接
+    await this.mcpManager.initializeFromConfig()
+  }
+  
+  async dispose() {
+    await this.mcpManager.disconnectAll()
+  }
+}
+
+// daemon 内
+const workspaceMap: Map<string, Workspace> = new Map()
 ```
 
 详见 [06-MCP/资源共享](./06-mcp-resources.md)。
@@ -194,18 +271,51 @@ mcpClientPool.get(fingerprint)  // ← 跨 session 共享
 
 **问题**：FileReadCache（PR#3717）的"模型已看过整文件"标记是 session 级私有、还是跨 session 共享？
 
-### 选择
+### 决策（最终）
 
-**保守起步：session 内私有，跨 session 不共享**。Stage 3 评估是否升级为 daemon 全局共享（带 mtime 二次校验）。
+**Session 内私有**。**不**跨 session 共享，包括同 workspace 内的多个 session。
 
-### 理由
+### 决策依据
 
-| 选项 | 优点 | 缺点 |
+1. **PR#3717 当前实现已经是 session-scoped** —— `FileReadCache` instance 由 `SessionService` 持有，daemon 化天然兼容（每 session 各持一个实例）
+2. **PR#3774 (已合并 2026-05-06) prior-read enforcement 假设依赖 session 私有**：cache `miss` 表示 "**当前 session** 没看过该文件" → 拒绝 Edit/WriteFile。共享 cache 后 "miss" 失去这个语义（其他 session 看过不代表当前 session 看过），PR#3774 的整套守卫会失效或需要重新审计
+3. **PR#3810 (已合并) audit 已经表明 invalidation 是 fragile point** —— PR#3717 漏了 5 条 history-rewrite 路径才被发现。共享 cache 把这个风险半径放大到全 daemon，而所有 history rewrite 路径都需要广播 invalidation
+4. **跨 session 重复 read 的代价小** —— 文件读取本身有 OS page cache 兜底（同文件第二次 read 走内存），FileReadCache 节省的主要是 LLM token，不是 disk I/O
+5. **决策 §1 sessionScope: 'single' 默认下，多 client 实际上看同一个 session** —— 不存在"两个 session 看同 workspace 同文件"的高频场景；只有 fork session / `LoadSession` 后才会出现，是 cold path
+
+### 拒绝跨 session 共享的具体理由
+
+| 跨 session 共享的"优点" | 反驳 |
+|---|---|
+| "两个 session 看同 workspace 时 read 命中" | 实际场景下 `single` scope 多 client 共享同一 session（决策 §1），不存在这个场景；只有 LoadSession fork 才出现 |
+| "节省 LLM token" | PR#3717 的占位符短路本来就只对**重复 full text Read** 生效，不优化 ranged read / 不优化首次 read。共享带来的额外节省有限 |
+| "节省 disk I/O" | OS page cache 已经覆盖（同文件第二次 read 走内存）|
+
+### 与决策 §1 / §3 的协调
+
+| 决策 | 边界 | FileReadCache 共享语义 |
 |---|---|---|
-| **A：session 内私有（本设计）** | 与 PR#3717 当前行为一致、无新风险、不影响 PR#3774 prior-read enforcement 语义 | 跨 session 有重复 read |
-| B：daemon 全局共享（用 `(dev,ino)` key + mtime） | 两个 session 看同 workspace 时 read 命中 | session A 改 mtime 但 session B 还没看到 → 状态错位、PR#3810 invalidation 5 路径需扩展到全局 |
+| §1 session 默认 'single' | 多 client 共享 session | **同 cache 实例**（因为是同 session）|
+| §1 session 'thread' 模式（多租户）| 每 client 独立 session | **隔离 cache**（绝对不能跨 session 共享）|
+| §3 MCP per-workspace | workspace 边界 | FileReadCache **更窄**——session 边界 |
 
-PR#3810 的 audit 已经表明 cache invalidation 是个 fragile point（PR#3717 漏了 5 条路径）。daemon 化先不要扩大 invalidation 半径，保守起步。
+FileReadCache 是**比 MCP 更激进的隔离**（session 内私有 vs MCP per-workspace 共享）。不对称是有意的，因为 cache invalidation 的正确性比 MCP 的状态隔离更微妙。
+
+### 实现要点
+
+```ts
+// PR#3717 设计
+class FileReadCache {
+  private byKey: Map<DevInoKey, ReadEntry>   // (dev, ino) → entry
+}
+
+// 每 SessionService 持一个实例（已是 PR#3717 当前行为）
+class SessionService {
+  private fileReadCache = new FileReadCache()
+}
+```
+
+**daemon 化无需任何修改** —— Session 已经是 daemon 化下的资源持有者，FileReadCache 跟着 Session 生命周期天然 session-scoped。
 
 ### 实现要点
 
@@ -362,8 +472,8 @@ class PermissionRequestHandler {
 |---|---|---|---|
 | 1 | session 跨 client 共享 | **默认 single（共享）**，可切 user / thread | Channels SessionRouter scope 系统 |
 | 2 | 状态进程模型 | 单 daemon 进程承载全部 session | 与 OpenCode 一致 + Qwen LocalContext / `AsyncLocalStorage` |
-| 3 | MCP server 生命周期 | daemon 内 pool 跨 session 复用 + per-server fallback | PR#3818 coalesce |
-| 4 | FileReadCache 共享 | session 内私有（保守起步）| PR#3717 + PR#3810 invalidation fragility |
+| 3 | MCP server 生命周期 | **per-workspace MCP state**（与 OpenCode 一致）+ Qwen 保留 in-flight coalesce + 30s 健康检查 | PR#3818 + PR#3741 健康检查 |
+| 4 | FileReadCache 共享 | **session 内私有**（终态决策）—— PR#3774 prior-read 守卫语义依赖 | PR#3717 + PR#3774 + PR#3810 invalidation 5 路径 |
 | 5 | Permission flow | 复用 PR#3723 + daemon 第 4 mode + SSE permission_request | PR#3723 evaluatePermissionFlow() |
 | 6 | 多 client 并发 | **同 session prompt 串行 + 事件 fan-out 多 client + 任何 client 可应答 permission** | ACP 协议语义 + Session task queue + subscriber set |
 
