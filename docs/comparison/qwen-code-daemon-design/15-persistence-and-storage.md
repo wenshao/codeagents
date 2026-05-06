@@ -693,4 +693,4 @@ Stage 6: + Postgres + S3 + 可选 Redis
 
 ---
 
-[← 返回 README](./README.md)
+[← 返回 README](./README.md) · [下一篇：HA 高可用与故障恢复 →](./16-high-availability.md)
