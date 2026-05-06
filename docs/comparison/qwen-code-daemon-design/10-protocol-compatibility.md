@@ -1,6 +1,6 @@
 # 10 — SDK / ACP 协议兼容性（单进程 vs Daemon）
 
-> [← 上一篇：与 OpenCode 详细对比](./09-comparison-with-opencode.md) · [回到 README](./README.md)
+> [← 上一篇：与 OpenCode 详细对比](./09-comparison-with-opencode.md) · [下一篇：多租户与沙箱 →](./11-multi-tenancy-and-sandbox.md)
 
 > 单进程模式（当前 `qwen --acp` stdio NDJSON）与 Daemon 模式（设计中 `qwen serve` HTTP）的协议兼容性分析。**结论：Schema 层完全兼容、Wire 层不兼容、SDK 抽象层用户代码 0 改动**。
 

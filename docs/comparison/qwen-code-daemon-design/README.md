@@ -18,6 +18,7 @@
 | 08 | [3 阶段路线图](./08-roadmap.md) | Stage 1 MVP（~1 周 HTTP-bridge）/ Stage 2 原生（~3 周）/ Stage 3 完整（~2 月）|
 | 09 | [与 OpenCode 详细对比](./09-comparison-with-opencode.md) | 路由、技术栈、设计哲学的逐项对照 |
 | 10 | [SDK / ACP 协议兼容性](./10-protocol-compatibility.md) | 单进程 vs Daemon 4 层兼容性矩阵 + 双向 RPC 同步→异步处理 + 用户代码 0 改动证明 |
+| 11 | [多租户与 Shell 沙箱](./11-multi-tenancy-and-sandbox.md) | 4 个 Level 演进路径（单租户→多租户→沙箱→SaaS）+ Tenant 抽象层 + 5 种本地沙箱（OS user / namespace / container 等）+ **远程 sandbox 设计**（SSH / gRPC / k8s job 4 种实现，workspace 同步 / 实时流 / 取消 / 容错 5 大挑战）+ Stage 4-6 路线图 + 软兼容性 audit |
 
 ## 一句话 TL;DR
 
