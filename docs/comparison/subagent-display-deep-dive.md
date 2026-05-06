@@ -33,6 +33,7 @@
 | [PR#3809](https://github.com/QwenLM/qwen-code/pull/3809) | 2026-05-04 | **Phase D part (a) 收官**（+649/-1 · 体量从 OPEN 时 +130 增长 5 倍）—— foreground `shell` 跑 ≥**effective timeout 的一半**（per-invocation，含 1000ms floor）完成时给 LLM-facing result 加 advisory。default-timeout 120s → 60s；显式 `timeout: 600_000` → 300s；`timeout: 1` 不会出"ran for 0s"噪声。Advisory 显式警告"别重跑刚完成的命令"——matters for stateful ops（deploys / migrations / `git push`）。配合 PR#3684 sleep interception 形成完整双层"长跑后台化"防御 | §六.6 新增 |
 | [PR#3792](https://github.com/QwenLM/qwen-code/pull/3792) | 2026-05-04 | **PR#3684 review 反馈清扫**（+664/-227 · 体量从 OPEN 时 +199/-199 增长 3.3 倍）—— Token bucket clock-drift guard（系统 suspend/resume 后 `Date.now()` 倒退保护）/ AST parse logging / 合并 SHELL_TOOL_NAMES / 抽 background-work utils / 路由统一 | 配套 §六.5 |
 | [PR#3808](https://github.com/QwenLM/qwen-code/pull/3808) | 2026-05-04 | **PR#3801 docs follow-up**（+24/-12）—— `shell.ts` / `task-stop.ts` model-facing 字符串从只引用 `/tasks` 升级为同时提及 dialog（让 LLM 根据 TTY/headless/SDK/ACP 模式建议对的 surface）| 配套 §六.5 |
+| **[PR#3836](https://github.com/QwenLM/qwen-code/pull/3836)** | 2026-05-06 | 🌟 **Kind framework 第 4 消费者：dream 任务**（+1714/-100 · 体量从 OPEN 时 +598/-19 增长 3x）—— auto-memory consolidation 后台任务接入 BackgroundTasksDialog；MERGED 版超出 OPEN scope 包含 **cancellation**：`MemoryTaskStatus 'cancelled'` + `MemoryManager.cancelTask` + `task_stop` 第 4 dispatch route + dialog `x` 键路由。framework 现有 **agent / shell / monitor / dream** 四消费者 —— "generic framework" 声称变为强证据 | §六.5 / §六.7 新增 |
 
 **关键 OPEN（追踪中）**：
 
@@ -454,7 +455,7 @@ PR#3684 自述清单只说"集成"未做，**没规定具体语义**——这是
 
 **PR#3791 合并后已完成**：monitor 与 subagent / background shell 共享同一个 pill+dialog 调度面 —— **Phase C 与 PR#3471/3488 调度面的主要对接已完成**，kind framework 现有 **agent / shell / monitor 三个真实消费者**，把"generic framework"从声称变为证据。
 
-**[PR#3836](https://github.com/QwenLM/qwen-code/pull/3836) 🟡 OPEN（2026-05-04）**：将 **dream** 加为**第 4 种 kind**（auto-memory consolidation 后台任务），把 framework 的 3 消费者扩展到 4——这是对"generic framework"的进一步压力测试，且复用 `MemoryManager.subscribe()` 实现 **zero core-package changes**（仅 CLI 侧扩展），印证 framework 的边界设计正确性。
+**[PR#3836](https://github.com/QwenLM/qwen-code/pull/3836) ✓ 2026-05-06 02:20 UTC 合并（+1714/-100，体量从 OPEN 时 +598/-19 增长 3x）**：将 **dream** 加为**第 4 种 kind**（auto-memory consolidation 后台任务），同时 **scope 扩展含 cancellation**（标题从 `feat(cli): surface` 改为 `feat(core,cli): surface **and cancel**`）。OPEN 版自称"zero core-package changes"，**MERGED 版实际改了 core**：① `MemoryTaskStatus` 加 `'cancelled'` 状态；② 新增 `MemoryManager.cancelTask` 方法；③ `task_stop` 工具加第 4 dispatch route（模型也能 cancel dream task）；④ cancellation aborts dream fork-agent + 现有 `runDream` finally 块释放 consolidation lock。**意义**：framework 现有 **agent / shell / monitor / dream 四个真实消费者**——把"generic framework"从声称变为强证据。
 
 **Lint fix 工程实践**：commit `7999b85` 给 5 个新 switch 加 `default: { const _exhaustive: never = entry; throw ... }`，同时保运行时 guard 和编译期 exhaustiveness 检查——4th kind 出现时 TypeScript 立即指出 5 个 site 需新加 arm。
 

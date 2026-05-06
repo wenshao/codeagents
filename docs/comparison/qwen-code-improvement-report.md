@@ -449,6 +449,86 @@
 
 ## 六、更新日志
 
+### 2026-05-06 第二轮（~10h 增量 · 6 项合并 · kind framework 第 4 消费者 dream 落地（PR#3836 +1714/-100）+ auto-memory recall 不阻塞 + fast model per-model 配置）
+
+扫描窗口：2026-05-05 17:20 UTC → 2026-05-06 03:14 UTC。窗口内 **6 项合并**。本次主线：① **Kind framework 第 4 消费者 dream 任务正式落地 + 含 cancellation**（PR#3836 体量从 OPEN 时 +598 增长 3x 到 +1714/-100，scope 扩展到含 `task_stop` + dialog `x` 键 + `MemoryTaskStatus 'cancelled'`）；② **auto-memory recall 不再阻塞主请求**（PR#3814 修复每轮 ~5s 延迟）；③ **fast model side queries 用 per-model 配置**（PR#3815 修复 settings 从 main model 泄漏到 fast model）；④ **skill 激活基于 discovered 路径**（PR#3852 + 安全设计防伪造路径激活）；⑤ **微信图片发送（CDN 上传）**（PR#3781 channels 增强）。
+
+#### 🟢 MERGED（6 项）
+
+| PR | 标题 | 合并时间 | 影响 |
+|---|---|---|---|
+| **[PR#3836](https://github.com/QwenLM/qwen-code/pull/3836)** | feat(core,cli): surface and cancel auto-memory dream tasks | 2026-05-06 02:20 UTC | 🌟 **Kind framework 第 4 消费者落地**（**+1714/-100** · 体量从 OPEN 时 +598/-19 增长 3x · 标题从 `feat(cli): surface` 扩到 `feat(core,cli): surface **and cancel**`）—— 把 dream 加为第 4 种 kind（agent / shell / monitor / **dream**）。新增能力相比 OPEN 版本：① **`MemoryTaskStatus` 加 `'cancelled'` 状态**（不只是 surface，还能 cancel）；② **`MemoryManager.cancelTask`**（dialog `x` 键路由）；③ **`task_stop` 工具加第 4 dispatch route**（模型也能 cancel dream task）；④ cancellation aborts dream fork-agent + 现有 `runDream` finally 块释放 consolidation lock。**用户行为变化**：以前 dream 静默后台跑，现在每个 fired dream 在 footer pill 出现（`1 dream`）+ dialog 短期保留 — additive change 但用户从只看 toast 变成看 pill counter ticking |
+| **[PR#3814](https://github.com/QwenLM/qwen-code/pull/3814)** | fix(core): prevent auto-memory recall from blocking main request | 2026-05-05 23:34 UTC | 🌟 **关联 [item-4/5 会话记忆 / Auto Dream](./qwen-code-improvement-report-p0-p1-core.md#item-4)**（**+419/-24** · 修复 #3759）—— 重大用户体验 bug：auto-memory recall 的 5s `AbortSignal.timeout` 每轮都触发，主请求路径同步 await 完整 recall promise（含 timeout + heuristic fallback），**每个用户 turn 被延迟 ~5s**。修复：① `resolveAutoMemoryWithDeadline()` 让 recall 与 2.5s deadline 赛跑，未完成则用空结果继续主请求；② model-driven selector timeout 从 5s 降到 2s；③ 用 `AbortSignal.any([timeout(2_000), callerAbortSignal])` 把 deadline 通过 `recall()` → `selectRelevantAutoMemoryDocumentsByModel` → `runSideQuery` 传播取消 in-flight LLM call。这是 PR#3087 auto-memory 系列的关键性能修复 |
+| **[PR#3815](https://github.com/QwenLM/qwen-code/pull/3815)** | fix(core): use per-model settings for fast model side queries | 2026-05-05 18:07 UTC | 🌟 **关联 [fast-model-usage-deep-dive](./fast-model-usage-deep-dive.md) 整体设计**（**+544/-2** · 修复 #3765）—— side queries（session recap / title generation / tool-use summary）走 fast model 时**用了 main model 的 `ContentGeneratorConfig`**，导致 main model 的 `extra_body` / `samplingParams` / `reasoning` 设置**泄漏到 fast model 请求**。**典型案例**：main model `extra_body.enable_thinking: true`，fast model `extra_body.enable_thinking: false` —— side query 仍发 `enable_thinking: true` 给 fast model（因为用的 main model config）。修复：`GeminiClient.generateContent()` 在请求 model ≠ main model 时通过 `buildAgentContentGeneratorConfig()`（与 subagents 同模式）解析目标 model 自己的 `ContentGeneratorConfig` + 创建专用 `ContentGenerator` |
+| **[PR#3852](https://github.com/QwenLM/qwen-code/pull/3852)** | fix(core): activate skills from discovered result paths | 2026-05-05 17:57 UTC | **关联 [item-9 指令条件规则](./qwen-code-improvement-report-p0-p1-core.md#item-9) + item-28 Skill 装载**（+656/-56）—— path-conditional skill 激活之前**只看 tool 输入路径**，但 broad selector（如 `**/*.ts`）能 discover 到具体文件路径，被遗漏。本 PR 让 scheduler 也考虑 discovery 工具（`glob` / `grep_search` / `ripGrep`）的具体结果路径。**安全设计**：仅信任 filesystem 工具的 result-side metadata + 用 structured ripgrep 输出避免伪造路径激活 |
+| **[PR#3781](https://github.com/QwenLM/qwen-code/pull/3781)** | feat(weixin): add image sending support via CDN upload | 2026-05-05 17:49 UTC | **Channels 增强**（+954/-46）—— 微信适配器加 CDN 图片上传支持（与 PR#2628 channels 平台延续） |
+| **[PR#3832](https://github.com/QwenLM/qwen-code/pull/3832)** | fix(sdk-python): standardize TAG_PREFIX to include v suffix | 2026-05-06 03:14 UTC | sdk-python release 工具修复（+6/-6） |
+
+#### 🟡 关键 OPEN（值得追踪）
+
+| PR | 方向 | 关联 |
+|---|---|---|
+| **[PR#3860](https://github.com/QwenLM/qwen-code/pull/3860)** | chore(deps): upgrade ink 6.2.3 → 7.0.2 + bump Node engine to 22 | **重大依赖升级**（+6258/-7915 lockfile）—— Ink 7 要求 Node ≥22 + React ≥19.2 + react-reconciler 0.33。**No source code changes** —— ink 6→7 API 兼容（公开 surface 一致），用户可见的渲染优化"once Ink 7 loaded"自动激活。涉及 TUI 渲染稳定性（`item-44 瞬态消息容器`）|
+| **[PR#3861](https://github.com/QwenLM/qwen-code/pull/3861)** | fix(cli): preserve comments and formatting in settings.json during migration write-back | settings 迁移 write-back 时保留 JSON 注释 + 格式 —— Qwen `.qwen/settings.json` 用户可能写注释，迁移时不应抹掉 |
+
+#### 🎯 重点解析 1：kind framework 第 4 消费者闭环（PR#3836）
+
+**回顾时间线**（[subagent-display §零](./subagent-display-deep-dive.md#零最新动态2026-04-27--2026-05-04--background-tasks-roadmap-3634-四阶段全部落地)）：
+
+| 时间 | PR | 消费者数 | 验证内容 |
+|---|---|:---:|---|
+| 2026-04-28 | PR#3488 | 1（agent）| 引入 framework |
+| 2026-04-29 | PR#3720 | 2（+ shell）| shell 接入 |
+| 2026-05-03 | PR#3791 | 3（+ monitor）| monitor 接入 + Lint fix `const _exhaustive: never` |
+| **2026-05-06** | **PR#3836** | **4（+ dream）** | **dream 接入，含 cancellation** |
+
+**OPEN → MERGED 体量爆涨原因**：OPEN 版（+598）原本 scope-out 了"PR-2 cancellation"（"requires `MemoryManager.cancelTask` + dream-fork abort + lock rollback"），MERGED 版（+1714）**直接把 PR-2 也合进来了**——这意味着：
+- 不再需要等下一个 PR 实现 cancellation
+- `task_stop` 工具的 dispatch 表现在覆盖全部 4 种 kind
+- dialog `x` 键对所有 4 种 kind 行为一致
+
+**zero core-package changes 假设被推翻**：OPEN 版称"复用 `MemoryManager.subscribe()`，zero core-package changes"，MERGED 版**实际改了 core**（`MemoryTaskStatus` 加 `'cancelled'` + `MemoryManager.cancelTask` 新方法）。但这是**有意识的架构决策**——既然 dialog 提供 `x` 键，就应该把 cancellation 做到底，而不是只 surface。
+
+#### 🎯 重点解析 2：auto-memory 系列 5s 阻塞 bug 终结
+
+PR#3814 修复的是 PR#3087 auto-memory 系列引入的**性能 regression**：
+
+```
+旧路径：每个 user turn → recall() 同步 await（含 5s timeout）→ 主请求开始
+       └─ 即使 recall 失败/超时，主请求也被强制等 5s
+新路径：每个 user turn → 启动 recall promise → 2.5s deadline 赛跑
+       ├─ 2.5s 内完成 → 用 recall 结果
+       └─ 2.5s 未完成 → 空结果继续主请求 + abort recall（取消 in-flight LLM call）
+```
+
+**用户感知**：每轮节省 ~2.5-5s 延迟（特别是 fast model side queries 慢的场景）。
+
+#### 🎯 重点解析 3：fast model 配置泄漏问题（item-22 思想延伸）
+
+PR#3815 修复了一个微妙但严重的配置泄漏：side queries 走 fast model 时用了 main model 的 ContentGeneratorConfig。这与 item-22 thinking 块 series 的思想一致——**不同模型有不同 API 形态**，配置必须 per-model 解析而不是全局共享。
+
+修复方法用与 subagents 相同的 `buildAgentContentGeneratorConfig()` 模式——"per-agent ContentGenerator view"已经是 Qwen Code 的成熟工程模式。
+
+#### 🟢 状态升级
+
+| Item | 旧状态 | 新状态 |
+|---|---|---|
+| **Kind framework 消费者数** | 3（agent + shell + monitor）| **4（+ dream）含 cancellation 全套** |
+| **auto-memory recall 阻塞** | 每轮 ~5s 延迟 bug | ✓ 修复（PR#3814 deadline 赛跑 + abort 传播）|
+| **fast model 配置隔离** | 从 main model 泄漏 | ✓ 修复（PR#3815 per-model `ContentGeneratorConfig`）|
+| **path-conditional skill 激活** | 仅看 tool 输入路径 | ✓ 含 discovered 路径 + 安全防伪造（PR#3852）|
+
+#### 累计计数
+
+- 已合并 PR: 159 → **165**（+6）
+- 关键 OPEN PR：本轮新增 PR#3860（Ink 7 升级 + Node 22）+ PR#3861（settings.json 注释保留）
+
+#### 备忘：Ink 7 升级带来的"白嫖"渲染优化
+
+PR#3860 自述："**No business code changes** — only deps, lockfile, docs"。Ink 6→7 API 兼容，但 user-visible 渲染改进**自动激活**（once Ink 7 loaded）。这与之前 item-44 / 焦点锁等 TUI flicker 系列工作互补——很多 flicker 问题在 Ink 7 中已上游修复。建议合并后**审计是否有 item-44 / item-46 / item-47 等系列任务因 Ink 7 而自动 ✓**。
+
+---
+
 ### 2026-05-06（~24h 增量 · 6 项合并 + 12 项关键 OPEN · WebSearch 工具回归（PR#3844）+ Issue #3841 引用 web-search-tool-deep-dive 分析）
 
 扫描窗口：2026-05-04 17:20 UTC → 2026-05-05 17:20 UTC。窗口内 **6 项合并 + 12 项关键 OPEN**。本次主线：① **WebSearch 工具回归**（PR#3502 ✓ 2026-04-24 移除 1,830 行 → PR#3844 OPEN 2026-05-05 重新添加，**但 Issue #3841 直接引用 codeagents 项目的 [web-search-tool-deep-dive.md](./web-search-tool-deep-dive.md) 跨产品对比分析**——文档影响产品决策的具体案例）；② **MCP coalesce 落地**（PR#3818 +239/-2）；③ **shell-escaped 文件路径修复**（PR#3820 +561/-168）；④ **OTel telemetry shutdown timeout**（PR#3813 +130/-3）。
