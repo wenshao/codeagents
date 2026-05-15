@@ -25,7 +25,7 @@
 
 - 无 in-process TUI client；所有 client 全走 HTTP/SSE。
 - 进程没有终端；通过 systemd / pm2 / Docker 后台运行。
-- 重启策略由进程管理器决定；session 通过 PR#3739 transcript-first fork resume 重建，HTTP `loadSession` / `resume` 仍待 Stage 1.5e 暴露。
+- 重启策略由进程管理器决定；session 通过 PR#3739 transcript-first fork resume 重建，HTTP `loadSession` / `resume` 仍待 Stage 1.5a must-haves 暴露。
 - `GET /session/:id/events` 是 daemon 内部 EventBus 的 SSE projection；client 不直接 import EventBus。
 
 ### Client 接入顺序
@@ -52,7 +52,7 @@ Stage 1 的 Mode B client 只能覆盖 conversation 主链路。要让 TUI / cha
 | TUI 形态 | 数据源 | 完整 dialog 支持 |
 |---|---|---|
 | 传统单进程（`qwen`）| in-process direct call | ✅ super-client（~15 Ink dialogs + local-jsx）|
-| **Mode B + TUI adapter** | HTTP/SSE via `DaemonSessionClient` | ⚠️ Stage 1: 仅 conversation；Stage 1.5d 后补齐 daemon state |
+| **Mode B + TUI adapter** | HTTP/SSE via `DaemonSessionClient` | ⚠️ Stage 1: 仅 conversation；Stage 1.5c 后补齐 daemon state |
 | **Mode B + 远端非-TUI client**（Web UI / mobile / IM bot）| HTTP/SSE | N/A — 非 Ink 渲染 |
 | **Mode A 本地 TUI**（`qwen --serve`）| in-process | ⏸ HOLD |
 
@@ -60,19 +60,19 @@ Stage 1 的 Mode B client 只能覆盖 conversation 主链路。要让 TUI / cha
 
 | Dialog | 真的不能 wire 化？ | Wire 化方案 | 工作量 | 当前 |
 |---|---|---|---|---|
-| `/memory` 编辑 | ❌ 完全可以 | `GET/POST /workspace/memory` 读写 `~/.qwen/memory.json` | ~0.5d | Stage 1.5d |
-| `/mcp` 启停 / 配置 | ❌ 完全可以 | `GET /workspace/mcp` + `POST /workspace/mcp/:server/restart` | ~1d | Stage 1.5d |
-| `/agents` 管理 | ❌ 完全可以 | `GET/POST /workspace/agents` — 参考实现详 [Claude Code `/agents` Deep-Dive](../claude-code-agents-view-deep-dive.md)（~3042 LOC 完整范本）| ~0.5d | Stage 1.5d |
-| `/tools` 启停 | ❌ 完全可以 | `POST /workspace/tools/:name/enable` | ~0.5d | Stage 1.5d |
-| `/approval-mode` 切换 | ❌ 完全可以 | `POST /session/:id/approval-mode` | ~0.5d | Stage 1.5d |
-| `/init` 项目初始化 | ❌ 完全可以 | `POST /workspace/init` | ~0.5d | Stage 1.5d |
-| `/resume <id>` 切换 session | ❌ Stage 1.5 must-have #2 已规划 | `POST /session/:id/load` | Stage 1.5e | ✅ 计划 |
-| `/auth` OAuth 登录 | ⚠️ 部分难点 | device-flow 或 Capability RPC | ~2-3d | Stage 1.5d |
+| `/memory` 编辑 | ❌ 完全可以 | `GET/POST /workspace/memory` 读写 `~/.qwen/memory.json` | ~0.5d | Stage 1.5c |
+| `/mcp` 启停 / 配置 | ❌ 完全可以 | `GET /workspace/mcp` + `POST /workspace/mcp/:server/restart` | ~1d | Stage 1.5c |
+| `/agents` 管理 | ❌ 完全可以 | `GET/POST /workspace/agents` — 参考实现详 [Claude Code `/agents` Deep-Dive](../claude-code-agents-view-deep-dive.md)（~3042 LOC 完整范本）| ~0.5d | Stage 1.5c |
+| `/tools` 启停 | ❌ 完全可以 | `POST /workspace/tools/:name/enable` | ~0.5d | Stage 1.5c |
+| `/approval-mode` 切换 | ❌ 完全可以 | `POST /session/:id/approval-mode` | ~0.5d | Stage 1.5c |
+| `/init` 项目初始化 | ❌ 完全可以 | `POST /workspace/init` | ~0.5d | Stage 1.5c |
+| `/resume <id>` 切换 session | ❌ Stage 1.5 must-have #2 已规划 | `POST /session/:id/load` | Stage 1.5a must-haves | ✅ 计划 |
+| `/auth` OAuth 登录 | ⚠️ 部分难点 | device-flow 或 Capability RPC | ~2-3d | Stage 1.5c |
 | `/ide` IDE 集成 | ⚠️ 语义模糊 | "IDE 在哪台机器？" | TBD | TBD |
 | `ModelDialog` 选 model | ✅ 已 wire 化 | `POST /session/:id/model` + `model_switched` event | — | Stage 1 ✓ |
 | `SessionPicker` 列 session | ✅ 已 wire 化 | `GET /workspace/:id/sessions` | — | Stage 1 ✓ |
 
-**结论**：6/9 项 ~0.5d；2/9 项有 IPC 难点但 Capability RPC 可解；1/9 项语义模糊。它们归入 [§06 Stage 1.5d control-plane parity](./06-roadmap.md#15d--daemon-side-control-plane-parity)。
+**结论**：6/9 项 ~0.5d；2/9 项有 IPC 难点但 Capability RPC 可解；1/9 项语义模糊。它们归入 [§06 Stage 1.5c state CRUD](./06-roadmap.md#15c--daemon-side-state-crud--control-plane-parity)。
 
 > 💡 **`/agents` 参考实现**：Claude Code `/agents` slash command 已 ship 完整 ~3042 LOC 的 7-mode 状态机 + 11-step wizard + AI 生成 agent + 6 source 分层——是 daemon-side state CRUD 的最佳设计 anchor。详 [**Claude Code `/agents` UI Deep-Dive**](../claude-code-agents-view-deep-dive.md)（含 P0/P1 借鉴项：`omitClaudeMd` 省 ~5-15 Gtok/周 / `criticalSystemReminder_EXPERIMENTAL` 每 turn 重注入 / `isolation: worktree` agent 隔离 / AI 生成 agent 等）。
 
@@ -86,7 +86,7 @@ Stage 1 的 Mode B client 只能覆盖 conversation 主链路。要让 TUI / cha
 | OpenCode | ✅ |
 | Gemini CLI daemon | ✅ |
 | **Qwen Code Stage 1**（current）| ❌ 离群点（thin shell only）|
-| **Qwen Code Stage 1.5d 后** | ✅ 对齐（除 `/auth` `/ide` 部分场景）|
+| **Qwen Code Stage 1.5c 后** | ✅ 对齐（除 `/auth` `/ide` 部分场景）|
 
 ### 远端 client Attach / Reconnect 状态恢复
 
@@ -216,11 +216,11 @@ Laptop                           Remote workstation
 | 阶段 | 远端 TUI 体验 | 部署建议 |
 |---|---|---|
 | **Stage 1**（current）| thin shell（仅 conversation + model_switch）| 可做原型；默认体验仍受限 |
-| **Stage 1.5c/1.5d 后** | typed event + daemon state/control-plane 补齐 | 多端协作 / 容器化 SaaS / 远端 dev box 都可用 |
+| **Stage 1.5c + 1.5-prereq 后** | typed event + daemon state/control-plane 补齐 | 多端协作 / 容器化 SaaS / 远端 dev box 都可用 |
 
 ### 完整 TUI 体验 + 远程访问选项
 
-| 选项 | 部署 | TUI 体验（Stage 1）| TUI 体验（Stage 1.5c/1.5d 后）|
+| 选项 | 部署 | TUI 体验（Stage 1）| TUI 体验（Stage 1.5c + 1.5-prereq 后）|
 |---|---|---|---|
 | **A. SSH + 单进程** | SSH 进远端机器跑 `qwen` | ✅ 完整本地 TUI | ✅ 完整 |
 | **B. Mode B + 远端 TUI client** | 远端 `qwen serve` headless，本地用 TUI adapter attach | ⚠️ thin shell | ✅ **接近完整**（除 `/ide` 等场景）|

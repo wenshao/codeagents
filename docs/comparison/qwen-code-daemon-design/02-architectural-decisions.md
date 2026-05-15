@@ -303,7 +303,7 @@ ACP 协议本身就是"client → agent → 同步 response"语义，不允许�
 |---|---|---|---|
 | 1 | session 跨 client 共享 | **默认 `sessionScope: 'single'` 同 daemon 多 client 共享 session**；per-request scope override 是 Stage 1.5 must-have #1 | PR#3739 transcript-first fork resume + Stage 1.5 must-have #1 |
 | 2 | 状态进程模型 | **1 daemon = 1 workspace × N session multiplexed**（与 `qwen --acp` stdio 1:1 心智 + OS 进程级隔离 + cgroup quota + K8s 云原生契合 + blast radius 最小）| [PR#4113](https://github.com/QwenLM/qwen-code/pull/4113) 移除 PR#3889 multi-workspace 路由 |
-| 3 | MCP server 生命周期 | **当前 per-session**（随 `Config` / `ToolRegistry` / `McpClientManager` 创建）；跨 session MCP 共享需要未来 pool/proxy | 当前源码状态 + Stage 1.5d control-plane parity |
+| 3 | MCP server 生命周期 | **当前 per-session**（随 `Config` / `ToolRegistry` / `McpClientManager` 创建）；跨 session MCP 共享需要未来 pool/proxy | 当前源码状态 + Stage 1.5c state CRUD |
 | 4 | FileReadCache 共享 | **per-session 严格私有**（同 daemon N session 各自实例不共享；跨 daemon 自然独立）+ PR#3774 prior-read 守卫 + PR#3810 5 路径 invalidation | PR#3717 / PR#3774 / PR#3810 |
 | 5 | Permission flow | 复用 PR#3723 + daemon 第 4 mode + SSE permission_request | PR#3723 evaluatePermissionFlow() |
 | 6 | 多 client 并发 | **同 session prompt 串行（FIFO）+ 事件 fan-out + 任何 client 可应答 permission** | PR#3889 commit `ca996ecb5`（FIFO + no-poison）+ ACP 协议语义 + EventBus subscriber set |

@@ -86,7 +86,7 @@ External Reference Architecture 提供 orchestrator 层（详 [§06 §五 Extern
 
 **当前 client 边界**：TUI / channels / web / IDE 直接对接 `qwen serve` HTTP server；`GET /session/:id/events` 是 daemon 内部 EventBus 的 SSE projection。外部 client 不直接 import / subscribe 内存 EventBus。
 
-**Mode B 远端 client 是 "thin shell"**（Stage 1）——只能渲染 wire 流，daemon-side state dialogs（`/memory` / `/mcp` / `/agents` 等）不可用。Stage 1.5d daemon-side control-plane parity 补齐后，TUI / channels / web / IDE 才能成为完整 client。详 [§04](./04-deployment-and-client.md)。
+**Mode B 远端 client 是 "thin shell"**（Stage 1）——只能渲染 wire 流，daemon-side state dialogs（`/memory` / `/mcp` / `/agents` 等）不可用。Stage 1.5c daemon-side state CRUD 补齐后，TUI / channels / web / IDE 才能成为完整 client。详 [§04](./04-deployment-and-client.md)。
 
 ---
 
@@ -113,14 +113,17 @@ External Reference Architecture 提供 orchestrator 层（详 [§06 §五 Extern
 | Stage | 范围 | 状态 |
 |---|---|---|
 | **Stage 1** | Mode B headless `qwen serve` + N session multiplexed + EventBus + first-responder permission + 9 STAGE1_FEATURES | ✅ **MERGED 2026-05-13** ([PR#3889](https://github.com/QwenLM/qwen-code/pull/3889)) |
-| **Stage 1.5a** | 1 daemon = 1 workspace 收紧 + `workspaceCwd` capability + `workspace_mismatch` | ✅ **MERGED 2026-05-15** ([PR#4113](https://github.com/QwenLM/qwen-code/pull/4113)) |
-| **Stage 1.5e** | P0 identity + lifecycle + reliability（upstream 9 个 must-haves）| ⏳ 待开 |
-| **Stage 1.5d** | P0 daemon-side control-plane parity（memory / MCP / skills / tools / agents / auth / provider / context）| ⏳ 待开 |
-| **Stage 1.5b** | P1 Mode B typed event contract + shared `DaemonSessionClient` over HTTP/SSE | ⏳ 待开 |
-| **Stage 1.5c** | P1 Primary client adapters：TUI / channels / web/debug / IDE behind flag | 🔧 原型期 |
-| **Mode A parking lot** | P2：[Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156) 暂停；[PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) 已合并但只作为 primitive | ⏸ HOLD |
-| **Stage 2** | 协议补齐（WebSocket / mDNS / OpenAPI / Prometheus / `/ext`）| ~3-4 周（拆 2a-2d）|
+| **Stage 1.5a §02** | [PR#4113](https://github.com/QwenLM/qwen-code/pull/4113) 1 daemon = 1 workspace 收紧 | ✅ **MERGED 2026-05-15** |
+| **Stage 1.5a must-haves** **(P0)** | chiga0 10 must-haves 剩 9 项 — Mode B 生产 blocker（loadSession HTTP / pair tokens / sessionScope override）| ~2 周（9 PRs 可并行）|
+| **Stage 1.5c** **(P0)** | daemon-side state CRUD 8 routes — Mode B 远端 client 摆脱 thin shell | ~3-5d |
+| **Stage 1.5-prereq** **(P1)** | chiga0 6 architecture findings — lift `AcpChannel` / `EventBus` / `PermissionMediator` 到 `@qwen-code/acp-bridge` | ~1-2 周 |
+| **Stage 1.5-client adapters** **(P1 behind flag)** | TUI / channels / web/debug / IDE 接入 Mode B daemon；默认切换必须等 P0/P1 | ~2-3 周 |
+| **Stage 1.5b** Mode A **(P2 推迟)** | Mode A `qwen --serve` flag — [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156)；A1 [PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) ✅ MERGED；**推迟到 1.5c 后**（Mode A 价值依赖 1.5c）| ~5-6d |
+| **Stage 1.5-remote-control** **(P2 后置)** | [PR#3929](https://github.com/QwenLM/qwen-code/pull/3929) / [#3930](https://github.com/QwenLM/qwen-code/pull/3930) / [#3931](https://github.com/QwenLM/qwen-code/pull/3931) 后续作为 daemon facade | 待 primary clients 收敛 |
+| **Stage 2** | 协议补齐（WebSocket / mDNS / OpenAPI / Prometheus / `/ext` + Reverse RPC 5 类 Client Capability）| ~3-4 周（拆 2a-2d）|
 | **Stage 2e** | 可选 native in-process（去 `qwen --acp` child）| ~1-2 周 |
+
+> **优先级决策（2026-05-15）**：Mode B 优先 — must-haves + 1.5c 摆脱 thin shell → 1.5-prereq 架构清洁 → Mode A（1.5b）推迟。详 [§06 §三 推进顺序](./06-roadmap.md)。
 
 详 [§06 Roadmap & Ecosystem](./06-roadmap.md)。
 

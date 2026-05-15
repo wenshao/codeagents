@@ -51,7 +51,7 @@ POST   /workspace/file                      write file（PR#3774 prior-read 守�
 POST   /workspace/file/edit                 edit file
 POST   /workspace/pty                       open PTY（Upgrade: websocket）
 
-# Stage 1.5d daemon-side control-plane parity（支撑 TUI / channels / web / IDE）
+# Stage 1.5c daemon-side state CRUD（支撑 TUI / channels / web / IDE）
 GET    /workspace/memory                    read ~/.qwen/memory.json
 POST   /workspace/memory                    update memory
 POST   /workspace/mcp/:server/restart       restart MCP server
@@ -83,7 +83,7 @@ WS     /session/:id                         WebSocket bidi 升级（与 SSE 并�
 > - **"wire 字节级一致"** = 不同 transport（HTTP SSE / future WebSocket facade）下序列化结果 bit-for-bit 相同（client 单一代码路径）
 > - **"不出 wire"** = 仅在 daemon 内处理，不通过 HTTP 协议暴露给 client（详 [§04 §二 TUI / client 边界](./04-deployment-and-client.md)）
 > - **"wire 协议锁定"** = HTTP routes + SSE event schema + zod schema 不再扩展（Stage 2 后）
-> - **"新 wire route"** = 新增 HTTP 路由（Stage 1.5d daemon-side control-plane parity）
+> - **"新 wire route"** = 新增 HTTP 路由（Stage 1.5c daemon-side state CRUD）
 > - **"ACP wire 版本"** = ACP NDJSON 协议本身的版本号（与 SDK 版本 / daemon envelope 版本区分）
 
 > 单进程模式（`qwen --acp` stdio NDJSON）与 Daemon 模式（`qwen serve` HTTP）的协议兼容性分析。**结论：Schema 层完全兼容、Wire 层不兼容、SDK 抽象层用户代码 0 改动**。
@@ -224,7 +224,7 @@ GET /capabilities
 {
   "v": 1,
   "mode": "http-bridge",
-  "features": [/* Stage 1 9 tags + Stage 1.5d 新 tags */],
+  "features": [/* Stage 1 9 tags + Stage 1.5c 新 tags */],
   "protocol_versions": {                              // 🆕
     "acp": "0.14.x",                                   // ACP wire 版本
     "daemon_envelope": 1                               // SSE envelope schema 版本
@@ -235,7 +235,7 @@ GET /capabilities
 
 **chiga0 finding 5（Stage 1.5b / Stage 2a）**：hard-coded `STAGE1_FEATURES` 数组改为 plug-in capability registry——让 `POST /ext/:method` ACP extMethod 桥接给 vendor zero-fork 扩展（vendor 注册 capability tag → registry → `/capabilities` 自动包括）。
 
-**Stage 1.5d daemon-side control-plane parity 注册的新 tags**：
+**Stage 1.5c daemon-side state CRUD 注册的新 tags**：
 
 ```
 'workspace_memory_crud'    'workspace_mcp_management'
@@ -290,9 +290,9 @@ const q = query({ transport: new HttpTransport({
 | Stage | 实现方式 | 与 stdio 兼容性 |
 |---|---|---|
 | **Stage 1**（✅ MERGED 2026-05-13）| daemon 内 `qwen --acp` child + HTTP↔stdio 桥接 | **业务逻辑 100% 同源**——同一个 ACP agent，仅外面包了层 HTTP 翻译 |
-| **Stage 1.5b**（Mode B event contract）| typed `SessionEvent` / `ControlEvent` + shared `DaemonSessionClient` over HTTP/SSE | wire 仍是 HTTP/SSE；client 共享 reducer / event schema |
+| **1.5-prereq**（Mode B event contract）| typed `SessionEvent` / `ControlEvent` + shared `DaemonSessionClient` over HTTP/SSE | wire 仍是 HTTP/SSE；client 共享 reducer / event schema |
 | **Stage 1.5c**（primary client adapters）| TUI / channels / web / IDE 接入 daemon HTTP/SSE | 适配层变化；daemon wire 向后兼容 |
-| **Stage 1.5d**（daemon-side control-plane parity）| 加 memory / MCP / skills / tools / agents / auth / provider / context 等 HTTP routes | 协议扩展，向后兼容（new capabilities via tag）|
+| **Stage 1.5c**（daemon-side state CRUD）| 加 memory / MCP / skills / tools / agents / auth / provider / context 等 HTTP routes | 协议扩展，向后兼容（new capabilities via tag）|
 | **Stage 2a**（Protocol completion）| WebSocket bidi + /health?deep + /ext/:method | 协议扩展，向后兼容 |
 | **Stage 2e**（可选 native in-process）| 去 `qwen --acp` child，daemon 直接 import `QwenAgent` | wire 协议不变，业务逻辑同源 |
 

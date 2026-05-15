@@ -174,7 +174,7 @@ type PermissionPolicy =
   | { kind: 'local-only' };                  // 当前 TUI behavior（local-jsx，不出 wire）
 ```
 
-详 [§06 §三 Stage 1.5b/P1](./06-roadmap.md#15b--mode-b-event-contract) 与 cross-module refactor findings。
+详 [§06 §三 1.5-prereq](./06-roadmap.md#15-prereq--mode-b-event-contract--bridge-primitives) 与 cross-module refactor findings。
 
 ---
 
