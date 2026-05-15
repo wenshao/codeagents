@@ -8,6 +8,8 @@ PR#3889 Stage 1 ✅ MERGED daemon HTTP front 暴露 9 个 STAGE1_FEATURES routes
 
 **Stage 1 实现状态**：9/9 STAGE1_FEATURES ✅；SSE Last-Event-ID 重连 ✅；first-responder permission vote ✅。**Stage 1.5 候选**：WebSocket bidi / `loadSession` HTTP / per-request scope override / capability negotiation / daemon-side state CRUD。
 
+**兼容性原则**：所有 Stage 1.5+ route / event / capability 必须 additive。旧 route 不移除，旧 event envelope 不破坏；client 通过 `/capabilities` feature tag 决定是否启用新 UI，不能因为新 daemon 缺某个 Stage 1.5 能力而崩溃。
+
 ---
 
 ## 一、路由总览
@@ -49,7 +51,7 @@ POST   /workspace/file                      write file（PR#3774 prior-read 守�
 POST   /workspace/file/edit                 edit file
 POST   /workspace/pty                       open PTY（Upgrade: websocket）
 
-# Stage 1.5c daemon-side state CRUD（远端 client 等价 Mode A 本地 TUI）
+# Stage 1.5d daemon-side control-plane parity（支撑 TUI / channels / web / IDE）
 GET    /workspace/memory                    read ~/.qwen/memory.json
 POST   /workspace/memory                    update memory
 POST   /workspace/mcp/:server/restart       restart MCP server
@@ -78,10 +80,10 @@ WS     /session/:id                         WebSocket bidi 升级（与 SSE 并�
 ## 二、ACP wire 兼容性 — 4 层矩阵
 
 > **术语**：**wire** = 两端点之间通过协议实际传输的字节流（"over the wire" = "通过协议传"）。本系列指 daemon ↔ client 之间通过 HTTP+SSE/WebSocket 传的 ACP NDJSON 协议。与 **schema**（zod 类型定义 / IDL）区分——schema 是契约，wire 是按 schema 编码后**实际字节**。常见用法：
-> - **"wire 字节级一致"** = 不同 transport（in-process EventBus / 远端 HTTP SSE）下序列化结果 bit-for-bit 相同（client 单一代码路径）
-> - **"不出 wire"** = 仅在 daemon / 本地 TUI 内处理，不通过 HTTP 协议暴露给远端 client（详 [§04 §二 TUI 与 wire 的边界](./04-deployment-and-client.md)）
+> - **"wire 字节级一致"** = 不同 transport（HTTP SSE / future WebSocket facade）下序列化结果 bit-for-bit 相同（client 单一代码路径）
+> - **"不出 wire"** = 仅在 daemon 内处理，不通过 HTTP 协议暴露给 client（详 [§04 §二 TUI / client 边界](./04-deployment-and-client.md)）
 > - **"wire 协议锁定"** = HTTP routes + SSE event schema + zod schema 不再扩展（Stage 2 后）
-> - **"新 wire route"** = 新增 HTTP 路由（Stage 1.5c daemon-side state CRUD 加 6-8 条）
+> - **"新 wire route"** = 新增 HTTP 路由（Stage 1.5d daemon-side control-plane parity）
 > - **"ACP wire 版本"** = ACP NDJSON 协议本身的版本号（与 SDK 版本 / daemon envelope 版本区分）
 
 > 单进程模式（`qwen --acp` stdio NDJSON）与 Daemon 模式（`qwen serve` HTTP）的协议兼容性分析。**结论：Schema 层完全兼容、Wire 层不兼容、SDK 抽象层用户代码 0 改动**。
@@ -222,7 +224,7 @@ GET /capabilities
 {
   "v": 1,
   "mode": "http-bridge",
-  "features": [/* Stage 1 9 tags + Stage 1.5c 新 tags */],
+  "features": [/* Stage 1 9 tags + Stage 1.5d 新 tags */],
   "protocol_versions": {                              // 🆕
     "acp": "0.14.x",                                   // ACP wire 版本
     "daemon_envelope": 1                               // SSE envelope schema 版本
@@ -231,9 +233,9 @@ GET /capabilities
 }
 ```
 
-**chiga0 finding 5（Stage 1.5-prereq）**：hard-coded `STAGE1_FEATURES` 数组改为 plug-in capability registry——让 `POST /ext/:method` ACP extMethod 桥接给 vendor zero-fork 扩展（vendor 注册 capability tag → registry → `/capabilities` 自动包括）。
+**chiga0 finding 5（Stage 1.5b / Stage 2a）**：hard-coded `STAGE1_FEATURES` 数组改为 plug-in capability registry——让 `POST /ext/:method` ACP extMethod 桥接给 vendor zero-fork 扩展（vendor 注册 capability tag → registry → `/capabilities` 自动包括）。
 
-**Stage 1.5c daemon-side state CRUD 注册的新 tags**：
+**Stage 1.5d daemon-side control-plane parity 注册的新 tags**：
 
 ```
 'workspace_memory_crud'    'workspace_mcp_management'
@@ -261,7 +263,7 @@ POST   /coordinator/sessions                       create session（orchestrator
 ```
 
 SDK 加 `coordinatorUrl` 配置项区分两种部署：
-- 单机部署（Mode A 或单 daemon Mode B）：跳过 orchestrator 直连 daemon URL
+- 单机部署（单 daemon Mode B）：跳过 orchestrator 直连 daemon URL
 - 跨 daemon process 部署：通过 orchestrator 路由 sessionId → daemonUrl
 
 ---
@@ -288,8 +290,9 @@ const q = query({ transport: new HttpTransport({
 | Stage | 实现方式 | 与 stdio 兼容性 |
 |---|---|---|
 | **Stage 1**（✅ MERGED 2026-05-13）| daemon 内 `qwen --acp` child + HTTP↔stdio 桥接 | **业务逻辑 100% 同源**——同一个 ACP agent，仅外面包了层 HTTP 翻译 |
-| **Stage 1.5b**（Mode A）| TUI + HTTP server 同进程 + in-process EventBus | **业务逻辑同源**——TUI 是 super-client，远端 client 看到的是 strict subset |
-| **Stage 1.5c**（daemon-side state CRUD）| 加 6-8 HTTP routes，远端 client 拿 daemon state 读写能力 | 协议扩展，向后兼容（new capabilities via tag）|
+| **Stage 1.5b**（Mode B event contract）| typed `SessionEvent` / `ControlEvent` + shared `DaemonSessionClient` over HTTP/SSE | wire 仍是 HTTP/SSE；client 共享 reducer / event schema |
+| **Stage 1.5c**（primary client adapters）| TUI / channels / web / IDE 接入 daemon HTTP/SSE | 适配层变化；daemon wire 向后兼容 |
+| **Stage 1.5d**（daemon-side control-plane parity）| 加 memory / MCP / skills / tools / agents / auth / provider / context 等 HTTP routes | 协议扩展，向后兼容（new capabilities via tag）|
 | **Stage 2a**（Protocol completion）| WebSocket bidi + /health?deep + /ext/:method | 协议扩展，向后兼容 |
 | **Stage 2e**（可选 native in-process）| 去 `qwen --acp` child，daemon 直接 import `QwenAgent` | wire 协议不变，业务逻辑同源 |
 

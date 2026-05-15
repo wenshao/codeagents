@@ -28,7 +28,7 @@
 | 拓扑 | 形态 | 典型场景 | 主要压力 |
 |---|---|---|---|
 | **P1 — 1:N**（multi-end sync）| 1 session × N clients 订阅同一 conversation 事件流 | 桌面 TUI + 手机 mirror / Web UI attach / pair programming | EventBus fan-out |
-| **P2 — N:1**（resource sharing）| N session × 1 user 同 workspace 切换 / 并行 | **IDE multi-window**（不同分支 / 子目录）/ mobile app N conversations | 同 daemon 内 N session 共享 OAuth/cache/MCP children |
+| **P2 — N:1**（resource sharing）| N session × 1 user 同 workspace 切换 / 并行 | **IDE multi-window**（不同分支 / 子目录）/ mobile app N conversations | 同 daemon 内 N session 共享 `qwen --acp` child process；当前 cache/MCP 仍 per-session |
 
 **关键观察**：IDE multi-window **是 P2 不是 P1**——多窗口为并行不同的事，不是同 session 多视图（Cursor / Continue / Claude Code / OpenCode / Gemini CLI 均原生支持 P2 single-process N-session）。
 
@@ -36,7 +36,7 @@
 
 **默认 `sessionScope: 'single'`**——同 daemon 多 client 自动 attach 到现有 session（语义 "first POST creates, subsequent POST attaches"）→ live collaboration（P1）。
 
-**Stage 1.5 must-have #1** 落地后支持 per-request `sessionScope: 'thread'` override —— P2 同 daemon 内显式新建 isolated session，多 session 多路复用同 `qwen --acp` child（共享 OAuth / FileReadCache / CLAUDE.md parse / MCP children）。
+**Stage 1.5 must-have #1** 落地后支持 per-request `sessionScope: 'thread'` override —— P2 同 daemon 内显式新建 isolated session，多 session 多路复用同 `qwen --acp` child。注意：当前源码里每个 ACP session 仍会创建自己的 `Config` / `ToolRegistry` / `McpClientManager` / `FileReadCache`；跨 session 共享 MCP/cache 是后续 pool/proxy 或 cache split 优化，不是 Stage 1 已有能力。
 
 ### 共享语义
 
@@ -54,7 +54,7 @@
 - ✓ **跨 workspace = 跨 daemon process = OS 进程级隔离**（多 daemon 部署天然隔离）
 - ✓ 跨 daemon process 进程级隔离（外部 orchestrator 多 daemon 部署时）
 - ⚠️ **同 daemon 同 workspace 多 client 能互相看见** —— 有意设计
-- ⚠️ **同 daemon N session 共 OS 权限**（同 `qwen --acp` child）—— 多 tenant 必须 1 daemon 1 tenant
+- ⚠️ **同 daemon N session 共 OS 权限**（同 `qwen --acp` child / 同 UID / 同 workspace fs 视图）—— 多 tenant 必须 1 daemon 1 tenant
 
 **多租户约束**：orchestrator 在 daemon process 层做 1:1 tenant 绑定（1 daemon = 1 tenant × 1 workspace）。详 [§06 §5.2](./06-roadmap.md#52-multi-tenancy--oidc--quota--audit)。
 
@@ -77,7 +77,8 @@ qwen serve (绑定 cwd = /work/repo-a)
 ```
 
 **关键 invariants**：
-- **N session 共享**：OAuth refresh × 1 / FileReadCache × 1 / CLAUDE.md parse × 1 / MCP children per server
+- **N session 共享**：同一个 `qwen --acp` child process 与 workspace bound context。
+- **N session 当前不共享**：`Config` / `ToolRegistry` / `McpClientManager` / `FileReadCache` 仍随 ACP session 创建。
 - **跨 workspace = 多 daemon process**：OS 进程级隔离 + systemd `MemoryMax=` / cgroup / docker `--memory` 直接 = per-workspace quota
 - **daemon crash 半径**：整个 daemon 退出 = 该 workspace 全部 session 收 `session_died`；其他 daemon（其他 workspace）不受影响
 - **Blast radius 最小**：1 daemon = 1 workspace，daemon crash 只影响 1 workspace
@@ -147,28 +148,29 @@ OpenCode default 是 1 daemon 多 workspace（`Map<workspace, Instance>` ALS in-
 
 ## 3. MCP server 生命周期
 
-**决策**：**per-daemon MCP state**（= per-workspace，因 1 daemon = 1 workspace）。
+**当前状态**：**per-session MCP state**。每个 ACP `newSession()` 创建新的 `Config`，`ToolRegistry` 拥有自己的 `McpClientManager`，因此同 daemon N session 不共享 MCP children。
 
-- daemon 内的 `qwen --acp` child 持自己的一套 MCP client 集，child 退出全部清理
-- 同 daemon N session **共享** MCP children
-- 跨 daemon（= 跨 workspace）不同 child 各自独立 MCP children（OS 进程级隔离）
+- daemon 内的 `qwen --acp` child 是共享的，但 session config / MCP manager 是 session-local。
+- 同 daemon N session 可能重复 spawn 同一组 MCP server children。
+- 跨 daemon（= 跨 workspace）不同 child 各自独立 MCP children（OS 进程级隔离）。
+- 未来如果要共享，需要 process-level MCP pool/proxy，并处理 stdio MCP 的 request/session 隔离问题。
 
 ### 依据
 
-1. **MCP 持 workspace-specific state**：`filesystem` MCP 限制目录 / `git` MCP 持 repo path / 企业 DB MCP 持 workspace 连接串——per-daemon 边界天然清晰
-2. **配置可能微小差异**：同 `github` MCP 不同 workspace 可能用不同 token——跨 daemon 自然隔离
-3. **OpenCode `Effect.acquireUseRelease`** 可借鉴 — per-workspace 范围，与 1 daemon = 1 workspace 自然对齐
+1. **当前源码绑定点是 `Config`**：`Config.createToolRegistry()` 创建 `ToolRegistry`，`ToolRegistry` 创建 `McpClientManager`。
+2. **ACP `newSession()` 每次构造新 `Config`**：因此 MCP children 自然随 session 生命周期走。
+3. **MCP 协议本身没有 qwen session 概念**：共享 stdio MCP child 需要额外 proxy/pool 设计，不能只把生命周期标签从 per-session 改成 per-daemon。
 
-### Qwen 独有优化
+### 已有优化仍然有效
 
 | 优化 | 价值 |
 |---|---|
-| **PR#3818 in-flight rediscovery coalesce** | 同 daemon 并发 reconnect 合并为单一 in-flight restart |
+| **PR#3818 in-flight rediscovery coalesce** | 单个 manager 内并发 rediscovery 合并为单一 in-flight restart |
 | **30s 健康检查 + 自动重连** | OpenCode 没有；掉线后用户主动 connect |
 
 ### 重复 spawn 代价
 
-同 user 同 workspace N session 共 1 套 `github` MCP children。多 workspace 同 user = M daemon × M sets of MCP children（每 daemon 一份）。单 MCP ~50-200MB；本地多项目 N < 5 workspace 可接受；服务器/K8s 部署多 tenant 时各 tenant 独立 daemon 自然隔离。
+同 user 同 workspace N session 当前会有 N 套 MCP children。多 workspace 同 user = M daemon × N session × MCP sets。单 MCP ~50-200MB，若未来 TUI / channels / IDE 大量并发 session，MCP pool/proxy 会变成 Stage 2/2e 的资源优化项。
 
 ---
 
@@ -201,8 +203,8 @@ OpenCode default 是 1 daemon 多 workspace（`Map<workspace, Instance>` ALS in-
 | Provider registry | daemon 全局 | 不可变 |
 | Skill registry | daemon 全局 + path-conditional | 不可变 + per-tool-call 激活 |
 | Auth credentials | per-daemon | 跨 daemon OS 进程级隔离 |
-| **LSP server** | per-daemon | 同 daemon N session 共享；跨 daemon 进程级隔离 |
-| **MCP server** | per-daemon | 同上 + reconnect coalesce + 30s 健康检查 |
+| **LSP server** | per-session / implementation-dependent | 当前随 session config 初始化；跨 daemon 进程级隔离 |
+| **MCP server** | per-session | 同 daemon N session 不共享；future pool/proxy 可优化 |
 | Background shell / agent / monitor / dream | per-task / 调度面 per-daemon | task ID + sessionId 关联 |
 | **Session state** | per-session（N session 各自 SessionService）| SessionService 持久化 + transcript JSONL |
 | **FileReadCache** | per-session（不向其他 session 泄漏）| PR#3717 session-scoped |
@@ -263,34 +265,35 @@ ACP 协议本身就是"client → agent → 同步 response"语义，不允许�
 
 ---
 
-## 7. 部署模式 — Mode A vs Mode B
+## 7. 部署模式 — Mode B mainline / Mode A parking lot
 
 ### 决策
 
-**支持两种部署模式 + 共享同一 daemon process 抽象**：
+**2026-05-15 后，roadmap 先只推进 Mode B。** Mode A 仍作为设计记录保留，但不再是 Stage 1.5 主线。
 
 | 模式 | 启动命令 | TUI | 适用场景 |
 |---|---|---|---|
-| **Mode A: CLI + HttpServer** | `qwen --serve [--port N]` | ✅ 本地（super-client）| 单用户终端 + WebUI / IDE / IM bot 同时接入当前 workspace |
-| **Mode B: Headless + HttpServer** | `qwen serve [--port N]` | ❌ | 服务器 / 容器 / 远端机器 / K8s pod |
+| **Mode B: Headless + HttpServer** | `qwen serve [--port N]` | ❌ | 当前主线：服务器 / 容器 / 远端机器 / K8s pod / 所有 client 的统一 runtime |
+| **Mode A: CLI + HttpServer** | `qwen --serve [--port N]` | ✅ 本地 | 暂停推进；待 Mode B contract 稳定后再评估 |
 
-两种模式都遵循 §2 状态进程模型（1 daemon = 1 workspace × N session），区别仅在 daemon process 是否同时承载本地 TUI 客户端。**Wire 协议字节级一致** —— TUI（Mode A）走 in-process EventBus 替代 SSE。
+当前 client 直接边界是 HTTP server：TUI / channels / web / IDE 通过 `DaemonSessionClient` 调用 `POST /session/:id/*`，通过 `GET /session/:id/events` 消费 SSE。EventBus 是 daemon 内部 fan-out primitive；`EventBus lift` 指抽出 typed event contract / reducer / server-side primitive，不是让外部 client 直接 subscribe 内存对象。
 
 ### 依据
 
-1. **Mode A 是 daemon 化最大 UX 价值** —— 用户不需要"先关 CLI 再起 serve 再重连"
-2. **Mode B 是云 / 服务器场景必需** —— 容器 / 远端机器没人在终端
-3. **两种模式实现成本几乎相同** —— 共享 Core / Express / EventBus / subscriber 协议
-4. **PR#3889 已实现 Mode B**（Stage 1 ✅ MERGED 2026-05-13）；Mode A 是 Stage 1.5b ~4d 增量
+1. **PR#3889 已实现 Mode B**（Stage 1 ✅ MERGED 2026-05-13）。
+2. **PR#4113 已把 Mode B 边界收紧到 1 daemon = 1 workspace**（✅ MERGED 2026-05-15）。
+3. **TUI / channels / web / IDE 是 primary clients**，应先统一到 daemon HTTP/SSE + typed event contract。
+4. **remote-control 后置**，等 primary clients 收敛后再作为 daemon facade 复用同一 contract。
+5. **Mode A 暂停**，避免在 event/control/client contract 稳定前引入第二条 in-process 暴露路径。
 
 ### TUI 在多 session daemon 下的语义
 
-详 [§04 §三 TUI super-client](./04-deployment-and-client.md)。简：
+详 [§04](./04-deployment-and-client.md)。简：
 
-- **Mode A 本地 TUI 是 super-client**（保留 ~15 Ink dialogs + local-jsx slash commands）
-- **wire 只承载 agent ↔ user conversation axis**——TUI mutations 不出 wire
-- **远程 client 是 thin shell**（Stage 1 现状）——Stage 1.5c daemon-side state CRUD 落地后功能对齐 Mode A
-- TUI 退出 = 整个 daemon process 退出（含所有 in-daemon sessions）
+- **Mode B TUI adapter** 应作为 HTTP/SSE client，不再拥有 runtime。
+- **channels / web / IDE** 同样通过 `DaemonSessionClient` 接入。
+- **daemon-side control-plane parity** 落地后，remote clients 才能覆盖 memory / MCP / skills / tools / agents / auth / provider / context 等状态。
+- **Mode A** 保留为 parking lot，不进入当前 stage 主线。
 
 ---
 
@@ -300,11 +303,11 @@ ACP 协议本身就是"client → agent → 同步 response"语义，不允许�
 |---|---|---|---|
 | 1 | session 跨 client 共享 | **默认 `sessionScope: 'single'` 同 daemon 多 client 共享 session**；per-request scope override 是 Stage 1.5 must-have #1 | PR#3739 transcript-first fork resume + Stage 1.5 must-have #1 |
 | 2 | 状态进程模型 | **1 daemon = 1 workspace × N session multiplexed**（与 `qwen --acp` stdio 1:1 心智 + OS 进程级隔离 + cgroup quota + K8s 云原生契合 + blast radius 最小）| [PR#4113](https://github.com/QwenLM/qwen-code/pull/4113) 移除 PR#3889 multi-workspace 路由 |
-| 3 | MCP server 生命周期 | **per-daemon** + in-flight coalesce + 30s 健康检查 | PR#3818 + 30s 健康检查（OpenCode 无）|
+| 3 | MCP server 生命周期 | **当前 per-session**（随 `Config` / `ToolRegistry` / `McpClientManager` 创建）；跨 session MCP 共享需要未来 pool/proxy | 当前源码状态 + Stage 1.5d control-plane parity |
 | 4 | FileReadCache 共享 | **per-session 严格私有**（同 daemon N session 各自实例不共享；跨 daemon 自然独立）+ PR#3774 prior-read 守卫 + PR#3810 5 路径 invalidation | PR#3717 / PR#3774 / PR#3810 |
 | 5 | Permission flow | 复用 PR#3723 + daemon 第 4 mode + SSE permission_request | PR#3723 evaluatePermissionFlow() |
 | 6 | 多 client 并发 | **同 session prompt 串行（FIFO）+ 事件 fan-out + 任何 client 可应答 permission** | PR#3889 commit `ca996ecb5`（FIFO + no-poison）+ ACP 协议语义 + EventBus subscriber set |
-| 7 | 部署模式 | **支持 Mode A（CLI+HttpServer）+ Mode B（Headless+HttpServer）双模式** | PR#3889 Mode B ✅ MERGED 2026-05-13；Mode A 归 Stage 1.5b ~4d 增量 |
+| 7 | 部署模式 | **Mode B mainline；Mode A parking lot** | 2026-05-15 决策：优先 TUI / channels / web / IDE 接入 Mode B；remote-control 后置 |
 
 ---
 

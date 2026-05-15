@@ -31,16 +31,18 @@
                 tool 执行 / 拒绝 / 弹审批
 ```
 
-### 双部署模式认证默认值
+### Mode B 认证默认值
 
-| 维度 | Mode A（`qwen --serve`）| Mode B（`qwen serve`）|
-|---|---|---|
-| 默认 auth | `none`（loopback only）| `bearer`（生成 token + 写 `~/.qwen/serve/token`）|
-| 默认 listen | `127.0.0.1` | `127.0.0.1`（需显式 `--host 0.0.0.0`）|
-| CORS / Origin | loopback only | 配置驱动 |
-| 关键场景 | 终端用户本地 + 同机 IDE / WebUI | 服务器 / 容器 / 远端机器 |
+2026-05-15 后 roadmap 先只推进 Mode B（`qwen serve`）。Mode A（`qwen --serve`）保留为 parking lot，不再作为近期 Stage 1.5 主线。
 
-本章详细机制 **两种模式完全一致**——Mode A 默认关 bearer（loopback 信任）但可显式 `--token` 启用。
+| 维度 | Mode B（`qwen serve`）|
+|---|---|
+| 默认 auth | loopback 可无 token；非 loopback 必须 bearer token |
+| 默认 listen | `127.0.0.1`（需显式 `--hostname 0.0.0.0` 才暴露远端）|
+| CORS / Origin | 默认拒绝 browser Origin；Stage 2/后续 named `--allow-origin` |
+| 关键场景 | 服务器 / 容器 / 远端机器 / TUI、channels、web、IDE client 统一 runtime |
+
+本章下面的机制均按 Mode B 描述；未来若 Mode A 重新评估，应复用相同 permission / auth contract，而不是引入第二套权限语义。
 
 ---
 
@@ -109,7 +111,7 @@ ACP mode 是 stdio 单 client 同步等待；`daemon-http` mode 是多 client + 
 - **Permission decisions cache 是 per-`qwen --acp` child（= per-workspace）**
 - 同 workspace N session 各自维护 PermissionManager（每个 ACP `Session` 实例内）
 - `workspace` / `global` scope decisions 文件 **per-workspace 共享**——同 daemon N session 并发写时需 in-memory mutex（per-file lock）
-- first-responder vote 路由按 sessionId 隔离——A session 的 `permission_request` 走 EventBus 只 fan-out 到订阅 A session 的 client，不会泄漏到 B session 的订阅者
+- first-responder vote 路由按 sessionId 隔离——A session 的 `permission_request` 走 daemon 内部 EventBus，并通过 SSE 只 fan-out 到订阅 A session 的 client，不会泄漏到 B session 的订阅者
 
 ### Stage 2e native in-process（可选演进）
 
@@ -131,7 +133,7 @@ ACP mode 是 stdio 单 client 同步等待；`daemon-http` mode 是多 client + 
 
 ```
 1. agent 内代码: PermissionManager.evaluate('Bash', {cmd: 'npm test'})
-2. flow 走到 L4 = 'ask' → 推送 permission_request event 走 EventBus
+2. flow 走到 L4 = 'ask' → 推送 permission_request event 到 daemon 内部 EventBus
 3. daemon broadcasts 'permission_request' SSE event 到 session 所有 subscriber
 4. HTTP request 挂起（pending in `pendingPermissions` Map）
 5. 任意 client `POST /permission/:requestId` 应答（first-responder）
@@ -157,9 +159,9 @@ ACP mode 是 stdio 单 client 同步等待；`daemon-http` mode 是多 client + 
 }
 ```
 
-### Stage 1.5-prereq finding 3 — `PermissionMediator` interface lift
+### Stage 1.5e finding 3 — `PermissionMediator` interface lift
 
-> chiga0 [comment 4427773706](https://github.com/QwenLM/qwen-code/pull/3889#issuecomment-4427773706) finding 3：当前 daemon 的 first-responder + `nonInteractive/ControlDispatcher` + `channels/BridgeClient` 是同一概念的 3 个独立实现。Stage 1.5-prereq 抽 `PermissionMediator` interface + 4 种 strategy policy 让 4 路 expose 路径共享同一 mediator：
+> chiga0 [comment 4427773706](https://github.com/QwenLM/qwen-code/pull/3889#issuecomment-4427773706) finding 3：当前 daemon 的 first-responder + `nonInteractive/ControlDispatcher` + `channels/BridgeClient` 是同一概念的 3 个独立实现。Stage 1.5e 抽 `PermissionMediator` interface + 4 种 strategy policy，让 daemon HTTP/SSE、channels、stream-json 等路径共享同一 mediator：
 
 ```ts
 interface PermissionMediator {
@@ -172,7 +174,7 @@ type PermissionPolicy =
   | { kind: 'local-only' };                  // 当前 TUI behavior（local-jsx，不出 wire）
 ```
 
-详 [§06 §三 Stage 1.5-prereq](./06-roadmap.md#1.5-prereq--chiga0-6-architecture-refactor-findings)。
+详 [§06 §三 Stage 1.5e](./06-roadmap.md#15e--identity--lifecycle--reliability)。
 
 ---
 
@@ -186,7 +188,7 @@ type PermissionPolicy =
 
 - **跨 tenant 部署 = 多 daemon process**：1 daemon = 1 tenant × 1 workspace，OS 进程级真隔离
 - **systemd `MemoryMax=` / cgroup / docker `--memory` 直接 = per-tenant quota**——不需要 daemon 内部抽象
-- **同 daemon N session 共 OS 权限**（同 `qwen --acp` child，共 user UID + fs 视图 + MCP children）——天然 1 tenant 内 N session 共信任域
+- **同 daemon N session 共 OS 权限**（同 `qwen --acp` child，共 user UID + fs 视图；MCP children 当前随 session config 创建但仍在同 UID/workspace 信任域内）——天然 1 tenant 内 N session 共信任域
 
 ### 同 daemon N session 边界（注意）
 
