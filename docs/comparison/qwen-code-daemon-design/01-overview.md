@@ -114,11 +114,11 @@ External Reference Architecture 提供 orchestrator 层（详 [§06 §五 Extern
 |---|---|---|
 | **Stage 1** | Mode B headless `qwen serve` + N session multiplexed + EventBus + first-responder permission + 9 STAGE1_FEATURES | ✅ **MERGED 2026-05-13** ([PR#3889](https://github.com/QwenLM/qwen-code/pull/3889)) |
 | **Stage 1.5a** | 1 daemon = 1 workspace 收紧 + `workspaceCwd` capability + `workspace_mismatch` | ✅ **MERGED 2026-05-15** ([PR#4113](https://github.com/QwenLM/qwen-code/pull/4113)) |
-| **Stage 1.5b** | Mode B typed event contract + shared `DaemonSessionClient` over HTTP/SSE | ⏳ 待开 |
-| **Stage 1.5c** | Primary client adapters：TUI / channels / web/debug / IDE | 🔧 原型期 |
-| **Stage 1.5d** | daemon-side control-plane parity（memory / MCP / skills / tools / agents / auth / provider / context）| ⏳ 待开 |
-| **Stage 1.5e** | identity + lifecycle + reliability | ⏳ 待开 |
-| **Mode A parking lot** | [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156) 暂停；[PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) 已合并但只作为 primitive | ⏸ HOLD |
+| **Stage 1.5e** | P0 identity + lifecycle + reliability（upstream 9 个 must-haves）| ⏳ 待开 |
+| **Stage 1.5d** | P0 daemon-side control-plane parity（memory / MCP / skills / tools / agents / auth / provider / context）| ⏳ 待开 |
+| **Stage 1.5b** | P1 Mode B typed event contract + shared `DaemonSessionClient` over HTTP/SSE | ⏳ 待开 |
+| **Stage 1.5c** | P1 Primary client adapters：TUI / channels / web/debug / IDE behind flag | 🔧 原型期 |
+| **Mode A parking lot** | P2：[Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156) 暂停；[PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) 已合并但只作为 primitive | ⏸ HOLD |
 | **Stage 2** | 协议补齐（WebSocket / mDNS / OpenAPI / Prometheus / `/ext`）| ~3-4 周（拆 2a-2d）|
 | **Stage 2e** | 可选 native in-process（去 `qwen --acp` child）| ~1-2 周 |
 

@@ -159,9 +159,9 @@ ACP mode 是 stdio 单 client 同步等待；`daemon-http` mode 是多 client + 
 }
 ```
 
-### Stage 1.5e finding 3 — `PermissionMediator` interface lift
+### Stage 1.5b/P1 finding 3 — `PermissionMediator` interface lift
 
-> chiga0 [comment 4427773706](https://github.com/QwenLM/qwen-code/pull/3889#issuecomment-4427773706) finding 3：当前 daemon 的 first-responder + `nonInteractive/ControlDispatcher` + `channels/BridgeClient` 是同一概念的 3 个独立实现。Stage 1.5e 抽 `PermissionMediator` interface + 4 种 strategy policy，让 daemon HTTP/SSE、channels、stream-json 等路径共享同一 mediator：
+> chiga0 [comment 4427773706](https://github.com/QwenLM/qwen-code/pull/3889#issuecomment-4427773706) finding 3：当前 daemon 的 first-responder + `nonInteractive/ControlDispatcher` + `channels/BridgeClient` 是同一概念的 3 个独立实现。Stage 1.5b/P1 抽 `PermissionMediator` interface + 4 种 strategy policy，让 daemon HTTP/SSE、channels、stream-json 等路径共享同一 mediator：
 
 ```ts
 interface PermissionMediator {
@@ -174,7 +174,7 @@ type PermissionPolicy =
   | { kind: 'local-only' };                  // 当前 TUI behavior（local-jsx，不出 wire）
 ```
 
-详 [§06 §三 Stage 1.5e](./06-roadmap.md#15e--identity--lifecycle--reliability)。
+详 [§06 §三 Stage 1.5b/P1](./06-roadmap.md#15b--mode-b-event-contract) 与 cross-module refactor findings。
 
 ---
 

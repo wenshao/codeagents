@@ -34,7 +34,7 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 - ⏸ [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156) Mode A `qwen --serve` 暂停推进；今天决策为“核心推进 Mode B”
 - 🔧 [PR#4132](https://github.com/QwenLM/qwen-code/pull/4132) `/demo` debug page 仍 OPEN / changes requested，可作为 Mode B POST+SSE client 试验田
 - 🧭 [PR#3929](https://github.com/QwenLM/qwen-code/pull/3929) / [#3930](https://github.com/QwenLM/qwen-code/pull/3930) / [#3931](https://github.com/QwenLM/qwen-code/pull/3931) remote-control stack 仍 OPEN draft / changes requested；**优先级后置**，等 TUI / channels / web / IDE 先完成 Mode B client 适配后，再重定向为 daemon HTTP/SSE facade
-- ⏳ Stage 1.5 剩余主线：Mode B typed event contract over HTTP/SSE / shared `DaemonSessionClient` / daemon-side control-plane CRUD / permission + client identity / session lifecycle + reliability / client adapters（详 [§06 Roadmap](./06-roadmap.md)）
+- ⏳ Stage 1.5 剩余主线：P0 production must-haves + daemon-side state CRUD，P1 typed event contract / bridge primitives + client adapters behind flag，P2 remote-control / Mode A revisit（详 [§06 Roadmap](./06-roadmap.md)）
 
 ## 二、6 章总览
 
@@ -90,12 +90,12 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 |---|:---:|---|
 | **Stage 1 — Mode B base** | ✅ MERGED | [PR#3889](https://github.com/QwenLM/qwen-code/pull/3889)（2026-05-13）：HTTP + SSE + EventBus + prompt/cancel/model/permission 基础链路 |
 | **Stage 1.5a — workspace hardening** | ✅ MERGED | [PR#4113](https://github.com/QwenLM/qwen-code/pull/4113)（2026-05-15）：1 daemon = 1 workspace × N sessions；`workspaceCwd` capability；`workspace_mismatch` |
-| **Stage 1.5b — Mode B event contract** | ⏳ 待开 | typed `SessionEvent` / `ControlEvent`；`DaemonSessionClient` 统一对接 HTTP/SSE；EventBus 作为 daemon 内部 fan-out primitive；TUI / channels / web / IDE / JSONL / stream-json 共享同一事件语义 |
-| **Stage 1.5c — primary client adapters** | 🔧 原型期 | **优先 TUI → channels → web/debug → IDE** 接入 Mode B daemon；[PR#4132](https://github.com/QwenLM/qwen-code/pull/4132) `/demo` 是 web/debug 验证面 |
-| **Stage 1.5d — Mode B control-plane parity** | ⏳ 待开 | memory / MCP / skills / tools / agents / auth / provider / context usage / supported commands 等 daemon-side state CRUD，支撑 TUI/channel/web/IDE 功能等价 |
-| **Stage 1.5e — identity + lifecycle + reliability** | ⏳ 待开 | daemon-stamped client identity；session-scoped permission；pair/revoke token；load/resume/close session；client heartbeat；ring/backpressure hardening |
-| **Stage 1.5f — remote-control revisit** | ⏳ 后置 | remote-control [#3929](https://github.com/QwenLM/qwen-code/pull/3929)/[#3930](https://github.com/QwenLM/qwen-code/pull/3930)/[#3931](https://github.com/QwenLM/qwen-code/pull/3931) 等 primary clients 收敛后，作为 daemon facade 复用 HTTP/SSE typed event contract |
-| **Mode A parking lot** | ⏸ HOLD | [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156) 暂停；[PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) 已合并但只记录为通用 helper |
+| **Stage 1.5e — identity + lifecycle + reliability** | **P0 待开** | daemon-stamped client identity；session-scoped permission；pair/revoke token；load/resume/close session；client heartbeat；ring/backpressure hardening；对应 upstream 9 个 must-haves |
+| **Stage 1.5d — Mode B control-plane parity** | **P0 待开** | memory / MCP / skills / tools / agents / auth / provider / context usage / supported commands 等 daemon-side state CRUD，支撑 TUI/channel/web/IDE 功能等价 |
+| **Stage 1.5b — Mode B event contract** | **P1 待开** | typed `SessionEvent` / `ControlEvent`；`DaemonSessionClient` 统一对接 HTTP/SSE；EventBus 作为 daemon 内部 fan-out primitive；TUI / channels / web / IDE / JSONL / stream-json 共享同一事件语义 |
+| **Stage 1.5c — primary client adapters** | **P1 原型期** | **优先 TUI → channels → web/debug → IDE** behind flag 接入 Mode B daemon；默认切换必须等 P0/P1；[PR#4132](https://github.com/QwenLM/qwen-code/pull/4132) `/demo` 是 web/debug 验证面 |
+| **Stage 1.5f — remote-control revisit** | **P2 后置** | remote-control [#3929](https://github.com/QwenLM/qwen-code/pull/3929)/[#3930](https://github.com/QwenLM/qwen-code/pull/3930)/[#3931](https://github.com/QwenLM/qwen-code/pull/3931) 等 primary clients 收敛后，作为 daemon facade 复用 HTTP/SSE typed event contract |
+| **Mode A parking lot** | **P2 HOLD** | [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156) 暂停；[PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) 已合并但只记录为通用 helper |
 | Stage 2a-2d | ⏳ 待开 | 协议补齐（WebSocket / allow-origin / mDNS / OpenAPI / Prometheus / `/ext`）|
 | Stage 2e | 可选 | native in-process（去 `qwen --acp` child）|
 
@@ -117,7 +117,7 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 
 | PR / Issue | 当前状态（2026-05-15）| Mode B roadmap 处理 |
 |---|---|---|
-| [Issue #3803](https://github.com/QwenLM/qwen-code/issues/3803) | CLOSED | 作为 daemon proposal / decisions archive；后续 Mode B client convergence 继续在新 PR/issue 中落地 |
+| [Issue #3803](https://github.com/QwenLM/qwen-code/issues/3803) | OPEN | daemon proposal / Stage 1.5 tracker；最新 comment 将 P0/P1/P2 重排为 Mode B must-haves + state CRUD 优先，Mode A 后置 |
 | [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156) | OPEN | Mode A 设计 issue，但最新结论是 **Mode A hold，核心推进 Mode B** |
 | [PR#4132](https://github.com/QwenLM/qwen-code/pull/4132) | OPEN / changes requested | `/demo` debug page 可继续作为 Mode B POST+SSE client 验证面 |
 | [PR#3929](https://github.com/QwenLM/qwen-code/pull/3929) | OPEN draft | remote-control foundation 后置；应等 TUI / channels / web / IDE 适配完成后改为 daemon HTTP/SSE client facade |

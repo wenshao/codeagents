@@ -28,22 +28,24 @@
 - 重启策略由进程管理器决定；session 通过 PR#3739 transcript-first fork resume 重建，HTTP `loadSession` / `resume` 仍待 Stage 1.5e 暴露。
 - `GET /session/:id/events` 是 daemon 内部 EventBus 的 SSE projection；client 不直接 import EventBus。
 
-### Client 接入优先级
+### Client 接入顺序
 
-| 优先级 | Client | 适配方向 |
+> 这里的顺序不是 upstream Stage 1.5 的 P0/P1/P2 foundation 优先级。P0 foundation 仍是 must-haves + daemon-side state CRUD；下表只描述各 client behind-flag 试点的先后。
+
+| 顺序 | Client | 适配方向 |
 |---|---|---|
-| P0 | TUI | attach-to-daemon render target；HTTP/SSE + shared reducer |
-| P0 | channels | 新 daemon transport，保留 channel routing |
-| P0 | web/debug | [PR#4132](https://github.com/QwenLM/qwen-code/pull/4132) `/demo` 作为最薄验证面 |
-| P1 | IDE | daemon transport behind flag，先覆盖 session/prompt/events/cancel/model |
-| P1 | JSONL / stream-json / dual-output | daemon event sinks |
-| P2 | remote-control | 后置；primary clients 收敛后作为 daemon facade |
+| 第一波 | TUI | attach-to-daemon render target；HTTP/SSE + shared reducer |
+| 第一波 | channels | 新 daemon transport，保留 channel routing |
+| 第一波 | web/debug | [PR#4132](https://github.com/QwenLM/qwen-code/pull/4132) `/demo` 作为最薄验证面 |
+| 第二波 | IDE | daemon transport behind flag，先覆盖 session/prompt/events/cancel/model |
+| 并行 | JSONL / stream-json / dual-output | daemon event sinks |
+| P2 deferred | remote-control | 后置；primary clients 收敛后作为 daemon facade |
 
 ---
 
 ## 二、TUI / client 边界
 
-Stage 1 的 Mode B client 只能覆盖 conversation 主链路。要让 TUI / channels / web / IDE 成为完整 client，需要先补 typed event contract，再补 daemon-side control-plane parity。
+Stage 1 的 Mode B client 只能覆盖 conversation 主链路。要让 TUI / channels / web / IDE 成为完整 client，需要先补 P0 的 production must-haves 与 daemon-side control-plane parity，再补 P1 typed event contract / bridge primitives；client adapters 只能先 behind flag。
 
 ### TUI 形态 4 种
 
@@ -103,7 +105,7 @@ Mode A `qwen --serve` 设计暂时 hold。本节保留原问题作为 future eva
 | TUI 是否同进程 co-host daemon | HOLD |
 | TUI 是否绑定一个 session 还是 attach 任意 session | HOLD |
 | TUI local dialogs 是否 wire 化 | 先通过 Mode B control-plane parity 解决 |
-| TUI 是否可作为纯 daemon client | **优先推进**：Stage 1.5c TUI adapter |
+| TUI 是否可作为纯 daemon client | **优先 behind flag 试点**：Stage 1.5c TUI adapter；默认切换等 P0/P1 |
 
 ---
 
