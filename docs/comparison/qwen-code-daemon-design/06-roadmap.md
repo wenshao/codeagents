@@ -234,18 +234,33 @@ chiga0 设计哲学（每 PR 反复出现）：**existing default path remains u
 | 何时 npm alpha publish？ | Wave 1 + 足够的 Wave 2 后 + release docs ready；不阻塞所有 control-plane routes |
 | Loopback 默认 token？ | v0.15 alpha 保持现状 + 加 `--require-auth`（PR 15）；v0.16 改 token-by-default + SDK auto-discovery + explicit opt-out |
 | Token instance path？ | `~/.qwen/serve/instances/<host>-<port>-<workspaceHash>/token`（多 daemon 共存）+ PID metadata（替代 port-only 路径）|
-| 如何 align PR#3929-3931 remote-control？ | 等 primary clients 稳定后改为 daemon facade，避免 parallel runtime/protocol fork |
+| 如何 align PR#3929-3931 remote-control？ | 等 primary clients 稳定后改为 daemon facade / control overlay；同时承认 **local daemon + remote-control relay** 和 **remote daemon + gateway** 两种形态，避免 parallel runtime/protocol fork |
 | Worktree 交互？ | `boundWorkspace` 仍是 boot-time daemon workspace；file routes 默认 bound-workspace safety；worktree-specific 行为必须显式，不是隐式 `process.chdir()` |
 
 ---
 
 ### 三·二 Deployment + package contract (chiga0 #3803 comment 2026-05-18)
 
-来源：chiga0 [Issue #3803 comment 4476174099](https://github.com/QwenLM/qwen-code/issues/3803#issuecomment-4476174099) (GPT-5 Codex 协助生成)，**在 Wave 4 收尾、Wave 5 adapter migration 真要默认切换前，提议钉死 6 项契约**：
+来源：chiga0 [Issue #3803 comment 4476174099](https://github.com/QwenLM/qwen-code/issues/3803#issuecomment-4476174099) + [comment 4476318030](https://github.com/QwenLM/qwen-code/issues/3803#issuecomment-4476318030) (GPT-5 Codex 协助生成)，**在 Wave 4 收尾、Wave 5 adapter migration 真要默认切换前，提议钉死 deployment / package / renderer / remote-control 契约**：
 
 #### 1. Deployment forms 3 类（详 [§01 §三·一](./01-overview.md#三一-deployment-forms来自-chiga0-3803-comment-4476174099-2026-05-18)）
 
 local-local（主装）/ remote-remote daemon 与 workspace colocate（cloud 推荐）/ **❌ local workspace + remote daemon**（不推荐——daemon 看不到 local fs/tools/MCP/skills）。
+
+#### 1.5 Deployment shape matrix（详 [§04 §四](./04-deployment-and-client.md#deployment-shape-matrixclientruntime-lens2026-05-18)）
+
+3-form 表只回答 daemon/workspace locality；client migration 还需要按 UI/adapter 形态拆分验证：
+
+| Shape | Runtime locality | 当前 roadmap 含义 |
+|---|---|---|
+| Local - Local | 本机 daemon/runtime/workspace | `qwen` 默认迁移目标；必须有 auto-daemon UX + control-plane parity |
+| Web chat / web terminal - Remote | remote daemon/runtime/workspace | web terminal 目标是 **daemon-native renderer**（typed events + reducer），PTY proxy 仅 fallback |
+| Local IDE - Local daemon | 本机 daemon/runtime/workspace | IDE dogfood 优先形态；path identity 共享，workspace mismatch 要 fail loud |
+| Local TUI - Remote | remote daemon/runtime/workspace | TUI 必须明示 remote label/path/auth；local cwd 不可当 runtime cwd |
+| Channel + daemon | daemon 可 local 或 remote | channel adapter 需要 session routing / identity mapping / permission cards；local daemon 可服务个人 workstation remote-control |
+| Remote-control overlay | local daemon + relay 或 remote daemon + gateway | P2 后置，但不是新 runtime protocol；复用 `DaemonSessionClient` + HTTP/SSE |
+
+**Review rule**：每个 client PR 必须说明它验证哪种 shape、daemon/workspace/client locality 假设、是否 behind flag/default off，以及对 path mapping、runtime diagnostics、client capability reverse RPC 的依赖。
 
 #### 2. Server / client / adapter 3 层 package boundary
 
@@ -322,6 +337,7 @@ TUI / channel / IDE default 切换到 daemon-backed 必须等：
 1. **control-plane parity** —— TUI 所有 mutating dialog 在 daemon API 都有对应 route（[§04 §二 9 项 dialog](./04-deployment-and-client.md) 全 wire 化）
 2. **reducer / adapter quality** —— typed event 消费器稳定 + 无 raw event spam
 3. **auto-daemon lifecycle** —— 上面第 3 点的 discovery / loopback auth / lifecycle policy / port collision / workspace binding 都齐
+4. **shape-specific readiness** —— local-local / remote TUI / IDE / channel / web terminal 各自 locality、path mapping、auth/gateway、diagnostics 要有明确验证记录
 
 **当前 PR#4266 / PR#4267 draft 不冲突这条 gate** —— 是合规 behind-flag experiment。
 
@@ -330,11 +346,12 @@ TUI / channel / IDE default 切换到 daemon-backed 必须等：
 | 章节 | 加 / 强化 |
 |---|---|
 | Deployment forms | 3 forms + 哪些推荐 |
+| Deployment shape matrix | local-local / web chat-terminal remote / local IDE-local daemon / local TUI-remote / channel+daemon / remote-control overlay |
 | Package / dependency boundary | server / client SDK / adapter 三层 |
 | Local auto-daemon UX | discovery / loopback auth / lifecycle / port collision / workspace binding |
 | Runtime locality | daemon/runtime host owns fs/network/process/env/credentials/MCP/skills |
 | Sandbox runner model | 当前 same-process trust vs 未来 isolated runtime worker |
-| Client migration gate | default 切换条件 |
+| Client migration gate | default 切换条件 + per-shape readiness |
 
 —— "Mode B 是对的，但 deployment + packaging 契约必须先显式化，否则同一套 code path 要同时服务 local CLI / remote devbox / enterprise cloud 三个场景，边界会糊。"
 
@@ -343,6 +360,7 @@ TUI / channel / IDE default 切换到 daemon-backed 必须等：
 | 建议项 | 已有 | 缺失 |
 |---|---|---|
 | 1 Deployment forms | §01 §三 双部署模式 | ✅ 已加 §三·一 3-form 表 |
+| 1.5 Deployment shape matrix | §04 §四 | ✅ 已加 6-shape 表 + web terminal / remote-control clarify |
 | 2 Package boundary | SDK 在 `@qwen-code/sdk`；channel-base 已拆 | ⚠️ daemon-server / daemon-client / daemon-adapters 未官方命名；3 条 dependency rule 未 lint enforce |
 | 3 Auto-daemon UX | ❌ 完全未做 | **Wave 6 release hardening 前补**（PR 28 npm alpha 之前）|
 | 4 Runtime locality | §04 §五 ✅；PR#4255 OAuth build-time grep test 已 ship | ⚠️ 未升级到 deployment model 章节 → 已加 callout 互链 |
@@ -582,6 +600,15 @@ remote-control UI / pairing / optional WS facade
 ```
 
 而不是重新拥有 session runtime、event log 或 worker server。
+
+2026-05-18 补充：remote-control 是 **control overlay**，不等于 daemon 必须远端。后续设计应同时覆盖两类部署：
+
+| 形态 | 架构 | 关键要求 |
+|---|---|---|
+| Local workspace + local daemon + remote-control relay | remote UI/channel → relay → local bridge → loopback daemon → local workspace/runtime | outbound-only bridge；pairing/revoke；remote device identity → daemon client identity audit；local daemon 不裸露公网 |
+| Remote workspace + remote daemon + remote-control UI | remote UI/channel → gateway → remote daemon → remote workspace/runtime | orchestrator/gateway；tenant isolation；quota/audit；runtime diagnostics |
+
+两者都复用同一 daemon HTTP/SSE typed event contract；差别是部署/routing，不是 runtime protocol。
 
 ### Mode A parking lot
 

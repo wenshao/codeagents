@@ -8,7 +8,7 @@
 
 **多 client 协调**（P1 拓扑）：subscriber 协议 + liveness（15s SSE heartbeat + TCP RST 即时剔除）+ active typer 提示 + takeover + first-responder permission。
 
-**远端 CLI（Mode B）**：3 类拓扑 — Local-Local（本机）/ Local-Remote（混合，**不推荐**）/ Remote-Remote（**推荐**，workspace 与 daemon 同机）。Client Capability 反向 RPC（5 类：editor / clipboard / browser / notification / file_picker）让 daemon 调起 client 本地资源——属 External Reference Architecture 范畴。
+**Deployment shapes（Mode B）**：runtime 维度仍是 Local-Local / Local-Remote（**不推荐**）/ Remote-Remote（**推荐**，workspace 与 daemon 同机）；client 维度进一步拆成 local-local、web chat/terminal-remote、local IDE-local daemon、local TUI-remote、channel+daemon、remote-control overlay。Web terminal 的目标是 **daemon-native renderer**（typed event + reducer），PTY proxy 只作为兼容 / demo / debug fallback。Client Capability 反向 RPC（5 类：editor / clipboard / browser / notification / file_picker）让 daemon 调起 client 本地资源——属 External Reference Architecture 范畴。
 
 ---
 
@@ -39,7 +39,7 @@
 | 第一波 | web/debug | [PR#4132](https://github.com/QwenLM/qwen-code/pull/4132) `/demo` 作为最薄验证面 + [PR#4203](https://github.com/QwenLM/qwen-code/pull/4203) channel/web BFF 共用安全边界 |
 | 第二波 | IDE | daemon transport behind flag — 实施 spike 详 [PR#4199](https://github.com/QwenLM/qwen-code/pull/4199) `feat(ide): add daemon connection spike` |
 | 并行 | JSONL / stream-json / dual-output | daemon event sinks |
-| P2 deferred | remote-control | 后置；primary clients 收敛后作为 daemon facade |
+| P2 deferred | remote-control | 后置；作为 daemon facade / control overlay，不意味着 daemon 必须远端 |
 
 > 📌 **chiga0 把 docs drafts 升级为 implementation spikes**（2026-05-16 ~08:00）：原 docs-only PR#4196 (TUI) / #4197 (channel) / #4198 (IDE) 已 CLOSED，改为 [PR#4202](https://github.com/QwenLM/qwen-code/pull/4202) (TUI +864 LOC) / [PR#4203](https://github.com/QwenLM/qwen-code/pull/4203) (channel +813 LOC) / [PR#4199](https://github.com/QwenLM/qwen-code/pull/4199) (IDE) **implementation spikes**——把设计文档与代码 spike 放同 PR，避免文档与实现脱节。
 
@@ -103,13 +103,13 @@ QWEN_DAEMON_WORKSPACE=/repo
 
 [PR#4203](https://github.com/QwenLM/qwen-code/pull/4203) 明确：channel / web client 默认切换 daemon 前必须先 ship 以下 5 项（全部来自 [Issue #4175](https://github.com/QwenLM/qwen-code/issues/4175) Wave 2-3）：
 
-| # | Blocker | 对应 PR | 状态（2026-05-16）|
+| # | Blocker | 对应 PR | 状态（2026-05-18）|
 |---|---|---|---|
 | 1 | Per-request `sessionScope` | Wave 2 PR 5 | ✅ MERGED [PR#4209](https://github.com/QwenLM/qwen-code/pull/4209) |
-| 2 | Session metadata + close/delete lifecycle | Wave 2.5 PR 11 | ⏳ deps PR 6 + PR 7 |
-| 3 | Daemon-stamped client identity | Wave 2 PR 7 | ⏳ 待开（Wave 1 PR 4 ✅ 已解锁）|
-| 4 | Session-scoped permission route | Wave 2 PR 8 | ⏳ 等 PR 7 |
-| 5 | Read-only diagnostics for MCP / skills / providers / environment | Wave 3 PR 12 / 13 | ⏳ 待开（PR 4 ✅ 已解锁）|
+| 2 | Session metadata + close/delete lifecycle | Wave 2.5 PR 11 | ✅ MERGED [PR#4240](https://github.com/QwenLM/qwen-code/pull/4240) |
+| 3 | Daemon-stamped client identity | Wave 2 PR 7 | ✅ MERGED [PR#4231](https://github.com/QwenLM/qwen-code/pull/4231) |
+| 4 | Session-scoped permission route | Wave 2 PR 8 | ✅ MERGED [PR#4232](https://github.com/QwenLM/qwen-code/pull/4232) |
+| 5 | Read-only diagnostics for MCP / skills / providers / environment | Wave 3 PR 12 / 13 / 14 | ✅ MERGED [PR#4241](https://github.com/QwenLM/qwen-code/pull/4241) / [#4251](https://github.com/QwenLM/qwen-code/pull/4251) / [#4247](https://github.com/QwenLM/qwen-code/pull/4247) |
 
 详 [§06 §三·一 Wave 2-3](./06-roadmap.md#wave-2--session-lifecycle--minimum-multi-client-safety)。
 
@@ -273,11 +273,63 @@ T=25  Alice 笔记本醒来重连 → daemon 通知 "Bob 接管了"
 
 ### 3 类拓扑
 
+> 这是 **workspace/runtime locality lens**。更细的 client UI / adapter 部署形态见下一节 deployment shape matrix。
+
 | 拓扑 | workspace 位置 | daemon 位置 | 适用 |
 |---|---|---|---|
 | **A. Local-Local** | 本机 | 本机 | 单人开发（最常见），Stage 1/1.5/2 默认 |
 | **B. Local-Remote** | 本机 | 远端 | ❌ **不推荐** — daemon 看不到本地 fs，必须 mount fs to remote 或 sync，运维复杂 |
 | **C. Remote-Remote**（**推荐**）| 远端 | 远端 | 类比 GitHub Codespaces / Coder；workspace 与 daemon 同机 = 不跨网络 fs |
+
+### Deployment shape matrix（client/runtime lens，2026-05-18）
+
+> 来源：chiga0 [Issue #3803 comment 4476318030](https://github.com/QwenLM/qwen-code/issues/3803#issuecomment-4476318030)。关键不变式：**runtime capabilities follow the daemon/runtime host, not the visual client**。对 remote-control 来说，"remote" 指 control entrypoint 可远端，不表示 daemon/runtime 必须远端。
+
+| Shape | Client / adapter | Daemon + runtime | Workspace | 主要要求 | 推荐阶段 |
+|---|---|---|---|---|---|
+| **1. Local - Local** | local TUI / IDE / local web / channel adapter | 本机 loopback `qwen serve` | 本机 | auto-daemon discovery / loopback auth / lifecycle / port+token+logs；control-plane parity；TUI 渲染不能 raw event spam | 现有用户默认迁移目标 |
+| **2. Web chat / web terminal - Remote** | browser UI | remote devbox / pod | remote volume | gateway/auth/CORS；SSE reconnect；runtime diagnostics；web terminal 走 daemon-native renderer，PTY proxy 仅 fallback | cloud/devbox P1 |
+| **3. Local IDE - Local daemon** | IDE extension | 本机 loopback daemon | IDE 当前 workspace | IDE 启动/发现 daemon；workspace mismatch preflight；editor context 显式传入；path identity 共享 | P1 early dogfood |
+| **4. Local TUI - Remote** | 本地 terminal renderer | remote daemon/runtime | remote workspace | TUI 明示 remote label/path/auth；local cwd 非 runtime cwd；path mapping / client capability reverse RPC；latency coalescing | P1 after TUI adapter quality |
+| **5. Channel + daemon** | IM/channel backend adapter | local 或 remote daemon | daemon-bound workspace | user/group/thread → session routing；identity mapping；permission cards；dedupe；长任务通知 | P1 behind flag |
+| **6. Remote-control overlay** | web/mobile/channel control surface | local daemon + bridge 或 remote daemon + gateway | local workstation 或 remote devbox | pairing/revoke；outbound bridge；audit；不 fork runtime/protocol | P2 after client contract stabilizes |
+
+#### Web terminal：daemon-native renderer，不是 PTY proxy 主线
+
+Web chat 和 web terminal 都应消费 daemon typed events / reducer。差异只在 UI 呈现：chat UI 用 DOM chat renderer，web terminal 用 terminal-like renderer。TUI adapter 已经是在做 Ink/terminal 版的 **daemon-native renderer**；web terminal 应复用同一 contract。
+
+PTY proxy 仍可作为兼容 / demo / debug fallback，但不能成为目标架构：它代理 terminal bytes，会重新耦合进程生命周期，并绕开 typed event / reducer convergence。
+
+#### Channel + local daemon 是合法 remote-control 形态
+
+用户可以在个人 workstation 上跑 `qwen serve`，再通过 DingTalk / WeChat / Telegram 从手机控制本机 workspace。此时 channel input 是 remote，daemon/runtime/workspace 仍是 local。这与"local workspace + remote daemon"不同，后者不推荐，因为远端 daemon 看不到本地文件、MCP、skills 和环境。
+
+#### Remote-control overlay 两种形态
+
+```text
+6A local workspace + local daemon + remote-control relay
+remote UI → relay / IM / websocket broker
+  → local bridge on user's workstation
+  → local qwen serve on loopback
+  → local workspace/runtime
+
+6B remote workspace + remote daemon + remote-control UI
+remote UI → gateway / web backend
+  → remote qwen serve
+  → remote workspace/runtime
+```
+
+两者都应复用 `DaemonSessionClient` + HTTP/SSE typed event contract。区别是部署和 routing，不是新 runtime protocol。
+
+#### Client PR review guidance
+
+每个 client adapter / wire-up PR 应在 PR 描述里声明：
+
+- 验证的 deployment shape（例如 local-local、local TUI-remote、channel+local daemon）。
+- daemon/workspace/client locality 假设。
+- 是否 behind flag / default off。
+- 对 control-plane parity、path mapping、runtime diagnostics、client-local capability 的依赖。
+- 本地手动验证方式，以及是否会影响现有非 daemon 主链路。
 
 ### 拓扑 C — Remote-Remote（推荐）
 
@@ -417,7 +469,16 @@ Laptop                           Remote workstation
 
 ## 七、与 PR#3929-3931 (remote-control stack) 的关系
 
-2026-05-15 决策后，remote-control 优先级后置。它仍然可以作为 mobile/browser facade 存在，但不应继续拥有 parallel runtime / event log / worker server。正确方向是等 TUI / channels / web / IDE 先收敛到 Mode B daemon contract 后，remote-control 再复用同一 `DaemonSessionClient` + HTTP/SSE typed event contract。
+2026-05-15 决策后，remote-control 优先级后置。它仍然可以作为 mobile/browser/channel control overlay 存在，但不应继续拥有 parallel runtime / event log / worker server。正确方向是等 TUI / channels / web / IDE 先收敛到 Mode B daemon contract 后，remote-control 再复用同一 `DaemonSessionClient` + HTTP/SSE typed event contract。
+
+**重要澄清（2026-05-18）**：remote-control 不要求 daemon 必须在远端。它至少有两种有效部署形态：
+
+| 形态 | Runtime / workspace | Control entrypoint | 说明 |
+|---|---|---|---|
+| **Local daemon + remote-control relay** | 用户 workstation 本机 | web/mobile/channel 远端入口 → relay → local bridge | Codex / Claude Code-like；保留本机 workspace、git state、MCP、skills、provider env；local daemon 可保持 loopback-only |
+| **Remote daemon + remote-control UI** | remote devbox / pod | web/mobile/channel → gateway | SaaS / devbox；workspace 生命周期、tenant isolation、quota、audit 由平台负责 |
+
+第一种不是"local workspace + remote daemon"反模式；workspace/runtime 没有离开本机，只有控制入口远端化。
 
 PR#3929-3931 当前仍是 draft / changes requested。简表：
 

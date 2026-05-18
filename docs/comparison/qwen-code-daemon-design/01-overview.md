@@ -36,6 +36,8 @@
 |---|---|---|
 | **Daemon process** | `qwen serve` HTTP front 进程；启动时绑定 cwd = 单 workspace；持 Express 5 server + EventBus + 1 个内嵌 `qwen --acp` child | `packages/cli/src/serve/server.ts` |
 | **Session** | ACP `Session` 实例（`QwenAgent.sessions: Map<sessionId, Session>` 内一条）；持 transcript / FileReadCache / PermissionManager | `packages/cli/src/acp-integration/session/Session.ts` |
+| **Daemon client / adapter** | TUI / channel / web / IDE / JSONL 等 client 通过 `DaemonClient` / `DaemonSessionClient` + typed event reducer 接入，不直接订阅内存 EventBus | 详 [§02 §8](./02-architectural-decisions.md#8-server--client--runtime-boundary2026-05-18) |
+| **Runtime worker** | 真正执行 tool / shell / MCP / skills / LSP / file operations 的 runtime；当前是 `qwen --acp` child，未来可替换 sandbox runner | 详 [§02 §8](./02-architectural-decisions.md#runtime-worker--sandbox-runner-boundary) |
 
 **核心约束**：
 - 1 daemon process **严格 1 workspace**（启动 cwd 绑定）
@@ -73,6 +75,17 @@ qwen serve (1 Daemon process, 绑定 cwd = /work/repo-a)
 
 跨 workspace 协调（IM bot 多项目 / WebUI 多 workspace 概览 / IDE multi-root）由 **client 侧 / orchestrator 侧**做（多 daemon endpoint 发现 + 路由）——daemon 自身只管"当前 workspace"。
 
+**2026-05-18 架构边界补充**：
+
+```text
+client adapters / output sinks
+  → daemon client/protocol layer
+  → qwen serve HTTP/SSE control plane
+  → runtime worker / sandbox runner
+```
+
+TUI / web terminal / channel / IDE / JSONL / stream-json 都应成为 daemon-native consumers：消费 typed events + shared reducer，再投影到各自 UI 或输出格式。PTY proxy 只保留为兼容 / demo / debug fallback。remote-control 是 control overlay，不再拥有独立 runtime / event protocol。详 [§02 §8](./02-architectural-decisions.md#8-server--client--runtime-boundary2026-05-18)。
+
 External Reference Architecture 提供 orchestrator 层（详 [§06 §五 External Reference Architecture](./06-roadmap.md)）。
 
 ---
@@ -102,7 +115,7 @@ Mode B 之下进一步区分**3 种 deployment form**，钉死 daemon host 与 w
 
 > File access / shell tools / LSP / provider auth / MCP servers / skill discovery+resources+scripts / process execution **全部从 daemon environment 求值**，除非未来有显式的 [client-capability reverse RPC](./04-deployment-and-client.md#六client-capability-反向-rpc) 例外声明。
 
-详 [§06 §三·二 Package boundary contract + auto-daemon UX](./06-roadmap.md#三二-deployment--package-contract-chiga0-3803-comment-2026-05-18)。
+详 [§04 §四 Deployment shape matrix](./04-deployment-and-client.md#deployment-shape-matrixclientruntime-lens2026-05-18) + [§06 §三·二 Package boundary contract + auto-daemon UX](./06-roadmap.md#三二-deployment--package-contract-chiga0-3803-comment-2026-05-18)。
 
 ---
 
@@ -141,7 +154,7 @@ Mode B 之下进一步区分**3 种 deployment form**，钉死 daemon host 与 w
 
 > **优先级决策（2026-05-15）**：Mode B 优先 — must-haves + 1.5c 摆脱 thin shell → 1.5-prereq 架构清洁 → Mode A（1.5b）推迟。详 [§06 §三 推进顺序](./06-roadmap.md)。
 >
-> 💡 **Implementation tracker**：[Issue #4175](https://github.com/QwenLM/qwen-code/issues/4175) doudouOUC 的 Mode B v0.16 production-ready 25-PR rollout plan（6 Wave）—— 上表的 Stage 1.5a/c/-prereq 映射到 Wave 1-5；Wave 6 是 release hardening + v0.16。详 [§06 §三·一 Wave breakdown](./06-roadmap.md#三一-issue-4175--25-pr-wave-breakdown-production-ready-tracker)。
+> 💡 **Implementation tracker**：[Issue #4175](https://github.com/QwenLM/qwen-code/issues/4175) doudouOUC 的 Mode B v0.16 production-ready 31-PR rollout plan（7 Wave，含 Wave 2.5 reliability）—— 上表的 Stage 1.5a/c/-prereq 映射到 Wave 1-5；Wave 6 是 release hardening + v0.16。详 [§06 §三·一 Wave breakdown](./06-roadmap.md#三一-issue-4175--31-pr-wave-breakdown-production-ready-tracker)。
 >
 > 🎉 **Wave 1+2+2.5+3 完整 + Wave 4 4/7 + 3 在飞 + PR 14b**（2026-05-16~18 共 **27 MERGED + 7 OPEN/draft + 2 CLOSED**：18 Wave PRs + 5 follow-up (含 PR#4279 Windows hotfix) + 3 bonus Stage 0 + 1 外部 MERGED；Wave 4 PR 17/20/21 + Wave 3 PR 14b + 3 adapter wire-up draft；Wave plan 进度 **18/31 = 58%**；**无 block 点**）：
 > - ✅ Wave 1 **PR 2** [PR#4191](https://github.com/QwenLM/qwen-code/pull/4191) capability registry + protocol versions — **MERGED 2026-05-16 10:07** (doudouOUC)

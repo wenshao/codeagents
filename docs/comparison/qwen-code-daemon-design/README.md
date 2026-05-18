@@ -32,7 +32,7 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 - ✅ [PR#4113](https://github.com/QwenLM/qwen-code/pull/4113) MERGED 2026-05-15（1 daemon = 1 workspace 收紧 + `--workspace` flag + `400 workspace_mismatch`）
 - ✅ [PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) MERGED 2026-05-15（`createInMemoryChannel` helper；从 Mode A stack 中产出，但现在只作为通用 primitive）
 - 🔧 **Mode B 优先**（2026-05-15 决策）：Stage 1.5a must-haves（9 项）+ Stage 1.5c daemon-side state CRUD 优先；Mode A（[Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156)）推迟到 1.5c 后
-- 📋 **Implementation tracker**：[Issue #4175](https://github.com/QwenLM/qwen-code/issues/4175) doudouOUC Mode B v0.16 production-ready **25-PR rollout plan**（6 Wave：Protocol foundation → Session lifecycle → Read-only control plane → Auth-gated mutation → Architecture extraction → Release hardening）—— 详 [§06 §三·一](./06-roadmap.md#三一-issue-4175--25-pr-wave-breakdown-production-ready-tracker)
+- 📋 **Implementation tracker**：[Issue #4175](https://github.com/QwenLM/qwen-code/issues/4175) doudouOUC Mode B v0.16 production-ready **31-PR rollout plan**（7 Wave：Protocol foundation → Session lifecycle → Wave 2.5 reliability → Read-only control plane → Auth-gated mutation → Architecture extraction → Release hardening）—— 详 [§06 §三·一](./06-roadmap.md#三一-issue-4175--31-pr-wave-breakdown-production-ready-tracker)
 - 🎉 **Wave 1+2+2.5+3 完整 + Wave 4 4/7 + 3 在飞**（2026-05-16~18 共 **27 MERGED + 7 OPEN/draft + 2 CLOSED**：18 Wave PRs + 5 follow-up + 3 bonus Stage 0 + 1 外部；Wave 4 PR 17/20/21 + PR 14b + 3 adapter wire-up；Wave plan 进度 **18/31 = 58%**；**无 block 点**）：
   - ✅ [PR#4191](https://github.com/QwenLM/qwen-code/pull/4191) Wave 1 PR 2 capability registry **MERGED 2026-05-16 10:07** (doudouOUC)
   - ✅ [PR#4209](https://github.com/QwenLM/qwen-code/pull/4209) Wave 2 PR 5 per-request `sessionScope` override **MERGED 2026-05-16 15:54** (doudouOUC)
@@ -73,9 +73,9 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 | # | 文档 | 核心内容 |
 |---|---|---|
 | **01** | [Overview](./01-overview.md) | TL;DR + 2 层术语 + 架构图 + Mode B 主线 + 资源经济性 + Stage 进展 + 阅读指南 |
-| **02** | [Architectural Decisions](./02-architectural-decisions.md) | 7 决策：session 共享 P1/P2 / 1 daemon = 1 workspace × N session 核心决策 / MCP 生命周期 / FileReadCache / Permission flow / 多 client 并发 / Mode A hold vs Mode B mainline |
+| **02** | [Architectural Decisions](./02-architectural-decisions.md) | 8 决策：session 共享 P1/P2 / 1 daemon = 1 workspace × N session / MCP 生命周期 / FileReadCache / Permission flow / 多 client 并发 / Mode B mainline / server-client-runtime boundary |
 | **03** | [HTTP API & Protocol](./03-http-api.md) | Route table（`/workspace/*` 单 workspace 路由）+ ACP wire 4 层兼容性矩阵 + SSE + Last-Event-ID + 双向 RPC 异步化 + Capability negotiation |
-| **04** | [Deployment & Client](./04-deployment-and-client.md) | Mode B client convergence + TUI / channels / web / IDE 适配边界 + remote-control 后置 + 多 client 协调 |
+| **04** | [Deployment & Client](./04-deployment-and-client.md) | Mode B client convergence + deployment shape matrix + TUI / channels / web / IDE 适配边界 + daemon-native renderer + remote-control overlay |
 | **05** | [Security & Permission](./05-permission-auth.md) | Bearer + Host allowlist + 0.0.0.0 拒绝 / PR#3723 4-mode evaluatePermissionFlow / first-responder vote + per-session 隔离 / Multi-tenant = 1 daemon 1 tenant OS 进程级隔离 |
 | **06** | [Roadmap & Ecosystem](./06-roadmap.md) | Timeline + Stage 1 audit + Stage 1.5 + chiga0 10 must-haves + 6 architecture findings + Stage 2 + External Reference Architecture + vs OpenCode + vs Anthropic |
 
@@ -100,7 +100,7 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 
 详 [§02 §〇 术语](./02-architectural-decisions.md)。
 
-### 7 个关键设计决策
+### 8 个关键设计决策
 
 | 决策 | 选择 |
 |---|---|
@@ -111,6 +111,7 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 | Permission flow | 复用 PR#3723 + daemon 作为第 4 种 mode |
 | 多 client 并发 | FIFO prompt 串行 + fan-out 事件 + first-responder permission vote |
 | Mode A vs Mode B | **Mode B 主线**；Mode A hold，待 Mode B event/control/client contract 稳定后再评估 |
+| Server/client/runtime boundary | server control plane / daemon client-protocol / adapters / runtime worker 分层；daemon-native renderer 为目标；remote-control 是 control overlay |
 
 详 [§02](./02-architectural-decisions.md)。
 
