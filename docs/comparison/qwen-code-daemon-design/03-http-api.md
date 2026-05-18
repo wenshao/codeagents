@@ -42,7 +42,7 @@ POST   /permission/:requestId              vote on permission request
 | PR | Route / 能力 | 说明 |
 |---|---|---|
 | **PR#4191** ✅ | capability registry refactor | hard-coded `STAGE1_FEATURES` → plug-in registry，未来 routes additive 注册不需改 capability 数组 |
-| **PR#4205** ✅ | `DaemonSessionClient` skeleton | SDK 侧统一接口（HTTP/SSE 之上 `subscribe()` / `prompt()` / `cancel()`），TUI / IDE / channels 共享 reducer |
+| **PR#4205** ✅ | `DaemonSessionClient` skeleton | SDK 侧统一接口（HTTP/SSE 之上 `subscribe()` / `prompt()` / `cancel()`），remote web chat / web terminal 先共享 reducer；channel / IDE future migration 复用 |
 | **PR#4209** ✅ | typed `SessionEvent` / `ControlEvent` schema 草案 | wire envelope `{id, v, type, data, originatorClientId?}` + zod schema lockstep |
 | **PR#4217** ✅ | typed event schema **v1** | `narrowDaemonEvent()` discriminated union；未知 type → `kind: 'unknown'` 向前兼容；reducer skeleton |
 | **PR#4214** ✅ | 三套来源 lockstep 立 invariant | 生产 `SERVE_CAPABILITY_REGISTRY` ↔ unit `EXPECTED_STAGE1_FEATURES` ↔ integration `caps.features` `toEqual` |
@@ -469,7 +469,7 @@ type DaemonErrorKind =
 | **Wave 2.5**（reliability）| heartbeat / Last-Event-ID replay / slow_client_warning / session metadata + close-delete | ✅ 3/3 MERGED |
 | **Wave 3**（read-only control plane）| status routes / preflight + env diagnostics / MCP guardrails + budget push | ✅ 3/3 MERGED |
 | **Wave 4**（auth-gated mutation）| mutation gate / memory&agents CRUD / approval+tools+init / FS boundary / file r/w / OAuth device-flow | ✅ 7/7 MERGED |
-| **Wave 5**（architecture extraction）| bridge primitives / MCP shared pool / PermissionMediator / output sinks / flag-gated adapters | 🟢 22a + 22b/1 + 22b/2 design ✅ / 22b/3 mechanical 待开 |
+| **Wave 5**（architecture extraction）| bridge primitives / MCP shared pool / PermissionMediator / output sinks / web client + render-core extraction | 🟢 22a + 22b/1 + 22b/2 design ✅ / 22b/3 mechanical 待开 |
 | **Wave 6**（release hardening + v0.16）| docs / metrics / changelog / RC / GA | 🚧 待启动 |
 
 **业务逻辑 100% 同源**——daemon 复用 ACP zod schema 与 `Session.handleXxx`，HTTP 仅是传输层桥接。Wave 5 PR 22 系列剥离桥接 primitives 后，未来 Stage 2 native in-process（直接 import `QwenAgent`，去 `qwen --acp` child）只是另一种 transport，wire 协议不变。

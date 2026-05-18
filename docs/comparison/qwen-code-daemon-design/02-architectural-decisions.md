@@ -18,7 +18,7 @@
 | **Session** | daemon 内嵌 `qwen --acp` child 的 `QwenAgent.sessions: Map` 内一条 |
 | **Daemon server** | HTTP/SSE API + auth + session lifecycle + EventBus projection + control-plane routes；当前在 `packages/cli/src/serve` |
 | **Daemon client SDK** | `DaemonClient` / `DaemonSessionClient` + typed event schema + reducer + reconnect / heartbeat / capability negotiation |
-| **Client adapter** | TUI / channel / web / IDE / JSONL / stream-json / dual-output 等渲染或输出层；只消费 daemon client SDK / protocol surface |
+| **Client adapter** | remote web chat / web terminal / future channel / future IDE / JSONL / stream-json / dual-output 等渲染或输出层；只消费 daemon client SDK / protocol surface。native local TUI 保持直连 runtime，但可复用 source-independent render core |
 | **Runtime worker** | 真正执行 model/tool/shell/MCP/skills/LSP/file operations 的 runtime；当前是 `qwen serve → qwen --acp child`，未来可替换为 sandbox runner |
 | **Control overlay** | remote-control / channel / web/mobile ingress；只作为 daemon facade，不拥有独立 runtime protocol |
 
@@ -175,7 +175,7 @@ OpenCode default 是 1 daemon 多 workspace（`Map<workspace, Instance>` ALS in-
 
 ### 重复 spawn 代价
 
-同 user 同 workspace N session 当前会有 N 套 MCP children。多 workspace 同 user = M daemon × N session × MCP sets。单 MCP ~50-200MB，若未来 TUI / channels / IDE 大量并发 session，MCP pool/proxy 会变成 Stage 2/2e 的资源优化项。
+同 user 同 workspace N session 当前会有 N 套 MCP children。多 workspace 同 user = M daemon × N session × MCP sets。单 MCP ~50-200MB，若 remote web chat / web terminal 或未来 channel / IDE daemon 化带来大量并发 session，MCP pool/proxy 会变成 Stage 2/2e 的资源优化项。
 
 ---
 
@@ -274,22 +274,23 @@ ACP 协议本身就是"client → agent → 同步 response"语义，不允许�
 
 ### 决策
 
-**2026-05-15 后，roadmap 先只推进 Mode B。** Mode A 仍作为设计记录保留，但不再是 Stage 1.5 主线。
+**2026-05-19 后，roadmap 先只推进 Mode B 的 remote web chat / web terminal POC + daemon server 能力。** Mode A 仍作为设计记录保留，但不再是 Stage 1.5 主线。native TUI、channel、IDE 默认链路暂不迁移。
 
 | 模式 | 启动命令 | TUI | 适用场景 |
 |---|---|---|---|
-| **Mode B: Headless + HttpServer** | `qwen serve [--port N]` | ❌ | 当前主线：服务器 / 容器 / 远端机器 / K8s pod / 所有 client 的统一 runtime |
+| **Mode B: Headless + HttpServer** | `qwen serve [--port N]` | ❌ | 当前主线：服务器 / 容器 / 远端机器 / K8s pod / remote web chat + web terminal |
 | **Mode A: CLI + HttpServer** | `qwen --serve [--port N]` | ✅ 本地 | 暂停推进；待 Mode B contract 稳定后再评估 |
 
-当前 client 直接边界是 HTTP server：TUI / channels / web / IDE 通过 `DaemonSessionClient` 调用 `POST /session/:id/*`，通过 `GET /session/:id/events` 消费 SSE。EventBus 是 daemon 内部 fan-out primitive；`EventBus lift` 指抽出 typed event contract / reducer / server-side primitive，不是让外部 client 直接 subscribe 内存对象。
+当前 daemon-native client 的直接边界是 HTTP server：remote web chat / web terminal 通过 `DaemonSessionClient` 调用 `POST /session/:id/*`，通过 `GET /session/:id/events` 消费 SSE。EventBus 是 daemon 内部 fan-out primitive；`EventBus lift` 指抽出 typed event contract / reducer / server-side primitive，不是让外部 client 直接 subscribe 内存对象。native TUI、channel、IDE 当前默认链路不变。
 
 ### 依据
 
 1. **PR#3889 已实现 Mode B**（Stage 1 ✅ MERGED 2026-05-13）。
 2. **PR#4113 已把 Mode B 边界收紧到 1 daemon = 1 workspace**（✅ MERGED 2026-05-15）。
-3. **TUI / channels / web / IDE 是 primary clients**，应先统一到 daemon HTTP/SSE + typed event contract。
-4. **remote-control 后置**，等 primary clients 收敛后再作为 daemon facade 复用同一 contract。
-5. **Mode A 暂停**，避免在 event/control/client contract 稳定前引入第二条 in-process 暴露路径。
+3. **remote web chat / web terminal 是 primary daemon clients**，应优先做 technical POC，先统一到 daemon HTTP/SSE + typed event contract。
+4. **native TUI / channel / IDE 不作为当前默认迁移目标**：TUI 复用 render core 但继续直连，channel / IDE 继续 `--acp` 优先。
+5. **remote-control 后置**，等 web contract 稳定后再作为 daemon facade 复用同一 contract。
+6. **Mode A 暂停**，避免在 event/control/client contract 稳定前引入第二条 in-process 暴露路径。
 
 ### TUI 在多 session daemon 下的语义
 
@@ -297,7 +298,7 @@ ACP 协议本身就是"client → agent → 同步 response"语义，不允许�
 
 - **本地单用户 `qwen` TUI = 传统单进程 in-process direct call**，**永远不走网络**（local default 永久路径，最高优先级 UX）。详下方 🌟 设计原则。
 - **Mode B TUI adapter**（[PR#4266](https://github.com/QwenLM/qwen-code/pull/4266) `--experimental-daemon-tui`）= **opt-in advanced**，仅 multi-client 协作场景。**永远 behind flag，不进入 default migration**。
-- **channels / web / IDE / remote TUI** 通过 `DaemonSessionClient` 接入——它们本来就是跨进程 client，daemon 是它们唯一可行路径。
+- **remote web chat / web terminal** 通过 `DaemonSessionClient` 优先接入，用来验证 daemon contract；channel / IDE 继续 `--acp`，daemon 迁移后置。
 - **daemon-side control-plane parity** 落地后，跨进程 remote clients 才能覆盖 memory / MCP / skills / tools / agents / auth / provider / context 等状态。
 - **Mode A** 保留为 parking lot；如未来要支持 "本地多 client 协作"（IDE + TUI 同 session live collaboration），**Mode A in-process TUI + 内嵌 HTTP server 可能比 Mode B + TUI adapter 更合适**——in-process TUI 保留零网络体验，HTTP server 仅服务其他 client。待 chiga0 auto-daemon UX 工程债重新评估时一并 revisit。
 
@@ -318,7 +319,7 @@ ACP 协议本身就是"client → agent → 同步 response"语义，不允许�
 **因此**：
 - ❌ "Local-Local 用户 TUI 通过 loopback `qwen serve`" **不能成为现有用户默认迁移目标**（与 §04 §六 deployment shapes table 早期措辞冲突，已修正）
 - ❌ chiga0 #3803 comment 4476174099 的 "auto-daemon UX" 草图（`qwen → discover daemon → if absent auto-start → attach TUI`）**仅适用于用户主动选 multi-client 协作场景**，不适合作 local default
-- ✅ Wave 5 PR 26 `flag-gated daemon client adapters` **scope 收紧**：仅 channel / web / IDE default 切换，**TUI default 不切换**
+- ✅ Wave 5 PR 26 **scope 收紧**：remote web chat / web terminal POC + render-core extraction 优先；channel / IDE default migration 后置；**TUI default 不切换**
 
 ---
 
@@ -332,7 +333,8 @@ Mode B 终态架构按三层逻辑边界收敛：
 
 ```text
 client adapters / output sinks
-  TUI / channel / web chat / web terminal / IDE / JSONL / stream-json
+  web chat / web terminal / future channel / future IDE / JSONL / stream-json
+  native TUI shares render core but keeps direct transport
   ↓ depend on
 daemon client/protocol layer
   DaemonClient / DaemonSessionClient / typed event schema / reducer
@@ -364,10 +366,12 @@ runtime worker / sandbox runner
   typed event schema, reducers, reconnect, heartbeat, capability negotiation
 
 @qwen-code/daemon-adapters-*
-  tui adapter
-  channel adapter
-  ide/web adapter
-  jsonl / stream-json / dual-output sinks
+  web chat adapter
+  web terminal adapter
+  optional channel / IDE adapters after daemon stabilization
+
+@qwen-code/client-render
+  source adapters / shared view model / terminal render core / output sinks
 ```
 
 **硬约束**：
@@ -375,27 +379,27 @@ runtime worker / sandbox runner
 | 约束 | 含义 |
 |---|---|
 | Server 不依赖 adapters | `serve` / daemon server 不能 import TUI / IDE / channel renderer |
-| Adapters 只依赖 client/protocol | TUI / channel / web / IDE 不可直接拿 `HttpAcpBridge` / EventBus 内部对象 |
+| Adapters 只依赖 client/protocol | remote web chat / web terminal / future channel / future IDE 不可直接拿 `HttpAcpBridge` / EventBus 内部对象 |
 | Reducer / typed events 在 client/protocol 层 | 不能散落在 `packages/cli/src/serve` 或某个 adapter 私有实现里 |
-| Output sinks 也是 adapter | JSONL / stream-json / dual-output 走同一 typed event stream，不再各自驱动 runtime |
+| Render core source-independent | native streamJson 与 daemon events 可投影到同一 view model，但 native TUI 不因此改走 daemon transport |
+| Output sinks 也是 adapter | JSONL / stream-json / dual-output 可复用 typed event semantics，但不改变现有 CLI 输出兼容 |
 
 ### Daemon-native renderer 是目标形态
 
-TUI adapter、web terminal、web chat、IDE panel、channel cards 都应消费同一 typed daemon event contract：
+Web terminal、web chat 先消费同一 typed daemon event contract；future IDE panel / channel cards 若迁移也复用同一 contract：
 
 ```text
 daemon SSE event
   → shared reducer / view model
   → renderer-specific projection
-     ├─ Ink TUI
      ├─ DOM chat
      ├─ DOM terminal-like view
-     ├─ IDE panel
-     ├─ channel message/cards
+     ├─ future IDE panel
+     ├─ future channel message/cards
      └─ JSONL / stream-json / dual-output sink
 ```
 
-**PTY proxy 不是主线架构**。它可作为兼容 / demo / debug fallback，但不能成为 web terminal 或 TUI 迁移目标，因为它代理 terminal bytes，会绕开 typed event / reducer convergence，并重新耦合 runtime process lifecycle。
+**PTY proxy 不是主线架构**。它可作为兼容 / demo / debug fallback，但不能成为 web terminal 目标架构，因为它代理 terminal bytes，会绕开 typed event / reducer convergence，并重新耦合 runtime process lifecycle。native TUI 继续直连，不需要 daemon-native renderer 作为默认路径。
 
 ### Runtime worker / sandbox runner boundary
 
@@ -441,11 +445,11 @@ remote-control 后续不得重新拥有 runtime、event log 或 worker server。
 这条架构决策不要求当前 PR 立即重构实现，但会改变后续 PR 的验收标准：
 
 1. `DaemonSessionClient` 继续作为 client adapter 的唯一 session 级入口。
-2. typed event schema + reducer 必须逐步成为 TUI / web / IDE / channel / JSONL / stream-json 的共享消费面。
-3. TUI / web terminal wire-up 应做 daemon-native renderer，而不是 PTY proxy 默认路径。
+2. typed event schema + reducer 必须先成为 web chat / web terminal / JSONL / stream-json 的共享消费面；channel / IDE 后续若迁移也复用该 contract。
+3. web terminal wire-up 应做 daemon-native renderer，而不是 PTY proxy 默认路径；native TUI 只共享 render core，不改默认 transport。
 4. channel / remote-control 只能做 daemon facade / ingress overlay，不可 fork runtime/event protocol。
 5. sandbox / runtime worker 抽象应在 Wave 5/Stage 2 后续设计中预留 failure isolation 和 runtime locality diagnostics。
-6. 所有 client PR 必须 behind flag / default off，且声明验证的 deployment shape 和 locality 假设（详 [§04](./04-deployment-and-client.md#deployment-shape-matrixclientruntime-lens2026-05-18)）。
+6. 所有 daemon client PR 必须 behind flag / explicit entrypoint / default off，且声明验证的 deployment shape 和 locality 假设（详 [§04](./04-deployment-and-client.md#deployment-shape-matrixclientruntime-lens2026-05-18)）。
 
 ---
 
@@ -459,8 +463,8 @@ remote-control 后续不得重新拥有 runtime、event log 或 worker server。
 | 4 | FileReadCache 共享 | **per-session 严格私有**（同 daemon N session 各自实例不共享；跨 daemon 自然独立）+ PR#3774 prior-read 守卫 + PR#3810 5 路径 invalidation | PR#3717 / PR#3774 / PR#3810 |
 | 5 | Permission flow | 复用 PR#3723 + daemon 第 4 mode + SSE permission_request | PR#3723 evaluatePermissionFlow() |
 | 6 | 多 client 并发 | **同 session prompt 串行（FIFO）+ 事件 fan-out + 任何 client 可应答 permission** | PR#3889 commit `ca996ecb5`（FIFO + no-poison）+ ACP 协议语义 + EventBus subscriber set |
-| 7 | 部署模式 | **Mode B mainline；Mode A parking lot** | 2026-05-15 决策：优先 TUI / channels / web / IDE 接入 Mode B；remote-control 后置 |
-| 8 | Server / client / runtime boundary | **server control plane / daemon client-protocol / adapters / runtime worker 分层**；daemon-native renderer 为目标；remote-control 只是 control overlay | 2026-05-18 deployment/package/runtime comments；§04 deployment shape matrix；§06 deployment + package contract |
+| 7 | 部署模式 | **Mode B mainline；Mode A parking lot** | 2026-05-19 决策：优先 remote web chat / web terminal POC；native TUI 直连；channel / IDE 迁移后置；remote-control 后置 |
+| 8 | Server / client / runtime boundary | **server control plane / daemon client-protocol / shared render core / adapters / runtime worker 分层**；web terminal daemon-native；remote-control 只是 control overlay | 2026-05-18/19 deployment/package/runtime comments；§04 deployment shape matrix；§06 deployment + package contract |
 
 ---
 

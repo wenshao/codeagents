@@ -22,9 +22,10 @@
 - **Observability 直接**：`htop` / `ps` 列表 1 OS process = 1 workspace
 - **心智简单**：daemon ↔ session 两层（无中间抽象）
 
-**两种部署**：
-- **Mode B** `qwen serve` — 当前主线：headless HTTP front，所有 client 通过 HTTP/SSE 接入同一 daemon runtime。
-- **Mode A** `qwen --serve` — 2026-05-15 后暂停推进；作为 parking lot 保留，待 Mode B event/control/client contract 稳定后再评估。
+**两条长期链路**：
+- **Native local TUI** `qwen` — 继续走现有直连 / streamJson / Ink 路径；这是本地终端体验的长期主线，不是临时 fallback。原因：本机 TUI 直连比“本机 TUI → localhost HTTP server → runtime”少一层 httpServer，性能更直接、维护面更小、故障概率更低。
+- **Mode B** `qwen serve` — headless HTTP front，当前优先服务 **remote web chat + web terminal** 等浏览器 / BFF / remote runtime 场景。remote web chat + web terminal technical POC 可与 P0 must-haves / state CRUD 并行启动，先验证 daemon HTTP/SSE typed event contract 的可行性；production-ready 仍等 P0/P1 收口。其他 channel、IDE 插件继续使用现有 `--acp` 模式，daemon 迁移后置。
+- **Mode A** `qwen --serve` — 2026-05-15 后暂停推进；作为 parking lot 保留。
 
 **主线 scope**：daemon building block + 协议表面锁定（Stage 2 后）。多 tenant / 跨 daemon process 路由 / SaaS 部署属 **External Reference Architecture**（外部商业平台实施）。
 
@@ -36,7 +37,7 @@
 |---|---|---|
 | **Daemon process** | `qwen serve` HTTP front 进程；启动时绑定 cwd = 单 workspace；持 Express 5 server + EventBus + 1 个内嵌 `qwen --acp` child | `packages/cli/src/serve/server.ts` |
 | **Session** | ACP `Session` 实例（`QwenAgent.sessions: Map<sessionId, Session>` 内一条）；持 transcript / FileReadCache / PermissionManager | `packages/cli/src/acp-integration/session/Session.ts` |
-| **Daemon client / adapter** | TUI / channel / web / IDE / JSONL 等 client 通过 `DaemonClient` / `DaemonSessionClient` + typed event reducer 接入，不直接订阅内存 EventBus | 详 [§02 §8](./02-architectural-decisions.md#8-server--client--runtime-boundary2026-05-18) |
+| **Daemon client / adapter** | web chat / web terminal 等 daemon-native client 通过 `DaemonClient` / `DaemonSessionClient` + typed event reducer 接入，不直接订阅内存 EventBus；TUI / channel / IDE 可共享 client/render 基础库，但不默认改传输链路 | 详 [§02 §8](./02-architectural-decisions.md#8-server--client--runtime-boundary2026-05-18) |
 | **Runtime worker** | 真正执行 tool / shell / MCP / skills / LSP / file operations 的 runtime；当前是 `qwen --acp` child，未来可替换 sandbox runner | 详 [§02 §8](./02-architectural-decisions.md#runtime-worker--sandbox-runner-boundary) |
 
 **核心约束**：
@@ -78,13 +79,13 @@ qwen serve (1 Daemon process, 绑定 cwd = /work/repo-a)
 **2026-05-18 架构边界补充**：
 
 ```text
-client adapters / output sinks
+client/render adapters / output sinks
   → daemon client/protocol layer
   → qwen serve HTTP/SSE control plane
   → runtime worker / sandbox runner
 ```
 
-TUI / web terminal / channel / IDE / JSONL / stream-json 都应成为 daemon-native consumers：消费 typed events + shared reducer，再投影到各自 UI 或输出格式。PTY proxy 只保留为兼容 / demo / debug fallback。remote-control 是 control overlay，不再拥有独立 runtime / event protocol。详 [§02 §8](./02-architectural-decisions.md#8-server--client--runtime-boundary2026-05-18)。
+web chat / web terminal 是 daemon 第一阶段 daemon-native consumers：消费 typed events + shared reducer，再投影到 DOM chat 或 terminal-like UI。Native local TUI 继续走直连链路，但应逐步把 source adapter 与 terminal renderer 分离，让 **direct streamJson** 和 **daemon ACP-over-HTTP events** 都能复用同一套 view model / Ink→ANSI 渲染核心。PTY proxy 只保留为兼容 / demo / debug fallback。remote-control 是 control overlay，不再拥有独立 runtime / event protocol。详 [§02 §8](./02-architectural-decisions.md#8-server--client--runtime-boundary2026-05-18)。
 
 External Reference Architecture 提供 orchestrator 层（详 [§06 §五 External Reference Architecture](./06-roadmap.md)）。
 
@@ -94,12 +95,13 @@ External Reference Architecture 提供 orchestrator 层（详 [§06 §五 Extern
 
 | 模式 | 启动命令 | TUI | 适用场景 |
 |---|---|---|---|
-| **Mode B: Headless + HttpServer** | `qwen serve [--port N]` | ❌ | 当前主线：服务器 / 容器 / 远端机器 / K8s pod / 所有 client 的统一 runtime |
+| **Native local TUI** | `qwen` | ✅ | 本地终端长期主线：直连 runtime，保留最佳性能和最低复杂度 |
+| **Mode B: Headless + HttpServer** | `qwen serve [--port N]` | ❌ | daemon server 主线：服务器 / 容器 / 远端机器 / K8s pod / web chat + web terminal |
 | **Mode A: CLI + HttpServer** | `qwen --serve [--port N]` | ✅ 本地 | 暂停推进；作为 parking lot 保留 |
 
-**当前 client 边界**：TUI / channels / web / IDE 直接对接 `qwen serve` HTTP server；`GET /session/:id/events` 是 daemon 内部 EventBus 的 SSE projection。外部 client 不直接 import / subscribe 内存 EventBus。
+**当前 client 边界**：web chat / web terminal 作为第一阶段 daemon consumers，直接或通过 BFF 对接 `qwen serve` HTTP/SSE；`GET /session/:id/events` 是 daemon 内部 EventBus 的 SSE projection。外部 client 不直接 import / subscribe 内存 EventBus。本地 TUI、channel、IDE 插件暂不默认改链路。
 
-**Mode B 远端 client 是 "thin shell"**（Stage 1）——只能渲染 wire 流，daemon-side state dialogs（`/memory` / `/mcp` / `/agents` 等）不可用。Stage 1.5c daemon-side state CRUD 补齐后，TUI / channels / web / IDE 才能成为完整 client。详 [§04](./04-deployment-and-client.md)。
+**Mode B 远端 client 是 "thin shell"**（Stage 1）——只能渲染 wire 流，daemon-side state dialogs（`/memory` / `/mcp` / `/agents` 等）不可用。Stage 1.5c daemon-side state CRUD 补齐后，web chat / web terminal 才能成为完整 browser client；channel / IDE 是否迁移另行评估。详 [§04](./04-deployment-and-client.md)。
 
 ### 三·一 Deployment forms（来自 chiga0 [#3803 comment 4476174099](https://github.com/QwenLM/qwen-code/issues/3803#issuecomment-4476174099)，2026-05-18）
 
@@ -107,8 +109,8 @@ Mode B 之下进一步区分**3 种 deployment form**，钉死 daemon host 与 w
 
 | Form | Daemon host | Workspace host | Client host | 推荐度 |
 |---|---|---|---|---|
-| **Local single-machine** | local 机器 | local 机器 | local TUI/IDE/channel | ✅ 主装机体验；daemon 可在 loopback 自动起 |
-| **Cloud/devbox remote-runtime** | remote host/pod | **同** remote host/volume | local TUI/IDE/web | ✅ 推荐 cloud+client 拆分；Codespaces/Coder 风格——workspace 与 runtime **必须 colocate** |
+| **Local single-machine** | local 机器 | local 机器 | local native TUI / local IDE / optional local web | ✅ 主装机体验；native TUI 直连长期保留；local daemon 仅服务 web/remote-control/实验 client |
+| **Cloud/devbox remote-runtime** | remote host/pod | **同** remote host/volume | browser web chat / web terminal | ✅ 推荐 cloud+client 拆分；Codespaces/Coder 风格——workspace 与 runtime **必须 colocate** |
 | **Local workspace + remote daemon** | remote host/pod | local 机器 | local client | ❌ **不推荐** —— daemon 看不到 local files / tools / MCP / skills，除非有显式 sync / mount / orchestrator |
 
 **核心不变式 — daemon host = runtime host**：
@@ -146,9 +148,9 @@ Mode B 之下进一步区分**3 种 deployment form**，钉死 daemon host 与 w
 | **Stage 1.5a must-haves** **(P0)** | chiga0 10 must-haves 剩 9 项 — Mode B 生产 blocker（loadSession HTTP / pair tokens / sessionScope override）| ~2 周（9 PRs 可并行）|
 | **Stage 1.5c** **(P0)** | daemon-side state CRUD 8 routes — Mode B 远端 client 摆脱 thin shell | ~3-5d |
 | **Stage 1.5-prereq** **(P1)** | chiga0 6 architecture findings — lift `AcpChannel` / `EventBus` / `PermissionMediator` 到 `@qwen-code/acp-bridge` | ~1-2 周 |
-| **Stage 1.5-client adapters** **(P1 behind flag)** | TUI / channels / web/debug / IDE 接入 Mode B daemon；默认切换必须等 P0/P1 | ~2-3 周 |
+| **Stage 1.5-client/render extraction** **(P1 / POC 并行)** | remote web chat / web terminal 先做 technical POC 接入 Mode B daemon；抽取 client 包与 terminal render core，供 native TUI 与 web terminal 共享渲染能力；channel / IDE 继续 `--acp`，迁移后置评估 | ~2-3 周，可与 P0 并行试点 |
 | **Stage 1.5b** Mode A **(P2 推迟)** | Mode A `qwen --serve` flag — [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156)；A1 [PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) ✅ MERGED；**推迟到 1.5c 后**（Mode A 价值依赖 1.5c）| ~5-6d |
-| **Stage 1.5-remote-control** **(P2 后置)** | [PR#3929](https://github.com/QwenLM/qwen-code/pull/3929) / [#3930](https://github.com/QwenLM/qwen-code/pull/3930) / [#3931](https://github.com/QwenLM/qwen-code/pull/3931) 后续作为 daemon facade | 待 primary clients 收敛 |
+| **Stage 1.5-remote-control** **(P2 后置)** | [PR#3929](https://github.com/QwenLM/qwen-code/pull/3929) / [#3930](https://github.com/QwenLM/qwen-code/pull/3930) / [#3931](https://github.com/QwenLM/qwen-code/pull/3931) 后续作为 daemon facade | 待 web chat / web terminal contract 稳定 |
 | **Stage 2** | 协议补齐（WebSocket / mDNS / OpenAPI / Prometheus / `/ext` + Reverse RPC 5 类 Client Capability）| ~3-4 周（拆 2a-2d）|
 | **Stage 2e** | 可选 native in-process（去 `qwen --acp` child）| ~1-2 周 |
 
@@ -191,9 +193,8 @@ Mode B 之下进一步区分**3 种 deployment form**，钉死 daemon host 与 w
 > - ✅ Wave 4 **PR 15** [PR#4236](https://github.com/QwenLM/qwen-code/pull/4236) mutation gating helper + `--require-auth` — **MERGED 2026-05-17 12:10** (doudouOUC, 3h06m, 2-3 轮 review 无 Critical 全 nit suggestion；最终 +620/-24；wenshao 真起 `qwen serve` **端到端 verify 4-cell behavior matrix 各 1 次**（review quality 新基线）；`createMutationGate` clean handoff for Wave 4 routes；`CONDITIONAL_SERVE_FEATURES` registry primitive；**解锁 Wave 4 PR 16-21 (6 个 PR)**)
 > - ✅ PR 3 follow-up [PR#4225](https://github.com/QwenLM/qwen-code/pull/4225) DaemonSessionClient hardening — **MERGED 2026-05-17 07:05** (chiga0, 3h11m open→merge, +323/-18 测试 141→205 行；多模型 /review pipeline：DeepSeek-v4-pro + claude-opus-4-7 + wenshao 4 轮 review；**chiga0 最终让步把 eager guard 改回 lazy**+ 加 `cursor monotonicity via Math.max`（同 PR#4217 reducer hardening pattern）+ abort-signal propagation + SSE `event.id` validation + test 钉 lazy-guard 防 regression)
 > - ⚠️ [PR#4226](https://github.com/QwenLM/qwen-code/pull/4226) typed event schema 竞品 OPEN (doudouOUC, 2026-05-17 03:58, +1398/-18, 测试/生产 1.8x)；与 PR#4217 重叠，开 4 分钟后 PR#4217 即 MERGED；**待 close 或拆 SessionState reducer 部分作 Wave 5 PR 25 提前**
-> - ✅ **Bonus** client adapter Stage 0 全 MERGED 2026-05-18：[PR#4203](https://github.com/QwenLM/qwen-code/pull/4203) channel bridge (chiga0, 02:21, +2012) + [PR#4199](https://github.com/QwenLM/qwen-code/pull/4199) IDE connection (chiga0, 02:38, +1676) + [PR#4202](https://github.com/QwenLM/qwen-code/pull/4202) TUI adapter (chiga0, 03:22, +1970)；Wave 5 PR 26 (`flag-gated daemon client adapters`) **提前交付** —— chiga0 按 **3 adapter × 3 stage = 9 PR** 拆分推进
-> - ⚠️ **Bonus** Stage 1 wire-up 调整：[PR#4260](https://github.com/QwenLM/qwen-code/pull/4260) TUI harness + [PR#4263](https://github.com/QwenLM/qwen-code/pull/4263) IDE Smoke Test **CLOSED 2026-05-18 06:59**（chiga0 主动；Stage 1 价值被 Stage 2 真接入 production UI 覆盖更彻底，wenshao 抓 command-layer 测试缺口后 chiga0 不再修而是放弃 Stage 1 直接走 Stage 2）；仅 [PR#4261](https://github.com/QwenLM/qwen-code/pull/4261) channel `--daemon-url` 仍 draft OPEN（channel 没 Stage 2 PR）
-> - 🔧 **Bonus** Stage 2 experimental flag-gated 2 PR：[PR#4266](https://github.com/QwenLM/qwen-code/pull/4266) `--experimental-daemon-tui` (+664/-16) 真接入 Ink TUI / [PR#4267](https://github.com/QwenLM/qwen-code/pull/4267) `qwen-code.experimentalDaemonIde` config 真注入 webview (+230/-5) —— OPEN draft (chiga0, 2026-05-18 05:06 起；channel stage 2 待开)
+> - ✅ **Bonus** client adapter Stage 0 全 MERGED 2026-05-18：[PR#4203](https://github.com/QwenLM/qwen-code/pull/4203) channel bridge (chiga0, 02:21, +2012) + [PR#4199](https://github.com/QwenLM/qwen-code/pull/4199) IDE connection (chiga0, 02:38, +1676) + [PR#4202](https://github.com/QwenLM/qwen-code/pull/4202) TUI adapter (chiga0, 03:22, +1970)；2026-05-19 后定位调整为 **default-off spike / future migration 参考**，不代表 native TUI/channel/IDE 默认迁 daemon
+> - ⚠️ **Bonus** Stage 1/2 wire-up 调整：[PR#4260](https://github.com/QwenLM/qwen-code/pull/4260) TUI harness + [PR#4263](https://github.com/QwenLM/qwen-code/pull/4263) IDE Smoke Test **CLOSED 2026-05-18 06:59**；[PR#4261](https://github.com/QwenLM/qwen-code/pull/4261) channel `--daemon-url`、[PR#4266](https://github.com/QwenLM/qwen-code/pull/4266) `--experimental-daemon-tui`、[PR#4267](https://github.com/QwenLM/qwen-code/pull/4267) `qwen-code.experimentalDaemonIde` 与最新主线不再一致，应收口为 draft/closed 或只吸收可复用代码到 render-core / web-terminal 方向
 > - ✅ **外部** `/demo` debug page [PR#4132](https://github.com/QwenLM/qwen-code/pull/4132) — **MERGED 2026-05-18 08:31** (jifeng, **远古 4 天 24 reviews 终于合**, 最终 +858/-3)；单 HTML browser-based debug UI 是 **Mode B POST+SSE 最薄 client 验证面**；XSS in `logEvent` `tag` 修：识别 `update.sessionUpdate.kind` / `event.type` 从 daemon SSE 上行是 daemon-controlled (而非 user-controlled) → 威胁模型扩到 daemon-emitted poisoned events 后 escape；rebase 过 PR#4247/4250/4251 冲突
 > - ✅ Wave 5 **PR 22b/2 design slice** [PR#4304](https://github.com/QwenLM/qwen-code/pull/4304) `BridgeOptions` lift + `DaemonStatusProvider` seam — **MERGED 2026-05-19 01:27** (doudouOUC, **1h57m** open→merge, merge commit `68e3ec988a`，+852/-371 11 files；wenshao 1 轮 CHANGES_REQUESTED → 4 轮 inline 修 → qwen-latest /review LGTM → MERGED；**3-stage 改 4-stage**：原 PR 22b/2 implementation lift 拆为 22b/2 design slice (冻 contract) + 22b/3 mechanical bulk lift (~3000 LOC, 1-2h IDE-driven `git mv`)；6 design decision baked in JSDoc：positional 参 / 全 envelope 返 / 无 abort/timeout / 单接口含 2 方法 / 可选 + idle fallback / acpChannelLive 由 bridge 传参；2 文件移：`BridgeOptions` interface (~150 LOC) → `acp-bridge/src/bridgeOptions.ts` + `buildDaemonPreflightCells` + `safeCheck` (~210 LOC byte-identical) → `cli/src/serve/daemonStatusProvider.ts`；新 factory `createDaemonStatusProvider()`；**Mode A in-process consumer 可省 `statusProvider?` 不崩** —— 对齐 PR 12/13 "idle status is queryable"；701/701 vitest pass；**Wave 5 PR 22 现 3/4 MERGED，仅剩 22b/3 mechanical bulk lift**)
 > - 🔧 Follow-up [PR#4305](https://github.com/QwenLM/qwen-code/pull/4305) #4291 post-merge fix（7 threads）— **OPEN + CHANGES_REQUESTED** 2026-05-18 23:50 (doudouOUC, +454/-116 5 files；qwen-latest review on **MERGED #4291** 后 7 项 hardening：① late-poll observer 解构原始字段不再持 entry/BrandedSecret/cancelController（**memory + secret retention**）② 抽 `callerIsDeviceFlowInitiator(view, callerClientId)` 共享 helper 3 处 inline copy 换掉（**DRY+回归预防**）③ timer fire `DeviceFlowPollTimeoutError` 单实例复用 abort.reason+reject（polish）④ `err.name` 走 `sanitizeForStderr`（**log injection 姊妹堵**与 `oauthError`）⑤ timeout 路径 audit hint 用 `result.hint` 与 SSE 一致 ⑥ inline `QWEN_SERVE_DEBUG` → 现有 `isServeDebugMode()` helper + `?? ''` 死代码删（DRY+dead code）⑦ late-rejection observer `name + length` 模式对称 provider catch 不再 slice 原 message（**secret leak**）；新测试 hard-negative-assert secret 不入 stderr + hostile `Error.name` sanitization；OAuth 史诗续：**+8032 LOC line if PR 21+#4291+#4305 全合**)

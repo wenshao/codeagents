@@ -4,7 +4,7 @@
 
 ## 一、TL;DR
 
-> **2026-05-15 决策更新**：先忽略 Mode A（`qwen --serve`）。后续 roadmap 以 **Mode B：`qwen serve` headless daemon 作为底层 runtime** 为主线；Mode A 暂停在 [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156) 里作为 parking lot，已合并的 [PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) 仅作为可复用 in-memory channel primitive 记录。
+> **2026-05-19 决策更新**：先忽略 Mode A（`qwen --serve`）。后续 roadmap 以 **Mode B：`qwen serve` headless daemon 作为 remote web chat / web terminal 的 runtime** 为主线；本地 native TUI `qwen` 直连链路长期保留，不默认迁到 daemon。channel / IDE 插件继续使用现有 `--acp` 模式，daemon 迁移优先级后置。remote web chat + web terminal 的 **technical POC 优先级上调**：可与 P0 must-haves / state CRUD 并行启动，先验证技术可行性；production-ready 仍依赖 P0/P1 contract 收口。Mode A 暂停在 [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156) 里作为 parking lot，已合并的 [PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) 仅作为可复用 in-memory channel primitive 记录。
 
 ```
 ACP NDJSON 协议 → HTTP+SSE daemon
@@ -24,7 +24,7 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 
 | 模式 | 命令 | TUI | 适用场景 |
 |---|---|:---:|---|
-| **Mode B** | `qwen serve [--port N]` | ❌ | **当前主线**：服务器 / 容器 / 远端机器 / K8s pod / 所有 client 的统一 runtime |
+| **Mode B** | `qwen serve [--port N]` | ❌ | **当前主线**：服务器 / 容器 / 远端机器 / K8s pod / remote web chat + web terminal |
 | **Mode A** | `qwen --serve [--port N]` | ✅ 本地渲染 | **暂停推进**：待 Mode B HTTP/SSE event contract / control-plane / client identity 稳定后再评估 |
 
 **当前状态**：
@@ -71,12 +71,11 @@ ACP NDJSON 协议 → HTTP+SSE daemon
   - ✅ [PR#4255](https://github.com/QwenLM/qwen-code/pull/4255) Wave 4 PR 21 OAuth device-flow route **MERGED 2026-05-18 14:05** (doudouOUC, **20h39m daemon 项目史上最长 lifetime** 破 PR#4249 15h20m；**135 reviews 史上最多**；最终 **+6172/-51 daemon 项目史上最大** 破 PR#4249 +5318；OAuth 2.0 RFC 8628 brokered through daemon；4 route + 5 typed event + build-time grep 防 browser-spawn regression + BrandedSecret 4-way redaction + 3 pre-PR agent / 12 P0+P1 fold-in；临门一脚被 1 个 TS 类型 inference 卡住 12:51 → 13:01 doudouOUC 修 → 13:59 gpt-5.5 /review LGTM → 14:05 MERGED)
   - ✅ PR 3 follow-up [PR#4225](https://github.com/QwenLM/qwen-code/pull/4225) DaemonSessionClient hardening **MERGED 2026-05-17 07:05** (chiga0, 多模型 /review 4 轮；chiga0 让步把 eager guard 改回 lazy + cursor monotonicity + abort propagation + event.id validation)
   - ⚠️ [PR#4226](https://github.com/QwenLM/qwen-code/pull/4226) typed event schema 竞品 OPEN (doudouOUC) — 与 PR#4217 重叠，待 close 或拆 reducer 作 Wave 5 PR 25 提前
-  - ✅ Bonus Stage 0 spike 全 MERGED 2026-05-18: [PR#4203](https://github.com/QwenLM/qwen-code/pull/4203) channel (02:21) + [PR#4199](https://github.com/QwenLM/qwen-code/pull/4199) IDE (02:38) + [PR#4202](https://github.com/QwenLM/qwen-code/pull/4202) TUI (03:22) (chiga0; Wave 5 PR 26 提前)
-  - ⚠️ Bonus Stage 1 wire-up 调整: [PR#4260](https://github.com/QwenLM/qwen-code/pull/4260) TUI + [PR#4263](https://github.com/QwenLM/qwen-code/pull/4263) IDE **CLOSED 06:59** (Stage 2 直接覆盖); [PR#4261](https://github.com/QwenLM/qwen-code/pull/4261) channel `--daemon-url` 仍 draft (channel 无 Stage 2)
-  - 🔧 Bonus Stage 2 experimental flag-gated 2 PR draft: [PR#4266](https://github.com/QwenLM/qwen-code/pull/4266) `--experimental-daemon-tui` / [PR#4267](https://github.com/QwenLM/qwen-code/pull/4267) `qwen-code.experimentalDaemonIde` (chiga0, 2026-05-18 05:06 起; channel stage 2 待开)
+  - ✅ Bonus Stage 0 spike 全 MERGED 2026-05-18: [PR#4203](https://github.com/QwenLM/qwen-code/pull/4203) channel (02:21) + [PR#4199](https://github.com/QwenLM/qwen-code/pull/4199) IDE (02:38) + [PR#4202](https://github.com/QwenLM/qwen-code/pull/4202) TUI (03:22) (chiga0)；2026-05-19 后定位调整为 **default-off spike / future migration 参考**，不代表 native TUI/channel/IDE 默认迁 daemon
+  - ⚠️ Bonus Stage 1/2 wire-up 调整: [PR#4260](https://github.com/QwenLM/qwen-code/pull/4260) TUI + [PR#4263](https://github.com/QwenLM/qwen-code/pull/4263) IDE **CLOSED 06:59**；[PR#4261](https://github.com/QwenLM/qwen-code/pull/4261) channel `--daemon-url`、[PR#4266](https://github.com/QwenLM/qwen-code/pull/4266) `--experimental-daemon-tui`、[PR#4267](https://github.com/QwenLM/qwen-code/pull/4267) `qwen-code.experimentalDaemonIde` 与最新主线不再一致，应收口为 draft/closed 或仅保留可复用代码到 render-core / web-terminal 方向
 - ✅ [PR#4132](https://github.com/QwenLM/qwen-code/pull/4132) `/demo` debug page (jifeng) **MERGED 2026-05-18 08:31** —— 4 天 24 reviews 终于合，daemon 项目 OPEN 最长 PR；XSS 修 (daemon-emitted poisoned events 威胁模型) + rebase 过 #4247/4250/4251 冲突
-- 🧭 [PR#3929](https://github.com/QwenLM/qwen-code/pull/3929) / [#3930](https://github.com/QwenLM/qwen-code/pull/3930) / [#3931](https://github.com/QwenLM/qwen-code/pull/3931) remote-control stack 仍 OPEN draft / changes requested；**优先级后置**，等 TUI / channels / web / IDE 先完成 Mode B client 适配后，再重定向为 daemon HTTP/SSE facade
-- ⏳ Stage 1.5 剩余主线：P0 production must-haves + daemon-side state CRUD，P1 typed event contract / bridge primitives + client adapters behind flag，P2 remote-control / Mode A revisit（详 [§06 Roadmap](./06-roadmap.md)）
+- 🧭 [PR#3929](https://github.com/QwenLM/qwen-code/pull/3929) / [#3930](https://github.com/QwenLM/qwen-code/pull/3930) / [#3931](https://github.com/QwenLM/qwen-code/pull/3931) remote-control stack 仍 OPEN draft / changes requested；**优先级后置**，等 remote web chat / web terminal daemon contract 稳定后，再重定向为 daemon HTTP/SSE facade
+- ⏳ Stage 1.5 剩余主线：P0 production must-haves + daemon-side state CRUD，P1 typed event contract / bridge primitives + remote web chat/web terminal POC + shared render core，P2 remote-control / Mode A / channel-IDE daemon migration revisit（详 [§06 Roadmap](./06-roadmap.md)）
 
 ## 二、6 章总览
 
@@ -85,7 +84,7 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 | **01** | [Overview](./01-overview.md) | TL;DR + 2 层术语 + 架构图 + Mode B 主线 + 资源经济性 + Stage 进展 + 阅读指南 |
 | **02** | [Architectural Decisions](./02-architectural-decisions.md) | 8 决策：session 共享 P1/P2 / 1 daemon = 1 workspace × N session / MCP 生命周期 / FileReadCache / Permission flow / 多 client 并发 / Mode B mainline / server-client-runtime boundary |
 | **03** | [HTTP API & Protocol](./03-http-api.md) | Route table（`/workspace/*` 单 workspace 路由）+ ACP wire 4 层兼容性矩阵 + SSE + Last-Event-ID + 双向 RPC 异步化 + Capability negotiation |
-| **04** | [Deployment & Client](./04-deployment-and-client.md) | Mode B client convergence + deployment shape matrix + TUI / channels / web / IDE 适配边界 + daemon-native renderer + remote-control overlay |
+| **04** | [Deployment & Client](./04-deployment-and-client.md) | Mode B web-first client convergence + deployment shape matrix + native TUI 直连边界 + web terminal daemon-native renderer + remote-control overlay |
 | **05** | [Security & Permission](./05-permission-auth.md) | Bearer + Host allowlist + 0.0.0.0 拒绝 / PR#3723 4-mode evaluatePermissionFlow / first-responder vote + per-session 隔离 / Multi-tenant = 1 daemon 1 tenant OS 进程级隔离 |
 | **06** | [Roadmap & Ecosystem](./06-roadmap.md) | Timeline + Stage 1 audit + Stage 1.5 + chiga0 10 must-haves + 6 architecture findings + Stage 2 + External Reference Architecture + vs OpenCode + vs Anthropic |
 
@@ -127,7 +126,7 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 
 ### Stage 进展（at 2026-05-15）
 
-**合入原则**：Stage 拆分必须逐步迁移。每个 PR 都要可单独合入、向后兼容、默认不破坏现有 TUI / channels / IDE / CLI 行为；新 daemon 能力通过 capability tag 暴露，client adapter 先 behind flag / 双栈测试，再单独 PR 切默认。
+**合入原则**：Stage 拆分必须逐步迁移。每个 PR 都要可单独合入、向后兼容、默认不破坏现有 TUI / channels / IDE / CLI 行为；新 daemon 能力通过 capability tag 暴露。remote web chat / web terminal 先 dogfood daemon；channel / IDE daemon 化只作为 future behind-flag 评估；native local TUI 不进入默认切换计划。
 
 | Stage | 状态 | 范围 |
 |---|:---:|---|
@@ -136,7 +135,7 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 | **Stage 1.5a must-haves** | ⏳ **P0** | chiga0 10 must-haves 剩 9 项 — Mode B 生产 blocker（~2 周，9 PRs 可并行）|
 | **Stage 1.5c** | ⏳ **P0** | daemon-side state CRUD 8 routes — Mode B 远端 client 摆脱 thin shell（~3-5d）|
 | Stage 1.5-prereq | ⏳ **P1** | chiga0 6 architecture findings — `AcpChannel` / `EventBus` / `PermissionMediator` lift（~1-2 周）|
-| Stage 1.5-client adapters | 🔧 **P1 behind flag** | TUI / channels / web/debug / IDE 作为 daemon HTTP/SSE clients 试点；默认切换必须等 P0/P1 |
+| Stage 1.5-client/render | 🔧 **P1 / POC 并行** | remote web chat / web terminal 先做 technical POC，验证 `qwen serve` + BFF/browser + HTTP/SSE typed events + shared reducer/render core 可行性；native TUI 复用渲染能力但保持直连；channel / IDE 迁移后置评估 |
 | **Stage 1.5b** Mode A | ⏳ **P2 推迟** | Mode A `qwen --serve` flag — [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156)；A1 [PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) ✅；剩余推迟到 1.5c 后 |
 | Stage 1.5-remote-control | ⏳ **P2 后置** | [#3929](https://github.com/QwenLM/qwen-code/pull/3929)/[#3930](https://github.com/QwenLM/qwen-code/pull/3930)/[#3931](https://github.com/QwenLM/qwen-code/pull/3931) 后续作为 daemon facade |
 | Stage 2a-2d | ⏳ 待开 | 协议补齐（WebSocket / mDNS / OpenAPI / Prometheus / `/ext` + Reverse RPC）|
@@ -163,7 +162,7 @@ ACP NDJSON 协议 → HTTP+SSE daemon
 | [Issue #3803](https://github.com/QwenLM/qwen-code/issues/3803) | OPEN | daemon proposal / Stage 1.5 tracker；最新 comment 将 P0/P1/P2 重排为 Mode B must-haves + state CRUD 优先，Mode A 后置 |
 | [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156) | OPEN | Mode A 设计 issue，但最新结论是 **Mode A hold，核心推进 Mode B** |
 | [PR#4132](https://github.com/QwenLM/qwen-code/pull/4132) | OPEN / changes requested | `/demo` debug page 可继续作为 Mode B POST+SSE client 验证面 |
-| [PR#3929](https://github.com/QwenLM/qwen-code/pull/3929) | OPEN draft | remote-control foundation 后置；应等 TUI / channels / web / IDE 适配完成后改为 daemon HTTP/SSE client facade |
+| [PR#3929](https://github.com/QwenLM/qwen-code/pull/3929) | OPEN draft | remote-control foundation 后置；应等 remote web chat / web terminal contract 稳定后改为 daemon HTTP/SSE client facade |
 | [PR#3930](https://github.com/QwenLM/qwen-code/pull/3930) | OPEN draft / changes requested | worker/WebSocket 层若保留，应成为 daemon transport facade，而不是替代 HTTP/SSE + EventBus-backed event contract |
 | [PR#3931](https://github.com/QwenLM/qwen-code/pull/3931) | OPEN draft / changes requested | remote-control TUI attach 后置；TUI 自身的 Mode B client adapter 更优先 |
 
