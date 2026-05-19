@@ -23,7 +23,7 @@
 - **心智简单**：daemon ↔ session 两层（无中间抽象）
 
 **两种部署**：
-- **Mode B** `qwen serve` — 当前主线：headless HTTP front，所有 client 通过 HTTP/SSE 接入同一 daemon runtime。
+- **Mode B** `qwen serve` — 当前主线：headless HTTP front，优先服务 remote web chat + web terminal；native local TUI 保持 direct runtime，channel / IDE 继续现有 `--acp` 路径。
 - **Mode A** `qwen --serve` — 2026-05-15 后暂停推进；作为 parking lot 保留，待 Mode B event/control/client contract 稳定后再评估。
 
 **主线 scope**：daemon building block + 协议表面锁定（Stage 2 后）。多 tenant / 跨 daemon process 路由 / SaaS 部署属 **External Reference Architecture**（外部商业平台实施）。
@@ -36,7 +36,7 @@
 |---|---|---|
 | **Daemon process** | `qwen serve` HTTP front 进程；启动时绑定 cwd = 单 workspace；持 Express 5 server + EventBus + 1 个内嵌 `qwen --acp` child | `packages/cli/src/serve/server.ts` |
 | **Session** | ACP `Session` 实例（`QwenAgent.sessions: Map<sessionId, Session>` 内一条）；持 transcript / FileReadCache / PermissionManager | `packages/cli/src/acp-integration/session/Session.ts` |
-| **Daemon client / adapter** | TUI / channel / web / IDE / JSONL 等 client 通过 `DaemonClient` / `DaemonSessionClient` + typed event reducer 接入，不直接订阅内存 EventBus | 详 [§02 §8](./02-architectural-decisions.md#8-server--client--runtime-boundary2026-05-18) |
+| **Daemon client / adapter** | remote web chat / web terminal / future channel / future IDE / JSONL 等 client 通过 `DaemonClient` / `DaemonSessionClient` + typed event reducer 接入，不直接订阅内存 EventBus；native local TUI 保持 direct runtime，但可复用 shared render core | 详 [§02 §8](./02-architectural-decisions.md#8-server--client--runtime-boundary2026-05-18) |
 | **Runtime worker** | 真正执行 tool / shell / MCP / skills / LSP / file operations 的 runtime；当前是 `qwen --acp` child，未来可替换 sandbox runner | 详 [§02 §8](./02-architectural-decisions.md#runtime-worker--sandbox-runner-boundary) |
 
 **核心约束**：
@@ -84,7 +84,7 @@ client adapters / output sinks
   → runtime worker / sandbox runner
 ```
 
-TUI / web terminal / channel / IDE / JSONL / stream-json 都应成为 daemon-native consumers：消费 typed events + shared reducer，再投影到各自 UI 或输出格式。PTY proxy 只保留为兼容 / demo / debug fallback。remote-control 是 control overlay，不再拥有独立 runtime / event protocol。详 [§02 §8](./02-architectural-decisions.md#8-server--client--runtime-boundary2026-05-18)。
+remote web chat / web terminal / JSONL / stream-json 优先成为 daemon-native consumers：消费 typed events + shared reducer，再投影到各自 UI 或输出格式。channel / IDE 后续若迁移也复用同一 contract。native TUI 复用 shared render core 但保持 direct runtime。PTY proxy 只保留为兼容 / demo / debug fallback。remote-control 是 control overlay，不再拥有独立 runtime / event protocol。详 [§02 §8](./02-architectural-decisions.md#8-server--client--runtime-boundary2026-05-18)。
 
 External Reference Architecture 提供 orchestrator 层（详 [§06 §五 External Reference Architecture](./06-roadmap.md)）。
 
@@ -94,12 +94,12 @@ External Reference Architecture 提供 orchestrator 层（详 [§06 §五 Extern
 
 | 模式 | 启动命令 | TUI | 适用场景 |
 |---|---|---|---|
-| **Mode B: Headless + HttpServer** | `qwen serve [--port N]` | ❌ | 当前主线：服务器 / 容器 / 远端机器 / K8s pod / 所有 client 的统一 runtime |
+| **Mode B: Headless + HttpServer** | `qwen serve [--port N]` | ❌ | 当前主线：服务器 / 容器 / 远端机器 / K8s pod / remote web chat + web terminal runtime |
 | **Mode A: CLI + HttpServer** | `qwen --serve [--port N]` | ✅ 本地 | 暂停推进；作为 parking lot 保留 |
 
-**当前 client 边界**：TUI / channels / web / IDE 直接对接 `qwen serve` HTTP server；`GET /session/:id/events` 是 daemon 内部 EventBus 的 SSE projection。外部 client 不直接 import / subscribe 内存 EventBus。
+**当前 daemon client 边界**：remote web chat / web terminal 直接对接 `qwen serve` HTTP server；`GET /session/:id/events` 是 daemon 内部 EventBus 的 SSE projection。外部 client 不直接 import / subscribe 内存 EventBus。native TUI / channel / IDE 当前默认链路不变。
 
-**Mode B 远端 client 是 "thin shell"**（Stage 1）——只能渲染 wire 流，daemon-side state dialogs（`/memory` / `/mcp` / `/agents` 等）不可用。Stage 1.5c daemon-side state CRUD 补齐后，TUI / channels / web / IDE 才能成为完整 client。详 [§04](./04-deployment-and-client.md)。
+**Mode B 远端 client 是 "thin shell"**（Stage 1）——只能渲染 wire 流，daemon-side state dialogs（`/memory` / `/mcp` / `/agents` 等）不可用。Stage 1.5c daemon-side state CRUD 补齐后，remote web chat / web terminal 才能成为完整 client。详 [§04](./04-deployment-and-client.md)。
 
 ### 三·一 Deployment forms（来自 chiga0 [#3803 comment 4476174099](https://github.com/QwenLM/qwen-code/issues/3803#issuecomment-4476174099)，2026-05-18）
 
@@ -146,9 +146,9 @@ Mode B 之下进一步区分**3 种 deployment form**，钉死 daemon host 与 w
 | **Stage 1.5a must-haves** **(P0)** | chiga0 10 must-haves 剩 9 项 — Mode B 生产 blocker（loadSession HTTP / pair tokens / sessionScope override）| ~2 周（9 PRs 可并行）|
 | **Stage 1.5c** **(P0)** | daemon-side state CRUD 8 routes — Mode B 远端 client 摆脱 thin shell | ~3-5d |
 | **Stage 1.5-prereq** **(P1)** | chiga0 6 architecture findings — lift `AcpChannel` / `EventBus` / `PermissionMediator` 到 `@qwen-code/acp-bridge` | ~1-2 周 |
-| **Stage 1.5-client adapters** **(P1 behind flag)** | TUI / channels / web/debug / IDE 接入 Mode B daemon；默认切换必须等 P0/P1 | ~2-3 周 |
+| **Stage 1.5-client/render** **(P1 / POC 并行)** | remote web chat + web terminal 技术 POC；抽 shared client/render core；channel / IDE 后置；native TUI 保持 direct | ~1-2 周 POC，可与 P0 并行 |
 | **Stage 1.5b** Mode A **(P2 推迟)** | Mode A `qwen --serve` flag — [Issue #4156](https://github.com/QwenLM/qwen-code/issues/4156)；A1 [PR#4160](https://github.com/QwenLM/qwen-code/pull/4160) ✅ MERGED；**推迟到 1.5c 后**（Mode A 价值依赖 1.5c）| ~5-6d |
-| **Stage 1.5-remote-control** **(P2 后置)** | [PR#3929](https://github.com/QwenLM/qwen-code/pull/3929) / [#3930](https://github.com/QwenLM/qwen-code/pull/3930) / [#3931](https://github.com/QwenLM/qwen-code/pull/3931) 后续作为 daemon facade | 待 primary clients 收敛 |
+| **Stage 1.5-remote-control** **(P2 后置)** | [PR#3929](https://github.com/QwenLM/qwen-code/pull/3929) / [#3930](https://github.com/QwenLM/qwen-code/pull/3930) / [#3931](https://github.com/QwenLM/qwen-code/pull/3931) 后续作为 daemon facade | 待 remote web contract 稳定 |
 | **Stage 2** | 协议补齐（WebSocket / mDNS / OpenAPI / Prometheus / `/ext` + Reverse RPC 5 类 Client Capability）| ~3-4 周（拆 2a-2d）|
 | **Stage 2e** | 可选 native in-process（去 `qwen --acp` child）| ~1-2 周 |
 
