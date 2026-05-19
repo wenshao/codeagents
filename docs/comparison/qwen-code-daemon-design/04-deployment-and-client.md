@@ -4,7 +4,7 @@
 
 ## TL;DR
 
-**2026-05-15 更新**：先忽略 Mode A（`qwen --serve`），以 **Mode B `qwen serve`** 作为唯一主线。TUI / channels / web / IDE 都应作为 daemon HTTP/SSE client 接入；EventBus 是 daemon 内部 fan-out primitive，client 共享的是 typed event contract + reducer + `DaemonSessionClient`，不是直接订阅内存 EventBus。
+**2026-05-19 更新**：先忽略 Mode A（`qwen --serve`），以 **Mode B `qwen serve`** 作为 remote web chat + web terminal runtime 主线。native local TUI 永久 direct；channel / IDE 继续 `--acp`，daemon 化后置。EventBus 是 daemon 内部 fan-out primitive，daemon clients 共享的是 typed event contract + reducer + `DaemonSessionClient`，不是直接订阅内存 EventBus。
 
 **多 client 协调**（P1 拓扑）：subscriber 协议 + liveness（15s SSE heartbeat + TCP RST 即时剔除）+ active typer 提示 + takeover + first-responder permission。
 
@@ -16,7 +16,7 @@
 
 | 模式 | 启动命令 | TUI | 适用场景 |
 |---|---|---|---|
-| **Mode B: Headless + HttpServer** | `qwen serve [--port N]` | ❌ | 当前主线：服务器 / 容器 / 远端机器 / 所有 client 的统一 runtime |
+| **Mode B: Headless + HttpServer** | `qwen serve [--port N]` | ❌ | 当前主线：服务器 / 容器 / 远端机器 / remote web chat + web terminal runtime |
 | **Mode A: CLI + HttpServer** | `qwen --serve [--port N]` | ✅ 本地 | 暂停推进；parking lot |
 
 当前主线只有 Mode B。详 [§02 §7](./02-architectural-decisions.md#7-部署模式--mode-b-mainline--mode-a-parking-lot)。
@@ -39,7 +39,7 @@
 >
 > **走 daemon 的场景仅限**：远端 client / 跨进程多 client 协作（IDE + TUI 同 session live collaboration）/ channel bot / web BFF。本地单用户 TUI **永远不被强制套上 HTTP 包袱**。
 >
-> [PR#4266](https://github.com/QwenLM/qwen-code/pull/4266) `--experimental-daemon-tui` 是 **opt-in advanced 路径**（用户主动选 multi-client 协作时），**永远 behind flag，不进入 default migration**。Wave 5 PR 26 `flag-gated daemon client adapters` 默认覆盖 channel / web / IDE，**不含 TUI default 切换**。Mode A `qwen --serve`（TUI super-client + 内嵌 HTTP server）可能比 Mode B + TUI adapter 更适合 "本地多 client 协作" —— 待 chiga0 `auto-daemon UX` 工程债重新评估时一并 revisit。
+> [PR#4266](https://github.com/QwenLM/qwen-code/pull/4266) `--experimental-daemon-tui` 是 **opt-in advanced 路径**（用户主动选 multi-client 协作时），**永远 behind flag，不进入 default migration**。Wave 5 PR 26 现在应优先收敛为 **remote web chat + web terminal 技术 POC + shared render/client core**；channel / IDE daemon 化后置。Mode A `qwen --serve`（TUI super-client + 内嵌 HTTP server）可能比 Mode B + TUI adapter 更适合 "本地多 client 协作" —— 待 chiga0 `auto-daemon UX` 工程债重新评估时一并 revisit。
 
 ### Client 接入顺序
 
@@ -47,10 +47,11 @@
 
 | 顺序 | Client | 适配方向 |
 |---|---|---|
-| 第一波 | TUI | attach-to-daemon render target；HTTP/SSE + shared reducer — 实施 spike 详 [PR#4202](https://github.com/QwenLM/qwen-code/pull/4202) `feat(tui): add daemon adapter spike` (+864 LOC) |
-| 第一波 | channels | 新 daemon transport，保留 channel routing — 实施 spike 详 [PR#4203](https://github.com/QwenLM/qwen-code/pull/4203) `feat(channel): add daemon bridge spike` (+813 LOC) |
-| 第一波 | web/debug | [PR#4132](https://github.com/QwenLM/qwen-code/pull/4132) `/demo` 作为最薄验证面 + [PR#4203](https://github.com/QwenLM/qwen-code/pull/4203) channel/web BFF 共用安全边界 |
-| 第二波 | IDE | daemon transport behind flag — 实施 spike 详 [PR#4199](https://github.com/QwenLM/qwen-code/pull/4199) `feat(ide): add daemon connection spike` |
+| 第一波 | remote web chat | BFF / browser UI 消费 daemon HTTP/SSE typed events；验证真实 prompt streaming、permission、cancel/model、reconnect、auth/token 边界 |
+| 第一波 | web terminal | daemon-native renderer；复用 shared terminal render core / view model；不以 PTY proxy 作为主线 |
+| 参考 | TUI | [PR#4202](https://github.com/QwenLM/qwen-code/pull/4202) 和 [PR#4266](https://github.com/QwenLM/qwen-code/pull/4266) 仅作 default-off spike / future multi-client 参考；native TUI 默认不迁 |
+| 后置 | channels | [PR#4203](https://github.com/QwenLM/qwen-code/pull/4203) 仅作 server-side bridge spike；默认继续 `--acp` |
+| 后置 | IDE | [PR#4199](https://github.com/QwenLM/qwen-code/pull/4199) 仅作 daemon connection spike；默认继续 `--acp` |
 | 并行 | JSONL / stream-json / dual-output | daemon event sinks |
 | P2 deferred | remote-control | 后置；作为 daemon facade / control overlay，不意味着 daemon 必须远端 |
 
@@ -138,7 +139,7 @@ QWEN_DAEMON_WORKSPACE=/repo
 
 ## 二、TUI / client 边界
 
-Stage 1 的 Mode B client 只能覆盖 conversation 主链路。要让 TUI / channels / web / IDE 成为完整 client，需要先补 P0 的 production must-haves 与 daemon-side control-plane parity，再补 P1 typed event contract / bridge primitives；client adapters 只能先 behind flag。
+Stage 1 的 Mode B client 只能覆盖 conversation 主链路。remote web chat / web terminal 可以先做技术 POC，用真实体验反向暴露缺口；要 production-ready，需要先补 P0 的 production must-haves 与 daemon-side control-plane parity，再补 P1 typed event contract / bridge primitives。native TUI、channel、IDE 默认链路暂不迁移。
 
 ### TUI 形态 4 种
 
@@ -153,7 +154,7 @@ Stage 1 的 Mode B client 只能覆盖 conversation 主链路。要让 TUI / cha
 >
 > 本地单用户 TUI **不需要** loopback HTTP / port / token / discovery / lifecycle / control-plane parity wire 化，**就不应该被强加这些代价**。`qwen` 默认是 daemon 项目里**最高优先级的用户体验**，任何 default migration 设计都不可破坏这个 UX。
 >
-> 走 daemon convergence 的 client（channel / web / IDE / remote TUI）是**主动选择跨进程协作**的场景；本地单用户 TUI **不在此列**。
+> 走 daemon convergence 的第一优先 client 是 remote web chat / web terminal；channel / IDE / remote TUI 属于后续主动选择跨进程协作的场景；本地单用户 TUI **不在此列**。
 
 ### TUI 与 wire 的边界 — 9 项 dialogs 真实成本
 
@@ -308,15 +309,15 @@ T=25  Alice 笔记本醒来重连 → daemon 通知 "Bob 接管了"
 |---|---|---|---|---|---|
 | **1. Local - Local (本地单用户 TUI)** 🌟 | **本地 `qwen` TUI = in-process direct call**（永远不走网络）| 不存在 daemon | 本地 | **零网络栈代价**；本地 TUI 不参与 daemon convergence（详 [§04 §一 设计原则](#mode-b-拓扑核心特征) + [§02 §7](./02-architectural-decisions.md#7-部署模式--mode-b-mainline--mode-a-parking-lot)）| **永久 default UX，最高优先级** |
 | **1b. Local - Local (multi-client 协作)** | IDE / local web / channel adapter（**TUI 不在此列**）| 本机 loopback `qwen serve` | 本机 | auto-daemon discovery / loopback auth / lifecycle / port+token+logs；control-plane parity | 跨进程多 client 协作场景；TUI 默认 in-process 不切换 |
-| **2. Web chat / web terminal - Remote** | browser UI | remote devbox / pod | remote volume | gateway/auth/CORS；SSE reconnect；runtime diagnostics；web terminal 走 daemon-native renderer，PTY proxy 仅 fallback | cloud/devbox P1 |
-| **3. Local IDE - Local daemon** | IDE extension | 本机 loopback daemon | IDE 当前 workspace | IDE 启动/发现 daemon；workspace mismatch preflight；editor context 显式传入；path identity 共享 | P1 early dogfood |
+| **2. Web chat / web terminal - Remote** | browser UI | remote devbox / pod | remote volume | gateway/auth/CORS；SSE reconnect；runtime diagnostics；web terminal 走 daemon-native renderer，PTY proxy 仅 fallback | **第一优先技术 POC，可与 P0 并行** |
+| **3. Local IDE - Local daemon** | IDE extension | 本机 loopback daemon | IDE 当前 workspace | IDE 启动/发现 daemon；workspace mismatch preflight；editor context 显式传入；path identity 共享 | 后置评估；默认继续 `--acp` |
 | **4. Local TUI - Remote** | 本地 terminal renderer | remote daemon/runtime | remote workspace | TUI 明示 remote label/path/auth；local cwd 非 runtime cwd；path mapping / client capability reverse RPC；latency coalescing | P1 after TUI adapter quality |
-| **5. Channel + daemon** | IM/channel backend adapter | local 或 remote daemon | daemon-bound workspace | user/group/thread → session routing；identity mapping；permission cards；dedupe；长任务通知 | P1 behind flag |
+| **5. Channel + daemon** | IM/channel backend adapter | local 或 remote daemon | daemon-bound workspace | user/group/thread → session routing；identity mapping；permission cards；dedupe；长任务通知 | 后置评估；默认继续 `--acp` |
 | **6. Remote-control overlay** | web/mobile/channel control surface | local daemon + bridge 或 remote daemon + gateway | local workstation 或 remote devbox | pairing/revoke；outbound bridge；audit；不 fork runtime/protocol | P2 after client contract stabilizes |
 
 #### Web terminal：daemon-native renderer，不是 PTY proxy 主线
 
-Web chat 和 web terminal 都应消费 daemon typed events / reducer。差异只在 UI 呈现：chat UI 用 DOM chat renderer，web terminal 用 terminal-like renderer。TUI adapter 已经是在做 Ink/terminal 版的 **daemon-native renderer**；web terminal 应复用同一 contract。
+Web chat 和 web terminal 都应消费 daemon typed events / reducer。差异只在 UI 呈现：chat UI 用 DOM chat renderer，web terminal 用 terminal-like renderer。shared terminal render core 应让 native TUI direct streamJson 与 web terminal daemon events 复用 view model / Ink->ANSI 投影，但 native TUI 不因此改走 daemon transport。
 
 PTY proxy 仍可作为兼容 / demo / debug fallback，但不能成为目标架构：它代理 terminal bytes，会重新耦合进程生命周期，并绕开 typed event / reducer convergence。
 
@@ -489,7 +490,7 @@ Laptop                           Remote workstation
 
 ## 七、与 PR#3929-3931 (remote-control stack) 的关系
 
-2026-05-15 决策后，remote-control 优先级后置。它仍然可以作为 mobile/browser/channel control overlay 存在，但不应继续拥有 parallel runtime / event log / worker server。正确方向是等 TUI / channels / web / IDE 先收敛到 Mode B daemon contract 后，remote-control 再复用同一 `DaemonSessionClient` + HTTP/SSE typed event contract。
+2026-05-19 决策后，remote-control 优先级后置。它仍然可以作为 mobile/browser/channel control overlay 存在，但不应继续拥有 parallel runtime / event log / worker server。正确方向是先验证 remote web chat / web terminal 的 Mode B daemon contract，remote-control 后续再复用同一 `DaemonSessionClient` + HTTP/SSE typed event contract。
 
 **重要澄清（2026-05-18）**：remote-control 不要求 daemon 必须在远端。它至少有两种有效部署形态：
 
@@ -512,7 +513,7 @@ PR#3929-3931 当前仍是 draft / changes requested。简表：
 | Mobile / browser UI | 先由 web/debug + IDE/TUI adapters 定 contract | ✅ 自带最小化 mobile/browser UI（PR#3930 +2564 行）|
 | Pairing token + LAN URL | ❌ 仅 bearer token | ✅ 一次性 pairing token + LAN URL 报告 |
 | Capability 反向 RPC（5 类）| ✅ editor / clipboard / browser / notification / file_picker | ❌ 无反向 RPC——permission approve/deny 通过 stream-json 直接路由 |
-| 2026-05-15 处理 | 主线；优先 TUI / channels / web / IDE | 后置；未来应改为 daemon facade |
+| 2026-05-19 处理 | 主线先验证 remote web chat / web terminal | 后置；未来应改为 daemon facade |
 
 ---
 
