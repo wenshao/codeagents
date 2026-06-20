@@ -1047,9 +1047,9 @@ Claude Code 的解决方案——**默认低 + 截断时升级**：
 | `query.ts` (L1199-1217) | `max_tokens` 截断检测 → 单次升级重试 |
 | `services/api/claude.ts` (L3394-3419) | slot-reservation cap 逻辑（GrowthBook gate） |
 
-**Qwen Code 现状**：`maxOutputTokens` 固定值（从 config 读取），不管实际输出多少都预留同样大小的 slot，截断后也不会自动重试。
+**Qwen Code 现状（2026-06-21）**：✅ **已实现，且比 Claude 基础设计更稳健**（[PR#2898](https://github.com/QwenLM/qwen-code/pull/2898) `feat(core): adaptive output token escalation (8K default + 64K retry)`，2026-04-08）。无 user/env 覆盖时用 `CAPPED_DEFAULT_MAX_TOKENS = 8_000`（`tokenLimits.ts:18`）；命中 `MAX_TOKENS` 截断时自动用 `ESCALATED_MAX_TOKENS`（64K）重试一次（`geminiChat.ts:1976-1982`）。**额外增强**：若升级后的 64K 响应**仍**被截断，进入 anchor-resume 恢复——从锚点续写、剥离重叠，最多 `MAX_OUTPUT_RECOVERY_ATTEMPTS = 3` 次（`geminiChat.ts:322,2430-2437`），Claude 基础设计仅升级一次。
 
-**Qwen Code 修改方向**：① 默认 8K 输出上限（减少 GPU slot 浪费）；② `stop_reason === 'max_tokens'` 时自动升级到 64K 重试一次；③ 环境变量覆盖默认值。
+**落地映射**（原"修改方向"3 项全成 + 1 增强）：① ✓ 8K 默认上限；② ✓ `MAX_TOKENS` 截断自动升级 64K 重试；③ ✓ env 覆盖；④ ✓（增强）升级后仍截断的多次 anchor-resume 恢复。
 
 **实现成本评估**：
 - 涉及文件：~2 个
