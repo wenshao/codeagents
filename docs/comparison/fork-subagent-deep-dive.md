@@ -269,15 +269,15 @@ const resolvedTools = useExactTools
 
 | 维度 | Claude Code Fork | Qwen Code Agent |
 |------|-----------------|-----------------|
-| **`subagent_type`** | 可选（省略时隐式 fork） | **必填** |
-| **上下文继承** | ✅ 完整对话历史 + 系统提示 + 工具集 + 文件缓存 | ❌ 每个子代理从头开始 |
-| **Prompt Cache 共享** | ✅ 字节一致前缀 → N 个子代理共享缓存 | ❌ 每个子代理独立缓存 |
-| **递归防护** | ✅ 双层（querySource + 消息扫描） | ❌ 不需要（不支持 fork） |
-| **工具集传递** | `useExactTools: true`（跳过过滤） | 按代理定义重新过滤 |
-| **Thinking 继承** | ✅ 继承父 `thinkingConfig` | 独立配置 |
-| **执行模式** | 强制异步（`forceAsync = true`） | 异步 |
-| **行为约束** | 10 条铁律 + 结构化输出格式 | 代理定义中的 `systemPrompt` |
-| **Worktree 隔离** | ✅ 可选 | ✅（Arena 模式下） |
+| **`subagent_type`** | 可选（省略时隐式 fork） | 显式 `"fork"`（省略→general-purpose awaitable；fork 为有意选择，非隐式） |
+| **上下文继承** | ✅ 完整对话历史 + 系统提示 + 工具集 + 文件缓存 | ✅ fork 继承完整对话历史 + 系统提示 + 工具集（常规 subagent 仍从零） |
+| **Prompt Cache 共享** | ✅ 字节一致前缀 → N 个子代理共享缓存 | ✅ fork 共享父 DashScope cache 前缀（systemInstruction + 工具声明 verbatim + 占位一致） |
+| **递归防护** | ✅ 双层（querySource + 消息扫描） | ✅ AsyncLocalStorage（`isInForkExecution()`） |
+| **工具集传递** | `useExactTools: true`（跳过过滤） | fork 用父工具声明 verbatim（仅排除 agent/cron）；常规按定义过滤 |
+| **Thinking 继承** | ✅ 继承父 `thinkingConfig` | ✅ fork 共享父 `generationConfig` |
+| **执行模式** | 强制异步（`forceAsync = true`） | fork fire-and-forget 后台执行 |
+| **行为约束** | 10 条铁律 + 结构化输出格式 | ✅ 同款 10 条铁律 + Scope/Result 输出格式（`buildChildMessage`） |
+| **Worktree 隔离** | ✅ 可选 | ✅（`isolation:'worktree'` + Arena） |
 
 ### Qwen Code Agent 工具入口
 
@@ -286,7 +286,7 @@ const resolvedTools = useExactTools
 interface AgentParams {
   description: string
   prompt: string
-  subagent_type: string  // 必填——无法隐式 fork
+  subagent_type: string  // `"fork"` → 继承上下文的 fork 子代理（显式选择）；省略/其它 → 独立 subagent
 }
 ```
 
@@ -296,7 +296,7 @@ interface AgentParams {
 Session 级 → Project 级 → User 级 → Extension 级 → Built-in
 ```
 
-每个子代理通过 `createAgentHeadless()` 独立启动，不继承父代理上下文。
+**常规**子代理通过 `createAgentHeadless()` 独立启动，不继承父代理上下文；**fork**（`subagent_type:"fork"`）通过 `createForkSubagent()` 继承父代理完整对话历史 + 共享 DashScope cache 前缀（详见文末更新说明）。
 
 ---
 
@@ -330,8 +330,8 @@ Fork 模型在保留完整上下文的同时，成本仅比无上下文传递高
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
-| `packages/core/src/tools/agent/agent.ts` | 2,419 | Agent 工具（`subagent_type` 必填，无 fork；含 override 支持） |
-| `packages/core/src/tools/agent/fork-subagent.ts` | 180 | Fork 子代理辅助（Qwen Code 自有实验性实现） |
+| `packages/core/src/tools/agent/agent.ts` | 2,419 | Agent 工具（含 `createForkSubagent`：fork 继承父上下文 + verbatim 共享 cache 前缀；override 支持） |
+| `packages/core/src/tools/agent/fork-subagent.ts` | 202 | Fork 核心（gate/`buildForkedMessages`/`FORK_PLACEHOLDER_RESULT`/10 铁律/ALS 递归防护/worktree notice）——已默认启用（#4963） |
 | `packages/core/src/subagents/subagent-manager.ts` | 1,221 | 子代理管理器（5 级搜索） |
 | `packages/core/src/subagents/builtin-agents.ts` | 325 | 内置代理（general-purpose, Explore；Explore 新增 `model: 'fast'`） |
 
@@ -345,4 +345,6 @@ Fork 模型在保留完整上下文的同时，成本仅比无上下文传递高
 4. **异步强制**使 fork 子代理不阻塞父代理——用户可继续与父代理交互，子代理在后台完成
 5. **占位文本统一**是一个精巧的缓存优化——不同文本会破坏缓存前缀一致性
 
-> **免责声明**: 以上分析基于 2026 年 Q1 初稿，2026-05-22 对照 v0.16.0 复核（Claude Code v2.1.89、Qwen Code v0.16.0），后续版本可能已变更。
+> **免责声明**: 以上分析基于 2026 年 Q1 初稿，2026-05-22 对照 v0.16.0 复核（Claude Code v2.1.89、Qwen Code v0.16.0）。
+>
+> **2026-06-20 更新**：经源码逐项核实，**Qwen Code 已实现近乎完整的 fork 子代理移植并默认启用**（`fork-subagent.ts` + `agent.ts` `createForkSubagent`）——继承父代理完整对话历史、systemInstruction/工具声明 verbatim 共享 DashScope cache 前缀、`FORK_PLACEHOLDER_RESULT` 占位一致、AsyncLocalStorage 递归防护、worktree 隔离、同款 10 铁律 + Scope/Result 输出格式。演进：[PR#2936](https://github.com/QwenLM/qwen-code/pull/2936)（2026-04-14 · 实现 + cache 共享）→ [PR#3255](https://github.com/QwenLM/qwen-code/pull/3255)（构造期参数重构）→ [PR#4574](https://github.com/QwenLM/qwen-code/pull/4574)（feature gate + don't peek/race）→ [PR#4963](https://github.com/QwenLM/qwen-code/pull/4963)（**2026-06-13 默认启用**）→ [PR#5155](https://github.com/QwenLM/qwen-code/pull/5155)（fire-and-forget 语义收敛）。**与 Claude 的实质差异仅余**：Qwen fork 为显式（`subagent_type:"fork"`）vs Claude 隐式（省略即 fork）；Qwen fork 为 fire-and-forget（结果不内联回父）。上文 §9 对比表已据此更新；§1–§8 关于 Claude 机制的描述仍准确。

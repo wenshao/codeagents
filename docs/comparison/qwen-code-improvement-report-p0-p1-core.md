@@ -103,9 +103,9 @@ Fork C：[...消息N | 占位结果 | "请测试 C"]  ← 共享前缀 cache
 | `tools/AgentTool/AgentTool.tsx` (1397行) | fork vs 常规 Subagent 决策树（L318-L356） |
 | `utils/forkedAgent.ts` (689行) | `CacheSafeParams`（确保 cache 一致性）、`saveCacheSafeParams()` |
 
-**Qwen Code 现状**：`AgentTool` 要求必须指定 `subagent_type`，Subagent 从零开始——不继承父对话历史，无 prompt cache 共享。5 个 Subagent = 5× 完整 prompt 费用。
+**Qwen Code 现状（2026-06-20）**：✅ **已实现近乎完整的 fork 移植并默认启用**。`subagent_type:"fork"`（显式选择）经 `createForkSubagent()` 继承父代理完整对话历史、systemInstruction/工具声明 verbatim 共享 DashScope cache 前缀、`FORK_PLACEHOLDER_RESULT` 占位一致、AsyncLocalStorage 递归防护、worktree 隔离、同款 10 铁律 + Scope/Result 输出格式。常规 subagent（省略或具名 `subagent_type`）仍从零开始。
 
-**Qwen Code 修改方向**：① `subagent_type` 改为可选——省略时触发 fork；② 新增 `forkSubagent.ts`——克隆父 assistant message + 统一占位 tool_result；③ `CacheSafeParams` 确保 fork 请求前缀一致；④ `isInForkChild()` 防止递归 fork。
+**落地映射**（原"修改方向"已全部完成）：① fork 为**显式** `subagent_type:"fork"`——Qwen 未走 Claude 的"省略即 fork"隐式路径，以保留"省略 ⇒ 可等待 subagent"契约；② `fork-subagent.ts` `buildForkedMessages()` 克隆父 assistant message + 统一占位 `FORK_PLACEHOLDER_RESULT`；③ fork 读父 `generationConfig`（systemInstruction + 工具声明 verbatim）共享 DashScope cache 前缀；④ `isInForkExecution()`（AsyncLocalStorage）防递归 fork。
 
 **实现成本评估**：
 - 涉及文件：~5 个
@@ -113,7 +113,7 @@ Fork C：[...消息N | 占位结果 | "请测试 C"]  ← 共享前缀 cache
 - 开发周期：~5 天（1 人）
 - 难点：保证 prompt cache 前缀字节一致性
 
-**进展**：[PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) ✓（2026-04-14 合并）— 省略 `subagent_type` 参数触发隐式 fork，继承父对话上下文并在后台运行。
+**进展**：[PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) ✓（2026-04-14 · 实现 + DashScope cache 共享）/ [PR#3255](https://github.com/QwenLM/qwen-code/pull/3255) ✓（构造期参数重构）/ [PR#4574](https://github.com/QwenLM/qwen-code/pull/4574) ✓（feature gate + don't peek/race 规训）/ [PR#4963](https://github.com/QwenLM/qwen-code/pull/4963) ✓（**2026-06-13 默认启用**）/ [PR#5155](https://github.com/QwenLM/qwen-code/pull/5155) ✓（fire-and-forget 语义收敛——fork 结果不内联回父）。注：Qwen fork 为**显式** `subagent_type:"fork"`，非 Claude 的省略即 fork。
 
 **相关文章**：[Fork Subagent Deep-Dive](./fork-subagent-deep-dive.md)
 
