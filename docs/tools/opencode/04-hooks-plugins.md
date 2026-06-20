@@ -1,8 +1,8 @@
 # 4. Hook 与插件系统——开发者参考
 
-> OpenCode 的 Hook 系统有 18 种类型，通过 npm 包分发插件。其中 `tool.definition` Hook（运行时修改工具 Schema）和 `experimental.chat.system.transform`（修改系统提示）是竞品中独有的能力。
+> OpenCode 的 Hook 系统有 21 种类型，通过 npm 包分发插件。其中 `tool.definition` Hook（运行时修改工具 Schema）和 `experimental.chat.system.transform`（修改系统提示）是竞品中独有的能力。
 >
-> **Qwen Code 对标**：Qwen Code 有 ~12 种 Hook 事件（command 类型）。OpenCode 的 npm 插件加载、工具定义修改 Hook、系统提示变换 Hook 是主要参考。
+> **Qwen Code 对标**：Qwen Code 有 20 种 Hook 事件（command / JS 处理器）。OpenCode 的 npm 插件加载、工具定义修改 Hook、系统提示变换 Hook 是主要参考。
 
 ## 一、为什么 OpenCode 的 Hook 设计值得研究
 
@@ -11,18 +11,19 @@
 | Agent | Hook 数量 | 处理器类型 | 插件分发 | 独有能力 |
 |-------|----------|-----------|---------|---------|
 | **Claude Code** | 27 事件 | 6 种（含 prompt/agent） | Plugin marketplace | LLM 推理决策 |
-| **OpenCode** | 18 种 | npm 插件 + 回调 | npm registry | 工具定义修改、系统提示变换 |
+| **OpenCode** | 21 种 | npm 插件 + 回调 | npm registry | 工具定义修改、系统提示变换 |
 | **Gemini CLI** | 11 事件 | command + runtime | Extension | 模型层拦截 |
-| **Qwen Code** | ~12 事件 | command | — | MessageBus 集成 |
+| **Qwen Code** | 20 事件 | command / JS | — | MessageBus 集成 |
 
 **OpenCode 独有创新**：Claude Code 的 Hook 能拦截工具执行，但**不能修改工具本身的定义**。OpenCode 的 `tool.definition` Hook 允许插件在运行时改变工具的描述和参数 Schema——这意味着插件可以扩展或限制内置工具的能力，而不需要 fork 源码。
 
-## 二、18 种 Hook 类型详解
+## 二、21 种 Hook 类型详解
 
 ### 核心 Hook
 
 | Hook | 触发时机 | 返回值 | 用途 |
 |------|---------|--------|------|
+| `dispose` | 插件卸载 | void | 资源清理 |
 | `event` | 自定义事件触发 | void | 事件总线订阅 |
 | `config` | 配置生命周期 | 配置修改 | 动态配置 |
 | `auth` | 认证请求 | 认证 provider | 自定义认证（GitHub Copilot、GitLab、Poe） |
@@ -46,6 +47,7 @@
 | `chat.headers` | HTTP 请求头构建 | 自定义 headers | API 认证、追踪 |
 | `experimental.chat.messages.transform` | 消息批量变换 | 修改消息列表 | 消息重排/过滤 |
 | **`experimental.chat.system.transform`** | 系统提示构建 | 修改系统提示 | **竞品唯一**——插件可修改系统提示 |
+| `experimental.provider.small_model` | 小模型选择 | 模型 | 为轻量任务（标题/摘要等）指定小模型 |
 
 ### 其他 Hook
 
@@ -55,6 +57,7 @@
 | `command.execute.before` | 命令执行前 | 命令拦截 |
 | `shell.env` | Shell 环境变量 | 环境定制 |
 | `experimental.session.compacting` | 会话压缩 | 注入上下文或替换压缩 prompt |
+| `experimental.compaction.autocontinue` | 压缩完成后 | 控制是否自动追加 continue 消息 |
 | `experimental.text.complete` | 文本补全 | 自定义补全逻辑 |
 
 ## 三、插件加载机制
@@ -69,21 +72,25 @@ opencode plugin install opencode-helicone-session
 # 插件在 config 中注册后，启动时通过 require() 加载
 ```
 
-### 内置插件（6 个）
+### 内置认证插件（10 个：内置 8 + 外部 npm 2）
 
-| 插件 | 功能 | 源码 |
+| 插件 | 功能 | 来源 |
 |------|------|------|
-| CodexAuth | GitHub Codex 认证 | 内置 |
+| CodexAuth | OpenAI / Codex 认证 | 内置 |
 | CopilotAuth | GitHub Copilot 认证 | 内置 |
-| GitLab | GitLab Agent Platform 集成 | 内置 |
-| Poe | Poe 平台认证 | 内置 |
+| Azure | Azure OpenAI 认证 | 内置 |
 | CloudflareWorkers | Cloudflare Workers AI | 内置 |
 | CloudflareGateway | Cloudflare AI Gateway | 内置 |
+| SnowflakeCortex | Snowflake Cortex 认证 | 内置 |
+| DigitalOcean | DigitalOcean 认证 | 内置 |
+| Xai | xAI 认证 | 内置 |
+| GitLab | GitLab Agent Platform | 外部 npm（opencode-gitlab-auth） |
+| Poe | Poe 平台认证 | 外部 npm（opencode-poe-auth） |
 
 ### 加载顺序
 
 ```
-启动 → 加载内置插件（6 个）
+启动 → 加载内置插件（10 个）
      → 加载 npm 外部插件
      → 顺序执行（非并行，确保确定性顺序）
      → 注册 Hook 回调

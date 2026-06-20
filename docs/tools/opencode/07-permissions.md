@@ -1,6 +1,6 @@
 # 7. 权限系统——开发者参考
 
-> OpenCode 的权限系统有三个独特设计：Tree-sitter Bash AST 分析（精确到参数级的命令权限判断）、Doom Loop 保护（连续拒绝自动中断）、文件时间锁（检测编辑期间外部修改）。
+> OpenCode 的权限系统有三个特色设计：命令前缀/参数级权限判断（`arity.ts` token 解析；tree-sitter AST 仍是源码 TODO）、Doom Loop 保护（重复循环自动中断）、文件时间锁（检测编辑期间外部修改）。
 >
 > **Qwen Code 对标**：Qwen Code 有 AST 只读检测和 `permission-helpers.ts` 多层评估。OpenCode 的 Doom Loop 保护（~30 行代码，高 ROI）和 Semaphore 文件锁是主要参考。
 
@@ -18,7 +18,7 @@
 
 | Agent | 命令分析 | 循环保护 | 文件冲突检测 |
 |-------|---------|---------|-------------|
-| **OpenCode** | Tree-sitter AST（参数级） | ✓ Doom Loop（连续 3 次拒绝中断） | ✓ 文件时间锁 |
+| **OpenCode** | token/arity 解析（命令前缀级；tree-sitter 为 TODO） | ✓ Doom Loop（3 步重复循环触发） | ✓ 文件时间锁 |
 | **Claude Code** | 23 项安全检查 + 正则 | — | — |
 | **Gemini CLI** | commandSafety.ts 黑名单 | — | — |
 | **Qwen Code** | AST 只读检测 | — | — |
@@ -58,38 +58,40 @@
 
 ## 三、Doom Loop 保护
 
-**问题**：Agent 被拒绝后换个措辞再试，用户再拒绝，Agent 再试——无限循环浪费 token。
+**问题**：Agent 陷入重复循环（反复调用相同工具，或反复被拒后换措辞再试），无限循环浪费 token。
 
-**解决方案**：连续 N 次权限拒绝后自动中断 Agent 执行。
+**解决方案**：检测到连续重复的步骤后，触发 `doom_loop` 权限（默认 `ask`），交由用户决定是否继续，从而打断循环。
+
+源码: `packages/opencode/src/session/processor.ts`（`DOOM_LOOP_THRESHOLD = 3`）
 
 ```
-拒绝计数 = 0
-
-工具请求权限 → 用户拒绝 → 拒绝计数 += 1
-                         → 拒绝计数 ≥ 3 → 自动中断，提示"检测到循环拒绝"
-                         
-工具请求权限 → 用户允许 → 拒绝计数 = 0（重置）
+监控最近 N 条消息 part（N = DOOM_LOOP_THRESHOLD = 3）
+  → 若最近 3 步构成重复循环
+  → 触发 permission "doom_loop"（默认 ask）
+  → 用户允许则继续，拒绝则中断
 ```
 
-**开发者启示**：~30 行代码实现，高 ROI。Qwen Code 应该立即实现——防止 yolo 模式之外的 Agent 陷入权限拒绝循环。
+**开发者启示**：实现简洁、ROI 高。Qwen Code 可在调度器中加入类似的重复检测（参见 Qwen 自身的多维 Loop 检测）。
 
-## 四、Tree-sitter Bash AST 分析
+## 四、命令前缀/参数级权限（arity 解析）
 
-源码: `packages/opencode/src/permission/arity.ts`
+源码: `packages/opencode/src/permission/arity.ts`（`BashArity`，token 级解析）
 
-使用 Tree-sitter 解析 bash 命令的 AST，提取：
+对 bash 命令做 token 解析，提取命令前缀用于权限匹配与可复用审批：
 - 根命令（`git`、`npm`、`rm`）
 - 子命令（`push`、`install`）
 - 关键参数（`--force`、`-rf`）
 
 ```
 "git push --force origin main"
-  → AST 分析
-  → permission pattern: "git.push.--force"
-  → 匹配规则: deny("git.push.--force")
+  → token / arity 解析
+  → permission pattern: "git push --force"
+  → 匹配规则: deny / ask / allow
 ```
 
-**vs 正则匹配**：正则 `rm -rf` 会误匹配 `echo "rm -rf"`（字符串中的 rm）。AST 分析只匹配实际命令，不匹配字符串内容。
+外部目录检测同样基于 token 解析（`packages/core/src/tool/bash.ts` 的 `shellTokens` / `externalCommandDirectories`）。
+
+> **现状**：更深入的 tree-sitter / parser-based AST 解析在 `bash.ts` 中以 TODO 形式标记（"Port tree-sitter bash parser"、"Replace token-based … with parser-based detection"），**尚未实装**。当前权限判断为 token / 前缀级，而非完整 AST。
 
 ## 五、文件时间锁
 
@@ -112,6 +114,6 @@
 
 在 Write/Edit 工具中检查目标文件的 mtime 是否在上次读取后变化。简单但能防止数据丢失。
 
-### P3：Tree-sitter Bash AST
+### P3：命令参数级权限匹配
 
-Qwen Code 已有 `shellAstParser.ts`，可以扩展到参数级权限匹配（如区分 `git push` vs `git push --force`）。
+Qwen Code 已有 `shellAstParser.ts`，可以扩展到参数级权限匹配（如区分 `git push` vs `git push --force`）——这一点已领先 OpenCode（后者的 tree-sitter AST 仍是 TODO，当前为 token/前缀级）。

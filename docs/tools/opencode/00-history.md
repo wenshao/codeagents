@@ -1,8 +1,8 @@
 # 0. OpenCode 项目演进时间线
 
-> 完整历史从 Kujtim Hoxha 的个人 Go 项目（2025-03）到 Anomaly Innovations / SST 团队接手 + 双重重写（Go→TS + Bubble Tea→OpenTUI），到当前 v1.14.x 多客户端开源平台。
+> 完整历史从 Kujtim Hoxha 的个人 Go 项目（2025-03）到 Anomaly Innovations / SST 团队接手 + 双重重写（Go→TS + Bubble Tea→OpenTUI），到 v1.17.x 多客户端开源平台（截至 2026-06）。
 >
-> **数据来源**：`/root/git/opencode/` git log 11,750 commits 实测 + GitHub API（2026-04-25 抓取）
+> **数据来源**：`/root/git/opencode/` git log 实测 + GitHub API。下方时间线与统计为 2026-04-25 抓取的历史快照。
 
 ## 时间线一览
 

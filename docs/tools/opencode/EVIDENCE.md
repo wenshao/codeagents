@@ -1,16 +1,16 @@
 # OpenCode 遥测与安全分析证据
 
 ## 基本信息
-- 仓库: opencode-ai/opencode, Apache-2.0, TypeScript（Bun 运行时）
-- 版本: v1.3.0（源码: `packages/opencode/package.json`）
-- 架构: TypeScript monorepo（Bun workspace）
-- 最后分析: 2026-03-28（commit `41c77ccb3`）
+- 仓库: sst/opencode, MIT, TypeScript（Bun 运行时）
+- 版本: v1.17.8（源码: `packages/opencode/package.json`）
+- 架构: TypeScript monorepo（Bun workspace，25 包）
+- 最后分析: 2026-06（commit `355a0bcf5`，dev 分支）
 
 > **注**: OpenCode v1.0 之前为 Go 项目（termai），v1.0+ 已完全重写为 TypeScript。
 > v1.2.15 二进制分析显示为 Go ELF（Go 编译产物），这是因为 v1.0 之前的发行版本。
-> 当前源码（v1.3.0）中 0 个 .go 文件，100% TypeScript。
+> 当前源码（v1.17.8）中 0 个 .go 文件，100% TypeScript。
 
-> **免责声明**: 以下基于 2026-03-28 源码分析，可能已过时。
+> **免责声明**: 以下基于 2026-06 源码分析，可能已过时。
 
 ## 遥测系统
 
@@ -53,7 +53,7 @@ OpenCode **不采集任何遥测数据**。OpenTelemetry 为可选开发工具�
 
 **权限操作**: `ask`（提示用户）、`allow`（自动批准）、`deny`（阻止）
 
-**可配置权限工具**: `read`, `edit`, `glob`, `grep`, `list`, `bash`, `task`, `external_directory`, `todowrite`, `todoread`, `question`, `webfetch`, `websearch`, `codesearch`, `lsp`, `doom_loop`, `skill`
+**可配置权限工具**（`packages/core/src/v1/config/permission.ts`）: `read`, `edit`, `glob`, `grep`, `list`, `bash`, `task`, `external_directory`, `todowrite`, `question`, `webfetch`, `websearch`, `lsp`, `doom_loop`, `skill`, `plan_enter`, `plan_exit`
 
 **权限检查流程**:
 1. Agent 级规则（来自配置 `agent.*.permission`）
@@ -61,9 +61,9 @@ OpenCode **不采集任何遥测数据**。OpenTelemetry 为可选开发工具�
 3. 均无匹配 → 通过 TUI 提示用户
 
 ### 外部目录保护
-- 源码: `packages/opencode/src/tool/external-directory.ts`
-- 工具在访问项目目录外的路径前检查 `assertExternalDirectory()`
-- Bash 工具使用 tree-sitter-bash 解析命令检测外部目录访问
+- 源码: `packages/core/src/tool/bash.ts`（`externalCommandDirectories`）
+- 工具在访问项目目录外的路径前检查外部目录权限（`external_directory`）
+- Bash 工具通过 token 解析（`shellTokens`）命令参数检测外部目录访问；tree-sitter / parser-based 解析在 `bash.ts` 中标记为 TODO，尚未实装
 
 ### 无沙箱机制
 OpenCode 不提供沙箱执行隔离。依赖权限系统控制工具行为。
@@ -72,7 +72,9 @@ OpenCode 不提供沙箱执行隔离。依赖权限系统控制工具行为。
 
 ### 架构（TypeScript monorepo）
 
-#### Go 风格 Package 结构（`packages/opencode/src/`）
+#### 主要源码目录（`packages/opencode/src/`）
+
+> 注：v1.17.8 已将大量引擎逻辑下沉到 `packages/core/src/`（如 `filesystem`、`flag`、`global`、权限 schema、`models-dev`、多个工具实现）。下表为 `packages/opencode/src/` 的代表性目录。
 
 | 目录 | 用途 |
 |------|------|
@@ -106,19 +108,22 @@ OpenCode 不提供沙箱执行隔离。依赖权限系统控制工具行为。
 | `tool/` | 工具定义和注册表 |
 | `worktree/` | Git worktree 管理 |
 
-#### Monorepo 包结构（`packages/`）
+#### Monorepo 包结构（`packages/`，25 包）
 
 | 包 | 用途 |
 |---|------|
-| `opencode/` | 核心 CLI/后端 |
+| `opencode/` | 主入口包：CLI 命令/会话编排/服务器/插件宿主 |
+| `core/` | 核心引擎：工具/会话/权限/存储/Agent（Effect 化） |
+| `cli/` | CLI 入口与命令 |
+| `server/` | HTTP/SSE 服务器 |
+| `tui/` | 终端 UI（OpenTUI + Solid.js） |
+| `llm/` | LLM 集成层 |
 | `app/` | Web 应用（SolidJS） |
-| `desktop/` | 桌面应用（Tauri） |
-| `desktop-electron/` | 桌面应用（Electron 替代方案） |
-| `sdk/js/` | JavaScript SDK |
-| `plugin/` | 插件 API 类型定义 |
-| `ui/` | 共享 UI 组件 |
-| `enterprise/` | 企业功能 |
-| `slack/` | Slack 集成 |
+| `desktop/` | 桌面应用（Electron） |
+| `console/` `sdk/` `ui/` `plugin/` | 控制台 / JS SDK / UI 组件 / 插件 API 类型 |
+| `enterprise/` `identity/` `containers/` `slack/` `stats/` | 企业 / 身份 / 容器 / Slack / 统计 |
+| `http-recorder/` `effect-drizzle-sqlite/` `effect-sqlite-node/` | HTTP 录制 / Effect-SQLite 适配 |
+| `storybook/` `docs/` `web/` `function/` `script/` | Storybook / 文档 / Web 工具 / 函数 / 构建脚本 |
 
 ### 代理系统（7 个内置代理）
 
@@ -127,48 +132,44 @@ OpenCode 不提供沙箱执行隔离。依赖权限系统控制工具行为。
 | 代理 | 用途 |
 |------|------|
 | general | 通用任务 |
-| build/coder | 代码生成 |
+| build | 代码生成（默认代理） |
 | plan | 任务规划 |
 | explore | 代码库探索 |
 | title | 会话标题生成 |
 | summary | 摘要生成 |
 | compaction | 上下文压缩 |
 
-### 工具系统（19+ 个）
+### 工具系统（16 个 = 13 无条件 + 3 有条件）
 
-源码: `packages/opencode/src/tool/registry.ts`（`all()` 函数注册）
+源码: `packages/opencode/src/tool/registry.ts`（`Tool.init(...)` 注册，`builtin[]` 数组）
 
-| 工具 | 源码 | 用途 | 关键参数 |
+| 工具 (id) | 源码 | 用途 | 关键参数 |
 |------|------|------|---------|
-| `bash` | `tool/bash.ts` | Shell 命令执行 | `command`, `timeout?`, `workdir?`, `description` |
+| `invalid` | `tool/invalid.ts` | 无效工具调用后备 | `tool`, `error` |
+| `bash` | `tool/shell.ts` | Shell 命令执行 | `command`, `cwd?`, `env?` |
 | `read` | `tool/read.ts` | 读取文件/目录 | `filePath`, `offset?`, `limit?` |
 | `glob` | `tool/glob.ts` | 文件模式搜索 | `pattern`, `path?` |
-| `grep` | `tool/grep.ts` | 正则内容搜索 | `pattern`, `path?`, `include?` |
-| `edit` | `tool/edit.ts` | 精确文本替换（模糊匹配） | `filePath`, `oldString`, `newString`, `replaceAll?` |
-| `write` | `tool/write.ts` | 写入文件 | `content`, `filePath` |
+| `grep` | `tool/grep.ts` | 正则内容搜索 | `pattern`, `path?` |
+| `edit` | `tool/edit.ts` | 精确文本替换 | `filePath`, `oldString`, `newString` |
+| `write` | `tool/write.ts` | 写入文件 | `filePath`, `content` |
 | `task` | `tool/task.ts` | 委派给子代理 | `description`, `prompt`, `subagent_type` |
-| `webfetch` | `tool/webfetch.ts` | URL 内容抓取 | `url`, `format?`, `timeout?` |
+| `webfetch` | `tool/webfetch.ts` | URL 内容抓取 | `url`, `format?` |
 | `todowrite` | `tool/todo.ts` | 写入待办列表 | `todos[]` |
-| `todoread` | `tool/todo.ts` | 读取待办列表 | （无） |
-| `websearch` | `tool/websearch.ts` | Web 搜索（Exa API） | `query`, `numResults?` |
-| `codesearch` | `tool/codesearch.ts` | 代码上下文搜索（Exa API） | `query`, `tokensNum?` |
+| `websearch` | `tool/websearch.ts` | Web 搜索（Exa / Parallel） | `query`, `numResults?` |
 | `skill` | `tool/skill.ts` | 加载技能 | `name` |
+| `apply_patch` | `tool/apply_patch.ts` | 统一补丁格式 | `patchText` |
 | `question` | `tool/question.ts` | 向用户提问 | `questions[]` |
-| `apply_patch` | `tool/apply_patch.ts` | 统一补丁格式（GPT 模型） | `patchText` |
-| `batch` | `tool/batch.ts` | 并行批量执行（实验性） | `tool_calls[]` |
-| `plan_exit` | `tool/plan.ts` | 退出规划模式（实验性） | （无） |
-| `lsp` | `tool/lsp.ts` | LSP 操作（实验性） | `operation`, `filePath`, `line`, `character` |
-| `list` | `tool/ls.ts` | 目录树（注册但不在 `all()` 中） | `path?`, `ignore?` |
-| `multiedit` | `tool/multiedit.ts` | 多处编辑 | — |
-| `invalid` | `tool/invalid.ts` | 无效工具调用后备 | `tool`, `error` |
+| `lsp` | `tool/lsp.ts` | LSP 操作 | `operation`, `filePath`, `line`, `character` |
+| `plan_exit` | `tool/plan.ts` | 退出规划模式 | （无） |
 
-**条件激活：**
-- `question`: 仅 app/cli/desktop 客户端 或 `OPENCODE_ENABLE_QUESTION_TOOL=true`
-- `websearch`/`codesearch`: 仅 provider 为 `opencode` 或 `OPENCODE_ENABLE_EXA=true`
-- `apply_patch`: 仅 GPT 模型（非 GPT-4）
-- `batch`: 仅 `experimental.batch_tool=true`
-- `plan_exit`: 仅 `OPENCODE_EXPERIMENTAL_PLAN_MODE=true`
-- `lsp`: 仅 `OPENCODE_EXPERIMENTAL_LSP_TOOL=true`
+**条件激活（3 个有条件 + 模型/后端相关）：**
+- `question`: 仅 app/cli/desktop 客户端 或 `enableQuestionTool` flag
+- `lsp`: 仅 `experimentalLspTool` flag
+- `plan_exit`: 仅 `experimentalPlanMode` flag 且 CLI 客户端
+- `apply_patch` ↔ `edit`/`write`: 按模型互斥——`modelID.includes("gpt-") && !modelID.includes("oss") && !modelID.includes("gpt-4")` 时用 `apply_patch`，否则用 `edit`/`write`
+- `websearch`: 需 Exa 或 Parallel 后端启用（`flags.enableExa` / `flags.enableParallel`），或 provider 为 `opencode`
+
+> 早期文档列出的 `ls`/`multiedit`/`todoread`/`codesearch`/`batch` 工具在当前源码中已不存在。
 
 ### 斜杠命令系统
 
@@ -211,29 +212,36 @@ OpenCode 不提供沙箱执行隔离。依赖权限系统控制工具行为。
 | `/editor` | — | 打开编辑器 |
 | `/skills` | — | 列出技能 |
 
-### LSP 集成（37 语言服务器）
+### LSP 集成（38 语言服务器）
 
 源码: `packages/opencode/src/lsp/server.ts`
 
-支持语言: TypeScript, JavaScript, Vue, Go, Ruby, Python, Elixir, Zig, C#, F#, Swift, Rust, C/C++, Svelte, Astro, Java, Kotlin, YAML, Lua, PHP, Prisma, Dart, OCaml, Bash, Terraform, LaTeX, Dockerfile, Gleam, Clojure, Nix, Typst, Haskell, Julia 等
+支持语言: TypeScript, JavaScript, Vue, Go, Ruby, Python, Elixir, Zig, C#, Razor, F#, Swift, Rust, C/C++, Svelte, Astro, Java, Kotlin, YAML, Lua, PHP, Prisma, Dart, OCaml, Bash, Terraform, LaTeX, Dockerfile, Gleam, Clojure, Nix, Typst, Haskell, Julia 等
 
 LSP 工具操作: `goToDefinition`, `findReferences`, `hover`, `documentSymbol`, `workspaceSymbol`, `goToImplementation`, `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`
 
 语言映射: `packages/opencode/src/lsp/language.ts`（~120 文件扩展名 → 语言 ID）
 
-### 认证插件（3 个）
+### 认证插件（10 个：内置 8 + 外部 npm 2）
 
-源码: `packages/opencode/src/plugin/index.ts#L47`
+源码: `packages/opencode/src/plugin/index.ts`（`internalPlugins`）
 
-| 插件 | 提供商 | 认证方式 | 源码 |
-|------|--------|---------|------|
-| CopilotAuthPlugin | `github-copilot` | GitHub Device Flow OAuth | `packages/opencode/src/plugin/copilot.ts` |
-| CodexAuthPlugin | `openai` | 浏览器 OAuth / 设备码 / API Key | `packages/opencode/src/plugin/codex.ts` |
-| GitlabAuthPlugin | GitLab | GitLab OAuth（外部 npm 包） | `opencode-gitlab-auth` |
+| 插件 | 提供商 | 源码 |
+|------|--------|------|
+| CodexAuthPlugin | `openai` | `plugin/openai/codex.ts` |
+| CopilotAuthPlugin | `github-copilot` | `plugin/github-copilot/copilot.ts` |
+| AzureAuthPlugin | `azure` | `plugin/azure.ts` |
+| CloudflareWorkersAuthPlugin | `cloudflare-workers-ai` | `plugin/cloudflare.ts` |
+| CloudflareAIGatewayAuthPlugin | `cloudflare-ai-gateway` | `plugin/cloudflare.ts` |
+| SnowflakeCortexAuthPlugin | `snowflake-cortex` | `plugin/snowflake-cortex.ts` |
+| DigitalOceanAuthPlugin | `digitalocean` | `plugin/digitalocean.ts` |
+| XaiAuthPlugin | `xai` | `plugin/xai.ts` |
+| GitlabAuthPlugin | `gitlab` | `opencode-gitlab-auth`（外部 npm） |
+| PoeAuthPlugin | `poe` | `opencode-poe-auth`（外部 npm） |
 
 ### 模型支持（100+ 提供商）
 
-源码: `packages/opencode/src/provider/models.ts`
+源码: `packages/core/src/models-dev.ts`
 
 - 通过 models.dev API 动态加载（`https://models.dev/api.json`）
 - 缓存: `~/.cache/opencode/models.json`

@@ -1,6 +1,6 @@
 # 2. 命令与工具——开发者参考
 
-> OpenCode 的工具系统有两个独特设计：**7 个内置代理**（每个代理有独立的工具集和系统提示）和 **18 种工具**（含 4 个条件工具）。其代理分层比 Claude Code 的单一 Agent + Subagent 模式更结构化。
+> OpenCode 的工具系统有两个独特设计：**7 个内置代理**（每个代理有独立的工具集和系统提示）和 **16 种工具**（含 3 个条件工具）。其代理分层比 Claude Code 的单一 Agent + Subagent 模式更结构化。
 >
 > **Qwen Code 对标**：OpenCode 的代理预设（build/plan/general/explore）可参考 Qwen Code 的 Subagent 类型设计。`tool.definition` Hook（运行时修改工具 Schema）是竞品中独有的能力。
 
@@ -15,7 +15,7 @@
 | "构建这个功能" | Read + Write + Edit + Bash + Task | 主动编码，可修改文件 |
 | "分析这个架构" | Read + Grep + Glob | 只读，不应修改文件 |
 | "规划重构方案" | Read + Grep + Glob | 只输出计划，不执行 |
-| "探索这个代码库" | Read + Grep + Glob + CodeSearch | 深度搜索，不修改 |
+| "探索这个代码库" | Read + Grep + Glob + WebSearch | 深度搜索，不修改 |
 
 Claude Code 用**单一 Agent + 动态工具过滤**解决这个问题。OpenCode 选择了**预定义代理**模式——每个代理有固定的工具集和系统提示。两种方案各有优劣：
 
@@ -28,7 +28,7 @@ Claude Code 用**单一 Agent + 动态工具过滤**解决这个问题。OpenCod
 
 | Agent | 代理模式 | 预设数量 | 用户选择 |
 |-------|---------|---------|---------|
-| **OpenCode** | 7 个预定义代理 | build/plan/general/explore/coder/designer/sysadmin | 启动时 `--agent` 或运行时切换 |
+| **OpenCode** | 7 个预定义代理 | build/plan/general/explore/compaction/title/summary | 启动时 `--agent` 或运行时切换 |
 | **Claude Code** | 单一 Agent + Subagent 类型 | general-purpose/Explore/Plan | 模型自动选择 Subagent |
 | **Qwen Code** | 单一 Agent + Subagent 类型 | Explore（只读）/ general | 模型自动选择 |
 | **Gemini CLI** | 单一 Agent | — | — |
@@ -78,51 +78,46 @@ opencode uninstall
 
 ## 工具系统
 
-> **⚠ 重大修正（第 N 轮审核）：** 原文档基于旧 TypeScript 版本。OpenCode 当前为 **Go 实现**（`internal/` 目录），工具列表已完全不同。
+OpenCode 当前为 **100% TypeScript**（Bun 运行时，仓库 0 个 `.go` 文件）。工具注册表见 `packages/opencode/src/tool/registry.ts`，核心工具实现多在 `packages/opencode/src/tool/`（部分引擎逻辑已下沉到 `packages/core/src/`）。
 
-### 当前工具（Go 版，源码：`internal/llm/agent/tools.go`，12 个）
+### 内置工具（16 个 = 13 无条件 + 3 有条件）
 
-| Agent | 用途 | 来源 |
+| 工具 | 源码 | 用途 | 关键参数 |
+|------|------|------|---------|
+| `invalid` | `tool/invalid.ts` | 无效工具调用后备 | `tool`, `error` |
+| `bash` | `tool/shell.ts` | Shell 命令执行（id 为 `bash`） | `command`, `cwd?`, `env?` |
+| `read` | `tool/read.ts` | 读取文件/目录 | `filePath`, `offset?`, `limit?` |
+| `glob` | `tool/glob.ts` | 文件模式搜索 | `pattern`, `path?` |
+| `grep` | `tool/grep.ts` | 正则内容搜索 | `pattern`, `path?` |
+| `edit` | `tool/edit.ts` | 精确文本替换 | `filePath`, `oldString`, `newString` |
+| `write` | `tool/write.ts` | 写入文件 | `filePath`, `content` |
+| `task` | `tool/task.ts` | 委派给子代理 | `description`, `prompt`, `subagent_type` |
+| `webfetch` | `tool/webfetch.ts` | URL 内容抓取 | `url`, `format?` |
+| `todowrite` | `tool/todo.ts` | 写入待办列表 | `todos[]` |
+| `websearch` | `tool/websearch.ts` | Web 搜索（Exa / Parallel） | `query`, `numResults?` |
+| `skill` | `tool/skill.ts` | 加载技能 | `name` |
+| `apply_patch` | `tool/apply_patch.ts` | 统一补丁格式 | `patchText` |
+| `question` | `tool/question.ts` | 向用户提问 | `questions[]` |
+| `lsp` | `tool/lsp.ts` | LSP 操作 | `operation`, `filePath`, `line`, `character` |
+| `plan_exit` | `tool/plan.ts` | 退出规划模式 | （无） |
+
+**条件激活（3 个）：**
+- `question`：仅 app/cli/desktop 客户端 或 `enableQuestionTool`
+- `lsp`：仅 `experimentalLspTool`
+- `plan_exit`：仅 `experimentalPlanMode` 且 CLI 客户端
+
+**模型相关：** `apply_patch` 与 `edit`/`write` 按模型互斥——`gpt-` 且非 `oss`/`gpt-4` 时启用 `apply_patch`，否则用 `edit`/`write`；`websearch` 需启用 Exa 或 Parallel 后端（或 provider 为 `opencode`）。
+
+> 源码中已无早期文档列出的 `ls`/`multiedit`/`todoread`/`codesearch`/`batch`/`sourcegraph`/`diagnostics` 工具。
+
+### 内置命令（服务端）
+
+| 命令 | 用途 | 源码 |
 |------|------|------|
-| **bash** | Shell 命令执行 | Go 源码确认 |
-| **edit** | 文件编辑 | Go 源码确认 |
-| **write** | 文件写入 | Go 源码确认 |
-| **view** | 读取文件内容（带行号） | Go 源码确认 |
-| **glob** | 文件模式匹配搜索 | Go 源码确认 |
-| **grep** | 正则内容搜索 | Go 源码确认 |
-| **ls** | 列出目录内容 | Go 源码确认 |
-| **fetch** | 抓取 Web 内容 | Go 源码确认 |
-| **patch** | 应用代码补丁 | Go 源码确认 |
-| **sourcegraph** | Sourcegraph 代码搜索 | Go 源码确认 |
-| **agent** | 启动搜索子代理 | Go 源码确认 |
-| **diagnostics** | LSP 诊断（需 LSP 客户端） | Go 源码确认（条件加载） |
+| `/init` | 创建/更新 AGENTS.md | `packages/opencode/src/command/index.ts` |
+| `/review` | 代码审查 | `packages/opencode/src/command/index.ts` |
 
-**TaskAgent 只读工具子集**（用于子代理）：glob, grep, ls, sourcegraph, view
-
-### 内置命令（2 个，源码：`RegisterCommand`）
-
-| 命令 | 用途 |
-|------|------|
-| `init` | 初始化项目（创建/更新 OpenCode.md） |
-| `compact` | 压缩会话（摘要后创建新会话） |
-
-支持自定义命令：`~/.config/opencode/commands/` 和 `.opencode/commands/` 目录。
-
-### 快捷键（Go TUI，源码：`internal/tui/tui.go`）
-
-| 快捷键 | 功能 |
-|--------|------|
-| **Ctrl+K** | 命令面板（**非 Ctrl+P**，原文档有误） |
-| Ctrl+L | 查看日志 |
-| Ctrl+S | 切换会话 / 发送消息 |
-| Ctrl+F | 文件选择器（上传） |
-| Ctrl+O | 模型选择 |
-| Ctrl+T | 切换主题 |
-| Ctrl+N | 新建会话 |
-| Ctrl+E | 打开外部编辑器 |
-| Ctrl+H / Ctrl+? | 切换帮助 |
-| @ | 补全对话框 |
-| Esc | 取消 |
+支持自定义命令：`~/.config/opencode/command/` 和 `.opencode/command/` 目录。TUI 另有 ~23 个斜杠命令（`/sessions`、`/models`、`/agents`、`/share`、`/fork`、`/compact`、`/undo`、`/redo`、`/skills` 等，详见 [EVIDENCE.md](./EVIDENCE.md)）。
 
 ## 多代理系统
 
@@ -131,13 +126,13 @@ opencode uninstall
 | **build** | 主代理 | 完全访问 + question + plan_enter | 默认代理，代码开发、文件编辑 |
 | **plan** | 主代理 | 只读（edit deny）+ plan_exit | 代码分析、规划，只能写 plan 文件 |
 | **general** | 子代理 | 受限（无 todo） | 复杂多步骤研究，可并行执行 |
-| **explore** | 子代理 | 只读（grep/glob/list/read/bash/webfetch/websearch/codesearch） | 快速代码库搜索，支持 quick/medium/thorough |
+| **explore** | 子代理 | 只读（grep/glob/list/read/bash/webfetch/websearch） | 快速代码库搜索，支持 quick/medium/very thorough |
 | **compaction** | 隐藏 | 全部 deny | 会话压缩 |
 | **title** | 隐藏 | 内部 | 自动标题生成 |
 | **summary** | 隐藏 | 内部 | 自动摘要生成 |
 
 - 支持通过 `opencode.json` 定义自定义代理（独立模型、温度、系统提示、最大步数）
-- 子代理通过 `@general`、`@explore` 消息引用调用
+- 子代理通过 `task` 工具（`subagent_type`）调用，TUI 中也可用 `@general`/`@explore` 引用
 
 ## 命令面板（Ctrl+P）
 
@@ -149,16 +144,17 @@ v1.0.0 新增命令面板，类似 VS Code 的 Ctrl+P 快速操作入口，提�
 规则优先级：远程 → 全局 → 项目 → .opencode → 内联
 权限类型（config schema 定义）：
   read, edit, glob, grep, list, bash, task,
-  external_directory, todowrite, todoread, question,
-  webfetch, websearch, codesearch, lsp, doom_loop, skill
+  external_directory, todowrite, question,
+  webfetch, websearch, lsp, doom_loop, skill,
+  plan_enter, plan_exit
   + catchall（任意自定义 key）
 操作：allow / deny / ask
 ```
 
-- 基于 Tree-sitter 的 bash 命令 AST 解析，自动提取目录和操作
+- 基于 token 解析的 bash 命令参数检测，自动提取外部目录（tree-sitter AST 解析在 `bash.ts` 中标记为 TODO，尚未实装）
 - `.env*` 文件默认 ask 确认（`.env.example` 除外）
 - 外部目录默认 ask 确认
-- Doom Loop 保护：连续权限拒绝自动中断
+- Doom Loop 保护：连续 3 步重复循环触发 doom_loop 权限询问（`DOOM_LOOP_THRESHOLD=3`）
 - Provider whitelist/blacklist：`enabled_providers` / `disabled_providers` 配置
 
 ## 配置

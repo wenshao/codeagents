@@ -14,7 +14,7 @@
 
 ## 二、实现架构
 
-源码: `packages/opencode/src/provider/models.ts`
+源码: `packages/core/src/models-dev.ts`（Provider 选择/认证在 `packages/opencode/src/provider/`）
 
 ```
 启动时
@@ -71,9 +71,9 @@
 }
 ```
 
-### 20 个内置 Provider
+### 内置 Provider（20+）
 
-Anthropic、OpenAI、Google（Generative AI + Vertex AI）、Amazon Bedrock、Azure、OpenRouter、Mistral、GitHub Copilot、GitLab、xAI、Groq、Cohere、DeepInfra、Cerebras、Together AI、Perplexity、Cloudflare（Workers AI + AI Gateway）、SAP AI Core、自定义 OpenAI 兼容。
+Anthropic、OpenAI、Google（Generative AI + Vertex AI）、Amazon Bedrock、Azure、OpenRouter、Mistral、Qwen/DashScope（Alibaba）、GitHub Copilot、GitLab、xAI、Groq、Cohere、DeepInfra、Cerebras、Together AI、Perplexity、Cloudflare（Workers AI + AI Gateway）、Snowflake Cortex、DigitalOcean、SAP AI Core、自定义 OpenAI 兼容。
 
 ## 三、Qwen Code 改进建议
 
