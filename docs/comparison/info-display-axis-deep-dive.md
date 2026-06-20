@@ -129,7 +129,7 @@ Claude 间接通过 `TokenWarning` 分级（context % 触发）暗示成本压�
 - `BudgetLimited { usage }` — 显式 `Goal unmet` / `Goal abandoned`
 - `Complete { usage }` — `Goal achieved`
 
-参 [`/goal` 命令深度对比](./goal-command-deep-dive.md)（独立专题）+ [`qwen-code-improvement-report.md` 2026-05-16 增量](./qwen-code-improvement-report.md#2026-05-16-增量goal-系列收官)（时间线演进）。
+参 [`/goal` 命令深度对比](./goal-command-deep-dive.md)（独立专题）+ [`qwen-code-improvement-report.md` 2026-05-16 增量](./qwen-code-improvement-report-changelog.md#2026-05-16-增量goal-系列收官)（时间线演进）。
 
 ### ③ 信息密度光谱
 

@@ -107,7 +107,7 @@
 
 | Claude Code | Qwen Code | 状态 | 备注 |
 |---|---|---|---|
-| `EnterWorktree` / `ExitWorktree` | `enter_worktree` / `exit_worktree`（**PR#4073 OPEN 2026-05-12**）+ `agent` 工具 `isolation: 'worktree'` 参数 | 🟡 **Qwen 待合并**（review 中）| **PR#4073** (+1651/-4 · LaZzyMan · closes Phase A+B of #4056)——2 新工具直接对标 Claude 工具名 + agent 隔离参数 + worktree cleanup + dirty-state guard + slug validation；详见 [improvement-report 2026-05-12 第二轮](./qwen-code-improvement-report.md#2026-05-12-第二轮) |
+| `EnterWorktree` / `ExitWorktree` | `enter_worktree` / `exit_worktree`（**PR#4073 MERGED 2026-05-14**）+ `agent` 工具 `isolation: 'worktree'` 参数 | ✅ **Qwen 已合并** | **PR#4073** (+1651/-4 · LaZzyMan · closes Phase A+B of #4056)——2 新工具直接对标 Claude 工具名 + agent 隔离参数 + worktree cleanup + dirty-state guard + slug validation；详见 [improvement-report 2026-05-12 第二轮](./qwen-code-improvement-report-changelog.md#2026-05-12-第二轮) |
 
 ### 3.10 Remote / Team / 全局工具
 
@@ -176,7 +176,7 @@ ToolSearch 工作流：
 
 ### 4.3 设计权衡：token 节省 vs cache hit
 
-[PR#4069 揭示的根本矛盾](./qwen-code-improvement-report.md#2026-05-12)（来自真实用户 [discussions/4065](https://github.com/QwenLM/qwen-code/discussions/4065)）：
+[PR#4069 揭示的根本矛盾](./qwen-code-improvement-report-changelog.md#2026-05-12)（来自真实用户 [discussions/4065](https://github.com/QwenLM/qwen-code/discussions/4065)）：
 
 | 维度 | ToolSearch 之前 | ToolSearch 之后 |
 |---|---|---|
