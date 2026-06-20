@@ -270,7 +270,7 @@
 | **P2** | privilege escalation防护 — auto 模式 60+ 危险规则自动剥离 [↓](./qwen-code-improvement-report-p2-stability.md#item-35) | AUTO 模式已自动剥离危险 allow 规则（`permission-manager.ts` stripDangerousRulesForAutoMode + `dangerousRules.ts`），非 yolo 全批准 | 中 | [PR#3048](https://github.com/QwenLM/qwen-code/pull/3048) 🟡 OPEN（session-scoped vibe mode，未合并）；AUTO 剥离机制已落地（源码 `permission-manager.ts`）|
 | **P3** | [动态状态栏](./dynamic-status-bar-deep-dive.md) — 模型/工具可实时更新状态文本 [↓](./qwen-code-improvement-report-p3-features.md#item-1) | 仅静态 Footer | 小 | — |
 | **P3** | [上下文折叠](./context-compression-deep-dive.md) — History Snip（Claude Code 自身仅 scaffolding，未完整实现） [↓](./qwen-code-improvement-report-p3-features.md#item-2) | 缺失 | 大 | — |
-| **P3** | [内存诊断](./memory-diagnostics-deep-dive.md) — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3-features.md#item-3) | 缺失 | 中 | — |
+| **P3** | [内存诊断](./memory-diagnostics-deep-dive.md) — V8 heap dump + 1.5GB 阈值触发 + leak 建议 + smaps 分析 [↓](./qwen-code-improvement-report-p3-features.md#item-3) | ✓ 已实现（`memoryDiagnostics`：RSS/heap gap 分析 + `smapsRollup` + fd-leak + 压力检测自动落盘）| 中 | [PR#4654](https://github.com/QwenLM/qwen-code/pull/4654) ✓（压力自动 dump）/ [PR#3785](https://github.com/QwenLM/qwen-code/pull/3785) ✓（结构化诊断）|
 | **P3** | [Feature Gates](./feature-gates-deep-dive.md) — GrowthBook 远程特性开关 + A/B 测试 + 按事件动态采样 [↓](./qwen-code-improvement-report-p3-features.md#item-4) | 缺失 | 中 | — |
 | **P3** | [DXT/MCPB 插件包](./zip-bomb-protection-deep-dive.md) — zip bomb 防护（512MB/文件，1GB 总量，50:1 压缩比限制） [↓](./qwen-code-improvement-report-p3-features.md#item-5) | 缺失 | 中 | — |
 | **P3** | [/security-review](./security-review-command-deep-dive.md) — 基于 git diff 的安全审查命令，聚焦漏洞检测 [↓](./qwen-code-improvement-report-p3-features.md#item-6) | 缺失 | 小 | — |
@@ -518,6 +518,16 @@
 **② 错误 / 已撤 PR 引用纠正**：**#2886**（实为 "session_id in API calls"，非 Agent Team——6 处误citing 已改为 #4844 / #2936 / #3471）；#3537 / #3798 / #3292 / #2838（均 CLOSED，非 OPEN）；#3048（OPEN vibe-mode，非本项实现）；#3034 / #3170（OPEN，针对诊断非并行启动）；张冠李戴 #4051(docs 已 MERGED) / #3042(无关 2025-07 docs) / #2024(早期拒绝 PDF) / #2891(InputPrompt 清理)。
 
 **③ 增量事实**：新增 `packages/sdk-java`（Java SDK）→ "Qwen 仅 TS SDK" 已过时（现 TS+Python+Java 三套）；WebFetch fastModel 路由经核实**被否决**（`web-fetch.ts` 刻意 pin 主模型）。
+
+#### §二 二轮深度复核（2026-06-20 · 抽查触发→全表系统核实，再修正 ~33 行）
+
+> 用户两次抽查（记忆 prefetch / Fork Subagent）均命中 9 路 agent 漏判的 stale，遂转为系统性核实。三种高产方法叠加，又揪出 ~33 行 stale（多为近 1–2 月合入但 §二 未同步）：
+>
+> **① 自相矛盾检测**（现状=缺失/仅 但进展=✓ PR）：HTTP Hooks（#2827）、Skill 模型覆盖（#2949）、危险操作指导（#2889）。
+> **② §二↔§四 交叉比对**（§四 近期已核实，§二 落后）：反应式压缩 #3879、Token 实时计数 #3329、并发 Session #3642、Git `/diff` #3491、文件历史快照 #4897、Deep Link `craftagents://`、keybindings #3969、Denial Tracking #4476、SendMessageTool #3471、Shell 安全 classifier #4151、请求合并 #3818、延迟初始化 #4022 等。
+> **③ recent-feat-PR 反扫**（按合入 PR 标题反查"缺失"行——最高产）：OSC 通知 iTerm2/Kitty/Ghostty #3562、`/copy` #4761、OSC 8 超链接 #4037、fd 追踪 memoryDiagnostics #3785、Virtual Scrolling #4146、路径补全 #4092、`/rename` #4048、Git 状态注入 #4110、PreCompact Hook #4688、内存诊断 #4654 等。
+>
+> **大教训**：`git log --grep "(#N)"` 假阳性（PR 号复用/正文交叉引用）+ 反向 grep 假阴性（功能在 `core/client.ts` 等非预期文件）令首轮 agent 系统性漏判"近期已实现"项。可靠法：`--diff-filter=A -- <file>` 定引入 commit + recent-feat-PR 标题反扫 + §四 交叉比对。两次"Fork/prefetch 实为已实现"另引发 [fork-subagent-deep-dive](./fork-subagent-deep-dive.md) §9 对比表与 [memory-prefetch](./memory-prefetch-deep-dive.md)、[item-2](./qwen-code-improvement-report-p0-p1-core.md#item-2)/[item-3](./qwen-code-improvement-report-p0-p1-engine.md#item-3) 连带更新。
 
 ---
 
