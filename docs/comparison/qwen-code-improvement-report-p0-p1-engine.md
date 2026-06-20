@@ -118,7 +118,7 @@
 | `query.ts` (L301, L1592) | 每轮 `using prefetch = startRelevantMemoryPrefetch()`、工具后 `if settled → inject` |
 | `query.ts` (L66-67, L331, L1620) | `skillPrefetch?.startSkillDiscoveryPrefetch()` skill 发现prefetch、write-pivot 触发（feature gate `EXPERIMENTAL_SKILL_SEARCH`） |
 
-**Qwen Code 修改方向**：无记忆prefetch机制；技能加载在启动时一次性完成（`skill-manager.ts`）；上下文附件在工具执行前同步收集。改进方向：① `chatCompressionService.ts` 旁新建 `memoryPrefetch.ts`——用户消息处理时 fire-and-forget 启动记忆搜索；② `coreToolScheduler.ts` 工具执行完成后检查 prefetch 是否 settled；③ skill 发现改为惰性——首次需要时搜索 + 结果缓存。
+**Qwen Code 现状**：✅ **记忆 prefetch 已实现**（[PR#4172](https://github.com/QwenLM/qwen-code/pull/4172) 2026-05-19 · `core/client.ts` `MemoryPrefetchHandle`）——用户消息到达即 fire-and-forget 发射非阻塞 auto-memory recall（`relevanceSelector` 召回），UserQuery 主请求前做 zero-wait settled poll 优先注入、未结算则下个 ToolResult 轮次消费，与工具执行重叠；并有完整生命周期管理（resetChat/MaxSessionTurns 等路径 abort-and-discard）。底座 [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) managed auto-memory。**仍缺**：① skill 发现仍为启动期/惰性加载，无 write-pivot 异步prefetch（对标 Claude `startSkillDiscoveryPrefetch()`）；② 上下文附件仍在工具执行前同步收集，无 attachment prefetch。
 
 **实现成本评估**：
 - 涉及文件：~3 个
@@ -127,8 +127,8 @@
 - 难点：prefetch 结果与主线程的竞态处理
 
 **意义**：记忆搜索需 50-200ms（涉及文件扫描或向量匹配）——与工具执行重叠则用户零感知。
-**缺失后果**：记忆/上下文收集阻塞工具执行——每轮额外 100-200ms 串行等待。
-**改进收益**：异步prefetch——记忆搜索与工具执行并行，延迟完全隐藏。
+**缺失后果**：记忆 recall 已并行隐藏（#4172）；剩余 skill 发现 / 上下文附件仍在工具执行前同步——write-pivot 时每轮额外 ~100-200ms 串行等待。
+**改进收益**：异步prefetch——搜索与工具执行并行，延迟完全隐藏（记忆部分已兑现，skill/附件待补）。
 
 ---
 
