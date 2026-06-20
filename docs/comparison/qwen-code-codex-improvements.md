@@ -1,8 +1,8 @@
 # Qwen Code 改进建议——对标 Codex CLI
 
-> 基于 Codex CLI (openai/codex) 完整 Rust 源码（97 crate，**992,581 行** `codex-rs/**/*.rs`）与 Qwen Code 源码（**1,292,728 行** `packages/**/*.ts(x)`，daemon/web-shell/desktop 合入 main 后激增）的系统对比，识别 **30 项**可借鉴的能力（其中 **1 项已实现**——item-13 Hook 系统）。Codex CLI 是唯一采用 Rust 原生构建 + 沙箱默认启用的主流 CLI Code Agent。
+> 基于 Codex CLI (openai/codex) 完整 Rust 源码（121 crate，**1,043,805 行** `codex-rs/**/*.rs`）与 Qwen Code 源码（**1,381,340 行** `packages/**/*.ts(x)`，daemon/web-shell/desktop 合入 main 后激增）的系统对比，识别 **30 项**可借鉴的能力（其中 **1 项已实现**——item-13 Hook 系统）。Codex CLI 是唯一采用 Rust 原生构建 + 沙箱默认启用的主流 CLI Code Agent。
 >
-> **最后核对日期**：2026-06-13（两侧源码均已 `git pull` 刷新；对照 release notes v0.134.0 → v0.139.0 stable + 0.140.0-alpha；新增 item-30 Plugin 系统补录，refresh item-1/3/4/8/9/12/16/23/27/28/29 状态）
+> **最后核对日期**：2026-06-20（Codex `git pull`：`56c97e3b5c → 64bdeed9f7`，7 天 231 commits，`codex-rs` +51k 行；**本窗口 0 个新增 crate / 0 个新 item**，refinement-heavy；crate 数 baseline 修正为 **121**（cargo workspace members）；refresh item-8/9/12/18/25/26/29/30 状态）
 >
 > **相关报告**：
 > - [Claude Code 改进建议报告（256 项）](./qwen-code-improvement-report.md)——行业领先者对比
@@ -212,6 +212,8 @@
 
 **2026-06-13 状态更新**：控制面继续扩张——`codex app-server --stdio` 启动模式（#24940）、账户 token usage 查询（#25344）、auth v2 Personal Access Token（#25731）；**remote-control 走 app-server v2 RPC**：配对发起 + controller grants 列举/撤销（v0.137.0 #25675/#25785）、websocket 用短时 server token 取代 ChatGPT access token（#24141）、desired state 持久化（#27445）。这套"远程控制配对 + 授权可审计可撤销"的安全模型，可对照 Qwen Code daemon 的 bearer token 体系（参见 [daemon 安全](./qwen-code-daemon-design/05-permission-auth.md)——pair token / per-client 撤销正在 backlog）。
 
+**2026-06-20 状态更新**：remote environment 连接生命周期成形——core 侧连接 lifecycle + 启动中 environment 入 snapshot 追踪 + app-server 侧连接超时配置三连（#28674/#28683/#29025）。配合 exec-server 的远端环境（item-25），app-server 正从"本地 IDE 协议"扩展为"多主机远程环境控制面"。
+
 **实现成本**：~3 周
 
 ---
@@ -235,6 +237,8 @@
 **2026-05-24 状态更新**：Codex 2026-05 新增 `codex-rs/agent-graph-store/`（454 行，PR `782191547c`）—— 存储与查询 thread-spawn 的父子拓扑关系，为多 agent 协作提供结构化存储边界。Qwen Code 做多 agent 编排时可参考这种"先建图存关系再 spawn"的模式，便于事后追踪和调试。
 
 **2026-06-13 状态更新**：multi-agent v2 进入资源治理阶段——agent **residency LRU**（限制驻留 agent 数，#26632）、并发额度按"活跃执行"而非 spawn 数计量（#26969）、`close_agent` 改名 `interrupt_agent` 语义更准确（#26994）、resume 时不自动复活 v2 后代 agent（#26997）、runtime 选择随 thread 保持 + spawned agent 的 follow-up/metadata 默认值清理（v0.137.0）。Qwen Code 的 Agent Team（实验中）做并发治理时可借鉴 LRU + 活跃执行计量。
+
+**2026-06-20 状态更新**：从"能并行"到"可控何时并行"——新增 **per-turn multi-agent mode**（#28685，`turn/start.multiAgentMode` = `explicitRequestOnly` / `proactive`，受 `features.multi_agent_mode` gate）+ **thread 级 mode**（#28792，`thread/start`/`resume`/`fork` 返回并保持 mode）。Qwen Code 的 Agent Team 可借鉴这种"按 turn/会话声明并行策略"的开关粒度。
 
 ---
 
@@ -275,6 +279,8 @@
 **实现成本**：~2 天（可复用现有 `KeychainTokenStorage` 基础设施）
 
 **2026-06-13 状态更新**：0.140.0-alpha 三连 PR 把 secrets 升级为 **CLI auth 的存储底座**——secret auth 存储配置（#27504）→ auth 专用加密 namespace（#27535）→ **CLI auth 凭据改用加密本地 secrets 存储**（#27539）。即从"可选的密钥管理工具"变成"认证链路的默认基础设施"，无 OS 密钥环的环境（容器/CI）也有加密落盘路径。Qwen Code 的 Qwen OAuth creds 目前明文 JSON 落盘（`~/.qwen/oauth_creds.json`，仅 `0o600` 权限保护，源码: `packages/core/src/qwen/sharedTokenManager.ts#L634`；MCP token 已有 keychain/hybrid 存储但 OAuth 链路未复用），此项优先级建议上调。
+
+**2026-06-20 状态更新**：MCP OAuth 凭据也改用加密本地 secrets 存储（#27541）——secrets 作为认证底座的覆盖面从 CLI auth 扩展到 MCP OAuth。Qwen Code 的 MCP token 已有 keychain，但 Qwen OAuth 链路仍明文，差距不变。
 
 ---
 
@@ -358,6 +364,8 @@
 
 **实现成本**：~3 天
 
+**2026-06-20 状态更新**：MCP 表面按环境作用域化——MCP sandbox metadata 按 server environment 作用域（#28914）、MCP 文件上传走 environment filesystem（#27923）、默认工具超时升到 300s（#28234）、marketplace plugin manifest fallback（#28789，与 item-30 联动）。
+
 ---
 
 <a id="item-19"></a>
@@ -434,6 +442,8 @@
 
 **参考实现**：[Hermes Agent](https://github.com/nousresearch/hermes-agent)（`tools/environments/`）实现了 6 种终端后端——Local/Docker/SSH/Daytona/Singularity/Modal，统一 `BaseEnvironment` 接口。Daytona 和 Modal 支持 **serverless 休眠**——Agent 环境空闲时自动暂停，按需唤醒，几乎零成本。
 
+**2026-06-20 状态更新**：exec-server 远程执行密集打磨——**Noise 协议成默认传输**（#26245，取代 legacy）+ Noise rendezvous 环境（#28774）、分块流式传文件（#28354）、honor 远端 environment 的 cwd/shell（#28122）、重连刷新签名 URL（#28374）、暴露 environment registry payload（#28651）。远程执行从"能跑"走向"安全默认 + 环境一致"。
+
 ---
 
 <a id="item-26"></a>
@@ -473,6 +483,8 @@ TurnStartParams {
 
 **意义**：多环境工作流（dev/staging/prod）的原生支持；避免用户手动维护 `.env` 文件。
 **改进收益**：切环境从"开新终端 + source .env" 变为 `/env staging`。
+
+**2026-06-20 状态更新**：environment 上下文进一步原生化——app-server 保留 target-native environment cwd（#28146）、core 侧 native 渲染 remote environment cwd（#28152）。env 选择从"会话级粘性"延伸到"远端环境路径一致性"。
 
 ---
 
@@ -595,6 +607,8 @@ Codex config + rollout/sessions（带 import ledger 追踪来源）
 
 **2026-06-13 状态更新**：本窗口持续打磨——session 导入提速（#26637）、source-specific import copy 恢复（#27703）、`AGENTS.md` 从所有 bound environment 加载（#27696）。
 
+**2026-06-20 状态更新**：导入可审计性补齐——**记录导入结果**（#28396）：按 config / AGENTS.md / skills / plugins / MCP / subagents / hooks / commands / sessions 分组记录成败，并新增 `externalAgentConfig/import/readHistories` 恢复 API。正好对应 Qwen 修改方向第 4 点（import ledger）——可直接参照这套"分组件成败 + 可回读"结构。
+
 ---
 
 <a id="item-30"></a>
@@ -626,6 +640,8 @@ Codex config + rollout/sessions（带 import ledger 追踪来源）
 
 **实现成本**：~2 周
 
+**2026-06-20 状态更新**：本窗口最密集方向（~19 PR）——marketplace manifest fallback（#28789）、root 本地 marketplace 源（#28771）、auth 门控的 remote catalog（#28625）、从选中插件发现 stdio MCP server（#27870）、recommended-plugin endpoint 四连栈（#28399~#28403）、plugin metadata 缓存供工具建议（#27812）、namespace 感知的 skill 加载（#28608）。生态运营基建持续拉开与 Qwen extensions 的差距，item-30 对标价值进一步上升。
+
 ---
 
 ## 二、竞品对比矩阵
@@ -633,7 +649,7 @@ Codex config + rollout/sessions（带 import ledger 追踪来源）
 | 能力 | Codex CLI | Claude Code | Gemini CLI | Qwen Code |
 |------|----------|-------------|-----------|-----------|
 | **技术栈** | Rust 原生 | TypeScript/Rust | TypeScript | TypeScript |
-| **代码规模** | 992,581 行（.rs） | ~512,000 行 | ~550,000 行 | 1,292,728 行（packages .ts/.tsx，含 daemon/web-shell/desktop） |
+| **代码规模** | 1,043,805 行（.rs） | ~512,000 行 | ~550,000 行 | 1,381,340 行（packages .ts/.tsx，含 daemon/web-shell/desktop） |
 | **默认沙箱** | ✅ 3 平台原生 | 可选 | 可选 | 可选（Docker/Podman/Seatbelt） |
 | **网络隔离** | ✅ 默认阻断 | 可选 | 无 | ❌ |
 | **Feature Flag** | 52 运行时 + 云端管控（cloud-config） | 22 编译时 | 无 | ❌ |
@@ -642,7 +658,7 @@ Codex config + rollout/sessions（带 import ledger 追踪来源）
 | **Cloud 执行** | ✅ best-of-N | Kairos | 无 | ❌ |
 | **MCP 双向** | ✅ 客户端+服务器 | 客户端 | 客户端 | ✅ 客户端+服务器（qwen-serve-bridge） |
 | **语音** | ✅ WebRTC | ✅ 内置 | 无 | ❌ |
-| **多 Agent** | ✅ V2 并行（residency LRU） | Coordinator/Swarm | 无 | Arena（竞赛）+ Agent Team（实验） |
+| **多 Agent** | ✅ V2 并行（residency LRU + per-turn/thread 模式选择） | Coordinator/Swarm | 无 | Arena（竞赛）+ Agent Team（实验） |
 | **Apply Patch** | ✅ unified diff | Edit 逐文件 | Edit | Edit |
 | **密钥管理** | ✅ OS 密钥环 + 加密本地（0.140α） | 无 | 无 | ❌（MCP token 有 keychain，OAuth 明文） |
 | **Ghost Commit** | ✅ | 检查点 | 无 | /rewind 跨会话文件快照（#4897） |
@@ -673,9 +689,52 @@ Codex config + rollout/sessions（带 import ledger 追踪来源）
 
 ## 五、更新日志
 
+### 2026-06-20（Codex 上游 `git pull` · 0 新增 item · refinement-heavy 窗口）
+
+**Codex 源码扫描**：`2026-06-12 → 2026-06-19` 间 **231 commits**，HEAD `64bdeed9f7`。`codex-rs/**/*.rs` LOC **992,581 → 1,043,805**（+51,224，+5.2%）。**本窗口 0 个 crate 新增/移除**——+51k 行全部来自既有 crate 内部演进（plugin / multi-agent / remote-env / exec-server 等）；源码内无新 release tag（仍在 v0.140 线推进，workspace 版本号 `0.0.0`）。
+
+**crate 计数口径修正（baseline）**：本报告此前沿用的 "97 crate" 系旧口径（漏计 `ext/*` 等嵌套 crate）；现按 cargo workspace `members` 实测 baseline 到 **121**（无 glob；`codex-rs` 下 127 个 `Cargo.toml` 中 6 个为 example/排除的非 member crate）。该值在 2026-06-13（`56c97e3b5c`）当时即已成立——**本窗口 crate 数零变动**，baseline 修正仅为口径对齐，不代表新增。
+
+**Qwen Code 侧口径说明**：`packages/**/*.ts(x)` origin/main **1,292,728 → 1,381,340**（+88,612，channel/web-shell 等持续并入，非同口径可比）。
+
+**本窗口主题**（无新 item，全部归入既有 30 项）：
+
+1. **Plugin / Marketplace 生态**（[item-30](#item-30)，~19 PR，最密集方向）：marketplace manifest fallback（#28789）、root 本地 marketplace 源（#28771）、auth 门控 remote catalog（#28625）、从选中插件发现 stdio MCP server（#27870）、recommended-plugin endpoint 四连栈（#28399~#28403）、plugin metadata 缓存（#27812）、namespace 感知 skill 加载（#28608）。
+2. **Multi-Agent V2 模式选择**（[item-9](#item-9)）：**per-turn mode**（#28685，`explicitRequestOnly` / `proactive` + `features.multi_agent_mode` gate）+ **thread 级 mode**（#28792）——从"能并行"到"可控何时并行"。
+3. **Remote Environments 基础设施**（[item-8](#item-8) / [item-25](#item-25) / [item-26](#item-26)）：remote env 连接生命周期三连（#28674/#28683/#29025）、exec-server **Noise transport 成默认**（#26245）+ rendezvous（#28774）、env-aware cwd/shell（#28122）、native env cwd 渲染（#28146/#28152）。
+4. **External Agent 导入可审计**（[item-29](#item-29)）：记录导入结果（#28396，按组件分组记成败 + `import/readHistories` 恢复 API）。
+5. **Secrets 认证底座延续**（[item-12](#item-12)）：MCP OAuth 凭据改用加密本地 secrets（#27541）——延续 0.140α "secrets 成认证底座"方向。
+6. **MCP / 审批按环境作用域**（[item-5](#item-5) / [item-18](#item-18)）：命令与网络审批按 execution environment 作用域化（#28738/#28899）、MCP sandbox metadata 按 server environment 作用域（#28914）、默认工具超时升到 300s（#28234）。
+
+#### 值得提及但未单列 item
+
+| 方向 | PR | 为何不单列 |
+|---|---|---|
+| **Rollout/Token Budget 跨线程硬上限**（耗尽即 abort 新 turn）| #28746/#28494/#28707 | Qwen Code 的 Workflow `budget`（`budget.total` 硬上限、耗尽即 `agent()` throw）已是相邻能力，属两侧趋同 |
+| **System Clock 工具**（`current-time` 工具 + time reminders）| #28822/#28824/#28835/#29011 | 新增系统工具，Qwen 可低成本等价实现（已有 `loop_wakeup`/`cron` 时间类工具）|
+| Response item ID / UUIDv7 context window IDs | #28953/#28812/#28814/#29012 | resume/fork/compaction 的内部可追踪性基建，无独立用户能力 |
+| PathUri / ApiPathString 路径迁移 | #28854/#28780/#28165 等 | 跨平台路径处理硬化（remote env / Windows exec-server），架构重构 |
+| Windows 沙箱 ACL 刷新修复（[item-1](#item-1)）| #28943 | 工程修复 |
+| 移除实验性 child `AGENTS.md` 注入 | #28993 | 实验清理 |
+
+#### Item refinement（8 项刷新，详见各 item 内联"2026-06-20 状态更新"）
+
+| Item | 刷新内容 |
+|---|---|
+| [item-8](#item-8) | remote environment 连接生命周期三连（#28674/#28683/#29025）|
+| [item-9](#item-9) | per-turn / thread 级 multi-agent mode 选择（#28685/#28792）|
+| [item-12](#item-12) | MCP OAuth 凭据改用加密本地 secrets（#27541）|
+| [item-18](#item-18) | MCP sandbox metadata 按环境作用域（#28914）；默认工具超时 300s（#28234）|
+| [item-25](#item-25) | Noise transport 成默认（#26245）+ rendezvous + 分块传文件 + env-aware cwd/shell |
+| [item-26](#item-26) | native environment cwd 跨 turn 保留（#28146/#28152）|
+| [item-29](#item-29) | 记录导入结果 + `import/readHistories` 恢复 API（#28396）|
+| [item-30](#item-30) | marketplace 多源/本地源/auth 门控/plugin-MCP 发现 等 ~19 PR |
+
+---
+
 ### 2026-06-13（Codex 上游 `git pull` + release notes 对照 · 补录 1 项 + 11 项 refinement）
 
-**Codex 源码扫描**：`2026-05-22 → 2026-06-12` 间 **616 commits**，HEAD `56c97e3b5c`。Codex `codex-rs/**/*.rs` LOC **909,950 → 992,581**（+82,631，+9.1%），crate 数 → **97**。本次同时对照 **release notes v0.134.0 → v0.139.0（stable）+ 0.140.0-alpha 线**逐版核对（此前仅源码扫描）。
+**Codex 源码扫描**：`2026-05-22 → 2026-06-12` 间 **616 commits**，HEAD `56c97e3b5c`。Codex `codex-rs/**/*.rs` LOC **909,950 → 992,581**（+82,631，+9.1%），crate 数 → **97**（旧口径；2026-06-20 已 baseline 到 121 workspace members）。本次同时对照 **release notes v0.134.0 → v0.139.0（stable）+ 0.140.0-alpha 线**逐版核对（此前仅源码扫描）。
 
 **Qwen Code 侧口径说明**：daemon / web-shell / desktop / SDK 合入 main 后，`packages/**/*.ts(x)` 从 631,020 → **1,292,728 行**——增长主要来自新包并入，非同口径可比。
 
@@ -823,4 +882,4 @@ review-story / next-prompt suggestion / usage attribution / prompt hooks——61
 
 ---
 
-*分析基于 Codex CLI (openai/codex, Apache-2.0, 97 Rust crate, **992,581 行** `codex-rs/**/*.rs`) 和 Qwen Code 源码 (**1,292,728 行** `packages/**/*.ts(x)`)。最后核对：2026-06-13（源码 + release notes v0.134.0~v0.139.0 双对照）。审计标准：仅算 merge 到 `origin/main` 的代码，PR/branch 上未合 feature 不算 Codex 已发布能力。*
+*分析基于 Codex CLI (openai/codex, Apache-2.0, 121 Rust crate, **1,043,805 行** `codex-rs/**/*.rs`) 和 Qwen Code 源码 (**1,381,340 行** `packages/**/*.ts(x)`)。最后核对：2026-06-20（Codex `56c97e3b5c → 64bdeed9f7`，231 commits，refinement-heavy 窗口，0 新增 crate / item）。审计标准：仅算 merge 到 `origin/main` 的代码，PR/branch 上未合 feature 不算 Codex 已发布能力。*
