@@ -1,6 +1,6 @@
 # Qwen Code 改进建议报告
 
-> 基于对 Claude Code（源码分析，56 个顶层模块，~1800 文件）与 Qwen Code（开源源码，~500 文件）的系统性源码对比分析。
+> 基于对 Claude Code（源码分析，56 个顶层模块，~1800 文件）与 Qwen Code（开源源码，**~4,750 文件 / ~2,700 源 `.ts(x)`**，14 包，含 daemon/web-shell/desktop）的系统性源码对比分析。
 >
 > **相关报告**：
 > - [Gemini CLI 上游 backport 报告（61 项）](./qwen-code-gemini-upstream-report.md)——Qwen Code 上游的可 backport 改进
@@ -55,7 +55,7 @@
 | **P1** | [Nudge 驱动的闭环学习](./closed-learning-loop-deep-dive.md) — 双计数器 + 后台 review 子代理 + 冻结快照 + 自修补（Hermes Agent 参考） [↓](./qwen-code-improvement-report-p0-p1-core.md#item-14) | 被动记忆（无 nudge） | 中 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓（部分覆盖） |
 | **P1** | [工具动态发现](./tool-search-deep-dive.md) — 仅加载核心工具，其余按需搜索（Qwen 实测节省 ~46% token / Claude 设计 ~60%；但 DeepSeek-v4 prefix cache 实测日成本 +214% — 详 PR#4069）[↓](./qwen-code-improvement-report-p0-p1-core.md#item-11) | **✅ 已合并** [PR#3589](https://github.com/QwenLM/qwen-code/pull/3589) MERGED 2026-05-10 +3796/-22 + [PR#4022](https://github.com/QwenLM/qwen-code/pull/4022) 扩展 4 deferred 工具 + [PR#4041](https://github.com/QwenLM/qwen-code/pull/4041) ask_user_question 反向修复 + [PR#4069](https://github.com/QwenLM/qwen-code/pull/4069) `tools.toolSearch.enabled` 全局开关 + `deepseek-v4-*` auto-disable | 小 | ✓ |
 | **P1** | [智能工具并行](./tool-parallelism-deep-dive.md) — 连续只读工具并行执行，代码探索快 5-10× [↓](./qwen-code-improvement-report-p0-p1-core.md#item-7) | 除 Agent 外全部顺序 | 小 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ / [Roadmap#2516](https://github.com/QwenLM/qwen-code/issues/2516) |
-| **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | preconnect 开发中 / early input ✓ | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) ✗（关闭，拆分）/ [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318)（preconnect，open）/ [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) ✓（early input，2026-04-18 合并）/ [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
+| **P1** | [启动优化](./startup-optimization-deep-dive.md) — TCP preconnect + 启动期间键盘捕获不丢失 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-8) | preconnect ✓ / early input ✓ | 小 | [PR#3085](https://github.com/QwenLM/qwen-code/pull/3085) ✗（关闭，拆分）/ [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318) ✓（preconnect，2026-04-27 合并）/ [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) ✓（early input，2026-04-18 合并）/ [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
 | **P1** | [指令条件规则](./instruction-loading-deep-dive.md) — 按文件路径匹配加载不同编码规范 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-9) | 所有指令始终加载 | 中 | [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) ✓ / [Roadmap#125](https://github.com/QwenLM/qwen-code/issues/125) |
 | **P1** | [Commit Attribution](./git-workflow-session-deep-dive.md) — git commit 中标注 AI vs 人类代码贡献比例 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-12) | **✅ 已实现且超 Claude**（独家 git notes refs/notes/ai-attribution + per-file aiChars/humanChars 字符级追踪 + 不污染 commit message）| 小 | **[PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) ✓ 2026-05-08 MERGED · +7075/-224** |
 | **P1** | [会话分支](./git-workflow-session-deep-dive.md) — /branch 从任意节点 fork 对话，探索替代方案 [↓](./qwen-code-improvement-report-p0-p1-core.md#item-13) | **✅ 已实现**（`/branch` + `/fork` alias · slash 命令对标 Claude `--fork-session` flag）| 中 | [PR#3022](https://github.com/QwenLM/qwen-code/pull/3022) ✗（已关闭）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) / **[PR#3539](https://github.com/QwenLM/qwen-code/pull/3539) ✓ 2026-05-08 MERGED · +1538/-18**（JSONL 复制 + `forkedFrom` stamp + atomic create + rollback-safe swap）|
@@ -79,8 +79,8 @@
 | **P1** | [反应式压缩](./reactive-compression-deep-dive.md) — prompt_too_long 自动裁剪最早消息 + 重试 3 次 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-10) | 无被动恢复 | 中 | — |
 | **P1** | [持久化重试模式](./persistent-retry-deep-dive.md) — CI/后台无限重试 + 5min 退避上限 + 30s 心跳 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-11) | 失败即退出 | 中 | [PR#3080](https://github.com/QwenLM/qwen-code/pull/3080) |
 | **P1** | [原子文件写入与事务回滚](./atomic-file-write-deep-dive.md) — temp+rename 原子写 + 大结果persist to disk [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-12) | 直接 writeFileSync | 中 | — |
-| **P1** | [自动检查点默认启用](./automatic-checkpoint-restore-deep-dive.md) — 每轮工具执行后自动创建文件快照 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-13) | 🟡 部分实现（机制已有 `restoreCommand.ts`，仅默认关闭 + 缺 picker UX）| 小 | [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) 🟡 OPEN（rewind + restore flows · picker UX）|
-| **P1** | [Coordinator/Swarm 多 Agent编排](./coordinator-swarm-orchestration-deep-dive.md) — Leader/Worker 团队 + 3 种执行后端 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-14) | 🟡 控制面 + UI 在做 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3433](https://github.com/QwenLM/qwen-code/pull/3433) ⚠️ revert（[PR#3468](https://github.com/QwenLM/qwen-code/pull/3468) 2026-04-20）/ [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) 🟡 OPEN（task_stop / send_message / per-agent transcript）/ [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) 🟡 OPEN（background-agent UI）|
+| **P1** | [自动检查点默认启用](./automatic-checkpoint-restore-deep-dive.md) — 每轮工具执行后自动创建文件快照 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-13) | 🟡 部分实现（`restoreCommand.ts` + `/rewind` 文件恢复 ✓；默认关闭 + picker UX 仍待）| 小 | [PR#4064](https://github.com/QwenLM/qwen-code/pull/4064) ✓（2026-05-16 · `/rewind` 文件恢复）/ [PR#3292](https://github.com/QwenLM/qwen-code/pull/3292) 🟡 OPEN（picker UX）|
+| **P1** | [Coordinator/Swarm 多 Agent编排](./coordinator-swarm-orchestration-deep-dive.md) — Leader/Worker 团队 + 3 种执行后端 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-14) | 🟡 控制面 + UI 已合并；**Workflow 工具(P1–P5)提供确定性编排** | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3433](https://github.com/QwenLM/qwen-code/pull/3433) ⚠️ revert（[PR#3468](https://github.com/QwenLM/qwen-code/pull/3468) 2026-04-20）/ [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) ✓（2026-04-27 · task_stop / send_message / per-agent transcript）/ [PR#3488](https://github.com/QwenLM/qwen-code/pull/3488) ✓（2026-04-28 · background-agent UI）/ Workflow [#4721](https://github.com/QwenLM/qwen-code/pull/4721) P1–P5 ✓（2026-06，详更新日志）|
 | **P1** | [Task Management 任务协同与跨进程并发调度](./task-management-deep-dive.md) — 支持 blocks/blockedBy 的任务拓扑、跨进程安全锁与 Swarm 集成 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-25) | 🟡 控制面 + UI 已合并，依赖拓扑/跨进程锁仍待 | 大 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) / [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) ✓（2026-04-27 合并 · `task_stop` / `send_message` / per-agent transcript）/ [PR#3507](https://github.com/QwenLM/qwen-code/pull/3507) ✓（2026-04-26 合并 · sticky todo panel）/ [PR#3647](https://github.com/QwenLM/qwen-code/pull/3647) ✓（2026-04-29 合并 · sticky todo 紧凑化 +560/-37）|
 | **P1** | [Agent 工具细粒度访问控制](./agent-tool-access-control-deep-dive.md) — 3 层allowlist/denylist + per-agent 限制 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-15) | 全部或指定列表 | 中 | [PR#3064](https://github.com/QwenLM/qwen-code/pull/3064) ✓ / [PR#3066](https://github.com/QwenLM/qwen-code/pull/3066) ✓ |
 | **P1** | [InProcess 同进程多 Agent隔离](./in-process-agent-isolation-deep-dive.md) — AsyncLocalStorage 上下文隔离 [↓](./qwen-code-improvement-report-p0-p1-engine.md#item-16) | 全局状态可能泄漏 | 中 | [PR#2886](https://github.com/QwenLM/qwen-code/pull/2886) |
@@ -98,7 +98,7 @@
 | **P0** | [`omitClaudeMd` for read-only agents](./claude-code-agents-command-deep-dive.md#104-omitclaudemd-优化值得移植) — Explore/Plan 等 read-only agents 启用后**省 ~5-15 Gtok/周** token cost（Claude 实测）。`AgentDefinition` 加 `omitClaudeMd?: boolean` 字段，`newSessionConfig` 中跳过 CLAUDE.md 注入。可加 kill-switch（Claude 用 `tengu_slim_subagent_claudemd`）| 直接拼 CLAUDE.md 到 subagent context | 小 | — |
 | **P1** | [Agent AI 自动生成（`/agents generate`）](./claude-code-agents-command-deep-dive.md#七ai-生成-agent杀手-feature) — 用户描述 "I need an agent that..." → 长 system prompt + LLM 调 `queryModelWithoutStreaming` 生成完整 agent 配置（identifier / whenToUse / systemPrompt JSON 输出）。Wizard "Generate" 分支预填后续 step | 缺失 | 中 | — |
 | **P1** | [`criticalSystemReminder_EXPERIMENTAL` per-agent 每 turn 重注入](./claude-code-agents-command-deep-dive.md#105-criticalsystemreminderexperimental--每-turn-重注入) — agent 定义中 `criticalSystemReminder?: string` 字段会**每 user turn 重新注入** `<system-reminder>` 标签到 context——确保关键约束（如 "Always verify with tests"）不被 context 滚动遗忘。配合 Qwen 已有 system-reminder 机制（item-26）| 缺失（无 per-turn 重注入）| 小 | — |
-| **P1** | [Agent `isolation: worktree` 定义字段](./claude-code-agents-command-deep-dive.md#106-isolation-worktree-与-pr4073-协调) — `AgentDefinition` 加 `isolation?: 'worktree' \| 'remote'` 字段，agent spawn 时根据该字段在独立 worktree 运行（依赖 PR#4073 Worktree* tools）| 缺失 | 小 | [PR#4073](https://github.com/QwenLM/qwen-code/pull/4073) OPEN（Worktree* 工具组）|
+| **P1** | [Agent `isolation: worktree` 定义字段](./claude-code-agents-command-deep-dive.md#106-isolation-worktree-与-pr4073-协调) — `AgentDefinition` 加 `isolation?: 'worktree' \| 'remote'` 字段，agent spawn 时根据该字段在独立 worktree 运行（依赖 PR#4073 Worktree* tools）| **✓ Worktree 工具已合并**（Workflow `isolation:'worktree'` 已使用）| 小 | [PR#4073](https://github.com/QwenLM/qwen-code/pull/4073) ✓（2026-05-14 合并 · EnterWorktree/ExitWorktree + Agent isolation）|
 | **P1** | [Subagent 定义管理 UI（`/agents` UI Stage 1.5c daemon-side state CRUD）](./claude-code-agents-command-deep-dive.md#101-stage-15c-daemon-side-state-crud-的范本) — 远端 client 等价 Mode A 本地 `/agents` 管理能力。7 routes：`GET/POST /workspace/agents` + `:agentType` CRUD + `/generate` AI 生成。详 [daemon-design §04 §二](./qwen-code-daemon-design/04-deployment-and-client.md) + [§06 §三 Stage 1.5c](./qwen-code-daemon-design/06-roadmap.md)| 远端 client thin shell（不能管 daemon-side agents）| 中 | — |
 | **P2** | [Shell 安全增强](./shell-security-deep-dive.md) — IFS 注入/Unicode 空白/Zsh 命令等 25+ 专项检查 [↓](./qwen-code-improvement-report-p2-core.md#item-1) | AST-only 读写分类 | 中 | — |
 | **P2** | [MDM 企业策略](./mdm-enterprise-deep-dive.md) — macOS plist + Windows Registry + 远程 API 集中管控 [↓](./qwen-code-improvement-report-p2-core.md#item-2) | 无 OS 级策略 | 大 | — |
@@ -156,7 +156,7 @@
 | **P2** | /rewind 检查点回退 — 会话内代码 + 对话恢复到之前的检查点 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-5) | ✓ 已实现 | 中 | [PR#3441](https://github.com/QwenLM/qwen-code/pull/3441) ✓（2026-04-25 合并 · double-ESC + /rewind · +1533/-6）|
 | **P2** | /copy OSC 52 剪贴板 — 复制代码块到剪贴板，OSC 52 + temp 文件回退 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-6) | 缺失 | 小 | — |
 | **P2** | 首次运行引导向导 — 主题/认证/API Key/安全/终端设置多步引导 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-7) | 缺失 | 中 | — |
-| **P2** | /doctor 诊断工具 — 系统环境检查（git/node/shell/权限/代理）[↓](./qwen-code-improvement-report-p2-tools-ui.md#item-8) | **✓ 已实现 + 持续扩展**（`/doctor` 基础诊断 + `/doctor memory` 内存子命令进行中）| 小 | [PR#3404](https://github.com/QwenLM/qwen-code/pull/3404) ✓（2026-04-19 合并 · 基础 `/doctor` 命令）/ [PR#3785](https://github.com/QwenLM/qwen-code/pull/3785) 🟡 OPEN（`/doctor memory` + `--json` + `collectMemoryDiagnostics()` · #3000 系列首层）|
+| **P2** | /doctor 诊断工具 — 系统环境检查（git/node/shell/权限/代理）[↓](./qwen-code-improvement-report-p2-tools-ui.md#item-8) | **✓ 已实现 + 持续扩展**（`/doctor` 基础诊断 + `/doctor memory` 内存子命令已合并）| 小 | [PR#3404](https://github.com/QwenLM/qwen-code/pull/3404) ✓（2026-04-19 合并 · 基础 `/doctor` 命令）/ [PR#3785](https://github.com/QwenLM/qwen-code/pull/3785) ✓（2026-05-17 合并 · `/doctor memory` + `--json` + `collectMemoryDiagnostics()` · #3000 系列首层）|
 | **P2** | 结构化 Diff 渲染 — Rust NAPI 快速着色 + 行号 gutter + 语法高亮 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-9) | 基础 inline diff | 中 | — |
 | **P2** | Slash Command 命名空间治理 — source namespace + reserved names + 来源透明 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-10) | 后者覆盖前者 | 中 | — |
 | **P2** | /plan 计划模式 — Agent 只分析不动手 + 用户确认后执行 [↓](./qwen-code-improvement-report-p2-tools-ui.md#item-11) | 无计划模式 | 小 | [PR#2921](https://github.com/QwenLM/qwen-code/pull/2921) ✓ / [PR#3008](https://github.com/QwenLM/qwen-code/pull/3008) ✓ |
@@ -454,6 +454,51 @@
 ---
 
 ## 六、更新日志
+
+### 2026-06-20 月度增量（2026-05-16 → 2026-06-20 · **608 commits / 176 feat PR** · origin/main `f35a10ba1`）
+
+> 5 周窗口的滚动汇总（非逐 PR 深挖；逐项深挖见下方各日条目）。Qwen Code 体量再增：`packages/**` 从 ~500 → **~4,750 文件**（~2,700 源 `.ts(x)`，14 包）。主线 = **Workflow 工具编排 P1–P5 落地** + **桌面 app 新包** + **daemon/web-shell 成熟** + 多渠道（QQ/飞书）。
+
+**🌟 Workflow 工具 P1–P5 全栈落地**（umbrella [#4721](https://github.com/QwenLM/qwen-code/pull/4721)）——确定性多 agent 编排，对标本报告 Coordinator/Swarm（[line 83](#二qwen-code-改进建议矩阵)）+ Codex multi-agent v2：
+- **P1** [#4732](https://github.com/QwenLM/qwen-code/pull/4732)（2026-06-10）：`node:vm` 最小沙箱 + 顺序 `agent()`
+- **P2** [#4947](https://github.com/QwenLM/qwen-code/pull/4947)（2026-06-12）：`parallel()` + `pipeline()` 并发 fan-out
+- **P3** [#5034](https://github.com/QwenLM/qwen-code/pull/5034)（2026-06-14）：`agent({schema, agentType, model, isolation:'worktree'})`
+- **P4** [#5094](https://github.com/QwenLM/qwen-code/pull/5094)（2026-06-16）：`meta` + `/workflows` + phase-tree 进度
+- **P5** [#5231](https://github.com/QwenLM/qwen-code/pull/5231)（2026-06-18）：token budget + per-run UI surfacing
+
+**🌟 桌面 app 新子系统**：[#3778](https://github.com/QwenLM/qwen-code/pull/3778)（2026-06-11）`packages/desktop` + Qwen ACP SDK 集成（macOS 公证 / Windows 自更新 / git branch badge）；后续 desktop qwen 集成（#4728）+ macOS 26 Liquid Glass（#5284）+ desktop-pet skill（#4808）。
+
+**daemon / web-shell 成熟**：`qwen serve` 直接托管 Web Shell UI（[#5392](https://github.com/QwenLM/qwen-code/pull/5392)）+ DaemonTransport/ACP 合规（#5040）+ mid-turn 消息投递（#5175）+ web-shell token/设置/重试/流式指标（#5066）+ 完成 turn 折叠为 prompt+答案（#5125）+ per-turn time/token（#5163）。
+
+**多渠道 IM**：QQ Bot（[#5202](https://github.com/QwenLM/qwen-code/pull/5202)，2026-06-19）+ 飞书/Lark（#4379，2026-05-28）。
+
+**Durable cron / loop**：可重启存活的定时任务（#5004）+ 秒级 wakeup 引擎（#5182）+ prompt-only `/loop` 自定速唤醒（#5197）。
+
+**Computer Use 跨平台**：迁移到 cua-driver（#5051）+ open-computer-use MCP 零配置内建（#4590）。
+
+**记忆 / Goal / Plan**：`/rewind` 文件恢复（#4064，2026-05-16）+ `/goal` judge-driven（#4123，详下条）+ 用户级 auto-memory `~/.qwen/memories/`（#4747）+ Plan `plansDirectory` 可配置（#4062）+ `QWEN.local.md` project-local 上下文（#4091）。
+
+**Skills**：`/skills` picker 对话框（#4532）+ triage skill（#4577）+ user-invocable frontmatter（#5037）+ skill `allowedTools` 自动批准（#4704）+ `auto-skill-` 前缀强制（#4839）。
+
+**性能 / 截断**：分层工具输出截断 + per-message/per-tool 预算（#4880）+ `/compress-fast` 无 LLM 规则压缩（#4893）+ 内存压力监控/诊断落盘（#4403/#4654）+ grep 结果可满足 prior-read 检查（#5043）。
+
+**遥测**：#3731 Phase 2–4（tool.blocked_on_user / subagent span 并发隔离 / TTFT / GenAI semconv，#4321 等）+ 运行时内存/CPU OTel 采样（#4868）。
+
+**Hooks / 权限**：post tool batch hooks（#4454）+ user prompt expansion hooks（#4377）+ toolCallId 传入 hook（#4918）+ ACP 权限超时可配（#5260）+ 专用 agent 权限对话框（#5105）。
+
+#### 矩阵状态修正（本次同步翻转 5 项 stale OPEN，均经 `git log origin/main` 核实）
+
+| item | 旧 | 新 |
+|---|---|---|
+| 启动 preconnect（line 58）| PR#3318 open | ✓ 2026-04-27（`3b0b6c052`）|
+| Coordinator/Swarm（line 83）| PR#3471/#3488 🟡 OPEN | ✓ 2026-04-27 / 04-28（与 line 193 一致）+ Workflow #4721 |
+| Agent `isolation:worktree`（line 101）| PR#4073 OPEN | ✓ 2026-05-14（`609e05bae`）|
+| 自动检查点（line 82）| 仅 PR#3292 OPEN | + PR#4064 ✓ 2026-05-16（`/rewind` 文件恢复）；picker UX 仍 OPEN |
+| /doctor memory（line 159）| PR#3785 🟡 OPEN | ✓ 2026-05-17（`eef06ce37`）|
+
+仍 OPEN（已核实未合并）：API retry classifyError（#3798）、rewind picker UX（#3292）、WebFetch fastModel（#3537）、Web UI+QR remote control（#2330）。
+
+---
 
 ### 2026-05-16 增量（`/goal` 系列收官 · **PR#4123 MERGED** 替代 PR#4088 CLOSED · +3476/-25 / 40 files / merge commit `0dde1ad70` / 10:14 UTC）
 
