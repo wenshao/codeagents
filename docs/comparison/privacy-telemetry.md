@@ -10,13 +10,13 @@
 |------|-----------|---------|-----------------|-------------|-------------|
 | **Claude Code** | Anthropic Metrics + Datadog + Segment | 开启 | 是 | 是 | 否 |
 | **Copilot CLI** | GitHub/Microsoft 内部 | 开启 | 未确认 | 是 | 未确认 |
-| **Codex CLI** | OpenAI 内部 | 开启 | 未确认 | 是 | 未确认 |
+| **Codex CLI** | OpenAI 内部 | 开启 | 未确认 | 未确认 | 未确认 |
 | **Aider** | PostHog | 默认关闭（opt-in，10% 采样） | 是 | 是 | 否 |
 | **Gemini CLI** | OpenTelemetry + Google Clearcut | 开启 | 是 | 是 | 否 |
 | **Kimi CLI** | 无 | — | 否 | 否 | 否 |
 | **OpenCode** | 无 | — | 否 | 否 | 否 |
 | **Goose** | PostHog | 默认关闭（opt-in） | 是 | 是 | 否 |
-| **Qwen Code** | OTEL（重品牌）+ 阿里云 RUM | RUM 开启 / **OTEL 默认关** ⓘ | 是 | 是 | 否 |
+| **Qwen Code** | OTEL（重品牌）+ 阿里云 RUM | RUM 开启 / **OTEL 默认关** ⓘ | 是 | 否（仅 OS 类型/版本，无 CPU/GPU/RAM） | 否 |
 | **Qoder CLI** | Qoder 自有 | 开启 | 是 | 未确认 | 否 |
 | **Hermes Agent** | **无内建遥测** | — | 否 | 否 | 否 |
 
@@ -69,6 +69,12 @@
 - session_number, total_sessions, total_tokens
 - 错误信息自动清洗（路径、密钥、邮箱 redact）
 
+### Qwen Code（阿里云 RUM，源码 `telemetry/qwen-logger/qwen-logger.ts`）
+- Installation ID（`~/.qwen/installation-id` 持久化 UUID，作为 RUM `user.id`）
+- OS 平台 + 版本（`os.platform()` / `os.release()`）——**不采集** CPU/GPU/RAM/MAC
+- 使用统计经阿里云 RUM（`getUsageStatisticsEnabled()` 默认开）
+- OTel 主链（traces/metrics/logs）**默认关**，需显式 `telemetry.enabled`（另一条独立管道）
+
 ## 隐私控制
 
 | Agent | 禁用方式 | 默认 |
@@ -91,10 +97,11 @@
 | **Copilot CLI** | **否** | 无原生沙箱 | **否** | **否** |
 | **Codex CLI** | **是**（Guardian Approval，实验性） | macOS Seatbelt + Linux Bubblewrap/Landlock + Windows Restricted Tokens | **是**（审批系统） | **否** |
 | **Aider** | **否** | **否** | **否** | **否** |
-| **Gemini CLI** | **是**（Conseca LLM 策略生成器 + AllowedPathChecker） | macOS Seatbelt + Linux seccomp BPF + Windows C# | **是**（TOML 策略引擎） | **是**（Conseca） |
+| **Gemini CLI** | **是**（Conseca LLM 策略生成器 + AllowedPathChecker） | macOS Seatbelt + Linux Bubblewrap + Windows C# | **是**（TOML 策略引擎） | **是**（Conseca） |
 | **Kimi CLI** | **否** | **否** | **是**（审批系统） | **否** |
 | **OpenCode** | **否** | **否** | **是**（基础权限） | **否** |
 | **Goose** | **是**（AdversaryInspector + RepetitionInspector + 模式扫描） | **否** | **是**（SmartApprove） | **是**（模式 + ML 分类器） |
+| **Qwen Code** | **是**（两阶段 LLM 分类器，AUTO 模式，fail-closed，`permissions/classifier.ts`） | macOS Seatbelt（6 profile）+ Docker/Podman 容器 | **是**（权限/分类器审批） | **否** |
 | **Hermes Agent** | **是**（`tools/tirith_security.py` + `tools/skills_guard.py` + `tools/osv_check.py`） | **6 种**（Local/Docker/SSH/Daytona/Singularity/Modal） | **是**（`tools/approval.py`） | **部分**（url_safety + website_policy） |
 
 ## 环境变量清洗
@@ -103,8 +110,9 @@
 |------|----------|----------|
 | **Claude Code** | 未公开（闭源） | 未公开 |
 | **Gemini CLI** | **全面**（`environmentSanitization.ts`） | TOKEN, SECRET, PASSWORD, KEY, AUTH, CREDENTIAL, 私钥模式, GitHub tokens, AWS keys, JWTs |
-| **Codex CLI** | 31 个危险环境变量阻止列表 | PATH, LD_PRELOAD 等 |
-| **Goose** | 31 个危险环境变量阻止列表 | 同 Codex |
+| **Codex CLI** | 动态链接劫持变量前缀过滤（`process-hardening`） | `LD_*` / `DYLD_*` 前缀（LD_PRELOAD、LD_LIBRARY_PATH、DYLD_INSERT_LIBRARIES 等；前缀匹配，非固定 31 项，PATH 不在内） |
+| **Goose** | 危险/敏感环境变量黑名单 | 见 `goose/EVIDENCE.md` |
+| **Qwen Code** | 部分（`sanitizeHookName` 清洗 telemetry hook 名的路径/参数） | env var 本身不 redact |
 | **Aider** | **无** | — |
 | **Kimi CLI** | **无** | — |
 | **OpenCode** | **无** | — |
@@ -121,6 +129,6 @@
 | Aider | 源码 `aider/analytics.py` | `aider/EVIDENCE.md` |
 | Gemini CLI | 源码 `packages/core/src/telemetry/` + `safety/` | `gemini-cli/EVIDENCE.md` |
 | Kimi CLI | 源码 `src/kimi_cli/` 全量搜索 | `kimi-cli/EVIDENCE.md` |
-| OpenCode | 源码 `internal/` 全量搜索 | `opencode/EVIDENCE.md` |
+| OpenCode | 源码 `packages/opencode/src/` + `packages/core/src/` 全量搜索 | `opencode/EVIDENCE.md` |
 | Goose | 源码 `crates/goose/src/` + `crates/goose-cli/src/` | `goose/EVIDENCE.md` |
 | Hermes Agent | 源码 `/root/git/hermes-agent`（822 .py / 369K 行全量分析） | `hermes-agent/EVIDENCE.md` |
