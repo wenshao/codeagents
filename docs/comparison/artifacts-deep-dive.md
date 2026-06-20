@@ -166,7 +166,7 @@ artifact 内容存于 Anthropic 托管基础设施，仅发布组织的已认证
 | **Claude Code** | ✅ Artifacts（自包含交互页）| ✅ claude.ai 私有 URL + 组织分享 | ✅ version + RBAC + 审计 + 保留策略 + Compliance API | 本文主题；Team/Enterprise beta |
 | **Qwen Code** | 🟡 `/export HTML`（本地 HTML 导出，`exportCommand.ts`，含 light theme，[PR#3908](https://github.com/QwenLM/qwen-code/pull/3908)）+ `qwen serve` web-shell（`packages/web-shell`，本地托管 web UI）| ✗ 无云端发布/分享 URL | ✗ | 最接近的对标是**本地导出**，非托管发布 |
 | **Gemini CLI** | 🟡 会话可导出 | ✗ | ✗ | 无托管 artifact 发布 |
-| **Codex CLI** | 🟡 thread 导出 | ✗ | ✗ | 无托管 artifact 发布 |
+| **Codex CLI** | 🟡 `/copy` markdown + 本地 rollout | 🟡 Cloud 任务可分享 + Sites 部署 | ✗ | `artifact` flag 休眠；详见 [Codex 会话产物与分享](./codex-artifacts-sharing-deep-dive.md) |
 | **Copilot CLI** | 🟡 infinite sessions / checkpoint | ✗ | ✗ | 无托管 artifact 发布 |
 
 **结论**：把会话产出**自动判定→生成自包含交互页→发布到托管私有 URL→组织内版本化分享→admin 治理**这条完整链路，目前为 Claude Code **独有**。其余 Agent 多止步于"本地导出 / 本地预览"。
