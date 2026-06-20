@@ -38,9 +38,9 @@
 | `services/compact/sessionMemoryCompact.ts` (631行) | `minTokens: 10K`、`maxTokens: 40K`、`minTextBlockMessages: 5` |
 | `services/compact/prompt.ts` | `NO_TOOLS_PREAMBLE`（防止模型在摘要时调用工具） |
 
-**Qwen Code 现状**：单层压缩——用户手动触发 `/compress` 或 token 超 70% 阈值时一次性全量压缩。基于字符数（非 token 数）定位分割点，保留后 30% 历史。压缩后不恢复文件/Skill，用户需重新 read 文件。5 章节摘要模板（vs Claude 的 9 章节）。
+**Qwen Code 现状（2026-06-20）**：✅ **多层自动压缩已落地**——不再是单层手动。① `microcompaction`（`services/microcompaction/microcompact.ts` · #3006）空闲期把旧工具结果 functionResponse 替换为 sentinel；② warn/auto/hard **三档自动阈值 ladder**（#4345，BREAKING · `computeThresholds`：比例下界 + window 边缘 absolute-byte 预留 + hard-tier API-reject 前 force rescue）；③ **reactive 溢出压缩**（#3879）；④ 子代理自动压缩 + 堆压力安全网；⑤ `/compress-fast` 无 LLM 规则压缩（#4893）；⑥ `compactionInputSlimming` 图像 token 估算。state_snapshot XML 摘要。**仍缺**：压缩后文件/Skill/Plan 重注入（压缩后需重新 Read）。
 
-**Qwen Code 修改方向**：① 新增 MicroCompact——每轮检查旧工具结果，替换为 `[cleared]`（最轻量）；② 阈值从 70% 改为 ~83%（给模型更多工作空间）；③ auto-compact 增加断路器（3 次失败停止）；④ 压缩后自动恢复最近 5 个文件 + 活跃 Skill；⑤ 增加 prompt_too_long 被动恢复（裁剪最早消息组后重试）。
+**落地映射**（原"修改方向"5 项已成 4 项）：① MicroCompact ✓（#3006）；② 阈值升级 ✓——已超原计划，改为三档 ladder（#4345）非 ~83% 单值；③ auto-compact 断路器 ✓（`consecutiveFailures`，#4345 由 boolean 改计数）；④ 压缩后文件/Skill 重注入 ✗ **仍缺**；⑤ prompt_too_long 被动恢复 ✓（reactive 溢出 #3879）。
 
 **量化参考**：[RTK](https://github.com/rtk-ai/rtk) 的实测数据表明，仅对命令输出做过滤就能在 30 分钟会话中节省 80% token（118K→24K）。RTK 从**命令输出端**解决，而多层压缩从**上下文历史端**解决——两者互补。
 
