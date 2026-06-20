@@ -208,7 +208,7 @@
 | **P2** | 请求合并与去重 — 1-in-flight + 1-pending + BoundedUUIDSet + inFlight 去重 [↓](./qwen-code-improvement-report-p2-perf.md#item-8) | 🟡 部分（MCP rediscovery coalescing + tool-registry lazy factory inflight 去重）| 中 | [PR#3818](https://github.com/QwenLM/qwen-code/pull/3818) ✓（MCP coalescing）/ [PR#3297](https://github.com/QwenLM/qwen-code/pull/3297) ✓（inflight dedup）|
 | **P2** | 延迟初始化与按需加载 — lazySchema + 动态 import() + 延迟prefetch [↓](./qwen-code-improvement-report-p2-perf.md#item-9) | ✓ 延迟工具/registry/计数（defer 低频内置工具 + lazy factory + lazy message count）| 小 | [PR#4022](https://github.com/QwenLM/qwen-code/pull/4022) ✓（defer 内置工具）/ [PR#3297](https://github.com/QwenLM/qwen-code/pull/3297) ✓（lazy factory）/ [PR#3897](https://github.com/QwenLM/qwen-code/pull/3897) ✓（lazy count）|
 | **P2** | 流式超时检测与级联取消 — 90s 空闲watchdog + siblingAbortController 级联 [↓](./qwen-code-improvement-report-p2-perf.md#item-10) | 固定超时/无级联 | 小 | — |
-| **P2** | Git 文件系统直读 — .git/HEAD+refs 直读 + 批量 check-ignore + LRU 缓存 [↓](./qwen-code-improvement-report-p2-perf.md#item-11) | 每次 spawn git | 小 | — |
+| **P2** | Git 文件系统直读 — .git/HEAD+refs 直读 + 批量 check-ignore + LRU 缓存 [↓](./qwen-code-improvement-report-p2-perf.md#item-11) | 🟡 部分（status line branch name 已 `.git/HEAD` 直读 + gitDir 缓存 + reflog watcher，`gitDirect.ts`）；其余路径（status/check-ignore/diff/worktree）仍 spawn git | 小 | [PR#5432](https://github.com/QwenLM/qwen-code/pull/5432) ✓（2026-06-20 · `resolveBranchName`/`readGitHead`/`watchRepoBranch` · +1027/-267）|
 | **P2** | 设置/Schema 缓存防抖动 — 3 层设置缓存 + schema 首次锁定 + parse 去重 [↓](./qwen-code-improvement-report-p2-perf.md#item-12) | 每次重新读取解析 | 小 | — |
 | **P2** | Bash 交互提示卡顿检测 — 45s 无输出 + prompt regex 匹配 + 自动通知 [↓](./qwen-code-improvement-report-p2-stability.md#item-1) | 无卡顿检测 | 小 | — |
 | **P2** | TTY orphan process检测 — 30s 检查终端存活 + 自动优雅退出 [↓](./qwen-code-improvement-report-p2-stability.md#item-2) | 无检测 | 小 | — |
@@ -387,7 +387,7 @@
 | **Prompt Cache** | 分段 + schema 锁定 + 缓存失效检测 | 无分段（有 cache 稳定化）| 中等差距 | [PR#4896](https://github.com/QwenLM/qwen-code/pull/4896) ✓（cache 稳定化）|
 | **请求合并** | coalescing + BoundedUUIDSet | 部分（MCP rediscovery coalescing）| 小差距 | [PR#3818](https://github.com/QwenLM/qwen-code/pull/3818) ✓ |
 | **延迟初始化** | lazySchema + 延迟 import + 延迟prefetch | **✓ 延迟工具/registry/计数** | 接近对齐 | [PR#4022](https://github.com/QwenLM/qwen-code/pull/4022) ✓ + [PR#3297](https://github.com/QwenLM/qwen-code/pull/3297) ✓ + [PR#3897](https://github.com/QwenLM/qwen-code/pull/3897) ✓ |
-| **Git 直读** | .git/HEAD+refs 直读 + LRU | spawn git | 中等差距 | — |
+| **Git 直读** | .git/HEAD+refs 直读 + LRU | **部分**（branch name `.git/HEAD` 直读 + gitDir 缓存 + reflog watcher；check-ignore/diff/worktree 仍 spawn）| 部分对齐 | [PR#5432](https://github.com/QwenLM/qwen-code/pull/5432) ✓（2026-06-20 · `gitDirect.ts`）|
 | **崩溃恢复** | 中断检测 + 合成续行 + 全量恢复 | 部分（JSONL 粘连恢复；3 状态检测+合成续行仍待）| 中等差距 | [PR#3656](https://github.com/QwenLM/qwen-code/pull/3656) ✓ |
 | **API 重试** | 10 次退避 + 529 降级 + 持久化重试 | **退避 + 429 SSE + 持久化重试** | 接近对齐（classifier 方案已关闭）| [PR#3246](https://github.com/QwenLM/qwen-code/pull/3246) ✓（429 SSE）+ [PR#3080](https://github.com/QwenLM/qwen-code/pull/3080) ✓ + [PR#4708](https://github.com/QwenLM/qwen-code/pull/4708) ✓ / [PR#3798](https://github.com/QwenLM/qwen-code/pull/3798) ✗ CLOSED |
 | **优雅关闭** | SIGINT/SIGTERM + 清理注册 + failsafe | **✓ 信号处理** | 接近对齐 | [PR#1884](https://github.com/QwenLM/qwen-code/pull/1884) ✓ + [PR#3544](https://github.com/QwenLM/qwen-code/pull/3544) ✓ |

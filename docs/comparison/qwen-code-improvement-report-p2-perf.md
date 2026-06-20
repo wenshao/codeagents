@@ -391,9 +391,9 @@
 | `tools/LSPTool/LSPTool.ts` (L554) | `git check-ignore` 批量路径参数 |
 | `utils/git.ts` | `findGitRoot` LRU 记忆化（max 50）、`gitExe` 单例查找 |
 
-**Qwen Code 现状**：`gitService.ts` 通过 `simple-git` 库调用 git 命令（每次 spawn 子进程）；无文件系统直读优化；无 git 操作 LRU 缓存。
+**Qwen Code 现状（2026-06-21）**：🟡 **branch name 热路径已文件系统直读**——[PR#5432](https://github.com/QwenLM/qwen-code/pull/5432)（2026-06-20）新增 `packages/core/src/utils/gitDirect.ts`：`resolveBranchName`（读 `.git/HEAD`，detached 时短 hash）+ `readGitHead`（结构化解析）+ `watchRepoBranch`（引用计数 reflog watcher，按仓库共享）+ gitDir 解析缓存（`clearGitDirCache`，复用 `gitDiff.resolveGitDir` 的 ancestor-walk + worktree `gitdir:` 指针）。CLI `useGitBranchName` 已改为薄封装，status line 渲染不再 spawn `git rev-parse`。**仍 spawn git**：status/diff/check-ignore/worktree 等其余路径（`gitUtils.ts`/`gitDiff.ts`/`commitAttribution.ts`/worktree services 仍走 `simple-git`/子进程）。
 
-**Qwen Code 修改方向**：① 高频查询（当前分支、HEAD 解析）直接读取 `.git/HEAD` + `.git/refs/`（async readFile，无 spawn）；② `git check-ignore` 合并为批量调用（一次传多个路径）；③ `findGitRoot` 结果 LRU 缓存（防止每次 stat 向上遍历）。
+**剩余修改方向**（① 已落地）：① ✓ 高频查询（branch、HEAD）直读 `.git/HEAD`（#5432）；② `git check-ignore` 合并批量调用仍待；③ `findGitRoot`/gitDir 缓存已有雏形（gitDir 解析缓存），通用 LRU 仍可扩。
 
 **实现成本评估**：
 - 涉及文件：~3 个
