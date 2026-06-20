@@ -350,57 +350,59 @@
 
 ## 四、架构差异总结
 
+> **2026-06-20 逐项重新核实**（对照 origin/main `f35a10ba1` 源码 + git log）：原表多数"无/缺失/落后"已过时——约 24 项实际已实现。下表为核实后状态，PR# 均经 `git log --grep "(#NNNN)"` 确认合并。
+
 | 维度 | Claude Code | Qwen Code | 差距评估 | 进展 |
 |------|-------------|-----------|----------|------|
-| **[Mid-Turn Queue Drain](./command-queue-orchestration-deep-dive.md)** | `query.ts` 工具批次间 drain | 无 | 显著落后 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) ✓ |
-| 压缩 (Compression) 策略 | 4 层分层压缩 | 单一阈值压缩 | 显著落后 | — |
-| Subagent | 支持 fork + 上下文继承 | 仅预定义类型 | 显著落后 | [PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) ✓ |
-| **智能工具并行** | Kind-based batching（默认 10 并发） | Agent 并发 / 其他顺序 | 中等差距 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ |
+| **[Mid-Turn Queue Drain](./command-queue-orchestration-deep-dive.md)** | `query.ts` 工具批次间 drain | **✓ 已实现** | 已对齐 | [PR#2854](https://github.com/QwenLM/qwen-code/pull/2854) ✓ |
+| 压缩 (Compression) 策略 | 4 层分层压缩 | **多层（microcompaction + reactive + /compress-fast）** | 接近对齐 | [PR#3006](https://github.com/QwenLM/qwen-code/pull/3006) ✓（L2）/ [PR#3879](https://github.com/QwenLM/qwen-code/pull/3879) ✓（reactive）/ [PR#4893](https://github.com/QwenLM/qwen-code/pull/4893) ✓（compress-fast） |
+| Subagent | 支持 fork + 上下文继承 | **✓ fork + 上下文继承** | 已对齐 | [PR#2936](https://github.com/QwenLM/qwen-code/pull/2936) ✓ |
+| **智能工具并行** | Kind-based batching（默认 10 并发） | **✓ Kind-based batching** | 已对齐 | [PR#2864](https://github.com/QwenLM/qwen-code/pull/2864) ✓ |
 | 投机执行 (Speculation) | 完整 overlay-fs + cow（991 行） | v0.15.0 已完整实现（563 行），默认关闭 | 小差距 | [PR#2525](https://github.com/QwenLM/qwen-code/pull/2525) ✓ |
 | 启动优化 | API Preconnect + Early Input | ✓ preconnect + early input | 已对齐 | [PR#3318](https://github.com/QwenLM/qwen-code/pull/3318) ✓（preconnect 2026-04-27）/ [PR#3319](https://github.com/QwenLM/qwen-code/pull/3319) ✓（early input）/ [PR#3232](https://github.com/QwenLM/qwen-code/pull/3232) ✓（profiler） |
 | 按路径注入上下文规则 | `.claude/rules/` + frontmatter `paths:` 惰加载 | ✅ `.qwen/rules/` + frontmatter `paths:` + 嵌套子目录 | **已对齐** | [PR#3339](https://github.com/QwenLM/qwen-code/pull/3339) ✓ |
-| 会话记忆 (Session Memory) | SessionMemory + memdir | 简单笔记工具 | 显著落后 | — |
-| 自动记忆 (Memory) 整理 | Auto Dream | 无 | 缺失 | — |
-| 上下文折叠 (Context Collapse) | History Snip | 无 | 缺失 | — |
-| Shell 安全增强 | 25+ 检查 + tree-sitter | AST-only 读写分类 | 中等差距 | — |
+| 会话记忆 (Session Memory) | SessionMemory + memdir | **✓ 托管 auto-memory** | 接近对齐 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓ + [PR#4747](https://github.com/QwenLM/qwen-code/pull/4747) ✓（`~/.qwen/memories`） |
+| 自动记忆 (Memory) 整理 | Auto Dream | **✓ 已实现** | 已对齐 | [PR#3087](https://github.com/QwenLM/qwen-code/pull/3087) ✓ + [PR#3836](https://github.com/QwenLM/qwen-code/pull/3836) ✓（dream UI） |
+| 上下文折叠 (Context Collapse) | History Snip | **部分**（microcompaction / reactive 压缩，非专门 history-snip）| 中等差距 | [PR#3006](https://github.com/QwenLM/qwen-code/pull/3006) ✓ / [PR#3879](https://github.com/QwenLM/qwen-code/pull/3879) ✓ |
+| Shell 安全增强 | 25+ 检查 + tree-sitter | **LLM 分类器 + shell-semantics + denial tracking** | 接近对齐 | [PR#4151](https://github.com/QwenLM/qwen-code/pull/4151) ✓ + `permissions/classifier.ts` |
 | MDM 企业策略 | plist + Registry + 远程 API | 无 | 缺失 | — |
-| Token 实时计数 | API 计数 + VCR 缓存 | 静态模式匹配 | 中等差距 | — |
-| 工具发现 | ToolSearchTool | 缺失 | 缺失 | [PR#3589](https://github.com/QwenLM/qwen-code/pull/3589) ✗ CLOSED（2026-04-24，未合并）|
-| 多 Agent通信 | SendMessageTool | 无 | 缺失 | — |
-| 文件索引 | FileIndex（fzf 风格） | 依赖 rg/glob | 中等差距 | [PR#3214](https://github.com/QwenLM/qwen-code/pull/3214)（git ls-files + rg） |
+| Token 实时计数 | API 计数 + VCR 缓存 | **✓ 流式实时计数** | 接近对齐 | [PR#3329](https://github.com/QwenLM/qwen-code/pull/3329) ✓ + [PR#4512](https://github.com/QwenLM/qwen-code/pull/4512) ✓（breakdown） |
+| 工具发现 | ToolSearchTool | **✓ 已实现** | 已对齐 | [PR#3589](https://github.com/QwenLM/qwen-code/pull/3589) ✓ MERGED 2026-05-26（`tools/tool-search.ts`）+ PR#4022/#4069 |
+| 多 Agent通信 | SendMessageTool | **✓ 已实现** | 已对齐 | [PR#3471](https://github.com/QwenLM/qwen-code/pull/3471) ✓（`tools/send-message.ts`） |
+| 文件索引 | FileIndex（fzf 风格） | **✓ git ls-files + rg** | 小差距 | [PR#3214](https://github.com/QwenLM/qwen-code/pull/3214) ✓（2026-05-12 合并） |
 | Commit Attribution | Co-Authored-By 追踪 | **git notes 元数据追踪（独家更精细）** | **超 Claude**（per-file 字符级 aiChars/humanChars，refs/notes/ai-attribution，不污染 commit message）| **[PR#3115](https://github.com/QwenLM/qwen-code/pull/3115) ✓ 2026-05-08 MERGED · +7075/-224** |
 | 会话分支 | /branch 对话分叉 | **`/branch` + `/fork` alias** | **已对标 Claude `--fork-session` flag**（slash 命令更顺手 + JSONL 完整复制 + forkedFrom stamp + atomic create + rollback-safe swap）| **[PR#3539](https://github.com/QwenLM/qwen-code/pull/3539) ✓ 2026-05-08 MERGED · +1538/-18** |
 | Output Styles | Learning / Explanatory 模式 | 无 | 缺失 | — |
 | Fast Mode | 速度/成本分级推理 | `fastModel` 不同方案 + 多场景应用（auto-title / web-fetch 待合并）| ⚠️ 部分→扩展中 | [PR#3077](https://github.com/QwenLM/qwen-code/pull/3077) ✓ / [PR#3086](https://github.com/QwenLM/qwen-code/pull/3086) ✓ / [PR#3120](https://github.com/QwenLM/qwen-code/pull/3120) ✓ / [PR#3540](https://github.com/QwenLM/qwen-code/pull/3540) ✓（auto-title via fastModel，2026-04-23）/ [PR#3537](https://github.com/QwenLM/qwen-code/pull/3537) 🟡 OPEN（web-fetch via fastModel）|
-| 并发 Session | 多终端 PID 追踪 + 后台脱附 | 无 | 缺失 | — |
-| Git Diff 统计 | 结构化 diff + 按文件统计 | 无 git-aware stats | 中等差距 | — |
-| 文件历史快照 | per-file SHA256 + 按消息恢复 | checkpoint（git 级） | 小差距 | — |
-| **流式工具执行** | StreamingToolExecutor 流水线 | 等完整响应 | 显著落后 | — |
-| **文件读取缓存** | FileReadCache 1000 LRU + 批量并行 | 🟡 部分覆盖（查询缓存已合并）| 显著落后→部分 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓（2026-04-24 合并 · 查询层 LRU，内容层仍缺）|
+| 并发 Session | 多终端 PID 追踪 + 后台脱附 | **部分**（后台 shell 池 + monitor）| 中等差距 | [PR#3642](https://github.com/QwenLM/qwen-code/pull/3642) ✓ + [PR#3684](https://github.com/QwenLM/qwen-code/pull/3684) ✓ |
+| Git Diff 统计 | 结构化 diff + 按文件统计 | **✓ /diff 命令** | 已对齐 | [PR#3491](https://github.com/QwenLM/qwen-code/pull/3491) ✓ |
+| 文件历史快照 | per-file SHA256 + 按消息恢复 | **✓ per-file 跨会话恢复** | 已对齐 | [PR#4897](https://github.com/QwenLM/qwen-code/pull/4897) ✓（`fileHistoryService.ts`） |
+| **流式工具执行** | StreamingToolExecutor 流水线 | 部分（`streamingToolCallParser` 解析层；执行前置未确认）| 中等差距 | — |
+| **文件读取缓存** | FileReadCache 1000 LRU + 批量并行 | **✓ FileReadCache + 失效 + prior-read**（仅 32 批并行待）| 接近对齐 | [PR#3717](https://github.com/QwenLM/qwen-code/pull/3717)/[#3774](https://github.com/QwenLM/qwen-code/pull/3774)/[#3810](https://github.com/QwenLM/qwen-code/pull/3810)/[#3932](https://github.com/QwenLM/qwen-code/pull/3932)/[#4002](https://github.com/QwenLM/qwen-code/pull/4002) ✓ |
 | **记忆异步prefetch** | Memory prefetch + skill prefetch | 无 | 缺失 | — |
-| **Token Budget 续行** | 90% 续行 + 递减检测 + 分层回退 | 70% 一次性压缩 | 中等差距 | — |
+| **Token Budget 续行** | 90% 续行 + 递减检测 + 分层回退 | 部分（Workflow budget；session 90% 续行未确认）| 中等差距 | [PR#5231](https://github.com/QwenLM/qwen-code/pull/5231) ✓（Workflow budget） |
 | **MCP 动态插槽** | pMap + dual-tier concurrency | 无并发限制 | 小差距 | — |
 | **通用缓存模式** | memoizeWithTTL + memoizeWithLRU | 仅搜索缓存 | 中等差距 | — |
 | **同步 I/O** | 绝大多数 async | ✓ 已实现 | 显著落后→已追平 | [PR#3581](https://github.com/QwenLM/qwen-code/pull/3581) ✓（2026-04-24 合并 · hot path 110→10 syscall/prompt，-91%）|
-| **Prompt Cache** | 分段 + schema 锁定 + 缓存失效检测 | 无分段 | 显著落后 | — |
-| **请求合并** | coalescing + BoundedUUIDSet | 无 | 缺失 | — |
-| **延迟初始化** | lazySchema + 延迟 import + 延迟prefetch | 全量同步加载 | 中等差距 | — |
+| **Prompt Cache** | 分段 + schema 锁定 + 缓存失效检测 | 无分段（有 cache 稳定化）| 中等差距 | [PR#4896](https://github.com/QwenLM/qwen-code/pull/4896) ✓（cache 稳定化）|
+| **请求合并** | coalescing + BoundedUUIDSet | 部分（MCP rediscovery coalescing）| 小差距 | [PR#3818](https://github.com/QwenLM/qwen-code/pull/3818) ✓ |
+| **延迟初始化** | lazySchema + 延迟 import + 延迟prefetch | **✓ 延迟工具/registry/计数** | 接近对齐 | [PR#4022](https://github.com/QwenLM/qwen-code/pull/4022) ✓ + [PR#3297](https://github.com/QwenLM/qwen-code/pull/3297) ✓ + [PR#3897](https://github.com/QwenLM/qwen-code/pull/3897) ✓ |
 | **Git 直读** | .git/HEAD+refs 直读 + LRU | spawn git | 中等差距 | — |
-| **崩溃恢复** | 中断检测 + 合成续行 + 全量恢复 | 无 | 缺失 | — |
-| **API 重试** | 10 次退避 + 529 降级 + 持久化重试 | 仅重试次数 | 显著落后 | [PR#3080](https://github.com/QwenLM/qwen-code/pull/3080) / [PR#3246](https://github.com/QwenLM/qwen-code/pull/3246) ✓ |
-| **优雅关闭** | SIGINT/SIGTERM + 清理注册 + failsafe | 无信号处理 | 缺失 | — |
-| **反应式压缩** | prompt_too_long 自动裁剪重试 | 无 | 缺失 | — |
-| **原子写入** | temp+rename + 大结果persist to disk | 直接 writeFileSync | 中等差距 | — |
-| **自动检查点** | 默认启用 + per-message 快照 | 默认关闭 | 中等差距 | — |
+| **崩溃恢复** | 中断检测 + 合成续行 + 全量恢复 | 部分（JSONL 粘连恢复；3 状态检测+合成续行仍待）| 中等差距 | [PR#3656](https://github.com/QwenLM/qwen-code/pull/3656) ✓ |
+| **API 重试** | 10 次退避 + 529 降级 + 持久化重试 | **退避 + 429 SSE + 持久化重试** | 接近对齐（classifier 进行中）| [PR#3246](https://github.com/QwenLM/qwen-code/pull/3246) ✓（429 SSE）+ [PR#3080](https://github.com/QwenLM/qwen-code/pull/3080) ✓ + [PR#4708](https://github.com/QwenLM/qwen-code/pull/4708) ✓ / [PR#3798](https://github.com/QwenLM/qwen-code/pull/3798) 🟡 OPEN |
+| **优雅关闭** | SIGINT/SIGTERM + 清理注册 + failsafe | **✓ 信号处理** | 接近对齐 | [PR#1884](https://github.com/QwenLM/qwen-code/pull/1884) ✓ + [PR#3544](https://github.com/QwenLM/qwen-code/pull/3544) ✓ |
+| **反应式压缩** | prompt_too_long 自动裁剪重试 | **✓ 已实现** | 已对齐 | [PR#3879](https://github.com/QwenLM/qwen-code/pull/3879) ✓ + [PR#4526](https://github.com/QwenLM/qwen-code/pull/4526) ✓ |
+| **原子写入** | temp+rename + 大结果persist to disk | **✓ temp+rename** | 已对齐 | [PR#4333](https://github.com/QwenLM/qwen-code/pull/4333) ✓ |
+| **自动检查点** | 默认启用 + per-message 快照 | **✓ per-message + /rewind** | 接近对齐 | [PR#4064](https://github.com/QwenLM/qwen-code/pull/4064) ✓ + [PR#4897](https://github.com/QwenLM/qwen-code/pull/4897) ✓ + [PR#3441](https://github.com/QwenLM/qwen-code/pull/3441) ✓ |
 | Session Ingress Auth | bearer token 远程认证 | 无 | 缺失 | — |
-| Computer Use | macOS 桌面自动化 | 无 | 缺失 | — |
-| Deep Link | `claude-cli://` URI scheme | 无 | 缺失 | — |
-| Notebook Edit | Jupyter cell 编辑 | 无 | 缺失 | — |
-| Team Memory | 组织级记忆同步 | 无 | 缺失 | — |
-| 自定义快捷键 | multi-chord + keybindings.json | 无 | 缺失 | — |
-| 企业代理 | CONNECT relay + CA cert 注入 | 无 | 缺失 | — |
+| Computer Use | macOS 桌面自动化 | **✓ 已实现（跨平台，超 Claude）** | 超 Claude | [PR#4590](https://github.com/QwenLM/qwen-code/pull/4590) ✓ + [PR#5051](https://github.com/QwenLM/qwen-code/pull/5051) ✓（cua-driver 跨平台）|
+| Deep Link | `claude-cli://` URI scheme | **✓ `craftagents://` URI scheme** | 已对齐 | `desktop/.../deep-link.ts` |
+| Notebook Edit | Jupyter cell 编辑 | **✓ `notebook_edit` 工具** | 已对齐 | PR#3900 / `ed14a3306`（2026-05-21）|
+| Team Memory | 组织级记忆同步 | 无（有 Agent Team，非组织记忆同步）| 缺失 | — |
+| 自定义快捷键 | multi-chord + keybindings.json | **✓ keybindings 系统** | 接近对齐 | `config/keyBindings.ts` + [PR#3969](https://github.com/QwenLM/qwen-code/pull/3969) ✓ |
+| 企业代理 | CONNECT relay + CA cert 注入 | 部分（proxy base URL + Anthropic 兼容；CONNECT relay+CA 注入未必）| 中等差距 | [PR#3991](https://github.com/QwenLM/qwen-code/pull/3991) ✓ + [PR#4020](https://github.com/QwenLM/qwen-code/pull/4020) ✓ + [PR#4607](https://github.com/QwenLM/qwen-code/pull/4607) ✓ |
 | 终端主题 | OSC 11 dark/light 检测 | ✓ 已实现 | **已对齐** | [PR#3460](https://github.com/QwenLM/qwen-code/pull/3460) ✓（2026-04-22 合并）|
-| Denial Tracking | 权限拒绝学习 + 自动回退 | 无 | 缺失 | — |
+| Denial Tracking | 权限拒绝学习 + 自动回退 | **✓ 已实现** | 已对齐 | `permissions/denialTracking.ts` + [PR#4476](https://github.com/QwenLM/qwen-code/pull/4476) ✓ |
 
 ## 五、相关 Deep-Dive 文章
 
