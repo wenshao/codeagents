@@ -1,4 +1,4 @@
-# Deep-Dive 文章索引（152 篇）
+# Deep-Dive 文章索引（153 篇）
 
 > 按主题分类的深度分析文章，每篇聚焦一个具体技术机制的 Claude Code vs Qwen Code 对比。
 >
@@ -143,7 +143,7 @@
 | [Ultraplan](./ultraplan-remote-planning-deep-dive.md) | 远程规划 |
 | [Session Ingress Auth](./session-ingress-auth-deep-dive.md) | 远程认证 |
 
-## 用户体验（25 篇）
+## 用户体验（26 篇）
 
 | 文章 | 主题 |
 |------|------|
@@ -172,6 +172,7 @@
 | [/context 非交互](./context-usage-noninteractive-deep-dive.md) | 自动化诊断 |
 | [上下文 Tips](./context-tips-system-deep-dive.md) | 提示系统 |
 | [权限对话框预览](./permission-dialog-file-preview-deep-dive.md) | 文件预览 |
+| [Artifacts 会话产物发布](./artifacts-deep-dive.md) | session→托管可分享网页（Claude 独有）|
 
 ## 其他（23 篇）
 
