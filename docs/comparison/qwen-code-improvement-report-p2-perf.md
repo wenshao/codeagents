@@ -391,9 +391,9 @@
 | `tools/LSPTool/LSPTool.ts` (L554) | `git check-ignore` 批量路径参数 |
 | `utils/git.ts` | `findGitRoot` LRU 记忆化（max 50）、`gitExe` 单例查找 |
 
-**Qwen Code 现状（2026-06-21）**：🟡 **branch name 热路径已文件系统直读**——[PR#5432](https://github.com/QwenLM/qwen-code/pull/5432)（2026-06-20）新增 `packages/core/src/utils/gitDirect.ts`：`resolveBranchName`（读 `.git/HEAD`，detached 时短 hash）+ `readGitHead`（结构化解析）+ `watchRepoBranch`（引用计数 reflog watcher，按仓库共享）+ gitDir 解析缓存（`clearGitDirCache`，复用 `gitDiff.resolveGitDir` 的 ancestor-walk + worktree `gitdir:` 指针）。CLI `useGitBranchName` 已改为薄封装，status line 渲染不再 spawn `git rev-parse`。**仍 spawn git**：status/diff/check-ignore/worktree 等其余路径（`gitUtils.ts`/`gitDiff.ts`/`commitAttribution.ts`/worktree services 仍走 `simple-git`/子进程）。
+**Qwen Code 现状（2026-06-21）**：🟡 **branch name 热路径已文件系统直读**——[PR#5432](https://github.com/QwenLM/qwen-code/pull/5432)（2026-06-20）新增 `packages/core/src/utils/gitDirect.ts`：`resolveBranchName`（读 `.git/HEAD`，detached 时短 hash）+ `readGitHead`（结构化解析）+ `watchRepoBranch`（引用计数 reflog watcher，按仓库共享）+ gitDir 解析缓存（`clearGitDirCache`，复用 `gitDiff.resolveGitDir` 的 ancestor-walk + worktree `gitdir:` 指针）。CLI `useGitBranchName` 已改为薄封装，status line 渲染不再 spawn `git rev-parse`。**仍 spawn git**：status/diff/worktree 等其余路径（`gitUtils.ts`/`gitDiff.ts`/`commitAttribution.ts`/worktree services 仍走 `simple-git`/子进程；`check-ignore` 不在此列——已用 `GitIgnoreParser` 直读 `.gitignore`）。
 
-**剩余修改方向**（① 已落地）：① ✓ 高频查询（branch、HEAD）直读 `.git/HEAD`（#5432）；② `git check-ignore` 合并批量调用仍待；③ `findGitRoot`/gitDir 缓存已有雏形（gitDir 解析缓存），通用 LRU 仍可扩。
+**剩余修改方向**（逐项核实 2026-06-21）：① ✓ 高频查询（branch、HEAD）直读 `.git/HEAD`（#5432，已落地）；② `git check-ignore` 批量 —— ✅ **已是直读、无需做**：qwen-code 用 `GitIgnoreParser`（`fileDiscoveryService` 直读 `.gitignore`），全仓库无 `git check-ignore` spawn；③ `findGitRoot`/gitDir 缓存已有雏形（gitDir 解析缓存），通用 LRU **收益≈0**（`findGitRoot` 是微秒级同步 `existsSync`，热路径已被 gitDir 缓存覆盖、且引入 stale 风险）；④ status/diff/worktree —— ❌ **不适合直读**（diff 算法 / index 解析 / worktree 创建是复杂操作，直读=重新实现 git，得不偿失，spawn 合理）；⑤ tool 路径 `gitUtils.getGitBranch` 仍 spawn `rev-parse` —— 🟡 **暂缓**：需把 `findGitRoot`/`resolveGitDir` 下沉到 `gitPaths.ts` 破 `gitUtils↔gitDirect` 循环，且调用方（chatRecording/agent）多已自带缓存。
 
 **实现成本评估**：
 - 涉及文件：~3 个
