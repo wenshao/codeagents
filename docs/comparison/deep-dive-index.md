@@ -120,7 +120,7 @@
 | [Task Management](./task-management-deep-dive.md) | 任务协同 |
 | [Team Memory](./team-memory-deep-dive.md) | 组织级记忆 |
 | [SDK 双向控制](./sdk-bidirectional-control-deep-dive.md) | 控制协议 |
-| [ACP 支持 Deep-Dive](./acp-support-deep-dive.md) | 4 家 ACP（Agent Client Protocol）支持对比：方法逐项（Qwen 10 vs OpenCode 13）/ 库版本（0.14.1 vs 0.21.0）/ Qwen 独家 `httpAcpBridge` 2802 LOC daemon HTTP↔ACP 桥接 / IDE 端 UX 评分（Zed/JetBrains/Avante/CodeCompanion）|
+| [ACP 支持 Deep-Dive](./acp-support-deep-dive.md) | **5 家** ACP 支持完整性：原生（Qwen/OpenCode/Qoder）vs 外部 adapter（Claude/Codex）/ 方法逐项（Qwen 11 vs OpenCode 13）/ Qwen 独家 `httpAcpBridge` HTTP↔ACP 桥接 + Java SDK / **MCP↔ACP 完整性反转** / IDE 端 UX 评分 |
 | [Codex MCP Server Deep-Dive](./codex-mcp-server-deep-dive.md) | Codex 是 4 家中唯一同时做 MCP 客户端 + MCP 服务端的——把 Codex 包装成 MCP 工具给其他 LLM 调用。`codex mcp-server`（标准 MCP 2 tools）+ `codex app-server`（MCP-like 私有协议 + 多 transport stdio/ws/unix）形态澄清 / 4 用例（LLM 互调 / orchestration 框架 / 脚本自动化 / IDE 接入） |
 | [Codex SubAgent / 多代理](./codex-subagent-deep-dive.md) | Codex 子代理：`Collab` V1 默认开 + **TOML** agent roles（vs Markdown）+ 子代理**继承**父运行时/权限 + `multi_agent_v2`(under-dev) + 云端 **best-of-N**（`--attempts 1–4`）+ `/agent` 线程导航；对标 Claude/Qwen subagent |
 

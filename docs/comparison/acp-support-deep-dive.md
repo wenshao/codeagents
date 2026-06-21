@@ -1,6 +1,6 @@
-# ACP（Agent Client Protocol）支持 Deep-Dive —— Claude Code / Codex / Qwen Code / OpenCode
+# ACP（Agent Client Protocol）支持 Deep-Dive —— Claude Code / Codex / Qwen Code / OpenCode / Qoder CLI
 
-> **核心问题**：4 家 Code Agent 对 Zed 推动的 ACP 协议支持情况如何？库版本、方法覆盖、IDE 端能力、独家形态各是什么？
+> **核心问题**：5 家 Code Agent 对 Zed 推动的 ACP 协议支持情况如何？谁原生、谁靠外部 adapter、库版本、方法覆盖、IDE 端能力、独家形态各是什么？
 >
 > 返回 [对比文档总览](./README.md)
 >
@@ -61,49 +61,74 @@ ACP 基于 **JSON-RPC 2.0**，传输用 **stdio NDJSON**（每行一个 JSON 对
 - **已验证 ACP Client**：Zed、JetBrains AI Assistant、Avante.nvim、CodeCompanion.nvim
 - **进展跟踪**：[Zed ACP progress report](https://zed.dev/blog/acp-progress-report#available-now)
 
-### 为什么 4 家 Code Agent 选择截然不同？
+### 为什么 5 家 Code Agent 选择截然不同？
 
-ACP 的价值是"广度"（接更多 IDE），代价是"被外部 spec 约束 control plane 设计"。**这个 trade-off 在头部厂商和社区厂商之间评估完全不同**——这正是本文 §一·"4 家立场"差异的根本原因，也是 §五 哲学摘要的解释起点。
+ACP 的价值是"广度"（接更多 IDE），代价是"被外部 spec 约束 control plane 设计"。**这个 trade-off 在头部厂商和社区厂商之间评估完全不同**——这正是本文 §一·"5 家立场"差异的根本原因，也是 §五 哲学摘要的解释起点。头部厂商（Anthropic/OpenAI）押注自家 MCP、把 ACP 丢给外部 adapter；Gemini 血统（Qwen/Qoder）+ OpenCode 则原生拥抱 ACP——与 [MCP 完整性](./mcp-completeness-deep-dive.md) 排名正好反转。
 
 ---
 
 ## 零、TL;DR
 
-| 维度 | Claude | Codex | Qwen | OpenCode |
-|---|:---:|:---:|:---:|:---:|
-| ACP Agent | ❌ | ❌ | ✅ **965 LOC** | ✅ **1968 LOC** |
-| ACP Client | ❌ | ❌ | ✅ VSCode companion | ❌ |
-| ACP 库版本 | — | — | `@agentclientprotocol/sdk@^0.14.1` | `@agentclientprotocol/sdk@0.21.0` |
-| 实现方法数（含 unstable_*） | — | — | **10** | **13** |
-| Zed 原生 ext | ❌ | ❌ | ✅ `packages/zed-extension/` | 🟡 用户手配 |
-| Java ACP 库 | ❌ | ❌ | ✅ `com.alibaba:acp-sdk` | ❌ |
-| **HTTP↔ACP daemon 桥接** 🆕 | ❌ | ❌ | ✅ **2802 LOC**（独家） | ❌ |
-| 替代选择 | 私有 NDJSON | MCP server | — | HTTP daemon（与 ACP 并存）|
+| 维度 | Claude | Codex | Qwen | OpenCode | Qoder |
+|---|:---:|:---:|:---:|:---:|:---:|
+| CLI 内**原生 ACP** | ❌ adapter | ❌ adapter | ✅ | ✅ | ✅ |
+| ACP Agent | ❌ | ❌ | ✅ `acpAgent` **965→7167 LOC** | ✅ **1968 LOC** | ✅ gemini 继承（闭源）|
+| ACP Client | ❌ | ❌ | ✅ VSCode companion | ❌ | ❌ |
+| ACP 库版本 | adapter v0.48.0 | adapter v0.16.0 | CLI `^0.14.1`（desktop 包 0.21.0）| `0.21.0` | gemini 继承 |
+| 实现方法数（含 unstable_*） | — | — | **11**（+`resumeSession`）| **13** | gemini 基线 |
+| 传输 HTTP/WS | ❌ | ❌ | ✅ **独家** daemon 桥接 | ❌ stdio | ❌ stdio-only |
+| Java ACP 库 | ❌ | ❌ | ✅ `com.alibaba:acp-sdk` | ❌ | ❌ |
+| 替代选择 | 私有 NDJSON | MCP server / app-server | — | HTTP daemon（OpenAPI）| Qoder 云远程 |
 
 **最关键的两个反直觉发现**：
-1. **OpenCode 比 Qwen 多 3 个 session lifecycle 方法**（`resumeSession` / `closeSession` / `unstable_forkSession`）—— ACP 库版本 0.14.1 vs 0.21.0 落差直接体现。Qwen 在 IDE 端**没有"会话列表恢复 + 关闭"原生 UX**。
-2. **Qwen 独家做了 HTTP↔ACP daemon 桥接**（`httpAcpBridge.ts` 2802 LOC，PR#3889 引入）—— 4 家中唯一把 ACP 从 stdio-only 协议套壳成 HTTP 远端可用，连 Zed 官方都没做这个。
+1. **OpenCode 比 Qwen 多 2 个 session lifecycle 方法**（`closeSession` / `unstable_forkSession`）——2026-06-22 复核：Qwen 已补上 `unstable_resumeSession`（方法数 10→**11**），缺口从 3 收窄到 2；仍缺"显式关闭 + fork 分叉"的原生 IDE UX。CLI ACP 库仍 lock 在 `0.14.1`（新 `desktop` 包已用 0.21.0）。
+2. **Qwen 独家做了 HTTP↔ACP daemon 桥接**（`httpAcpBridge.ts` 2802 LOC，PR#3889 引入）—— 5 家中唯一把 ACP 从 stdio-only 协议套壳成 HTTP 远端可用，连 Zed 官方都没做这个。
+
+## 零·五、完整性排名 + MCP↔ACP 反转（2026-06-22 增补）
+
+**原生 ACP 完整性排名**：**Qwen Code > OpenCode > Qoder CLI > Claude Code ≈ Codex**（后两家 CLI **无原生 ACP**，仅靠外部 adapter）。
+
+### ⭐ 与 MCP 完整性**完全反转**
+
+| 协议 | 完整性排名 | 谁领先 |
+|---|---|---|
+| **MCP**（agent↔工具）| Claude > Codex ≈ Qwen > OpenCode > Qoder | **Anthropic/OpenAI**（自家主推）|
+| **ACP**（IDE↔agent）| **Qwen > OpenCode > Qoder** > Claude ≈ Codex | **Gemini 血统 + OpenCode**（拥抱 Zed 标准）|
+
+Anthropic/OpenAI 在自家 MCP 上最全，却把 Zed 的 ACP **丢给外部 adapter**——`claude` / `codex` CLI 里都**没有** `--acp`，靠 Zed 维护的桥接器接入（详 [MCP 支持完整性对比](./mcp-completeness-deep-dive.md)）。
+
+### native vs adapter（关键区分）
+
+| Agent | CLI 内**原生 ACP** | 接入机制 |
+|---|:--:|---|
+| **Qwen Code** | ✅ `--experimental-acp` | 原生被 IDE 拉起 + **独家 HTTP↔ACP daemon 桥接** |
+| **OpenCode** | ✅ `opencode acp` | 原生被 IDE 拉起（库最新 0.21.0）|
+| **Qoder CLI** | ✅ `--acp`（gemini 继承）| 原生但**仅 stdio**（无 HTTP/WS；二进制 `ACP` 101×）|
+| **Claude Code** | ❌ | 外部 adapter [`@agentclientprotocol/claude-agent-acp`](https://github.com/agentclientprotocol/claude-agent-acp) v0.48.0（wrap Claude Agent SDK）|
+| **Codex** | ❌ | 外部 adapter [`zed-industries/codex-acp`](https://github.com/zed-industries/codex-acp) v0.16.0；其 `app-server` 是**另一套私有协议**（≠ ACP）|
+
+> **adapter ≠ 原生**：Zed 能在编辑器里用上 Claude/Codex，但靠的是 Zed 自己维护的桥接进程把 Claude Agent SDK / Codex CLI 翻译成 ACP——agent 本体里没有 ACP server。Qwen/OpenCode/Qoder 则是 CLI 自带 `--acp`/`acp` 子命令。
 
 ## 一、ACP 是什么 + 谁支持
 
 ACP（Agent Client Protocol）是 Zed Industries 推动的 **IDE↔Agent 标准协议**，2025 年发布，npm 包 `@agentclientprotocol/sdk`。基于 JSON-RPC over stdio NDJSON。设计目标：让 IDE 厂商不再为每个 agent 写专属集成，agent 厂商也不再为每个 IDE 写专属插件。
 
-### 4 家立场
+### 5 家立场
 
-| 角色 | Claude Code | Codex | Qwen Code | OpenCode |
-|---|:---:|:---:|:---:|:---:|
-| **作为 ACP Agent**（被 IDE 拉起） | ❌ | ❌ | ✅ `packages/cli/src/acp-integration/acpAgent.ts` 965 LOC | ✅ `packages/opencode/src/acp/agent.ts` 1968 LOC |
-| **作为 ACP Client**（驱动其他 Agent） | ❌ | ❌ | ✅ `packages/vscode-ide-companion/src/services/acpConnection.ts` 694 LOC | ❌ |
-| **Java ACP 库** | ❌ | ❌ | ✅ `com.alibaba:acp-sdk` v0.0.1-α | ❌ |
-| **Zed 原生 extension** | ❌（自家 IDE 扩展） | ❌ | ✅ `packages/zed-extension/` | 🟡 文档教用户配 settings.json |
-| **daemon-side ACP bridge** 🆕 | ❌ | ❌ | ✅ `httpAcpBridge.ts` 2802 LOC | ❌（直接 HTTP daemon，不走 ACP） |
-| **替代协议** | NDJSON 私有 + MCP 部分 | MCP server (`codex-mcp`) + 自家 `app-server-protocol` 17K LOC | — | HTTP daemon（与 ACP 并存）|
+| 角色 | Claude Code | Codex | Qwen Code | OpenCode | Qoder CLI |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **作为 ACP Agent**（被 IDE 拉起） | ❌（外部 adapter） | ❌（外部 adapter） | ✅ `acpAgent.ts` 965→**7167** LOC | ✅ `acp/agent.ts` 1968 LOC | ✅ `--acp`（gemini 继承，闭源）|
+| **作为 ACP Client**（驱动其他 Agent） | ❌ | ❌ | ✅ `vscode-ide-companion` acpConnection 694 LOC | ❌ | ❌ |
+| **Java ACP 库** | ❌ | ❌ | ✅ `com.alibaba:acp-sdk` v0.0.1-α | ❌ | ❌ |
+| **Zed 原生 extension** | ❌（外部 adapter） | ❌（外部 adapter） | ✅ `packages/zed-extension/` | 🟡 文档教用户配 settings.json | ❌ |
+| **daemon-side ACP bridge** 🆕 | ❌ | ❌ | ✅ `httpAcpBridge.ts` 2802 LOC | ❌（直接 HTTP daemon，不走 ACP） | ❌（仅 stdio）|
+| **替代协议** | NDJSON 私有 + 外部 adapter | MCP server (`codex-mcp`) + 自家 `app-server-protocol` 17K LOC + 外部 adapter | — | HTTP daemon（与 ACP 并存）| Qoder 云远程控制 |
 
 ### Claude / Codex 的替代选择
 
 **Claude Code**：用私有 NDJSON 控制协议——SDK 双向 20+ 控制原语（`set_model` / `seed_read_state` / `interrupt` / `canUseTool` 回调等），自家 IDE 扩展直接对接，**不进 ACP 生态**。哲学："深度集成 > 标准化兼容"。
 
-**Codex**：用 MCP（Model Context Protocol）替代——`mcp-server` crate 让 Codex 自己**作为 MCP server** 暴露给其他 LLM agent 调用，4 家中**独家**。**MCP 是工具调用协议（窄）**，**ACP 是会话协议（全）**。Codex 选 MCP 反映它把自己定位为"被其他 agent 调用的工具"，而不是"被 IDE 嵌入的会话"。详 [Codex MCP Server Deep-Dive](./codex-mcp-server-deep-dive.md)（含 `codex mcp-server` 2 工具形态 / `codex app-server` 私有协议 / 4 个核心用例 / 与 ACP 哲学对比）。
+**Codex**：用 MCP（Model Context Protocol）替代——`mcp-server` crate 让 Codex 自己**作为 MCP server** 暴露给其他 LLM agent 调用，5 家中**独家**。**MCP 是工具调用协议（窄）**，**ACP 是会话协议（全）**。Codex 选 MCP 反映它把自己定位为"被其他 agent 调用的工具"，而不是"被 IDE 嵌入的会话"。详 [Codex MCP Server Deep-Dive](./codex-mcp-server-deep-dive.md)（含 `codex mcp-server` 2 工具形态 / `codex app-server` 私有协议 / 4 个核心用例 / 与 ACP 哲学对比）。
 
 ## 二、ACP 库版本 + 方法覆盖（最关键差距）
 
@@ -129,10 +154,10 @@ ACP（Agent Client Protocol）是 Zed Industries 推动的 **IDE↔Agent 标准�
 | `setSessionConfigOption` | ✅ L428 | ✅ L1268 | 改配置项 |
 | `prompt` | ✅ L471 | ✅ L1320 | 主对话流（含工具调用流） |
 | `cancel` | ✅ L479 | ✅ L1503 | 软中断 |
-| **`resumeSession`** | ❌ | ✅ **L732** | **从指定消息恢复对话** |
+| **`unstable_resumeSession`** | ✅ **L2802**（2026-06 新增）| ✅ **L732** | **从指定消息恢复对话** |
 | **`closeSession`** | ❌ | ✅ **L766** | **显式关闭并清理资源** |
 | **`unstable_forkSession`** | ❌ | ✅ **L678** | **从历史点 fork 出新分支** |
-| 实现总数 | **10** | **13** | — |
+| 实现总数 | **11**（2026-06-22 复核）| **13** | — |
 
 ### 3 个缺口的 IDE 体验影响
 
@@ -168,7 +193,7 @@ ACP（Agent Client Protocol）是 Zed Industries 推动的 **IDE↔Agent 标准�
                                               └─stdio NDJSON──▶ multiplexed session
 ```
 
-### 4 家中独家形态的意义
+### 5 家中独家形态的意义
 
 1. **ACP 协议层零改动**：daemon 内部仍跑标准 ACP 子进程，所以**所有 ACP 库改进自动受益**——这是协议中性设计的胜利。
 2. **远端可用**：原 ACP 是 stdio-only（IDE-bound，只能本机），HTTP 套壳后 Zed 跨网段、web bot、channel 都能连。
@@ -192,8 +217,8 @@ ACP（Agent Client Protocol）是 Zed Industries 推动的 **IDE↔Agent 标准�
 | 能力维度 | Claude | Codex | Qwen | OpenCode |
 |---|---|---|---|---|
 | **IDE 厂商接入广度**（开协议 vs 私有）| 🔴 私有 NDJSON | 🔴 不接 IDE | 🟢 ACP + Zed ext + VSCode companion + Java | 🟢 ACP only |
-| **ACP 协议方法完整性** | — | — | 🟡 10/13 | 🟢 13/13 |
-| **会话生命周期 IDE 体验**（list/resume/close） | — | — | 🔴 缺 3 个核心方法 | 🟢 齐全 |
+| **ACP 协议方法完整性** | — | — | 🟡 **11/13**（2026-06-22）| 🟢 13/13 |
+| **会话生命周期 IDE 体验**（list/resume/close） | — | — | 🟡 已补 resume，仍缺 close/fork（2）| 🟢 齐全 |
 | **HTTP daemon 存在** | 🔴 | 🔴 | 🟢 `qwen serve` PR#3889 MERGED 2026-05-13 | 🟢 `opencode serve` OpenAPI 13525 LOC（早已存在）|
 | **ACP semantics over HTTP**（远端 ACP-aware IDE 可达） | 🔴 | 🔴 | 🟢 **唯一**（httpAcpBridge 桥接 `qwen --acp` children） | 🔴（HTTP daemon 走 OpenAPI 协议，ACP 仍 stdio-only）|
 | **多语言宿主接入** | TS+Py | TS+Py | **TS+Py+Java** | TS only |
@@ -201,6 +226,8 @@ ACP（Agent Client Protocol）是 Zed Industries 推动的 **IDE↔Agent 标准�
 | **Zed 原生体验** | 🔴 | 🔴 | 🟢 自家 `packages/zed-extension/` | 🟡 用户手配 `settings.json` |
 | **JetBrains 现成集成** | 🟢 私有 | 🔴 | 🟢 ACP | 🟢 文档教配 `acp.json` |
 | **Avante.nvim / CodeCompanion.nvim** | 🔴 | 🔴 | ⚠️ 理论 ACP 兼容 | 🟢 已 doc 验证 |
+
+> **Qoder CLI（闭源）**：原生 ACP 但仅 stdio——可被 Zed/JetBrains 走标准 ACP stdio 拉起（无现成扩展），无 HTTP daemon、无 Java、无 ACP client、无 daemon 桥接；多语言宿主接入仅靠标准 ACP 协议本身。IDE-UX 完整度低于 Qwen/OpenCode，但仍是"原生 ACP"一档，高于 Claude/Codex 的"外部 adapter"。
 
 ### 按场景的最佳选择
 
@@ -213,7 +240,7 @@ ACP（Agent Client Protocol）是 Zed Industries 推动的 **IDE↔Agent 标准�
 | 避开协议绑定走自家深度集成 | **Claude** | NDJSON 20+ 控制原语，含 `seed_read_state` 等独家能力 |
 | 不要 IDE，要被 LLM agent 调用 | **Codex** | 唯一同时是 MCP server |
 
-## 五、4 家选型哲学摘要
+## 五、5 家选型哲学摘要
 
 | 家 | 一句话 | 标志证据 |
 |---|---|---|
@@ -221,6 +248,8 @@ ACP（Agent Client Protocol）是 Zed Industries 推动的 **IDE↔Agent 标准�
 | **Codex** | "把自己定位为被调用的工具" | `codex-mcp` crate + 自家 `app-server-protocol` 17K LOC + 不接 IDE |
 | **Qwen Code** | "广度优先——4 维全做 + daemon HTTP→ACP 独家" | ACP agent + ACP client + Zed ext + Java ACP + httpAcpBridge 2802 LOC |
 | **OpenCode** | "深度优先——ACP 库版本最新、方法覆盖最全（13/13）" | `@agentclientprotocol/sdk@0.21.0` + 实现 13 个方法 + 教 Zed/JetBrains/Avante/CodeCompanion 配置 |
+| **Qoder CLI** | "继承即用——gemini 血统自带 ACP，但只做 stdio 最小集" | `--acp` flag + `acpMode` + `acpAuthenticatedType`（闭源二进制 `ACP` 101×）；无 HTTP/WS、无 Java、无 daemon 桥接、无 ACP client |
+| **Claude / Codex** | "不进 ACP 本体——交给外部 adapter" | `claude`/`codex` CLI 无 `--acp`；Zed 靠 `claude-agent-acp` v0.48.0 / `codex-acp` v0.16.0 桥接 |
 
 ## 六、Qwen Code 借鉴清单
 
@@ -256,3 +285,5 @@ ACP（Agent Client Protocol）是 Zed Industries 推动的 **IDE↔Agent 标准�
 ---
 
 > **数据来源**：四家 2026-05-17 源码核实。Qwen Code `packages/cli/src/acp-integration/acpAgent.ts` 965 LOC + `packages/cli/src/serve/httpAcpBridge.ts` 2802 LOC + `packages/vscode-ide-companion/src/services/acpConnection.ts` 694 LOC；OpenCode `packages/opencode/src/acp/agent.ts` 1968 LOC + `acp/session.ts` 122 LOC + `acp/runtime.ts` 22 LOC；ACP 库版本基于各项目 `package.json`。Claude / Codex 无 ACP 代码（grep `agent-client-protocol` / `acp` 在各自源码均为空）。
+>
+> **2026-06-22 复核增补**：① 加入 **Qoder CLI**（闭源，二进制 EVIDENCE：原生 `--acp` **stdio-only**，gemini 继承，`ACP` 101×；无 HTTP/WS daemon）；② Qwen `acpAgent.ts` 已增长至 **7167 LOC** 并新增 `unstable_resumeSession`（方法数 10→**11**，仍缺 `closeSession`/`forkSession`），CLI ACP 库仍 `^0.14.1`（新 `desktop` 包用 `^0.21.0`）；③ Claude/Codex 确认 CLI **无原生 ACP**——接入靠外部 adapter（[`@agentclientprotocol/claude-agent-acp`](https://github.com/agentclientprotocol/claude-agent-acp) v0.48.0 / [`zed-industries/codex-acp`](https://github.com/zed-industries/codex-acp) v0.16.0），Codex `app-server` 是另一套**私有协议**（≠ ACP）；④ 完整性排名见 [§零·五](#零五完整性排名--mcpacp-反转2026-06-22-增补)，与 [MCP 完整性](./mcp-completeness-deep-dive.md) 呈反转。
