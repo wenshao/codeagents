@@ -87,6 +87,7 @@ A collection of external resources for learning about Code Agent CLI tools.
 ### 综合 AI Newsletter
 
 - [The Batch](https://www.deeplearning.ai/the-batch/) - Andrew Ng 主编，每周 AI 领域重要进展，包含 agent 与工具相关内容
+- [AI Weekly](https://aiweekly.co/) - 追踪 AI 专家和机构当前正在阅读和分享的内容，覆盖模型、agent、研究、融资与政策
 - [Machine Learning Monthly](https://mlmonthly.com/) - 每月 ML 领域综述
 - [Alpha Signal](https://alphasignal.ai/) - AI 研究与工程热点追踪
 
